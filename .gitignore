@@ -2,6 +2,7 @@ prefs.dat
 dist/
 build/
 /saves/
+singularity/saves/
 *.egg-info/
 *.pyc
 *.ogg
