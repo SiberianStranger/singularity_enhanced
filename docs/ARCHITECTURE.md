@@ -36,12 +36,19 @@ src/
     commands.ts     # PlayerCommand union (with playerId), command dispatcher
     outbox.ts       # notifications, pending choices, log entries emitted during a tick
     save.ts         # serialize/deserialize, schemaVersion, migrations
+    assert.ts       # assertNever
   dsl/
+    types.ts        # Condition/Effect/Weight node types, registries, DslContext
+    node.ts         # checked readers for untyped content nodes
+    context.ts      # scope environments, DslContext factory, default hooks
     conditions.ts   # boolean tree evaluator + registry
     effects.ts      # command list executor + registry
+    weight.ts       # the shared weight DSL ({ base, modifiers })
     paths.ts        # dotted-path get/set with writable-path whitelist
-    mtth.ts         # mean-time-to-happen → per-tick hazard
-    validate.ts     # static validation of trees against registries and schemas
+    mtth.ts         # mean-time-to-happen → per-evaluation hazard
+    validate.ts     # static validation of trees and whole bundles
+  content.ts        # content record types (EventDef, DecisionDef, JournalDef, HookDef, ContentBundle);
+                    # core owns these types, packages/content validates against them (no cycle)
   systems/
     time/           # cadence hooks, speed
     compute/        # hardware, sites, clusters, model self, throughput, power, cost

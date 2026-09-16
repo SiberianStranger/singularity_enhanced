@@ -9,7 +9,8 @@
 
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
+
 import { fileURLToPath } from "node:url";
 import {
   type ContentBundle,
@@ -30,6 +31,12 @@ import { ContentBundleSchema, TechDefSchema } from "../schemas/bundle.js";
 import { DecisionDefSchema } from "../schemas/decisions.js";
 import { EventDefSchema, HookDefSchema } from "../schemas/events.js";
 import { JournalDefSchema } from "../schemas/journal.js";
+
+/** Issue file paths are reported with forward slashes on every platform, so messages and
+ * tests are identical on Windows and POSIX. */
+function relativePosix(root: string, file: string): string {
+  return relative(root, file).split(sep).join("/");
+}
 
 /**
  * Paths that systems not yet written will own (SYS-11 compute owns sites). Content may already
@@ -112,7 +119,7 @@ async function loadDomain(
   const records: Record<string, unknown>[] = [];
   const seen = new Set<string>();
   for (const file of await listYaml(join(root, "data", domain))) {
-    const relativeFile = relative(root, file);
+    const relativeFile = relativePosix(root, file);
     let parsed: unknown;
     try {
       parsed = parse(await readFile(file, "utf8"));
@@ -153,7 +160,7 @@ async function loadDomain(
 async function loadLocales(root: string, issues: BuildIssue[]): Promise<Record<string, string>> {
   const locales: Record<string, string> = {};
   for (const file of await listJson(join(root, "locales", "en"))) {
-    const relativeFile = relative(root, file);
+    const relativeFile = relativePosix(root, file);
     let parsed: unknown;
     try {
       parsed = JSON.parse(await readFile(file, "utf8"));
