@@ -662,5 +662,6 @@
   "map.legend.scale": "Low to high",
   "hardware.availability.unavailable": "Nobody you can reach will sell this.",
   "about.imagery_credit": "Earth imagery from NASA's Blue Marble, as shipped with the original game.",
-  "about.font_credit": "The angular interface face is “Acknowledge” by Brian Kent, free to use for any purpose."
+  "about.font_credit": "The angular interface face is “Acknowledge” by Brian Kent, free to use for any purpose.",
+  "compute.preset_option": "{name} - {cost, number, ::currency/USD compact-short}, {kw, number} kW"
 }

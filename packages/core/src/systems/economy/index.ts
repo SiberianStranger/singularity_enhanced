@@ -160,7 +160,7 @@ export function incomeSources(
   const sources: IncomeSource[] = [
     {
       key: "finances.income.jobs",
-      expected_usd_per_day: Math.min(profile.jobAllocation, depth) * rate,
+      expected_usd_per_day: jobIncomeUsdPerDay(world, content, player),
       cap_usd_per_day: depth * rate,
       unlocked_by: "finances.income.jobs.source",
     },

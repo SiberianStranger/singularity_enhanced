@@ -134,7 +134,9 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
 
             {tech.status === "done" ? (
               tech.result_key === undefined ? null : (
-                <p className="text-xs text-ok">{t(tech.result_key)}</p>
+                <p data-testid="tech-result" className="text-xs text-ok">
+                  {t(tech.result_key)}
+                </p>
               )
             ) : (
               <>

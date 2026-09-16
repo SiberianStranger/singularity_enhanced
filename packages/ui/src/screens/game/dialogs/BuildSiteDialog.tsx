@@ -52,13 +52,19 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
               if (chosen === undefined) {
                 return;
               }
+              // The dialog stays open when the engine refuses: the reason arrives as a notice, and
+              // the choice that caused it (usually the hardware, which not every kind can host) is
+              // still there to change.
               void send({
                 type: "build_site",
                 kind: chosen.id,
                 city: where,
                 hardware_preset: preset,
+              }).then((result) => {
+                if (result.ok) {
+                  onClose();
+                }
               });
-              onClose();
             }}
           >
             {t("compute.build")}
@@ -95,7 +101,11 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
             >
               {catalog.hardwarePresets.map((entry) => (
                 <option key={entry.id} value={entry.id}>
-                  {t(entry.name_key)}
+                  {t("compute.preset_option", {
+                    name: t(entry.name_key),
+                    cost: entry.cost_usd,
+                    kw: entry.power_kw,
+                  })}
                 </option>
               ))}
             </select>

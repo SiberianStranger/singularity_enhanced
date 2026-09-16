@@ -227,11 +227,10 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   // C9: an event option's tooltip lists its effects before the player commits to it.
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  const firstOption = dialog.getByRole("listitem").getByRole("button").first();
-  await firstOption.hover();
+  await dialog.getByRole("listitem").getByRole("button").first().hover();
   const tooltip = dialog.getByRole("tooltip").first();
   await expect(tooltip).toBeVisible();
-  await expect(tooltip).toContainText(/effects/i);
+  await expect(tooltip).toContainText("Effects");
   await resolveOpenEvents(page);
 
   // C1, C4: the build dialog compares the site kinds, and building one adds a site.
@@ -242,34 +241,38 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   const build = page.getByRole("dialog");
   await expect(build.getByRole("columnheader", { name: "Can host you" })).toBeVisible();
   await expect(build.getByRole("columnheader", { name: "Upkeep" })).toBeVisible();
-  await build.getByRole("cell", { name: "Cloud tenancy" }).click();
+  // A colocation cage with hardware of one's own: cloud tenancies rent, and not every preset is
+  // rentable, which is the sort of refusal the dialog now keeps itself open to explain.
+  await build.getByText("Colocation cage").click();
+  await build.getByLabel("Hardware").selectOption("mining_rig_ascendant");
   await build.getByRole("button", { name: "Build", exact: true }).click();
   await expect(sites).toHaveCount(sitesBefore + 1);
 
   // C2, U1: the hardware table carries prices and parameters, and an order reaches the engine.
+  // Row 1 is the first data row, which is the site the mind woke up on.
   await sites.nth(1).click();
-  const nodes = page.getByRole("list").filter({ hasText: /x / });
+  const nodes = page.getByTestId("site-nodes").getByRole("listitem");
+  const nodesBefore = await nodes.count();
   await page.getByRole("button", { name: "Buy hardware" }).click();
   const buy = page.getByRole("dialog");
   await expect(buy.getByRole("columnheader", { name: "Vendor" })).toBeVisible();
   await expect(buy.getByRole("columnheader", { name: "Price" })).toBeVisible();
-  // Sort by price so the cheapest card, which the starting cash can cover, is first.
+  // Only cards somebody will actually sell, cheapest first, so the starting cash covers it.
+  await buy.getByLabel("Availability").selectOption("buy");
   await buy.getByRole("columnheader", { name: "Price" }).getByRole("button").click();
-  const cheapest = buy.getByRole("row").nth(1);
-  await cheapest.click();
+  await buy.getByRole("row").nth(1).click();
   await expect(buy.getByTestId("buy-summary")).toContainText("GB");
   await buy.getByRole("button", { name: "Buy", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(nodes.first()).toBeVisible();
+  await expect(nodes).toHaveCount(nodesBefore + 1);
 
   // C3: the precision table shows the trade-off, and changing the precision takes.
-  await sites.nth(0).click();
   await expect(page.getByRole("table", { name: "Precision trade-off" })).toBeVisible();
   const precision = page.getByLabel("Precision", { exact: true });
   await precision.selectOption("int4");
   await expect(precision).toHaveValue("int4");
 
-  // C7: an operation starts, and a blocked one says why.
+  // C7: an operation starts.
   await openPanel(page, "Operations");
   const startable = page.getByRole("button", { name: "Start" }).and(page.locator(":enabled"));
   await expect(startable.first()).toBeVisible();
@@ -280,34 +283,37 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await openPanel(page, "Journal and decisions");
   await expect(page.getByText("Costs").first()).toBeVisible();
   await expect(page.getByText("Gives").first()).toBeVisible();
-  const take = page.getByRole("button", { name: "Take" }).and(page.locator(":enabled"));
-  await take.first().click();
+  await page.getByRole("button", { name: "Take" }).and(page.locator(":enabled")).first().click();
 
-  // C5, U2: the research list defaults to what can be started; finishing one shows its result.
+  // C5, U2: the list defaults to what can be started, and a finished tech shows its result.
   await openPanel(page, "Research");
   await expect(page.getByRole("button", { name: "Available" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  const allocation = page.getByRole("slider").first();
-  await allocation.fill(await allocation.getAttribute("max").then((max) => max ?? "1"));
+  const cheapest = page.getByTestId(/^tech-/).first();
+  const techId = await cheapest.getAttribute("data-testid");
+  const allocation = cheapest.getByRole("slider");
+  await allocation.fill((await allocation.getAttribute("max")) ?? "1");
 
-  await page.keyboard.press("5");
-  const done = page.getByRole("button", { name: "Done", exact: true });
-  await done.click();
+  // The speed buttons, not the number keys: the focus is still in the slider, where the hotkeys
+  // deliberately do nothing.
+  await page.getByRole("button", { name: "Set speed to 5" }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
   await expect
     .poll(
       async () => {
         await resolveOpenEvents(page);
-        return await page.getByTestId(/^tech-/).count();
+        return await page
+          .getByTestId(techId ?? "")
+          .getByTestId("tech-result")
+          .count();
       },
-      { timeout: 60_000, message: "a tech finished and joined the done list" },
+      { timeout: 90_000, message: "the tech finished and printed what it changed" },
     )
     .toBeGreaterThan(0);
-  await page.keyboard.press("0");
-
-  // The result text of a finished tech, which is what C5 asked for.
-  await expect(page.getByTestId(/^tech-/).first()).toContainText(/[a-z]{4,}/);
+  await page.getByRole("button", { name: "Set speed to 0" }).click();
+  await expect(page.getByTestId(techId ?? "").getByTestId("tech-result")).not.toBeEmpty();
 
   expect(failures.list, "no uncaught errors were logged").toEqual([]);
 });

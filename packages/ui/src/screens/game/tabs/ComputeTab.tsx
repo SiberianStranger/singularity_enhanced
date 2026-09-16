@@ -279,7 +279,7 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
             <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
               {t("compute.nodes")}
             </h4>
-            <ul className="flex flex-col gap-1 text-sm">
+            <ul data-testid="site-nodes" className="flex flex-col gap-1 text-sm">
               {site.nodes.map((node) => (
                 <li key={node.id} className="flex justify-between gap-2 font-mono">
                   <span>

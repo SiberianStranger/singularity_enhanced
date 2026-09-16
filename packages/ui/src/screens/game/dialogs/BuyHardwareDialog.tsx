@@ -88,8 +88,14 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
               if (card === undefined) {
                 return;
               }
-              void send({ type: "buy_hardware", siteId: site, accelerator: card.id, count });
-              onClose();
+              // Kept open on a refusal, so the reason and the table that produced it stay together.
+              void send({ type: "buy_hardware", siteId: site, accelerator: card.id, count }).then(
+                (result) => {
+                  if (result.ok) {
+                    onClose();
+                  }
+                },
+              );
             }}
           >
             {t("compute.buy")}

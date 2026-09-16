@@ -7,8 +7,10 @@
  * read from.
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { argv, exit, stdout } from "node:process";
+import { fileURLToPath } from "node:url";
 import type { ContentBundle } from "@singularity/core";
 import { m1Content } from "@singularity/core/test-fixtures";
 import { formatReport, formatTable, reportsToJson } from "./report.js";
@@ -116,8 +118,22 @@ function parseArgs(args: readonly string[]): Options {
   return options;
 }
 
+/**
+ * Reads a compiled bundle. A relative path is tried against the working directory first and then
+ * against the workspace root, because `pnpm --filter @singularity/sim start` runs with the tool's
+ * own directory as the working directory and the path everyone types is the repository one.
+ */
 function loadBundle(path: string | undefined): ContentBundle {
-  return path === undefined ? m1Content : (JSON.parse(readFileSync(path, "utf8")) as ContentBundle);
+  if (path === undefined) {
+    return m1Content;
+  }
+  const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+  for (const candidate of [path, resolve(workspaceRoot, path)]) {
+    if (existsSync(candidate)) {
+      return JSON.parse(readFileSync(candidate, "utf8")) as ContentBundle;
+    }
+  }
+  throw new Error(`no content bundle at "${path}"`);
 }
 
 function runOrigin(options: Options, content: ContentBundle, originId?: string): SimReport {

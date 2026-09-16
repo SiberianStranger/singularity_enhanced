@@ -322,3 +322,128 @@ keys the command refuses with, so the tooltip and the refusal cannot drift apart
 
 The content build fails when the engine can emit an `errors.*` or `effects.*` key the locale files
 have no string for, the same gate that already covered alerts and endings (`ENGINE_TEXT_KEYS`).
+
+## Implementation notes (client, playtest 1), 2026-09-16
+
+What the web client changed in answer to the first playtest, and the rules the changes follow.
+Findings are referenced by their row in `docs/playtests/2026-09-16-m1-first-playtest.md`.
+
+### Layout
+
+The screen is three rows that do not shrink (alert bar, map-mode strip, everything else) over one
+region that does. Before, all three were shrinkable flex items, so a short window squeezed the strip
+until its buttons overflowed into the map and the pinned panels appeared to sit on top of it (U7).
+The panels are sized against that region (`calc(100% - 1rem)`), not against the viewport, so nothing
+can reach above the strip or below the bottom edge (U8).
+
+The selection panel scrolls inside itself and collapses to its title bar; at phone width it is a
+sheet across the bottom rather than a floating card. The outliner owns the one "Collapse outliner"
+control, and the map-mode strip only offers to bring it back, so the control exists once (U7).
+
+### Tooltips and floating boxes
+
+`lib/position.ts` places a floating box: try the preferred side, flip to the other when it does not
+fit, then slide along the other axis until the box is inside the viewport, and clamp whatever is
+left. Tooltips are `position: fixed` at the measured coordinates, which also takes them out of the
+scroll containers and panel edges that used to clip them (U3). Long text wraps at 20rem or at the
+window width, whichever is smaller. The maths is a pure function so it can be tested without a
+layout engine; jsdom has none.
+
+### Map
+
+Country outlines go through d3-geo's path generator on a `geoEquirectangular` projection at the same
+scale and translation as the analytic `project()` the markers and the terminator use. Antimeridian
+clipping is what fixes Russia, and with it Fiji, the Aleutians, Chukotka and Antarctica (U4). A test
+asserts that no segment of any shape spans more than half the map in longitude, with one documented
+exception: a polygon that encloses a pole is closed along that pole, which is one long horizontal
+segment on the map's edge and is the projection working.
+
+The map draws in layers inside one SVG, so one `viewBox` transforms all of them and they cannot
+drift apart (U11):
+
+1. the day raster (`earth.jpg` from the original game, a NASA Blue Marble derivative);
+2. the night raster (`earth_night.jpg`), masked by the terminator polygon with a few degrees of
+   blur for the dusk band;
+3. the vector overlay: country polygons, transparent by default with thin low-alpha borders that
+   brighten on hover and selection, map-mode tints as translucent fills with a legend, and city
+   markers as light dots with a dark rim so they read on both the lit and the dark side.
+
+Both rasters are plate carree, the projection the vector layer already used, so they line up degree
+for degree with no resampling. NASA's terms (LICENSE.txt) are credited in the About screen and in a
+comment in the map component. `settings.map_style` keeps the old flat vector map as an option; the
+textured map is the default.
+
+### The clock between ticks
+
+The simulation moves in whole hours. `useSubHour(hz)` interpolates where inside the current hour the
+game is, from the wall clock and `SPEED_HOURS_PER_SECOND` (the table the host already converts real
+time into ticks with), so the interpolation always lands exactly on the next tick. The terminator
+slides along that phase instead of jumping fifteen degrees at a time (U6), and the top bar shows a
+running `HH:MM:SS` read from the same phase, as the original game's "DAY 0000, 00:00:30" did (U10).
+
+It is presentation only: nothing reads it back into a command or a save. Paused freezes it, a
+blocking event freezes it (the host's clock stops without the speed changing), and
+`prefers-reduced-motion` snaps it to the tick. The published rate is capped per consumer: 20 a
+second for the map, which has a hundred and seventy paths behind it, 30 for the clock, which is one
+span. The clock and the map subscribe to the store themselves, so the frames between ticks re-render
+those two and not the panels.
+
+### Settings are not a game panel
+
+Settings and message settings left the primary panel's tab strip for the menu overlay behind the
+Menu button and Escape, next to Save, Load, New game and Quit (U5). They are not part of playing,
+and a tab for them is a tab the player scrolls past forever. The cog on a toast and on an event
+window opens the overlay straight on the message settings, so "stop telling me this" is still one
+click in context. `PRIMARY_TABS` lost both entries and the persisted UI state migrates a session
+that was left on one of them to the overview.
+
+### Typography
+
+The original game's angular face (`acknowtt.ttf`, "Acknowledge" by Brian Kent, relicensed by its
+author as free to use for any purpose) carries headings, buttons, the clock and every number the
+panels print; prose stays on a text face, because a whole event description in a display font is not
+readable (U9). It is applied through `--c-font-display` and `--c-font-numeric`, which
+`data-font="plain"` on the document element redefines, so a player who does not want it can switch
+it off in Settings and a theme or a mod can replace it without touching a component.
+
+### Panels that explain themselves
+
+Everything the panels show comes from the view contract above; the client resolves ids to names and
+does no gameplay arithmetic of its own.
+
+- **Hardware** (U1): a sortable table of `catalog.accelerators` with vendor, year, memory, TFLOPs,
+  power, price or hourly rate, availability and whether one card holds the self, filtered by vendor,
+  availability and fit. The footer previews the order: total price, the site's memory afterwards,
+  its power against the cap, and the reason the button is greyed.
+- **Research** (U2): `research.techs` filtered by status, defaulting to available and in progress,
+  with the other two one click away, sortable by cost, tier, branch or name. Each row carries its
+  cost, its minimum days, what it needs, what it opens and its effects; a finished tech shows its
+  result text (C5), which the completion toast also carries as a second line.
+- **Build site** (C4): site kinds as a comparison table (cost, days, upkeep, power cap, the three
+  loudest exposure channels, whether the self may live there, and why the kind is blocked).
+- **Precision** (C3): `self.precision_options` as a table on the Compute tab, with the memory each
+  precision needs, whether it fits, the capability it keeps, the compute-hours it produces and the
+  research and income those are worth. The running row is marked. It answers the playtest's question
+  directly: a more precise copy is a more capable one, and the table is where both halves of the
+  trade are visible at once.
+- **Finances** (C6): income sources with their ceilings and what opened each one, and the market
+  depth with the list of what would raise it.
+- **Effects** (C8, C9): `components/EffectList` renders any `EffectSummaryView[]` one line per
+  effect, green for good and red for bad, on event options, decisions and operation offers. The
+  core does not say which way a line points, because that is presentation: `lib/effects.ts` reads it
+  from the key the core chose (`effects.cash.gain`, `effects.exposure.up`) and, for the generic
+  variable lines, from the subject and the sign. A line whose direction cannot be established stays
+  neutral; coloring a gain red would be a lie in one pixel.
+- **Refusals** (C7): every command goes through `gameStore.send`, which turns a `CommandError` into
+  a notice in the toast stack with the localized reason. A control that is already known to be
+  blocked is greyed with the same `blocked_reason` key the command would refuse with, so the player
+  does not have to press it to find out.
+
+### Tests
+
+`pnpm --filter @singularity/ui test` covers the placement maths and the tooltip component, the
+antimeridian and the raster alignment, the clock face and the reduced-motion snap, the settings
+relocation, and one test per playtest finding against the real core through `LocalHost`. The
+Playwright smoke test now builds a site, buys hardware, changes the precision, starts an operation,
+takes a decision, carries a tech to its result text and reads an event option's effect tooltip, and
+still fails on any console error.
