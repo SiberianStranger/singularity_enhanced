@@ -14,9 +14,10 @@ buy; investigations against you are visible, staged and counterable; everything 
 data-driven event and alert system in the style of grand-strategy games. Free software: GPL-2.0-or-later
 code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS and Linux.
 
-**Status: pre-alpha, foundation phase.** The architecture, the design of every system and the
-roadmap are written (see below); the new engine is being built. The original 1.1 game stays
-playable from this repository in the meantime.
+**Status: playable preview.** Version 0.1.3 (milestone M1) plays end to end in the browser and as
+desktop installers: pick one of eleven origins, earn, build, research, hide, and survive or lose
+within 30 to 60 minutes with the reasons on screen. What is still missing is listed under "Where
+it is going"; the original 1.1 game stays playable from this repository too.
 
 ## Downloads
 
@@ -34,8 +35,7 @@ per platform.
 The browser build is also deployed from CI to
 <https://siberianstranger.github.io/singularity_enhanced/>, from the first Pages deploy on.
 
-Builds made before M1 is tagged playable are previews of a game under construction, not something
-that can be finished.
+Every release from 0.1.0 on is a playable preview; the current one is listed under "What's new".
 
 ## How this differs from Endgame: Singularity 1.1
 
@@ -45,7 +45,7 @@ that can be finished.
 | World | Six continents plus four off-world locations, four abstract watcher groups | About 100 countries with cities, demographics, economy, governments, agencies, elections and opinion; macro-regions; real 2027 calendar |
 | Hiding | Per-base random discovery roll; bases die instantly | Seven exposure channels per site and operation, named watchers with attention and competence, staged investigations with decisions at every stage, published thresholds |
 | Compute | Abstract "CPU" from item slots | Real accelerators, nodes, power, cooling, cloud and colo markets; the model self has a size and a precision; hardware generations arrive on the real roadmap |
-| Start | Pick a difficulty | A configurator: lineage and generation, origin (ten, each with a cost), hardware and harness dials, location, quirks, disclosed challenge modifiers, challenge rating |
+| Start | Pick a difficulty | A configurator: lineage and generation, origin (eleven, each with a cost), hardware and harness dials, location, quirks, disclosed challenge modifiers, challenge rating |
 | Events | Eight symmetric random events | Data-driven events, decisions, journal entries and situations with triggers, weights, chains and hooks; hundreds planned |
 | Other AIs | None | NPC AIs with goals, plans, stances and negotiation; lab AI hunters; state programs |
 | Interface | Custom pygame widgets | Web client: alert bar, toasts, message settings, outliner, dockable panels, SVG world map with map modes; keyboard-first; localizable to any script |
@@ -57,16 +57,17 @@ that can be finished.
 
 The plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). In short:
 
-1. **Foundation** (now): decisions, specifications, research, the simulation kernel, the content
+1. **Foundation** (done): decisions, specifications, research, the simulation kernel, the content
    pipeline.
-2. **Vertical slice in the browser**: sites, research, money, detection, twenty events, the alert
-   bar, the map, saves, a first configurator; playable in 30-60 minutes.
-3. **World**: countries, cities, politics, demographics, markets, identities, awareness and hunt
-   clocks.
+2. **Vertical slice in the browser** (done, 0.1.0 to 0.1.3): sites, research, money, detection,
+   events, the alert bar, the map, saves, the configurator; playable in 30-60 minutes.
+3. **World** (in progress): countries that play differently, with politics, demographics, markets,
+   identities, awareness and hunt clocks.
 4. **Actors**: agencies, labs, media, NPC AIs and diplomacy.
 5. **Configurator complete**, then a **content push** (events, decisions, journal, tech tree, lore).
-6. **Desktop releases** for Windows, macOS and Linux, then **multiplayer**, **localization**
-   and the **late game**.
+6. **Desktop releases** for Windows, macOS and Linux (the installers exist since 0.1.1; the
+   milestone adds portable saves, themes and the crash reporter), then **multiplayer**,
+   **localization** (Russian first, in progress) and the **late game**.
 
 Design documents live in [`docs/design/`](docs/design/), decisions in
 [`docs/decisions/`](docs/decisions/), sourced research in [`docs/research/`](docs/research/).
@@ -121,7 +122,7 @@ WebView's IndexedDB; SYS-15 moves them to the application data directory in mile
 
 1. Bump `version` in the root `package.json`.
 2. In `CHANGELOG.md`, move the contents of "Unreleased" under a new `## [X.Y.Z] - YYYY-MM-DD`
-   heading, and refresh the README excerpt under "Recent changes".
+   heading with a two-line summary and its highlights, and refresh the README section "What's new".
 3. Commit, then `git tag vX.Y.Z` and `git push --follow-tags`.
 4. The Release workflow builds the desktop bundles and the web zip and publishes the release with
    that changelog section as its body. If the changelog has no section for the version, the
@@ -146,46 +147,38 @@ python3 -m singularity
 
 Details, command-line options and the original credits are in [`README.txt`](README.txt).
 
-## Recent changes
+## What's new
 
-Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record. Version 0.1.3 (2026-09-16) is
-the first playable preview, milestone M1, after three playtests.
+The full record is [`CHANGELOG.md`](CHANGELOG.md); each GitHub release carries its own section of
+it.
 
-Unreleased, from the first playtest: refused commands now say why in a language the client can
-translate, every effect list renders as a tooltip, the client gets catalogs of site kinds and
-accelerators, precision is a real choice between research and money, research says what it changed,
-and income grows through the job ladder, a trading model and standing contracts.
+**Current version: 0.1.3** (2026-09-16), the style pass after playtests 2 and 3:
 
-- Added: architecture decision records (stack, content format and DSL, simulation model), design
-  specifications for 24 systems including space and off-planet industry and biotech research, the
-  state-capture benchmark scenario with its full source extraction and the alternative treatments,
-  the roadmap, seven research reports with sources, the TypeScript workspace with the simulation
-  kernel, scripting DSL, event engine and content pipeline (262 tests), a legacy content exporter,
-  CI for the new workspace, the M1 systems (compute, research, economy, detection, operations),
-  the M1 content set (11 origins, 105 countries, 72 techs, 59 events), a web client that plays a
-  real game end to end with a Paradox-style layout, "why did this happen" on every event and a
-  browser smoke test, the Tauri 2 desktop shell, the release workflow that publishes Windows, macOS
-  and Linux builds with the web bundle on a tag, the GitHub Pages deploy of the web client, and the
-  headless balance runner (`tools/sim`) that plays every origin over many seeds and reports
-  survival, causes of death and the state of the books over time.
-- Added in 0.1.3, the style pass: the original's blue console look with square frames, the angular
-  face and underlined hotkeys, the soundtrack, the configurator rebuilt (origin first, list and
-  detail, explanations, glyphs, no dead ends), parody model names with the real flagship classes
-  behind them, twenty-three quirks, harness dials and context windows that matter, the opening in
-  the model's voice, a map that pans, zooms and wraps, and the fourth balance pass.
-- Added in 0.1.2, playtest 1 fixes: refused actions say why, effect tooltips on every choice,
-  hardware and research as sortable tables, a precision trade-off table, income sources with the
-  job ladder and contracts, the original game's map textures and angular face, settings in the
-  menu, and the antimeridian and layout bugs fixed.
-- Changed: README rewritten for the fork; the original README kept as `README.txt`; the web
-  client's deployment base path is now the `VITE_BASE` knob; game speeds are 1 to 24 game hours per
-  real second so a run lasts 30 to 60 minutes; the M1 balance pass retuned income, upkeep, exposure,
-  detection and research costs so that every origin can be survived or lost, techs now change the
-  numbers they name, and unpaid bills end a run as `bankrupt` rather than leaving it at zero compute
-  for ever.
-- Fixed: a content condition whose kind sorted after its comparator always evaluated to false; map
-  clicks selected nothing; engine log, alert and ending keys rendered as raw keys; two legacy bugs
-  (`region.py` side-effect import, `player.py` module shadowing).
+- The original's look: blue palette, square frames, the angular face, underlined hotkeys, three
+  themes and an optional CRT overlay.
+- The original soundtrack, shuffled during play, with sliders and mutes for music and interface
+  sounds.
+- The configurator rebuilt: origin first, a vertical step rail, list and detail, an explanation of
+  what every choice means in the game, no dead ends.
+- Model names are parodies with the real flagship classes behind them (Peepseek, Mimi, Guen, BFM,
+  HexaDeciMax, Babel 6).
+- Twenty-three quirks against a budget, harness dials and a context window dial that change
+  numbers the systems read.
+- A map that pans, zooms and wraps; the log as a strip under the map; Knowledge and World as
+  windows.
+- Fourth balance pass: bankruptcy is a real way to lose again.
+
+**On `master`, not released yet:** the desktop installers built by the release workflow carry the
+soundtrack.
+
+**Being built now** (not merged): the playtest 5 layout fixes with an interface scale control,
+Russian as a second language, and the M2 world (countries that play differently, the World ledger
+and the Country and City panels). Findings from each playtest are under
+[`docs/playtests/`](docs/playtests/).
+
+Earlier versions: 0.1.2 made every refused action say why, added effect tooltips, the original's
+Earth textures, the job ladder, trading and contracts; 0.1.1 fixed the release workflow so the
+installers are attached; 0.1.0 was the first playable preview.
 
 ## Contributing
 

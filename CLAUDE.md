@@ -50,8 +50,10 @@ maintainer writes in Russian; the project itself is in English.
   is rewritten and force-pushed, never left as is.
 - Do not commit files that a running background agent is still writing; commit them when it reports.
 - Never push a commit that turns CI red: run the relevant checks first (`pnpm check`, `pytest`).
-- Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets a line under
-  "Unreleased" in the changelog, and the README's "Recent changes" excerpt mirrors it.
+- Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets one short line
+  (one change per line, no run-on bullets) under "Unreleased" in the changelog; when a version is
+  cut it gets a two-line summary and a "Highlights" list first; the README section "What's new"
+  repeats the current version's highlights and the unreleased list.
 - `.gitignore` ignores dotfiles except `.github/`, `.nvmrc` and `.gitattributes`; check
   `git check-ignore -v <path>` before assuming a new dotfile is tracked.
 
