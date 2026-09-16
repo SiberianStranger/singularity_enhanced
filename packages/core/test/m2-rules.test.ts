@@ -240,3 +240,23 @@ describe("country-scoped events", () => {
     expect(started.world.players.p1?.vars.m2_elections ?? 0).toBeGreaterThan(0);
   });
 });
+
+describe("country-scoped targets", () => {
+  it("reads the event's own targets condition against the country in scope", () => {
+    // `m2_country_month` targets every country; `m2_country_week` targets only the ones the player
+    // is in. A bound target still goes through `targets`, or a country pulse would fire its events
+    // everywhere on earth and the condition that says "only where I am" would never be read.
+    const started = worldGame({ seed: "targets" });
+    started.tick(24 * 32);
+    const months = started.world.log.filter(
+      (entry) => entry.key === "log.event_fired" && entry.vars.event === "m2_country_month",
+    );
+    const weeks = started.world.log.filter(
+      (entry) => entry.key === "log.event_fired" && entry.vars.event === "m2_country_week",
+    );
+    expect(months.length).toBeGreaterThan(1);
+    // Three countries in the fixture, one of which the player is in: the weekly pass is the rarer
+    // of the two even though it comes round four times as often.
+    expect(weeks.length).toBeLessThan(months.length * 3);
+  });
+});

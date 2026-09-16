@@ -365,6 +365,12 @@ export function eventEligibility(
     if (def.trigger !== undefined && !evaluateCondition(def.trigger, dctx)) {
       return undefined;
     }
+    // A named target is still a target: `targets` decides whether this is one of the places the
+    // event is about. Without this a country pulse would fire its events in every country on
+    // earth, because the condition that says "only where the player is" would never be read.
+    if (def.targets !== undefined && !evaluateCondition(def.targets, dctx)) {
+      return undefined;
+    }
     return { def, targets: [target] };
   }
   if (def.scope === "player") {
