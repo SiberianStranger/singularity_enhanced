@@ -80,3 +80,16 @@ panels, tabs, indicators, tooltips with the formula behind every number) stay; t
 The M1 client used a generic dark web look (rounded cards, a humanist sans, blue pill buttons).
 Playtest 1 found it banal and hard to read at width. Everything in that look is replaced by the
 rules above; the layout regions of SYS-11 stay.
+
+## Sizes and reveal (added after playtest 3)
+
+- Base prose is 16 px in the readable face; secondary text never below 13 px; the angular face is
+  used only for short labels, titles, buttons, tabs and numbers, never for paragraphs, and never
+  below 14 px. The text size setting (Small, Normal, Large) scales everything; Normal is 16 px.
+- Dense is not small: density comes from tables and columns, not from shrinking type. A panel
+  that does not fit is compacted by narrower columns and abbreviations, never by wrapping numbers.
+- Event, story and journal texts reveal progressively, like the original's typewriter: about 60
+  characters per second, a click or Enter completes the text at once, off under reduced motion.
+- Map highlights are the clipped country path itself (fill and stroke), never a bounding box.
+  City dots are dim by default; the player's active sites glow, a hovered country lights its own
+  dots, and a dot with the player's site may carry a small block of numbers or icons.
