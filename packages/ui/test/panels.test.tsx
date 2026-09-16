@@ -8,7 +8,7 @@
  * market will take (C6), and a refused command says why (C7).
  */
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
@@ -134,6 +134,30 @@ describe("research (U2, C5)", () => {
     expect(costs()).not.toEqual(byCost);
   });
 
+  it("never offers more compute than the engine will take", async () => {
+    const live = await play();
+    // A running operation holds compute-hours the engine will not let research have. The slider
+    // used to ignore that, so dragging it to its maximum was refused and snapped back to zero.
+    const offer = live.view().operation_offers.find((entry) => entry.enabled);
+    expect(offer).toBeDefined();
+    await useGameStore.getState().send({ type: "start_operation", operationId: offer?.id ?? "" });
+    expect(live.view().operations.length).toBeGreaterThan(0);
+
+    const tab = await openTab(/^Research$/);
+    const first = within(tab).getAllByTestId(/^tech-/)[0] as HTMLElement;
+    const techId = (first.getAttribute("data-testid") ?? "").replace("tech-", "");
+    const slider = within(first).getByRole("slider") as HTMLInputElement;
+    const max = Number(slider.max);
+    expect(max).toBeGreaterThan(0);
+
+    fireEvent.change(slider, { target: { value: String(max) } });
+    await waitFor(() => {
+      const tech = live.view().research.techs.find((entry) => entry.id === techId);
+      expect(tech?.allocation_per_day).toBe(max);
+    });
+    expect(useUiStore.getState().notices, "no refusal was raised").toEqual([]);
+  });
+
   it("shows the result text of a finished tech", async () => {
     const live = await play();
     // Finish the cheapest tier-0 tech by throwing the whole rack at it.
@@ -159,6 +183,21 @@ describe("research (U2, C5)", () => {
     const row = within(panel()).getByTestId(`tech-${cheapest?.id}`);
     expect(cheapest?.result_key, "the tech has a result text").toBeDefined();
     expect(row).toHaveTextContent(i18next.t(cheapest?.result_key ?? ""));
+
+    // And the alert says it too. Under the default message preset a research alert is an icon and
+    // no toast, so the icon has to carry the result or C5 is only half answered.
+    const alert = live.view().notifications.find((entry) => entry.key === "alerts.tech_researched");
+    expect(alert, "finishing a tech raises an alert").toBeDefined();
+    expect(alert?.vars.result_key).toBe(cheapest?.result_key);
+    const icons = screen.getByTestId("alert-icons");
+    await userEvent.hover(
+      within(icons).getByRole("button", {
+        name: i18next.t("alerts.tech_researched", { ...alert?.vars }),
+      }),
+    );
+    expect(await within(icons).findByRole("tooltip")).toHaveTextContent(
+      i18next.t(String(alert?.vars.result_key)),
+    );
   });
 });
 

@@ -107,7 +107,15 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
         <Slider
           label={t("finances.jobs")}
           min={0}
-          max={Math.max(1, resources.compute_hours_per_day)}
+          // The same ceiling the engine allocates against: the capacity minus research and the
+          // operations that are running (SYS-07, SYS-17).
+          max={Math.max(
+            1,
+            Math.floor(
+              finances.job_allocation_per_day +
+                Math.max(0, resources.compute_hours_per_day - resources.compute_allocated_per_day),
+            ),
+          )}
           value={Math.min(finances.job_allocation_per_day, resources.compute_hours_per_day)}
           display={t("finances.job_allocation", { value: finances.job_allocation_per_day })}
           onChange={(value) => {

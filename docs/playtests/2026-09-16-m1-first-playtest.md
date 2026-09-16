@@ -22,17 +22,17 @@ grouped by owner. Status column: open, fixed (commit), by design (explained in t
 
 | # | finding | status |
 |---|---|---|
-| U1 | The hardware list is an unsorted dump without prices or parameters. | open |
-| U2 | The research list shows every tech by default, including unavailable ones; it is long to scroll and has no sorting or filter. Default should be "available", with filters and sort. | open |
-| U3 | Text runs outside its window (tooltips clipped at the screen edge). | open |
-| U4 | The vector map is broken over Russia (antimeridian artifact). | open |
-| U5 | Settings and Message settings belong in the menu opened by the Menu button, not in the game panel tabs. | open |
-| U6 | The day-night terminator moves in jumps instead of smoothly. | open |
-| U7 | The primary panel (Overview and the others) overlaps the map-mode strip; the outliner on the right overlaps it too. | open |
-| U8 | The bottom-left selection panel runs off the screen. | open |
-| U9 | Use the original game's angular font (the Acknowledge TT face shipped with the legacy game) for headings, buttons, the clock and the numbers, keeping a readable text face for prose. | open |
-| U10 | The clock should show seconds ticking continuously, as the original's "DAY 0000, 00:00:30" did, even when seconds have no simulation meaning; the terminator moved smoothly in the original. | open |
-| U11 | Map look: build on the original's map (NASA Blue Marble day texture with the night texture and city lights showing on the dark side of the terminator), with country borders, map-mode tints and markers drawn as a carefully aligned vector layer on top; the pure vector map stays as the fallback theme. | open |
+| U1 | The hardware list is an unsorted dump without prices or parameters. | fixed (0.1.2) |
+| U2 | The research list shows every tech by default, including unavailable ones; it is long to scroll and has no sorting or filter. Default should be "available", with filters and sort. | fixed (0.1.2) |
+| U3 | Text runs outside its window (tooltips clipped at the screen edge). | fixed (0.1.2) |
+| U4 | The vector map is broken over Russia (antimeridian artifact). | fixed (0.1.2) |
+| U5 | Settings and Message settings belong in the menu opened by the Menu button, not in the game panel tabs. | fixed (0.1.2) |
+| U6 | The day-night terminator moves in jumps instead of smoothly. | fixed (0.1.2) |
+| U7 | The primary panel (Overview and the others) overlaps the map-mode strip; the outliner on the right overlaps it too. | fixed (0.1.2) |
+| U8 | The bottom-left selection panel runs off the screen. | fixed (0.1.2) |
+| U9 | Use the original game's angular font (the Acknowledge TT face shipped with the legacy game) for headings, buttons, the clock and the numbers, keeping a readable text face for prose. | fixed (0.1.2) |
+| U10 | The clock should show seconds ticking continuously, as the original's "DAY 0000, 00:00:30" did, even when seconds have no simulation meaning; the terminator moved smoothly in the original. | fixed (0.1.2) |
+| U11 | Map look: build on the original's map (NASA Blue Marble day texture with the night texture and city lights showing on the dark side of the terminator), with country borders, map-mode tints and markers drawn as a carefully aligned vector layer on top; the pure vector map stays as the fallback theme. | fixed (0.1.2) |
 
 ## Acceptance
 

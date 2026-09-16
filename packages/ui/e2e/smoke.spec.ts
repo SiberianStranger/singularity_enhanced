@@ -224,6 +224,14 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   const failures = watchForFailures(page);
   await startGame(page);
 
+  // U11: the map's rasters are really served, which a broken <image> would not say out loud.
+  const dayTexture = await page
+    .locator('[data-testid="map-raster"] image')
+    .first()
+    .getAttribute("href");
+  expect(dayTexture, "the map has a day texture").not.toBeNull();
+  expect((await page.request.get(dayTexture as string)).status()).toBe(200);
+
   // C9: an event option's tooltip lists its effects before the player commits to it.
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
@@ -297,8 +305,12 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   );
   const cheapest = page.getByTestId(/^tech-/).first();
   const techId = await cheapest.getAttribute("data-testid");
+  // End puts a range input at its maximum, which is the whole free rack; it also proves the
+  // slider is reachable from the keyboard.
   const allocation = cheapest.getByRole("slider");
-  await allocation.fill((await allocation.getAttribute("max")) ?? "1");
+  await allocation.focus();
+  await page.keyboard.press("End");
+  await expect(allocation).not.toHaveValue("0");
 
   // The speed buttons, not the number keys: the focus is still in the slider, where the hotkeys
   // deliberately do nothing.
@@ -313,7 +325,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
           .getByTestId("tech-result")
           .count();
       },
-      { timeout: 90_000, message: "the tech finished and printed what it changed" },
+      { timeout: 60_000, message: "the tech finished and printed what it changed" },
     )
     .toBeGreaterThan(0);
   await page.getByRole("button", { name: "Set speed to 0" }).click();

@@ -57,7 +57,10 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
   const techs = techRows(view);
   const allocated = techs.reduce((sum, tech) => sum + tech.allocation_per_day, 0);
   const total = view.resources.compute_hours_per_day;
-  const free = Math.max(0, total - view.finances.job_allocation_per_day - allocated);
+  // What is left is the capacity minus everything already committed: research, paid work and the
+  // compute the running operations hold. The engine allocates against exactly that number, so a
+  // slider that ignored the operations offered hours the command would then refuse.
+  const free = Math.max(0, total - view.resources.compute_allocated_per_day);
 
   // Filtering and sorting seventy-odd rows is not worth memoizing, and the list is rebuilt from
   // the view on every render anyway.
@@ -166,7 +169,8 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
                   <Slider
                     label={t("research.allocation")}
                     min={0}
-                    max={Math.max(1, Math.round(tech.allocation_per_day + free))}
+                    // Floored, not rounded: rounding up offers one hour more than the engine has.
+                    max={Math.max(1, Math.floor(tech.allocation_per_day + free))}
                     value={tech.allocation_per_day}
                     display={t("common.ch_per_day", { value: tech.allocation_per_day })}
                     onChange={(value) => {

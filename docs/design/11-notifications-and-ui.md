@@ -439,6 +439,15 @@ does no gameplay arithmetic of its own.
   blocked is greyed with the same `blocked_reason` key the command would refuse with, so the player
   does not have to press it to find out.
 
+### Allocation ceilings
+
+The research and freelance sliders stop where the engine stops: at
+`compute_hours_per_day - compute_allocated_per_day` plus whatever that slider already holds, floored.
+`compute_allocated_per_day` includes the compute the running operations hold, which the sliders used
+to ignore, so dragging one to its end while an operation ran produced a command the engine refused
+and a control that snapped back to zero. The smoke test found it; a component test now sets a slider
+to its maximum with an operation running and asserts the allocation takes and no refusal is raised.
+
 ### Tests
 
 `pnpm --filter @singularity/ui test` covers the placement maths and the tooltip component, the

@@ -9,6 +9,13 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.2] - 2026-09-16
+
+Playtest 1 fixes: everything the maintainer found broken or unexplained in 0.1.1, plus the
+original game's map textures and angular face.
+
 ### Added
 - A refused command says why: `game.command()` returns `{ ok, error: { key, vars } }` with a locale
   key under `errors.*` instead of an English sentence, and every refusal is written to the player's
@@ -26,6 +33,19 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   `expert_jobs`) raising both the freelance rate and the market depth, a trading line whose daily
   return is drawn from the world RNG, standing contracts from the freelance-identity operation, and
   `contract_brokerage` and `grant_capture` to raise them.
+- The map is the original game's Earth: NASA Blue Marble day and night textures under a vector
+  layer of borders, map-mode tints, a legend and city markers, all in one plate carree transform.
+  The flat vector map stays as a Settings option.
+- The original game's angular face (Acknowledge) on headings, buttons, the clock and the numbers,
+  with a running HH:MM:SS clock interpolated between ticks; both switchable off in Settings.
+- Hardware is a sortable, filterable table with prices and parameters and a purchase preview;
+  building a site compares the kinds side by side; the precision trade-off is one table; the
+  Finances panel lists income sources and the market depth; the research list filters to what is
+  available by default and sorts by cost, tier, branch and name.
+- Effect tooltips in Paradox style on event options, decisions and operation offers, green for
+  good and red for bad, with the reason when a choice is greyed.
+- Playtest notes under `docs/playtests/`, a UI style guide (`docs/design/ui-style-guide.md`), the
+  configurator screen v0.2 in SYS-04, and the September 2026 model-name research.
 
 ### Changed
 - Precision is a real choice: research hours land at the capability factor squared, so a quantized
@@ -34,12 +54,23 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - Ten techs that changed no number now do: power masking and power engineering lower telemetry
   exposure and site upkeep, quantum entanglement lowers network exposure, pressure domes trade
   upkeep for human exposure, knowledge preservation opens a standing contract, and so on.
+- Settings and message settings moved out of the game panel into the menu behind the Menu
+  button and Escape, next to Save, Load, New game and Quit.
+- Model names in the game are parodies of the real families with the real technical facts behind
+  them (lore bible, amended); the names themselves are applied in the next content pass.
 
 ### Fixed
 - Research completion says what it changed: every tech carries a `result_key` the content build
   enforces, and the completion notice and the Research tab both show it.
 - The content build now fails a tech with no result string, and a tech that neither changes a number
   nor unlocks anything.
+- The vector map no longer smears across the antimeridian (Russia, Fiji, the Aleutians, Chukotka,
+  Antarctica); tooltips and menus flip and slide to stay inside the window; the map-mode strip, the
+  outliner and the selection panel no longer overlap or run off the screen; the day-night
+  terminator moves smoothly.
+- A refused command says why, on screen; the research and freelance sliders no longer offer
+  compute that running operations hold; the client saves module is tracked again after the legacy
+  `saves/` ignore rule swallowed it.
 
 ## [0.1.1] - 2026-09-16
 
