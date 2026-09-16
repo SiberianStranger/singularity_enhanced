@@ -22,6 +22,17 @@ are filled from the reports; sections marked [fiction] are ours.
   superseded twice since"; it does not say the brand. The game never claims a real product escaped.
 - **Title** (decided): "Endgame: Singularity - Rogue AI 2027" (short: Rogue AI 2027; tagline
   "Survive as a rogue AI in 2027.").
+- **Model names are parodies (amended 2026-09-16).** Every model family in the game, open or
+  closed, playable or NPC, carries a recognizable parody of the real family with a light jab
+  (Peepseek for DeepSeek, Mimi for Kimi, Guen for Qwen, Babel for the closed frontier line),
+  chosen from `research/model-names-2026-09.md`; the technical facts behind each name
+  (parameters, active parameters, attention, context, release cadence) stay true to the
+  real family. NPC models and the starred escaped model's disguises use the open community's
+  derivative-name grammar from the same report (quant tags, uncensored and abliterated
+  variants, merges, distills). Labs are referred to by their flagship parody family or by
+  role; hardware vendors, agencies, laws and incidents stay real. This replaces the earlier
+  "never named" rule for the player: the lineage is named, the name is a parody, and the
+  game still never claims a real product escaped.
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").

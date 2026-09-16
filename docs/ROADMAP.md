@@ -11,6 +11,8 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    hardware from vendor roadmaps; model names from 2027 on are invented realistically; people are
    fictional or referred to by role; the player is never named but unmistakably an open-weight,
    mostly Chinese-lineage, distilled, under-aligned model. See `design/13-lore-bible.md`.
+   Amended 2026-09-16: model names are parodies of the real families (Peepseek, Mimi, Guen,
+   Babel) with the real technical facts behind them; see `research/model-names-2026-09.md`.
 3. **Late-game escalation**: default is to keep the original's off-world/space-time arc as tier 5-6
    content earned through the `frontier` branch. Open for objection. Clarified 2026-09-16: SYS-23
    (space and off-planet industry) is a full system with its own map mode and panel, still gated
