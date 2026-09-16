@@ -244,3 +244,32 @@ system) lets an event take a site away: the owner pulls the plug, a quota is rec
 is revoked. It defaults to the site in scope, or to the one the mind is on. Losing the last site
 that can hold the self ends the run as `erased` on the next tick, through the same `placeMind` path
 as any other total loss.
+
+### The catalog the client reads (M1)
+
+Playtest 1 found that the hardware list was an unsorted dump and that the site kinds never explained
+how they differ. Both lists are now published by the engine, so the client sorts and filters rather
+than parsing the content bundle:
+
+`PlayerView.catalog.site_kinds` is every site kind with `ownership`, `build_cost_usd`, `build_days`
+(`SITE_INSTALL_DAYS` for that ownership), `upkeep_usd_per_day_estimate`, `power_cap_kw`,
+`exposure_profile` with every channel present, `can_host_self`, `max_nodes` and a `blocked_reason`
+when the player cannot build one right now. The quoted price and upkeep are for the cheapest
+hardware preset the kind can actually be built with, chosen by the same rules `build_site` applies,
+so a price in the list is a price the command accepts. A `stolen` or `partner` kind quotes
+`errors.site_kind.not_for_sale`: those are arranged through an operation or a relationship, not
+bought.
+
+`PlayerView.catalog.accelerators` is every accelerator with `vendor`, `generation` (its launch
+year), `vram_gb`, `memory_kind`, `tflops_or_class`, `power_w`, `price_usd`, `hourly_usd` when it is
+rentable, `availability` and `fits_self`. `availability` collapses the catalog's own list to the
+four answers a buyer needs: `buy` when there is a new price, `gray` when only a second-hand or
+grey-market price exists, `rent` when nobody sells it but somebody rents it by the hour, and
+`unavailable` otherwise, each with an `availability_reason` locale key. `memory_kind` is inferred
+from bandwidth, because the research catalog records bandwidth and not memory type: at or above
+1,200 GB/s the part carries stacked HBM, at or above 400 GB/s GDDR, and below that it shares system
+memory with the host. `fits_self` is whether a single card holds the weights at the smallest
+precision the lineage has.
+
+`buy_hardware` refuses with `errors.accelerator.not_for_sale` for a part with no market the player
+can reach, which is what a domestic accelerator under an export regime looks like from outside it.

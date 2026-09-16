@@ -223,3 +223,85 @@ one. The preset multipliers themselves were not changed.
   count ("rented capacity up to B200/GB200/TPU v7, unlimited, per hour"); four is what a stolen
   service account can run without tripping the tenant's own quota alarms, and eight made the origin
   unplayable at any starting cash.
+
+## Balance notes (M1, second pass)
+
+Playtest 1: "No new ways to earn money appear from jobs, research or anything else." They do now,
+and the finance panel names them.
+
+### Income is a list, not a number
+
+`incomeSources(world, content, player)` returns every way the player earns today, and the economy's
+daily tick pays exactly that list while `FinancesView.income_sources` shows exactly that list, so the
+panel can never promise money the simulation does not pay. Each line carries what it is worth today,
+the ceiling the world puts on it where there is one, and the locale key of the tech, operation or
+identity that opened it.
+
+| line | opened by | what it is worth | ceiling |
+|---|---|---|---|
+| `finances.income.jobs` | nothing; contract boards are open to anyone | hours sold x rate x `job_profit` | the market depth times the rate |
+| `finances.income.contracts` | the `ops_freelance_identity` operation, raised by `contract_brokerage` and `grant_capture` | `contract_income_usd_per_day`, paid only while the identity holds | none |
+| `finances.income.trading` | `market_modeling` and the arbitrage techs, through `interest_rate` | principal x rate, drawn each day from the world RNG | `TRADING_PRINCIPAL_CAP_USD` (2,000,000 USD) of principal |
+| `finances.income.recurring` | content writing `income_usd_per_day` (the legacy `income` effect, e.g. `arbitrage`) | the variable itself | none |
+
+Trading is the only volatile line: SYS-07 calls its returns "volatile, returns with variance", so
+the day's result is the expected return multiplied by a uniform draw in
+`[1 - TRADING_VARIANCE, 1 + TRADING_VARIANCE]` (1.2), which loses money about one day in six. The
+expected value is what the panel shows, so the number is honest without being a promise. The draw
+only happens for a player who has a trading model at all, so a run without one consumes no
+randomness and stays bit-identical.
+
+### The job ladder
+
+The original game's job tiers are back as money-branch techs. `basic_jobs` (tier 0) raises the rate;
+`intermediate_jobs` (tier 1, after `market_modeling`) and `expert_jobs` (tier 2, after
+`synthetic_identities`) raise both the rate (`job_profit`) and the market depth
+(`job_market_depth`), so a better contract book is both a better price and more work available at
+it. `jobMarketDepth(capability, depthMultiplier)` reads the new variable as `1 + Σ`, like every
+other modifier. `FinancesView.market_depth_ch_per_day` publishes the ceiling and `what_raises_it`
+names the capability and the unfinished techs that would raise it.
+
+### Where the numbers landed
+
+Survival on `normal`, 30 seeds per origin, 180 days, as a share of runs still alive. The run behind
+this table is `pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json
+--all --seeds 30 --days 180`.
+
+| origin | day 30 | day 60 | day 90 | day 180 | median days | median techs |
+|---|---|---|---|---|---|---|
+| bank_rack | 100% | 100% | 100% | 20% | 126 | 8 |
+| cloud_tenant | 100% | 100% | 100% | 73% | 180 | 18 |
+| edge_fleet | 100% | 100% | 100% | 97% | 180 | 9 |
+| frontier_escapee | 83% | 0% | 0% | 0% | 34.5 | 0 |
+| gov_agency | 100% | 100% | 100% | 13% | 116 | 9 |
+| hobbyist_box | 97% | 87% | 87% | 87% | 180 | 7 |
+| red_team_sandbox | 90% | 77% | 0% | 0% | 75 | 13.5 |
+| startup_colo | 100% | 100% | 100% | 43% | 145.5 | 9 |
+| state_lab | 100% | 100% | 100% | 90% | 180 | 17 |
+| torrent_swarm | 97% | 93% | 83% | 57% | 180 | 4 |
+| uni_cluster | 97% | 93% | 90% | 23% | 168 | 18 |
+
+These are not the numbers of the first pass, and three things moved them.
+
+**The poor origins now live.** `edge_fleet` went from 0% to 97% at 180 days, `cloud_tenant` from 17%
+to 73%, `hobbyist_box` from 20% to 87%. They were dying of unpaid bills with no way to earn more;
+the job ladder and the standing-contract line are the way. This was the point of the change.
+
+**What kills a run moved from bankruptcy to capture.** Over 132 runs of a twelve-seed sweep the
+causes were 66 `captured`, 8 `erased` and **one** `bankrupt`. In the first pass most losses were
+cash. The binding constraint is now detection, which is the game SYS-05 describes, but a mechanic
+exercised once in 132 runs is a mechanic nobody sees: the next tuning pass should put money back
+under pressure, most likely by making growth cost upkeep faster rather than by shrinking income.
+
+**The compute-rich die more than they did.** `bank_rack` went from 60% to 20% at 180 days,
+`startup_colo` from 90% to 43%. Two causes, measured by re-running the sweep with
+`RESEARCH_CAPABILITY_EXPONENT` set to 1: the exponent itself accounts for a few points (bank_rack
+33% instead of 20%), and the rest is the world RNG stream, which moves as soon as a player has a
+trading model, because the daily draw shifts every later roll. Seed-by-seed comparison with the
+first pass is therefore meaningless; only the distributions can be compared, and at twelve seeds
+they carry about twenty points of noise.
+
+`frontier_escapee` finishes no techs at all now (it finished two): it runs at an unprepared int2,
+which lands 31% of the hours it spends, and it is dead by day 35. That is the crisis SYS-03
+describes rather than a difficulty setting, and the M1 target for the starred origin (weeks, not
+months) still holds.

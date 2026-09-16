@@ -267,3 +267,58 @@ tokens are checked against the 4.5:1 text contrast minimum by a test rather than
 - The outliner has no macro-region filter.
 - The selection panel has the M1 tab sets only: Overview, Nodes, Exposure, Costs for a site,
   Overview and Watchers for a country.
+
+## Implementation notes (M1, view contract)
+
+Playtest 1 found four things the client could not show because the engine did not publish them:
+what an event option does, what a decision gives, why a button is greyed out, and why a command that
+was issued appeared to do nothing. All four are now part of `snapshot(playerId)`.
+
+### Effects as data
+
+`EffectSummaryView { key, vars?, text }` is one line of what something does. `key` is a locale key,
+`vars` are interpolated into it, and `text` is the English the client falls back on when the key has
+no translation, so a summary is never blank. Lines are generated from any effect list by
+`summarizeEffects(effects, content, override)`, which walks the DSL and emits one line per node:
+`add`/`set`/`mul` (on cash, on a named player variable, on any other path), `exposure`, `suspicion`,
+`awareness`, `set_flag`/`clear_flag`, `lose_site`, `fire_event`, `notify`, `log`, `clamp`, the
+journal effects, and the nested kinds `if`, `random_list`, `scope` and `ref`, which are walked to a
+depth of four. A weighted draw puts the odds of its branch on each line it produces as `chance`.
+
+Writer override: a record that carries `effects_text_key` gets exactly that one line instead of the
+generated ones. It exists on event options, decisions, techs and operation outcomes.
+
+A variable gets its own key where the content names one (`effects.var.job_profit`) and the generic
+`effects.var.add` with the variable's short name otherwise, so a new modifier variable renders
+sensibly on the day it is written and reads well on the day someone writes a string for it.
+
+### Where the summaries appear
+
+- `PlayerView.events: EventView[]`: the same pending events as `pending`, with
+  `EventOptionView { id, text_key, tooltip_key?, enabled, effects, blocked_reason? }` and the
+  `why` expander. `blocked_reason` is the first unmet leaf of the option's `enabled_if`.
+- `DecisionView` gains `title_key`, `desc_key`, `effects` (its own effects plus its `on_complete`,
+  because a decision with a duration has all of its consequences there), `cost` and
+  `blocked_reason`.
+- `OperationOfferView` gains `name_key`, `desc_key`, `attention`, `cost_usd`,
+  `cost_compute_hours_per_day`, `duration_days: [min, max]`, `success_chance`, `skill`,
+  `effects_on_success`, `effects_on_failure`, `exposure_per_day` and `blocked_reason`.
+- `ResearchView.techs: TechView[]` is every tech with a `status` of done, in progress, available or
+  locked, so the client filters instead of the engine, plus `name_key`, `desc_key`, `result_key`,
+  `cost_ch`, `min_days`, `requires`, `unlocks`, `effects` and `blocked_reason`.
+- `PlayerView.catalog` carries `site_kinds` and `accelerators` with the numbers the choice turns on,
+  so the Compute tab never has to read the content bundle.
+- `SelfView.precision_options` is the table SYS-03 describes.
+- `FinancesView` gains `income_sources`, `market_depth_ch_per_day` and `what_raises_it`.
+
+### A refused command says why
+
+`game.command(cmd)` returns `{ ok, error? }` where `error` is `CommandError { key, vars? }`: a
+locale key under `errors.*` and the numbers that explain it, never prose. Every refusal is also
+written to the player's log as `log.command_refused` with `command`, `reason` and the error's own
+variables, so an action that was ignored leaves a trace the player can read afterwards. The keys a
+greyed control shows (`blocked_reason` on a decision, an offer, a tech or a site kind) are the same
+keys the command refuses with, so the tooltip and the refusal cannot drift apart.
+
+The content build fails when the engine can emit an `errors.*` or `effects.*` key the locale files
+have no string for, the same gate that already covered alerts and endings (`ENGINE_TEXT_KEYS`).

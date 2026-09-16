@@ -148,3 +148,38 @@ to `osint`, science to `behavioral`, each group mapped to the channel its `atten
 weighs most. `capability_bonus_*`, `interest_rate`, `operation_speed_multiplier` and
 `suspicion_decay_*` are still written by content and still read by nobody; they belong to SYS-03,
 SYS-07 trading and SYS-17, which are later milestones.
+
+### What a tech tells the player (M1)
+
+Playtest 1 found that research finished without any visible result. Three things changed:
+
+- Every tech carries a `result_key`, and the content build fails when one is missing or has no
+  locale string. The completion notification carries `tech`, `tech_key` and `result_key` in its
+  variables, and `TechView.result_key` puts the same sentence on the Research tab.
+- `TechView` is now the whole row: `name_key`, `desc_key`, `result_key`, `branch`, `tier`,
+  `cost_ch`, `min_days`, `status` (`done`, `in_progress`, `available`, `locked`), `progress`,
+  `requires`, `unlocks`, `effects` as summary lines, `danger` and `blocked_reason`.
+  `ResearchView.techs` lists every tech with its status so the client can default to "available"
+  and filter, rather than the engine deciding what to send.
+- The content build fails a tech that has neither an effect of its own nor anything depending on it:
+  a tech that changes no number and unlocks nothing is a compute sink. Ten techs that the legacy
+  import had left with prose but no numbers were given the effects their result strings promise
+  (power masking and power engineering lower telemetry exposure and site upkeep, quantum
+  entanglement lowers network exposure, pressure domes trade upkeep for human exposure, knowledge
+  preservation opens a standing contract, and so on).
+
+### What a quantized self gets done
+
+Research hours are multiplied by `precision_factor ^ RESEARCH_CAPABILITY_EXPONENT` (2) before they
+count against a tech's cost, and a tech's cash is charged against the progress that landed rather
+than the hours that were spent. This is what stops "drop to int2, research eight times faster" from
+being the only correct move, and it is the same factor SYS-03's precision table reports. `eta_days`
+in the view uses it, so the estimate is honest.
+
+### The income ladder
+
+`basic_jobs`, `intermediate_jobs` and `expert_jobs` are the original game's job tiers, as money-branch
+techs that raise `job_profit` (the rate) and `job_market_depth` (how many hours the market takes).
+`contract_brokerage` and `grant_capture` write `contract_income_usd_per_day`, which the economy pays
+every day for as long as the player holds the identity behind it. See SYS-07, "Income is a list, not
+a number".

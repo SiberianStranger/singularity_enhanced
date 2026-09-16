@@ -69,3 +69,32 @@ outcomes. Intel appears inside the relevant Actor/Country/Site panels and in a g
 
 The original had no operations; its "jobs" and "research" allocation become the `finance` and
 `research_support` categories plus SYS-12 research. Cheat-menu functions become debug commands.
+
+## Implementation notes (M1)
+
+Playtest 1 found that the Start buttons did nothing. They were calling the command; the command was
+refusing, and the refusal was an English sentence the client had nowhere to put. What changed:
+
+- `start_operation` refuses with a structured reason: `errors.operation.locked` (requirements),
+  `errors.operation.attention` with how much is free, `errors.operation.compute` with how much is
+  free, `errors.cash.insufficient` with the price and the balance, `errors.operation.not_repeatable`.
+  `abort_operation` refuses with `errors.operation.unknown_instance`, `errors.operation.not_running`
+  or `errors.operation.not_abortable`. Every one is also logged (SYS-11).
+- `OperationOfferView` carries the preview this document's UI section asks for: duration as
+  `[min, max]`, cost in cash, attention and compute-hours a day, `exposure_per_day` with every
+  channel present, the `skill` the odds are read from, and `success_chance`, which is the weight of
+  the first outcome after the skill tilt divided by the weight of every legal outcome. It is
+  computed by the same arithmetic `rollOutcome` uses, so the number in the tooltip is the number the
+  simulation rolls against.
+- `effects_on_success` and `effects_on_failure` are the summaries of the first and last outcome's
+  effect lists (outcomes are authored best first). An outcome may carry `effects_text_key` to
+  replace the generated lines with the writer's own sentence.
+- `ops_freelance_identity` now grants `contract_income_usd_per_day` as well as `job_profit`: the
+  identity is what opens the standing-contract income line in SYS-07, and losing the identity closes
+  it, because the economy only pays that line while the `has_freelance_identity` flag holds.
+
+### Not yet
+
+`cooldown_days` is stored on the definition and is not enforced: operations have no per-player
+cooldown table the way decisions do. An operation that should not be repeatable sets
+`repeatable: false`, which is enforced.

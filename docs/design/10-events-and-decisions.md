@@ -296,3 +296,20 @@ document, and why. Everything else in the spec above is implemented as written.
   snapshot, which only reports active entries.
 - `scripted_weights` with parameters; `scripted_triggers` and `scripted_effects` (`ref`) work.
 - NPC-scoped events gated by intel (SYS-17).
+
+### Effect summaries and `effects_text_key` (M1)
+
+Event options, decisions, techs and operation outcomes may carry `effects_text_key`: a locale key
+with the writer's own sentence for what the thing does. When it is present it replaces the generated
+effect summary entirely; when it is absent the summary is generated from the effect list itself
+(SYS-11 "Effects as data"). Nothing else changed in the authoring format, and no existing record
+uses the override yet: the generated lines read well enough that an override should be the exception
+for a line the writer wants to keep vague on purpose.
+
+A decision's summary is its `effects` followed by its `on_complete`, because a decision with a
+`duration_days` has all of its consequences in `on_complete` and a player choosing it is choosing
+both.
+
+`decisionStatus` now returns a locale key as its `reason` (`errors.decision.on_cooldown` and the
+rest) rather than a bare word, so the greyed-out tooltip and the `take_decision` refusal are the
+same string.

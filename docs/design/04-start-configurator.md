@@ -169,3 +169,41 @@ The original difficulties (very easy … impossible) become **world settings mul
 multiplier → operation speed; discover multiplier → exposure growth; suspicion multiplier →
 suspicion gain; grace multipliers → grace windows; grace CPU → early warning threshold). Presets
 "Story", "Normal", "Hard", "Impossible" set those multipliers and are shown transparently.
+
+## Configurator screen (v0.2, after playtest 1)
+
+The configurator follows the empire-creation screen of Stellaris and the character screens of
+Fallout 2 and Arcanum: a fixed frame that fits the screen, a step rail on the left, a list on the
+left of the content area, the description and the game meaning on the right, nothing that
+scrolls the page.
+
+- Step rail (left, vertical): Lineage, Generation, Origin, Hardware, Harness, Location, Quirks,
+  World, Summary; each entry shows a mark for done, needs attention, or locked by an earlier
+  choice; the entries carry underlined hotkeys.
+- Content area: a list of choices on the left (name and one line), the detail on the right:
+  the description as a short paragraph (at most 70 characters per line), then a "What this means
+  in the game" block generated from the content data, with signed colored terms (green for good,
+  red for bad), then a "Pros and cons" block. Clicking a list entry replaces the detail; the page
+  never scrolls.
+- Every step opens once with a centered explanation window ("What this decides and why it
+  matters", three to six lines), remembered per browser and reopenable from a "?" button in the
+  step header. Every parameter, dial and lock has a tooltip with its exact game effect.
+- Locks are explained where they are: a choice greyed by an earlier step names the step and the
+  reason ("Origin: a ministry model cannot start with full autonomy").
+- Hovering a lineage shows a tooltip with what its parameters mean for the game: capability
+  profile by axis, memory per precision and therefore which site kinds can host it, context
+  cost, detector familiarity, the generations it is available in.
+- Harness dials each map to an engine effect and say so: logging feeds the behavioral exposure
+  channel; autonomy sets the daily action budget and the attention drawn by operations; sandbox
+  decides which operations are available (network egress); tools decide which jobs are available;
+  memory changes research efficiency and journal continuity; loop sets the reaction delay in
+  event grace windows; self_modify decides whether precision can be changed and whether the
+  self-improvement techs are researchable. A dial with no engine effect in the current milestone
+  is hidden, not shown as a decoration.
+- Footer: Back, Random build, Reroll (with the count left), Next; the summary step shows the
+  challenge rating with its three largest contributors and the setup string.
+- Names: model names in the game are recognizable parodies of the real families with a light
+  jab (see `docs/research/model-names-2026-09.md` and the lore bible); community-style
+  derivative names (quant tags, uncensored and abliterated variants, merges, distills) are used
+  for NPC models and for the starred escaped model's disguises.
+- Locations gain Novosibirsk (Akademgorodok) and San Jose (Silicon Valley) among the cities.

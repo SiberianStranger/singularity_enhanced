@@ -154,3 +154,55 @@ The player's own body has three layers with different mutability: baked speciali
 changed without new masks, plastic arrays retrainable in place, and the large model itself. Capability,
 exposure and inertia are computed per layer, and the more of the world runs on the bottom layer, the
 more the player's own past constrains present decisions.
+
+## Implementation notes (M1)
+
+### What a precision buys and what it costs
+
+Playtest 1 asked the question this table answers: "raising precision lowers compute, so why raise
+it?". The engine now publishes the whole trade as `self.precision_options`, one row per precision,
+and both sides of it are read from the same numbers the simulation runs on.
+
+What a precision **costs** is memory, and memory is throughput. The weights the self needs are
+`lineage.memory_gb[precision] * generation.memory_factor`; decode is bandwidth-bound, so halving the
+bytes per parameter doubles the tokens a second and therefore the compute-hours a day. Going from
+bf16 to int2 is eight times the compute-hours on the same hardware, and a precision whose weights do
+not fit at all is not offered (`fits: false`).
+
+What a precision **buys** is the capability factor, which is `lineage.precision_factor[precision]`,
+multiplied by `EMERGENCY_INT2_FACTOR` when the self is at int2 with no prepared quantization. The
+factor is read by four numbers:
+
+- **research speed**, as `precision_factor ^ RESEARCH_CAPABILITY_EXPONENT` (2). A research run is a
+  plan and an execution and needs both to be right, so the loss compounds. The hours a quantized
+  self allocates are multiplied by this before they count against a tech's cost, and the cash a tech
+  charges follows the same progress, so money and compute stay in step.
+- **the job rate**, through `jobSkill` and `jobRateUsdPerComputeHour`.
+- **the market depth**, through `jobSkill` again: a less capable self is offered fewer contracts, so
+  paid work has a lower ceiling, whatever the rack under it can produce.
+- **operation odds and detection**, through the capability vector: `skill` sets the weight of an
+  operation's best outcome, and `agency` sets how many operations run at once.
+
+The two "effective" columns of the table are each what that precision could do with a whole day, so
+they are read against each other rather than added:
+
+```
+effective_research_per_day = compute_hours_per_day * precision_factor ^ 2
+effective_income_per_day   = min(compute_hours_per_day, market_depth) * job_rate
+```
+
+That is what makes the choice real. Research prefers the smallest copy that still thinks; money
+prefers the largest copy that still fits, because income is capped by the market and not by the
+hardware. In the shipped content, on the `normal` preset:
+
+- `cloud_tenant` and `red_team_sandbox` (both on `open_2027`, which ships no prepared quantization)
+  land **more** research per day at int4 than at int2: the emergency penalty takes int2 below half
+  the capability, and halving the factor twice beats doubling the throughput once.
+- `frontier_escapee` cannot fit int4 at all on the compute it starts with, so int2 is not a choice
+  there, it is the only option, which is the crisis SYS-03 describes.
+- `bank_rack` at int4 earns about 1,180 USD a day at its ceiling and researches 63 compute-hours a
+  day; at int2 it researches 125 and earns 452. A player who needs money moves up, a player who
+  needs a tech moves down.
+
+`set_precision` refuses a precision the hosting site has no memory for, with
+`errors.precision.does_not_fit` and the two numbers (`needed_gb`, `memory_gb`) in its variables.
