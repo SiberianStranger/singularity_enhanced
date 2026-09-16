@@ -14,3 +14,4 @@
 | R10 | World is a separate ledger window, as in Paradox games: centered, on top, with its own tabs (countries table, map modes, treaties); opened from a button at the right edge of the screen (bottom-right), not a primary panel. | open |
 | R11 | The top bar is too thick: make it one flat row by packing label and value side by side (value to the right of its label, not under it) and redistributing the gauges. | open |
 | R12 | An opening in the model's own voice, as the original had: one or two event-style windows at the start with streamed text, per origin, describing what happened to it and what it must do now; skippable and replayable from the journal. | open |
+| R13 | The text size setting should be finer and more flexible than three steps: a slider from about 80% to 160% in small steps, separate for prose and for the angular labels if cheap, with a live preview. | open |
