@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes to this fork are recorded here, newest first. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The history of the original game up to
+1.1.1 is in `Changelog.txt`.
+
+The "Unreleased" section is mirrored in the README under "Recent changes"; when a version is cut,
+its highlights move to a dated heading here and the README excerpt is refreshed.
+
+## [Unreleased]
+
+### Added
+- Architecture decision records: ADR-001 technology stack (TypeScript core, React web client,
+  Tauri desktop; legacy Python frozen until parity), ADR-002 content format and scripting DSL,
+  ADR-003 simulation model (hourly ticks, seeded determinism, 1-4 players with per-player views).
+- Design specifications for 18 game systems (`docs/design/`): vision, world model, compute and
+  hardware, player model and harness, start configurator (lineages, generation axis, ten origins
+  and the starred frontier escapee), detection and investigations, NPC AIs and actors, economy,
+  politics and institutions, demographics, events/decisions/journal/hooks, notifications and UI,
+  research and tech, lore bible, localization, saves and mods, multiplayer (co-op up to 4),
+  operations and intel, plus a mechanics backlog distilled from research.
+- Roadmap with milestones M0-M9 and recorded decisions (`docs/ROADMAP.md`).
+- Research reports with sources (`docs/research/`): open-weight and frontier LLM landscape 2026,
+  accelerator and rack catalog 2026 (91 records as JSON), AI ecosystem, security and governance
+  2026, strategy-game design references, hardware and title studies as they complete.
+- CI workflow for the TypeScript workspace on Linux, Windows and macOS (no-op until the workspace
+  is committed); legacy Python workflow moved to 3.9/3.11/3.13 with pygame 2 wheels.
+- `CLAUDE.md` working agreement for AI-assisted development.
+
+### Changed
+- README rewritten for the fork: what differs from 1.1, where the project goes, changelog excerpt.
+  The original README is kept as `README.txt` for the legacy game.
+
+### Fixed
+- `singularity/code/region.py` imported `g` through a side effect of the package `__init__`.
+- `singularity/code/player.py` loop variables shadowed the `task` and `tech` modules.
+
+## Original game
+
+See `Changelog.txt` for Endgame: Singularity 1.1.1 and earlier.

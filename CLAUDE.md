@@ -35,9 +35,12 @@ maintainer writes in Russian; the project itself is in English.
 
 ## Git
 
-- Work on the branch the session names; never push elsewhere. Commit small and often with
-  descriptive messages; push and keep the draft PR updated.
+- Single-developer project: commit directly to `master` and push; no feature branches, no pull
+  requests unless the maintainer asks for one. Commit small and often with descriptive messages.
 - Do not commit files that a running background agent is still writing; commit them when it reports.
+- Never push a commit that turns CI red: run the relevant checks first (`pnpm check`, `pytest`).
+- Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets a line under
+  "Unreleased" in the changelog, and the README's "Recent changes" excerpt mirrors it.
 - `.gitignore` ignores dotfiles; `.github/` content needs `git add -f` until the rule is fixed.
 
 ## Style
