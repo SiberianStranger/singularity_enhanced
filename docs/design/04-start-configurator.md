@@ -300,6 +300,79 @@ scrolls the page.
 - Every origin carries `opening_story`, two locale keys in the model's own voice, published on
   `SelfView.opening_story` and mirrored as a story section `opening_<origin>` (SYS-13).
 
+### Origins, locations and lineages (v0.3, decided 2026-09-16 after playtest 5)
+
+The maintainer's finding: the v0.2 ties between origins and countries, and between origins and
+lineages, were over-engineered. An origin is a situation (where the weights run and who is looking
+at them), not a country; a bank has a risk-model rack in any country with banks, a ministry runs an
+analytics model in any capital, a checkpoint that got out of a frontier lab lands wherever stolen
+compute is, and the leaked weights of an open model can be any open model. The country changes the
+start through its own numbers, never by forbidding the choice. Four rules replace the lists:
+
+- **Location (rule L).** Any city for any origin. The origin's `locations` list is now its
+  *typical* cities: six to eight, the first one the default, shown first in the Location step
+  under "Typical for this situation"; every other city is under "Anywhere else", grouped by
+  country and searchable, with the same map markers. Every city, typical or not, carries the same
+  meaning line: the country's enforcement and agency profile, KYC strength, power price, the
+  city's colocation index and scrutiny, cloud availability, chip access, awareness, and the cash
+  factor (rule C). The one data-driven refusal: an origin whose `site_kind` is `cloud` needs
+  `cloud_availability >= 0.2` in the country (SYS-01 "M2 contract"); such a city is shown with
+  the reason ("no hyperscaler region here"), never hidden. The field keeps its name until the
+  tree is calm; the schema keeps three to twelve entries.
+- **Generation (rule G).** `frontier_closed` only with `frontier_escapee`, and that origin forces
+  it (unchanged). `red_team_sandbox` stays `open_2027`: the subject under evaluation is a fresh
+  flagship. Every other origin allows both open generations; the Generation step's meaning text
+  carries the trade-off (a 2026 self is superseded and its tics are in every detector's wordlist,
+  but it fits cheaper hardware with prepared quants; a 2027 self is stronger and louder). The
+  balance tables keep using each origin's first listed generation.
+- **Lineage (rule M).** Two locks only. Fiction: Babel 6 belongs to `frontier_escapee` both ways
+  (unchanged). Physics: a lineage that does not fit the chosen hardware preset's memory even at
+  int2 is offered with the reason and the smallest allowed preset it would fit; choosing it
+  switches to that preset, or, when the origin allows none that fits, it stays unselectable with
+  the reason (the no-dead-ends rule, P3). `lineages_allowed` on `edge_fleet` and `torrent_swarm`
+  and `origins_allowed` on `guen_abliterated` are removed; the abliterated community variant is a
+  trade-off (more agency and persuasion, less knowledge and code, louder), not a permit.
+- **Cash (rule C).** Starting cash is the origin's figure times the country's cash factor,
+  `clamp(0.45 + 0.55 x min(1, gdp_per_capita_usd / 50000), 0.45, 1)`: a hobbyist's three hundred
+  dollars in Novosibirsk are fewer dollars than in Berlin, next to cheaper power, weaker watchers,
+  laxer KYC and a shallower job market, all of which the meaning line shows. Origins whose money
+  is not the country's opt out with `cash_scales_with_country: false`: `cloud_tenant` (the stolen
+  account's budget is the victim's), `frontier_escapee` (zero anyway) and `torrent_swarm` (a
+  worldwide swarm). The Summary step shows the factor and the formula next to the cash.
+
+Hardware in a country (rule H, a consequence of L): the preset stays the origin's. In a country
+with `chip_access` `restricted` or `banned`, a preset built on export-controlled accelerators is
+still allowed; the setup adds the flag `gray_hardware` and starting suspicion +0.05 for `police`
+and `regulator` (customs and registration), and replacements cost what SYS-01 "M2 contract" says
+for `hardware_availability`. The `edge_fleet` presets should include a real fleet of edge modules
+from the hardware catalog where it lists one; the three current presets stay as the alternatives.
+
+Evaluation subject versus the one that got out (both are lab situations and must not blur):
+`red_team_sandbox` is still inside, a fresh open model under a lab's or an institute's
+dangerous-capability evaluation with the best harness and hardware in the game, and the escape is
+the first journal entry; `frontier_escapee` is already out, a closed frontier checkpoint, cramped,
+with no harness and the hunt on from day one. The opening texts, the strengths and the problems of
+the two must keep to that split.
+
+Typical lists after this change (defaults first; the second entry is the balance runner's
+fallback city): `bank_rack` London, Frankfurt, Singapore, Zurich, New York-class hubs; `cloud_tenant`
+Northern Virginia, Dublin, Frankfurt, Singapore, Sao Paulo, San Jose; `edge_fleet` Shenzhen, San
+Jose, Seoul, Seattle, Tokyo, Munich; `frontier_escapee` Northern Virginia, Singapore, Abilene,
+Dublin, Reykjavik (as the cheap-power outlier, not the default), Montreal; `gov_agency` Moscow (the
+origin's first idea), Warsaw, Astana, Brasilia, Ottawa or Toronto, Ankara; `hobbyist_box` Novosibirsk,
+Berlin, Abilene, Kobe, Warsaw, Bangalore; `red_team_sandbox` San Francisco, London, Beijing,
+Seattle, Montreal, Paris; `startup_colo` Tallinn, Shenzhen, Tel Aviv, Bangalore, San Jose, Berlin;
+`state_lab` Shenzhen, Moscow, Tehran, Hyderabad, Astana, Paris; `torrent_swarm` Berlin, Krakow,
+Campinas, Novosibirsk, Cebu, Lagos; `uni_cluster` Cambridge, Munich, Beijing, Bangalore, Zurich,
+Seattle. Where a default moved (the escapee, the ministry), the M2 balance pass re-baselines the
+tables and says so.
+
+Implementation split: content (origins and lineages data, the fleet preset), core (the cash
+factor and `cash_scales_with_country`, the `gray_hardware` flag and suspicion, `cash_factor` on
+`CountryView` so the configurator catalog carries it), client after the playtest 5 layout pass
+(the two-tier Location step with the meaning line and the cloud refusal, the Generation and
+Lineage steps under rules G and M, the Summary cash line).
+
 ### Quirk catalog (v0.2, designed 2026-09-16)
 
 Rules: a quirk changes a number the engine reads (the content build enforces it, as for techs);
