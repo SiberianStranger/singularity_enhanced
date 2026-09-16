@@ -6,13 +6,7 @@
  * as an argument rather than calling a hook, so tables and tooltips can use it inside a loop.
  */
 
-import type {
-  ContributionView,
-  CountryAgencies,
-  SiteView,
-  TextVar,
-  WatcherRole,
-} from "@singularity/core";
+import type { ContributionView, SiteView, TextVar, WatcherRole } from "@singularity/core";
 import type { TFunction } from "i18next";
 import { contentBundle } from "../content/bundle.js";
 import { acceleratorById, cityById, countryById } from "../content/catalog.js";
@@ -61,43 +55,17 @@ export function siteName(t: Translate, site: Pick<SiteView, "name" | "kind" | "c
 }
 
 /**
- * Which display name in `CountryDef.agencies` belongs to a watcher role.
+ * What a country's watcher of this role is called (SYS-01, M2 second pass).
  *
- * The two tables were written apart: the roles are the engine's (`WATCHER_ROLES`) and the names are
- * the world data's, which calls the cyber agency `cyber` and carries nothing at all for the four
- * roles that are not a national institution (a lab's own security, an AI institute, a cloud
- * provider, the press). A role with no entry has no agency name here, which is not a gap: those
- * watchers are named by their role everywhere in the game.
- */
-const AGENCY_FIELD: Readonly<Record<string, keyof CountryAgencies>> = {
-  cyber_agency: "cyber",
-  intelligence: "intelligence",
-  police: "police",
-  regulator: "regulator",
-  financial_intel: "financial_intel",
-};
-
-/**
- * What a country's watcher of this role is called (playtest 5, continuation).
- *
- * The world data carries raw display strings ("NIST / Center for AI Standards and Innovation
- * (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"), which stay English in
- * Russian and read as a dossier note in English. A locale key wins whenever content writes one, so
- * the panels are ready for `world.country.<id>.agency.<role>` on the day the content pass adds it
- * and use the raw string until then. A role the data names nothing for returns nothing, and the
- * caller prints the role.
+ * The world data carries no display strings at all: the agency names are content locale keys,
+ * `world.country.<id>.agency.<role>`, written in English by the world-data generator and in Russian
+ * by hand, so a Russian dossier reads Russian institution names. A role a country names nothing for
+ * has no key, and the caller prints the role instead, which is what the four roles that are not a
+ * national institution (a lab's own security, an AI institute, a cloud provider, the press) always
+ * did.
  */
 export function agencyName(t: Translate, countryId: string, role: string): string | undefined {
-  const written = keyed(t, `world.country.${countryId}.agency.${role}`);
-  if (written !== undefined) {
-    return written;
-  }
-  const field = AGENCY_FIELD[role];
-  if (field === undefined) {
-    return undefined;
-  }
-  const raw = countryById.get(countryId)?.agencies?.[field];
-  return typeof raw === "string" && raw !== "" ? raw : undefined;
+  return keyed(t, `world.country.${countryId}.agency.${role}`);
 }
 
 /**

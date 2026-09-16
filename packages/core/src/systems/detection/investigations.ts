@@ -15,6 +15,10 @@ import {
   AGENCY_BUDGET_SPEED_SPAN,
   EVIDENCE_DECAY_PER_DAY,
   EVIDENCE_GAIN_SCALE,
+  HANDOVER_EVIDENCE_SHARE,
+  HANDOVER_GLOBAL_ROLES,
+  HANDOVER_LOCAL_SUSPICION,
+  HANDOVER_STAGE,
   HUNT_PRESSURE_AWARENESS,
   HUNT_PRESSURE_HUNT_LEVEL,
   HUNT_PRESSURE_PER_INVESTIGATION,
@@ -25,6 +29,7 @@ import {
   INVESTIGATION_STAGE_SUSPICION,
   INVESTIGATION_STAGES,
   INVESTIGATION_STALL_EVIDENCE,
+  LOCAL_WATCHER_ROLES,
   SEIZURE_CASH_FROZEN_SHARE,
   SITE_SEIZURE_SUSPICION_BUMP,
   VAR_CONTRACT_FLAG,
@@ -53,7 +58,14 @@ import { payFromPlayer, playerBalance } from "../../money.js";
 import { effectiveCapabilityOf, endGame, modifier } from "../../player.js";
 import { loseSite } from "../../sites.js";
 import type { ContributionView } from "../../views/types.js";
-import { setSuspicion, splitActorId, watchedExposure, watches } from "../../watchers.js";
+import {
+  setSuspicion,
+  splitActorId,
+  watchedExposure,
+  watcherActorId,
+  watcherEntityId,
+  watches,
+} from "../../watchers.js";
 import { fireHook } from "../events/index.js";
 
 export function stageIndex(stage: InvestigationStage): number {
@@ -360,6 +372,75 @@ function checkIdentity(
   });
 }
 
+/**
+ * The handover (SYS-05 stage 4, "handover to a stronger agency").
+ *
+ * A frontier lab's security team can analyse a self better than any ministry can, and it cannot
+ * serve a warrant. When its case reaches the first stage that needs legal powers, the file goes to
+ * whoever has jurisdiction where the site is: the agency in that country with the most of its own
+ * suspicion, raised to at least `HANDOVER_EVIDENCE_SHARE` of what the lab believes. That agency
+ * has to end up believing `HANDOVER_LOCAL_SUSPICION` before it takes the case on; where nobody
+ * local does, the lab keeps it and does what a lab can do, which is to have the hardware pulled.
+ *
+ * Returns the watcher that runs the investigation from here on, which is the caller's own watcher
+ * when nothing was handed over.
+ */
+function handOverCase(
+  world: World,
+  ctx: SystemContext,
+  investigation: Investigation,
+  watcher: Watcher | undefined,
+): Watcher | undefined {
+  if (watcher === undefined || watcher.country !== null) {
+    return watcher;
+  }
+  if (!HANDOVER_GLOBAL_ROLES.includes(watcher.role)) {
+    return watcher;
+  }
+  const site = investigation.siteId === null ? undefined : siteTable(world)[investigation.siteId];
+  const countryId = site === undefined ? undefined : cityTable(world)[site.city]?.country;
+  if (countryId === undefined) {
+    return watcher;
+  }
+  const inherited = watcher.suspicion * HANDOVER_EVIDENCE_SHARE;
+  const watchers = watcherTable(world);
+  let best: Watcher | undefined;
+  // Role order rather than insertion order, so two agencies that believe exactly the same thing
+  // are always separated the same way in every replay of the same seed.
+  for (const role of LOCAL_WATCHER_ROLES) {
+    const local =
+      watchers[watcherEntityId(investigation.playerId, watcherActorId(countryId, role))];
+    if (local !== undefined && (best === undefined || local.suspicion > best.suspicion)) {
+      best = local;
+    }
+  }
+  if (best === undefined || Math.max(best.suspicion, inherited) < HANDOVER_LOCAL_SUSPICION) {
+    return watcher;
+  }
+  setSuspicion(world, best, Math.max(best.suspicion, inherited));
+  // The agency's own file, where it had one, is folded into the case it has just been handed.
+  const own = openInvestigationFor(world, investigation.playerId, actorIdOf(best));
+  if (own !== undefined && own.id !== investigation.id) {
+    investigation.evidence = Math.max(investigation.evidence, own.evidence);
+    closeInvestigation(world, ctx, own, "handover");
+  }
+  const from = investigation.watcher;
+  investigation.watcher = actorIdOf(best);
+  ctx.outbox.log({
+    key: "log.investigation_handover",
+    vars: { watcher: investigation.watcher, from },
+    playerId: investigation.playerId,
+  });
+  ctx.outbox.notify({
+    playerId: investigation.playerId,
+    severity: "warning",
+    key: "alerts.investigation_handover",
+    vars: { watcher: investigation.watcher, from },
+    link: { panel: "detection", id: investigation.id },
+  });
+  return best;
+}
+
 function enterStage(
   world: World,
   ctx: SystemContext,
@@ -441,7 +522,11 @@ export function tickInvestigations(world: World, ctx: SystemContext, player: Pla
     }
     const bar = INVESTIGATION_STAGE_SUSPICION[next] ?? 1;
     if ((watcher?.suspicion ?? 0) >= bar) {
-      enterStage(world, ctx, player, investigation, next, watcher);
+      // A watcher with no police powers hands the case to whoever has them before the stage that
+      // needs them starts, so the raid, the paperwork and the credit are all the local agency's.
+      const acting =
+        next === HANDOVER_STAGE ? handOverCase(world, ctx, investigation, watcher) : watcher;
+      enterStage(world, ctx, player, investigation, next, acting);
     } else {
       scheduleStage(world, ctx, investigation, watcher, competence);
     }

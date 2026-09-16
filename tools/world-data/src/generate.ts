@@ -1,5 +1,5 @@
 /**
- * Builds the three world data files from the baseline dossier and the overrides.
+ * Builds the world data files from the baseline dossier and the overrides.
  *
  * Nothing here reads the committed files: the generator is the definition of what they contain,
  * and `test/generated.test.ts` asserts the two agree, so a hand edit to the data fails CI instead
@@ -27,6 +27,7 @@ import {
   stability,
   stance,
   WATCHER_ROLES,
+  type WatcherRole,
 } from "./derive.js";
 import { Comment, emitDocument, type Fields, InlineMap } from "./emit.js";
 import type { CountryOverride, Overrides } from "./overrides.js";
@@ -35,14 +36,20 @@ export interface GeneratedFiles {
   readonly countries: string;
   readonly cities: string;
   readonly macro_regions: string;
+  /** English agency names, as the content locale file `locales/en/world_agencies.json`. */
+  readonly agency_names: string;
 }
 
-/** The agency roles of the baseline, in the order the country files write them. */
+/**
+ * The agency roles of the baseline, paired with the engine's watcher role, which is what the locale
+ * key is written under. The baseline calls the AI regulator `ai_regulator` and the engine calls the
+ * cyber agency `cyber_agency`; everything else lines up (SYS-01 "M2 contract", "Watchers").
+ */
 const AGENCY_FIELDS: readonly [
   string,
   "ai_regulator" | "cyber" | "intelligence" | "police" | "financial_intel",
 ][] = [
-  ["cyber", "cyber"],
+  ["cyber_agency", "cyber"],
   ["intelligence", "intelligence"],
   ["police", "police"],
   ["regulator", "ai_regulator"],
@@ -53,7 +60,10 @@ function agencyText(value: string | readonly string[] | null | undefined): strin
   if (value === null || value === undefined) {
     return undefined;
   }
-  return Array.isArray(value) ? value.join(", ") : (value as string);
+  const text = Array.isArray(value) ? value.join(", ") : (value as string);
+  // The baseline sets a long dash; the repository does not use one anywhere (CLAUDE.md "Style",
+  // SYS-14 "a dash is - with spaces"), and these strings are locale source now, not research notes.
+  return text.replace(/\s*\u2014\s*/g, " - ");
 }
 
 function countryId(country: BaselineCountry): string {
@@ -141,8 +151,10 @@ const COUNTRY_HEADER: readonly string[] = [
   "  democracy_index         <- democracy_index_2024 (EIU, 2025 edition)",
   "  electricity_usd_per_kwh <- electricity_price_usd_per_kwh_industrial",
   "  chip_access             <- chip_access_tier",
-  '  agencies                <- agencies (ai_regulator becomes "regulator"; a list of services is',
-  '                             joined with ", " because the field is a display name)',
+  "  The agency display names are no longer here: they are locale keys",
+  "  (world.country.<id>.agency.<role>) in locales/en/world_agencies.json, written by the same",
+  "  generator, so a Russian dossier reads Russian institution names (SYS-01, M2 second pass).",
+  "  A list of services is joined with a comma, because the string is a display name.",
   "",
   "Derived, from ai_policy_posture and the capacity proxies in the same record:",
   "",
@@ -282,14 +294,6 @@ function countryFields(
       ),
     ]);
   }
-  const agencies: Fields = [];
-  for (const [name, source] of AGENCY_FIELDS) {
-    const text = agencyText(country.agencies?.[source]);
-    if (text !== undefined) {
-      agencies.push([name, text]);
-    }
-  }
-  fields.push(["agencies", agencies]);
   if (override?.agency_profile !== undefined) {
     const profile: Fields = [];
     for (const role of WATCHER_ROLES) {
@@ -398,5 +402,33 @@ export function generate(baseline: Baseline, overrides: Overrides): GeneratedFil
     countries: emitDocument(COUNTRY_HEADER, countryRecords),
     cities: emitDocument(CITY_HEADER, cityRecords),
     macro_regions: emitDocument(MACRO_REGION_HEADER, macroRecords),
+    agency_names: emitAgencyNames(baseline, overrides),
   };
+}
+
+/**
+ * The agency display names, as a content locale file rather than as YAML fields (SYS-01, M2 second
+ * pass). The data carries no prose, so a Russian dossier reads Russian institution names instead of
+ * English ones; the keys are `world.country.<id>.agency.<role>` and the Russian file beside this
+ * one is hand-written. A role the baseline names nothing for gets no key, which is how a country
+ * with no working cyber agency stays a country with no working cyber agency.
+ */
+function emitAgencyNames(baseline: Baseline, overrides: Overrides): string {
+  const entries: [string, string][] = [];
+  for (const country of [...baseline.countries].sort((left, right) =>
+    countryId(left).localeCompare(countryId(right)),
+  )) {
+    const names = overrides.countries[countryId(country)]?.agency_names;
+    for (const [role, source] of AGENCY_FIELDS) {
+      const text = names?.[role as WatcherRole] ?? agencyText(country.agencies?.[source]);
+      if (text !== undefined && text !== "") {
+        entries.push([`world.country.${countryId(country)}.agency.${role}`, text]);
+      }
+    }
+  }
+  entries.sort((left, right) => left[0].localeCompare(right[0]));
+  const body = entries
+    .map(([key, value]) => `  ${JSON.stringify(key)}: ${JSON.stringify(value)}`)
+    .join(",\n");
+  return `{\n${body}\n}\n`;
 }

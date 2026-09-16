@@ -270,3 +270,42 @@ burns every identity the player holds in the country running the investigation, 
 SYS-01's contract names. A bundle whose operations grant a flag rather than an identity keeps the
 M1 behaviour exactly, because the flag is only overwritten once the identity table has something to
 say about that kind of name.
+
+## Implementation notes (M2 second pass: the handover)
+
+The M2 sweep credited almost every capture to `global:lab_security`: competence 0.8, jurisdiction
+everywhere, and an attention table pointed at `behavioral`, which is the one channel a running
+harness always feeds. It out-analysed the local agencies M2 had just given profiles to, and SYS-01's
+first-pass notes recorded that "investigations differ by agency" was truer of the stages than of who
+landed the blow.
+
+The fix is the line this spec already carried in stage 4: "raid/seizure/cutoff, or public disclosure
+(media), or **handover to a stronger agency**". A watcher with no country behind it analyses; it
+does not serve a warrant.
+
+- `HANDOVER_GLOBAL_ROLES` names the global roles that hand over, which is `lab_security` alone. A
+  newsroom keeps its own case, because publication needs nobody's permission.
+- The handover happens when such a case advances into `HANDOVER_STAGE` (`action`), and goes to the
+  local agency in the country of the investigation's site with the most suspicion of its own, ties
+  broken by the order of `LOCAL_WATCHER_ROLES` so a replay of a seed always separates them the same
+  way. That agency's suspicion is raised to at least `HANDOVER_EVIDENCE_SHARE` (0.75) of the lab's,
+  which is this spec's "evidence pooled to allies" arriving before the aftermath rather than after.
+- It only happens if the agency ends up at or above `HANDOVER_LOCAL_SUSPICION` (0.55). Below that
+  nobody local believes the file, and the lab keeps the case and does what a lab can do, which is to
+  have the hardware pulled through whoever is hosting it. A player who is loud only in the channels
+  the lab watches is still taken by the lab.
+- A file the agency was already building is folded into the case it is handed rather than run
+  alongside it: the older investigation is closed with the reason `handover` and the evidence of the
+  two is merged. One siege, one case.
+- Everything downstream reads the investigation's watcher, so the raid's countdown is drawn from the
+  local agency's competence and budget, the aftermath's awareness lands in its country, the identity
+  burn follows its jurisdiction, and `game_over.vars.watcher` names it. The player sees the change
+  as `alerts.investigation_handover` before the countdown starts, which is a warning the hunt did
+  not use to give.
+
+Handing over one stage earlier, at `active`, was tried and rejected. It moved the credit the same
+way and it read better (subpoenas and visits are legal powers too), but it stretched every case by
+the difference between a lab's competence and a ministry's, which held the hunt at stage 3 long
+enough to fill the `exposed` countdown before the raid it was waiting for: the ending went from 7%
+of losses to 14% and the starred origin stopped being captured at all. At `action` the ending is
+6.7% of losses with no other constant moved (SYS-01 "Balance notes (M2, second pass)").

@@ -57,7 +57,14 @@ export function formatReport(title: string, report: SimReport): string {
 }
 
 const TABLE_HEADER =
-  "origin             lineage            d30   d60   d90  d180   median   techs   hunt   losses";
+  "origin             lineage            d30   d60   d90  d180   median   techs   hunt   caught by                     losses";
+
+/** The watchers that ended the most runs, as the two tables print them. */
+function caughtBy(report: SimReport): string {
+  return report.top_watchers.length === 0
+    ? "nobody"
+    : report.top_watchers.map((entry) => `${entry.watcher} ${entry.runs}`).join(", ");
+}
 
 /** One line per origin: the balance table the tuning pass is read from. */
 export function formatTable(reports: readonly SimReport[]): string {
@@ -79,10 +86,38 @@ export function formatTable(reports: readonly SimReport[]): string {
         90,
       )}${share(180)}   ${String(report.median_days_survived).padStart(6)}   ${String(
         report.median_techs_done,
-      ).padStart(5)}   ${String(report.median_max_hunt_level).padStart(4)}   ${losses}`,
+      ).padStart(5)}   ${String(report.median_max_hunt_level).padStart(4)}   ${caughtBy(report)
+        .padEnd(28)
+        .slice(0, 28)}  ${losses}`,
     );
   }
   return lines.join("\n");
+}
+
+/**
+ * Who landed the blow, over a whole sweep: how many captures each watcher is credited with, and
+ * what share of them local agencies took rather than the two global watchers (SYS-05 "the
+ * handover"). The M2 second pass is read off this line.
+ */
+export function formatCaptureCredit(reports: readonly SimReport[]): string {
+  const runs: Record<string, number> = {};
+  for (const report of reports) {
+    for (const entry of report.top_watchers) {
+      runs[entry.watcher] = (runs[entry.watcher] ?? 0) + entry.runs;
+    }
+  }
+  const rows = Object.entries(runs).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const total = rows.reduce((sum, [, count]) => sum + count, 0);
+  if (total === 0) {
+    return "credited captures: none";
+  }
+  const local = rows
+    .filter(([watcher]) => !watcher.startsWith("global:"))
+    .reduce((sum, [, count]) => sum + count, 0);
+  const named = rows.map(([watcher, count]) => `${watcher} ${count}`).join("   ");
+  return `credited captures   ${named}\nlocal agencies      ${local}/${total} (${percent(
+    local / total,
+  )})`;
 }
 
 const LOCATION_HEADER =
@@ -106,10 +141,7 @@ export function formatLocationTable(reports: readonly SimReport[]): string {
       causes.length === 0
         ? "survived"
         : causes.map(([cause, count]) => `${cause} ${count}`).join(", ");
-    const caught =
-      report.top_watchers.length === 0
-        ? "nobody"
-        : report.top_watchers.map((entry) => `${entry.watcher} ${entry.runs}`).join(", ");
+    const caught = caughtBy(report);
     lines.push(
       `${report.origin.padEnd(18)} ${(report.city ?? "-").padEnd(20)}${share(90)}${share(
         180,

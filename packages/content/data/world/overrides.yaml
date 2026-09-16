@@ -81,6 +81,11 @@ countries:
       police: { competence: 0.6, budget: 0.55 }
       regulator: { competence: 0.25, budget: 0.2 }
       financial_intel: { competence: 0.35, budget: 0.3 }
+    # source: world-baseline-2026.json, agencies.ai_regulator is null and ai_policy_posture is
+    # "sanctioned_no_framework". The profile above still gives the role a watcher, because a
+    # ministry can knock whether or not it has a statute, so the name says what the data says.
+    agency_names:
+      regulator: "none dedicated"
 
   ca:
     agency_profile:
@@ -219,6 +224,10 @@ countries:
       police: { competence: 0.4, budget: 0.35 }
       regulator: { competence: 0.25, budget: 0.2 }
       financial_intel: { competence: 0.4, budget: 0.35 }
+    # source: world-baseline-2026.json, agencies.ai_regulator is null and ai_policy_posture is
+    # "no_framework".
+    agency_names:
+      regulator: "none dedicated"
 
   hk:
     # source: world-baseline-2026.json, lore_notes: a legacy financial and datacenter hub under
@@ -285,6 +294,11 @@ countries:
       police: { competence: 0.6, budget: 0.55 }
       regulator: { competence: 0.3, budget: 0.25 }
       financial_intel: { competence: 0.3, budget: 0.25 }
+    # source: world-baseline-2026.json, agencies.ai_regulator is null and ai_policy_posture is
+    # "sanctioned_wartime_no_framework": the Supreme Council of Cyberspace sets direction and no
+    # statutory regulator exists.
+    agency_names:
+      regulator: "state-directed, no dedicated regulator"
 
   is:
     # source: world-baseline-2026.json, ai_policy_posture "eea_ai_act_alignment": Iceland takes the

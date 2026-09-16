@@ -203,7 +203,7 @@ export function CityPanel({
             <ContributionLines
               t={t}
               title={t("world.local_heat")}
-              lines={[]}
+              lines={row.local_heat_contributions}
               note={t("world.local_heat_hint")}
             />
           }
@@ -260,7 +260,7 @@ export function CityPanel({
           <ContributionLines
             t={t}
             title={t("world.local_heat")}
-            lines={[]}
+            lines={row.local_heat_contributions}
             note={t("world.local_heat_hint")}
           />
         }

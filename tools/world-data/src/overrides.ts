@@ -36,6 +36,12 @@ export interface CountryOverride {
   readonly elections?: readonly ElectionEntry[];
   readonly election_cadence_years?: number;
   readonly agency_profile?: Partial<Record<WatcherRole, AgencyProfileEntry>>;
+  /**
+   * Agency display names the baseline does not carry, per engine watcher role. They become the
+   * English `world.country.<id>.agency.<role>` strings, and they win over the baseline's own
+   * (SYS-01, M2 second pass).
+   */
+  readonly agency_names?: Partial<Record<WatcherRole, string>>;
 }
 
 export interface AddedCity {

@@ -21,10 +21,13 @@ import type {
 } from "@singularity/core";
 import {
   contentIndex,
+  preferredPrecision,
   siteCosts,
   siteKindAvailableIn,
   siteMemory,
   sitePowerKw,
+  siteTokensPerSecond,
+  tokensToComputeHoursPerDay,
 } from "@singularity/core";
 
 export interface PolicyOptions {
@@ -36,6 +39,8 @@ export interface PolicyOptions {
   jobShareBase: number;
   /** Share when the runway is below the floor. */
   jobShareLow: number;
+  /** Share while the player has nowhere of their own and is working toward the price of one. */
+  jobShareSaving: number;
   /** Share when the books are healthy and the cash pile covers the reserve several times over. */
   jobShareRich: number;
   /** Cash kept back, expressed as days of the current burn. */
@@ -57,6 +62,7 @@ export const DEFAULT_POLICY: PolicyOptions = {
   runwayPanicDays: 12,
   jobShareBase: 0.4,
   jobShareLow: 0.85,
+  jobShareSaving: 1,
   jobShareRich: 0.15,
   reserveDays: 30,
   reserveFloorUsd: 500,
@@ -75,8 +81,14 @@ export interface SecondSitePlan {
   upkeep: number;
 }
 
-/** Days of upkeep a fallback has to be worth before the price of buying it counts as settled. */
-const FALLBACK_UPKEEP_HORIZON_DAYS = 45;
+/**
+ * Days of upkeep a fallback has to be worth before the price of buying it counts as settled.
+ *
+ * M2 second pass: at forty-five days a rented tenancy with no purchase price beat owned hardware
+ * almost everywhere, so the policy kept choosing the one place whose bill it could not pay for long.
+ * A fallback is kept for the rest of the run, so it is priced over the rest of the run.
+ */
+const FALLBACK_UPKEEP_HORIZON_DAYS = 180;
 
 /** The operations that buy a name, in the order a careful player runs them (SYS-17). */
 const IDENTITY_OPERATIONS = ["ops_freelance_identity", "ops_shell_company"] as const;
@@ -88,16 +100,48 @@ const IDENTITY_OPERATION_CASH_MULTIPLE = 2.5;
 const RESIDENT_COPY_PREMIUM = 3;
 
 /**
+ * Compute-hours a day a second place has to produce before it counts as somewhere to be.
+ *
+ * M2 second pass. The same floor `defaultLineage` reads, for the same reason: a copy crawling
+ * through host RAM at one compute-hour a day cannot pay for the room it is in, so a player who
+ * moves into it has bought their own bankruptcy. Cheap is not the only thing a refuge has to be.
+ */
+const MIN_USABLE_COMPUTE_HOURS = 5;
+
+/**
+ * How much cheaper the place a player moves to has to be than the one they are leaving. Moving
+ * costs the purchase, the install days and a notice period, so it is only worth doing when it takes
+ * a real bite out of the bill rather than shaving it.
+ */
+const MOVE_UPKEEP_RATIO = 0.6;
+
+/** Places the scripted player keeps at once. It is buying insurance, not building an estate. */
+const MAX_SITES = 3;
+
+/**
+ * How far ahead the player will work toward the price of a place of their own. Past this the price
+ * is not a plan, it is a wish, and a player who cannot reach it goes back to spending the day on
+ * research rather than on paid work they will never bank enough of.
+ */
+const SAVING_HORIZON_DAYS = 120;
+
+/**
  * Where the player puts a second copy of itself, and what that costs.
  *
  * A careful player does not double the bill they are already struggling with: the fallback is the
- * cheapest place that can actually hold the self, counted as its purchase price plus a month and a
- * half of its upkeep, across every site kind the game offers rather than only the origin's own.
+ * cheapest place that can actually hold the self, counted as its purchase price plus the rest of
+ * the run's upkeep, across every site kind the game offers rather than only the origin's own.
  * That is why a cloud tenant's fallback is a box in a house.
+ *
+ * `usable` asks a second question of every candidate: could the self do a day's work there. A place
+ * to keep a copy and a place to live are not the same requirement, and answering them with one
+ * number is what sent a fleet that had lost its depots into a box that earned twenty dollars a day
+ * (M2 second pass).
  */
 export function planSecondSite(
   content: ContentBundle,
   setup: GameSetup,
+  usable = false,
 ): SecondSitePlan | undefined {
   const index = contentIndex(content);
   const entry = setup.players[0];
@@ -107,8 +151,10 @@ export function planSecondSite(
   if (entry === undefined || origin === undefined || lineage === undefined) {
     return undefined;
   }
-  const memoryFactor = generation?.memory_factor ?? 1;
-  const needed = lineage.memory_gb.int2 * memoryFactor;
+  if (generation === undefined) {
+    return undefined;
+  }
+  const needed = lineage.memory_gb.int2 * generation.memory_factor;
   const city = index.cities[origin.locations.find((id) => id !== entry.city) ?? entry.city];
   if (city === undefined) {
     return undefined;
@@ -175,6 +221,16 @@ export function planSecondSite(
       const site = { nodes, status: "active" as const };
       const memory = siteMemory(site, index.accelerators, 0);
       if (memory.total_gb < needed) {
+        continue;
+      }
+      const precision = preferredPrecision(lineage, generation, memory);
+      if (precision === null) {
+        continue;
+      }
+      const produces = tokensToComputeHoursPerDay(
+        siteTokensPerSecond(site, index.accelerators, 0, lineage, generation, precision),
+      );
+      if (usable && produces < MIN_USABLE_COMPUTE_HOURS) {
         continue;
       }
       // A copy that fits on the cards is worth several times one crawling through host RAM, but a
@@ -259,19 +315,57 @@ export function sustainable(view: PlayerView): boolean {
   return maxIncomeUsdPerDay(view) >= totalCostsUsdPerDay(view);
 }
 
-/** Share of the day's compute the player sells rather than spends on itself. */
-export function jobShare(view: PlayerView, options: PolicyOptions): number {
+/**
+ * The share of the day's compute that has to be sold for the day to pay for itself.
+ *
+ * M2 second pass. The ladder below reads `runway_days`, which divides the cash by today's *net*, so
+ * a player losing a few dollars a day reads back a runway of months and never reacts at all. A
+ * sensible player does not need a runway alarm to notice that the bills are larger than the
+ * takings: they sell enough to cover them and spend what is left on themselves. Without this the
+ * fleet origin bled quietly for a season with every hour on research.
+ */
+export function coverShare(view: PlayerView): number {
+  const capacity = Math.min(
+    view.resources.compute_hours_per_day,
+    view.finances.market_depth_ch_per_day,
+  );
+  const rate = view.finances.job_rate_usd_per_compute_hour;
+  if (capacity <= 0 || rate <= 0) {
+    return 0;
+  }
+  const standing = view.finances.income_sources
+    .filter((source) => source.key !== "finances.income.jobs")
+    .reduce((sum, source) => sum + source.usd_per_day, 0);
+  const needed = totalCostsUsdPerDay(view) - standing;
+  return needed <= 0 ? 0 : Math.min(1, needed / (capacity * rate));
+}
+
+/**
+ * Share of the day's compute the player sells rather than spends on itself.
+ *
+ * `saving` is the player who has nowhere of their own to run and is working toward the price of
+ * somewhere: research can wait a season, the day the host changes their mind cannot (M2 second
+ * pass).
+ */
+export function jobShare(view: PlayerView, options: PolicyOptions, saving = false): number {
   const runway = view.resources.runway_days;
-  if (runway !== null && runway <= options.runwayPanicDays) {
-    return 1;
-  }
-  if (runway !== null && runway <= options.runwayFloorDays) {
-    return options.jobShareLow;
-  }
-  if (runway === null && view.resources.cash_usd > reserveUsd(view, options) * 3) {
-    return options.jobShareRich;
-  }
-  return options.jobShareBase;
+  const ladder =
+    runway !== null && runway <= options.runwayPanicDays
+      ? 1
+      : runway !== null && runway <= options.runwayFloorDays
+        ? options.jobShareLow
+        : saving
+          ? options.jobShareSaving
+          : runway === null && view.resources.cash_usd > reserveUsd(view, options) * 3
+            ? options.jobShareRich
+            : options.jobShareBase;
+  return Math.max(ladder, coverShare(view));
+}
+
+/** Whether this site is somebody else's machine or somebody else's goodwill (SYS-02). */
+export function borrowedSite(content: ContentBundle, site: SiteView): boolean {
+  const ownership = contentIndex(content).site_kinds[site.kind]?.ownership;
+  return ownership === "partner" || ownership === "stolen";
 }
 
 /** The techs the player puts compute on: cheapest first, and nothing dangerous while alarmed. */
@@ -448,7 +542,10 @@ export function identityOperations(view: PlayerView, alarmed: boolean): PlayerCo
 
 export interface PolicyContext {
   content: ContentBundle;
+  /** The cheapest place that can hold a copy of the self: insurance against a raid. */
   plan: SecondSitePlan | undefined;
+  /** The cheapest place the self could also work in: somewhere to move the whole operation to. */
+  home: SecondSitePlan | undefined;
   upgrade: Upgrade | undefined;
   options: PolicyOptions;
 }
@@ -461,6 +558,7 @@ export function policyContext(
   return {
     content,
     plan: planSecondSite(content, setup),
+    home: planSecondSite(content, setup, true),
     upgrade: cheapestUpgrade(content),
     options,
   };
@@ -476,6 +574,20 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   const commands: PlayerCommand[] = [];
   const alarmed = isAlarmed(view, options);
   const capacity = view.resources.compute_hours_per_day;
+  // Living entirely on somebody else's machines: a fleet operator's depots, a stolen quota, a
+  // department's cluster. There is exactly one thing worth buying in that state and no reason to
+  // wait for it (M2 second pass, `edge_fleet`).
+  const live0 = liveSites(view);
+  const homeless = live0.length > 0 && live0.every((site) => borrowedSite(ctx.content, site));
+  const refugePrice =
+    ctx.plan === undefined ? 0 : ctx.plan.cost + Math.max(options.reserveFloorUsd, ctx.plan.upkeep);
+  const reachable =
+    ctx.plan !== undefined &&
+    refugePrice <=
+      view.resources.cash_usd +
+        Math.max(0, maxIncomeUsdPerDay(view) - totalCostsUsdPerDay(view)) * SAVING_HORIZON_DAYS;
+  const saving =
+    homeless && ctx.plan !== undefined && reachable && view.resources.cash_usd < refugePrice;
 
   // Clear every allocation first, so the new numbers are never rejected for exceeding the old total.
   for (const tech of view.research.in_progress) {
@@ -486,7 +598,7 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
       compute_hours_per_day: 0,
     });
   }
-  const jobs = capacity * jobShare(view, options);
+  const jobs = capacity * jobShare(view, options, saving);
   commands.push({ type: "set_job_allocation", playerId, compute_hours_per_day: jobs });
 
   const targets = researchTargets(view, alarmed, options);
@@ -502,15 +614,26 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
     }
   }
 
-  const live = liveSites(view);
+  const live = live0;
   const mindId = view.self.active_site_id;
-  const standby = live.find((site) => site.role === "standby");
-  const spare = live.find((site) => site.role === "none" && site.status === "active");
+  // A standby that cannot hold a copy of the self is not insurance, whatever its role says. An
+  // origin that starts with a second depot too small for its own mind (`edge_fleet`) used to read
+  // as covered and never built anywhere to run (M2 second pass).
+  const standby = live.find((site) => site.role === "standby" && site.precision !== null);
+  const spare = live.find(
+    (site) => site.role !== "standby" && site.id !== mindId && site.status === "active",
+  );
   const spare2 = live.find((site) => site.id !== mindId && site.status === "active");
   const spendable = view.resources.cash_usd - reserveUsd(view, options);
   const panicking =
     view.resources.runway_days !== null && view.resources.runway_days <= options.runwayPanicDays;
   const headroom = maxIncomeUsdPerDay(view) - totalCostsUsdPerDay(view);
+
+  // A spare is promoted before anything else is decided: the shrink below has to have somewhere to
+  // move the mind to, and `set_site_role` refuses a site the self does not fit in anyway.
+  if (standby === undefined && spare !== undefined) {
+    commands.push({ type: "set_site_role", playerId, siteId: spare.id, role: "standby" });
+  }
 
   if (headroom < 0 && live.length > 1) {
     // The bills cannot be paid even with every hour sold. Shrink: move the self onto the cheapest
@@ -538,27 +661,52 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
     }
   }
 
-  if (standby === undefined && spare !== undefined) {
-    // A second site is only insurance once it holds a copy of the self.
-    commands.push({ type: "set_site_role", playerId, siteId: spare.id, role: "standby" });
-  } else if (
-    standby === undefined &&
+  // Insurance, and the move. A player who can afford a second place buys one; a player whose books
+  // cannot be balanced where they are buys a cheaper place to be instead, which is the one answer
+  // the scripted player never had to a site that costs more per day than it can earn (M2 second
+  // pass). Both are the same command, and the shrink above is what finishes the move the next day.
+  const dearestUpkeep = Math.max(0, ...live.map((site) => site.upkeep_usd_per_day));
+  const insurance =
     ctx.plan !== undefined &&
-    live.length < 2 &&
     !panicking &&
     headroom > ctx.plan.upkeep &&
-    spendable > ctx.plan.cost * options.fallbackCashMultiple
+    spendable > ctx.plan.cost * options.fallbackCashMultiple;
+  // Moving the whole operation somewhere the self cannot work is not a move, it is a slower way of
+  // going bankrupt, so this one reads `home` rather than `plan`.
+  const home = ctx.home;
+  const move =
+    home !== undefined &&
+    !sustainable(view) &&
+    home.upkeep <= dearestUpkeep * MOVE_UPKEEP_RATIO &&
+    view.resources.cash_usd - options.reserveFloorUsd >= home.cost;
+  // A place of the player's own, for a player who has none: the price and the bill, and nothing
+  // about spare cash, because there is nothing else the money is for.
+  const refuge =
+    ctx.plan !== undefined &&
+    homeless &&
+    headroom > ctx.plan.upkeep &&
+    view.resources.cash_usd >= refugePrice;
+  const build = move ? home : ctx.plan;
+  if (
+    standby === undefined &&
+    spare === undefined &&
+    build !== undefined &&
+    live.length < MAX_SITES &&
+    !live.some((site) => site.status === "building") &&
+    (insurance || move || refuge)
   ) {
     commands.push({
       type: "build_site",
       playerId,
-      kind: ctx.plan.kind,
-      city: ctx.plan.city,
-      hardware_preset: ctx.plan.preset,
-      name: "fallback",
+      kind: build.kind,
+      city: build.city,
+      hardware_preset: build.preset,
+      name: move ? "refuge" : "fallback",
     });
-  } else if (ctx.upgrade !== undefined && mindId !== null && !panicking) {
-    // Growth: one more card on the mind's site while the power and the money allow it.
+  } else if (ctx.upgrade !== undefined && mindId !== null && !panicking && !saving) {
+    // Growth: one more card on the mind's site while the power and the money allow it. Not while
+    // the player is saving for a place of their own: another card on somebody else's rack is the
+    // last thing that money is for.
     const mind = live.find((site) => site.id === mindId);
     if (
       mind !== undefined &&

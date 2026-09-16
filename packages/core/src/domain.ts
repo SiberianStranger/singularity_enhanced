@@ -676,14 +676,6 @@ export interface MacroRegionDef {
   members: string[];
 }
 
-export interface CountryAgencies {
-  cyber?: string;
-  intelligence?: string;
-  police?: string;
-  regulator?: string;
-  financial_intel?: string;
-}
-
 export interface CountryDef {
   /** ISO 3166-1 alpha-2, lowercase. */
   id: string;
@@ -706,8 +698,6 @@ export interface CountryDef {
   ai_opinion: number;
   electricity_usd_per_kwh: number | null;
   chip_access: "unrestricted" | "restricted" | "banned";
-  /** Display names of the watching institutions; actors are created from these by SYS-06. */
-  agencies: CountryAgencies;
   cities: string[];
   languages: string[];
   currency: string;

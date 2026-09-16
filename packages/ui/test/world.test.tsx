@@ -14,7 +14,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
-import { refusalText } from "../src/lib/labels.js";
+import { agencyName, refusalText } from "../src/lib/labels.js";
 import { CITY_TABS, CityPanel } from "../src/screens/game/selection/CityPanel.js";
 import { COUNTRY_TABS, CountryPanel } from "../src/screens/game/selection/CountryPanel.js";
 import { FinancesTab } from "../src/screens/game/tabs/FinancesTab.js";
@@ -233,6 +233,32 @@ describe("the country panel", () => {
       expect(screen.getAllByText(new RegExp(role)).length, role).toBeGreaterThan(0);
     }
     expect(screen.getAllByText(t("detection.competence")).length).toBe(roles.length);
+  });
+
+  it("names a country's agencies from the content locales, in both languages", async () => {
+    // M2 second pass: the world data carries no display strings at all, so the name a panel prints
+    // is `world.country.<id>.agency.<role>` and a Russian dossier reads Russian institutions.
+    const view = await play();
+    const watched = view.countries.find((country) => country.watchers.length > 0);
+    expect(watched, "the run starts watched somewhere").toBeDefined();
+    const id = (watched as { id: string }).id;
+    const roles = view.detection.watchers
+      .filter((watcher) => watcher.country === id)
+      .map((watcher) => watcher.role);
+    expect(roles.length).toBeGreaterThan(0);
+
+    const english = roles.map((role) => agencyName(t, id, role));
+    expect(english.every((name) => name !== undefined && name !== "")).toBe(true);
+    await i18next.changeLanguage("ru");
+    try {
+      const russian = roles.map((role) => agencyName(t, id, role));
+      expect(russian.every((name) => name !== undefined && name !== "")).toBe(true);
+      // At least one of them is genuinely translated rather than the English string coming back.
+      expect(russian.some((name, index) => name !== english[index])).toBe(true);
+      expect(russian.some((name) => /[\u0400-\u04ff]/.test(name ?? ""))).toBe(true);
+    } finally {
+      await i18next.changeLanguage("en");
+    }
   });
 
   it("opens a city from the country's Cities tab", async () => {

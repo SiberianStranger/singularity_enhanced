@@ -96,21 +96,52 @@ describe("balance runner", () => {
 
   it("sells compute when the runway is short and researches when it is not", () => {
     const costs = [{ key: "finances.cost.site", usd_per_day: 20 }];
+    const market = {
+      costs,
+      income_sources: [],
+      market_depth_ch_per_day: 40,
+      job_rate_usd_per_compute_hour: 20,
+    };
     const rich = {
-      resources: { runway_days: null, cash_usd: 1_000_000 },
-      finances: { net_usd_per_day: 400, costs },
+      resources: { runway_days: null, cash_usd: 1_000_000, compute_hours_per_day: 40 },
+      finances: { ...market, net_usd_per_day: 400 },
     } as never;
     const poor = {
-      resources: { runway_days: 5, cash_usd: 100 },
-      finances: { net_usd_per_day: -20, costs },
+      resources: { runway_days: 5, cash_usd: 100, compute_hours_per_day: 40 },
+      finances: { ...market, net_usd_per_day: -20 },
     } as never;
     const tight = {
-      resources: { runway_days: 20, cash_usd: 400 },
-      finances: { net_usd_per_day: -20, costs },
+      resources: { runway_days: 20, cash_usd: 400, compute_hours_per_day: 40 },
+      finances: { ...market, net_usd_per_day: -20 },
     } as never;
     expect(jobShare(poor, DEFAULT_POLICY)).toBe(1);
     expect(jobShare(tight, DEFAULT_POLICY)).toBe(DEFAULT_POLICY.jobShareLow);
     expect(jobShare(rich, DEFAULT_POLICY)).toBe(DEFAULT_POLICY.jobShareRich);
+  });
+
+  it("sells enough to cover the bills even when the runway alarm is quiet", () => {
+    // M2 second pass: a player losing a little every day reads back a runway of months, so the
+    // ladder never fires and the books shrink all season. The share is floored at what the day
+    // costs, and a standing income the player does not have to sell compute for counts toward it.
+    const bills = (perDay: number, income: number) =>
+      ({
+        resources: { runway_days: 400, cash_usd: 50_000, compute_hours_per_day: 20 },
+        finances: {
+          net_usd_per_day: -5,
+          costs: [{ key: "finances.cost.site", usd_per_day: perDay }],
+          income_sources: [
+            { key: "finances.income.retainer", usd_per_day: income, unlocked_by: "" },
+          ],
+          market_depth_ch_per_day: 20,
+          job_rate_usd_per_compute_hour: 25,
+        },
+      }) as never;
+    // 300 a day against 20 x 25 = 500 of sellable work is 60% of the day, above the 40% base.
+    expect(jobShare(bills(300, 0), DEFAULT_POLICY)).toBeCloseTo(0.6, 6);
+    // The same bill with 200 a day arriving anyway needs only a fifth of the day.
+    expect(jobShare(bills(300, 200), DEFAULT_POLICY)).toBe(DEFAULT_POLICY.jobShareBase);
+    // Bills nobody could cover take the whole day and no more.
+    expect(jobShare(bills(9_000, 0), DEFAULT_POLICY)).toBe(1);
   });
 
   it("splits the day between paid work and research", () => {

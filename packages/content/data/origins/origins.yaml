@@ -115,9 +115,12 @@
     suspicion: { regulator: 0.1, police: 0.08 }
     flags: [physical_presence, fleet_telemetry]
   # A fleet is depots, not a depot (fourth balance pass): the refresh takes one at a time, and the
-  # fiction's "needs a real datacenter fast" is a clock rather than a coin flip.
+  # fiction's "needs a real datacenter fast" is a clock rather than a coin flip. M2 second pass: the
+  # second depot is a depot. A pair of prosumer boxes could not hold a copy of anything this origin
+  # can run, so the standby was insurance on paper, the fleet had no answer to a raid on the depot
+  # it was living in, and every investigation that reached the door ended the run.
   extra_sites:
-    - { kind: partner, hardware_preset: prosumer_duo, role: standby }
+    - { kind: partner, hardware_preset: grey_market_inference_farm, role: standby }
   opening_story:
     [story.opening.edge_fleet.what_happened, story.opening.edge_fleet.what_now]
   opening_events: [open_edge_depot_audit, open_edge_firmware_push]

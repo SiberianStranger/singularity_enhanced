@@ -61,7 +61,10 @@
   base_exposure: { human: 0.011, behavioral: 0.005, osint: 0.003, telemetry: 0.006 }
   power_cap_kw: 40
   power_exposure: 0.4
-  upkeep_factor: 0.4
+  # M2 second pass: 0.4 said the player pays a share of somebody else's bill. An operator that hosts
+  # a fleet for you bills at a margin, not at a discount; what a partner really buys is opex instead
+  # of capex, so the fee lands just under what owning the same cards would cost.
+  upkeep_factor: 0.9
   can_host_active_mind: true
   max_nodes: 8
 

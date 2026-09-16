@@ -1,7 +1,9 @@
+# Two countries with agency profiles: one names its agencies and one does not, and the Russian file
+# is missing a name English writes (SYS-01, M2 second pass).
 - id: de
   iso3: DEU
   name_key: world.country.de.name
-  macro_region: middle_earth
+  macro_region: western_europe
   population: 84000000
   median_age: 46.7
   urbanization_pct: 77.6
@@ -15,6 +17,9 @@
   ai_opinion: -0.3
   electricity_usd_per_kwh: 0.2
   chip_access: unrestricted
-  cities: [de_berlin, de_atlantis]
+  cities: [de_berlin]
   languages: [de]
   currency: EUR
+  agency_profile:
+    cyber_agency: { competence: 0.7, budget: 0.6 }
+    police: { competence: 0.6, budget: 0.6 }

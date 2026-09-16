@@ -1,0 +1,10 @@
+- id: de_berlin
+  country: de
+  name_key: world.city.de_berlin.name
+  population: 6000000
+  lat: 52.52
+  lon: 13.4
+  tags: [tech]
+  power_headroom: 0.5
+  colo_price_index: 1
+  scrutiny: 0.4

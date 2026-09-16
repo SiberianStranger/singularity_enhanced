@@ -935,6 +935,73 @@ function quirksDoSomething(loaded: Records, issues: BuildIssue[]): void {
   }
 }
 
+/**
+ * Agency names, which are locale keys rather than data (SYS-01, M2 second pass).
+ *
+ * The country record no longer carries display strings, so nothing in the data refers to
+ * `world.country.<id>.agency.<role>` and the ordinary `*_key` walk cannot see them. Two rules
+ * replace it, and both are errors rather than warnings, because a missing name here is a panel that
+ * prints a role id at a player:
+ *
+ * - a role the country authors an `agency_profile` for is a watcher the game will build and show,
+ *   so it has to be named;
+ * - a name English writes has to exist in every language the build bundles, which is stricter than
+ *   the coverage warning the rest of the strings get, because falling back to English here means a
+ *   Russian dossier listing American institutions in Latin script.
+ */
+function validateAgencyNames(
+  loaded: Records,
+  byLanguage: Record<string, Record<string, string>>,
+  issues: BuildIssue[],
+): void {
+  const languages = Object.keys(byLanguage).sort();
+  const source = byLanguage[SOURCE_LANGUAGE] ?? {};
+  const required = new Set<string>();
+  for (const country of loaded.countries ?? []) {
+    const id = String(country.id);
+    const profile = country.agency_profile;
+    if (!isRecord(profile)) {
+      continue;
+    }
+    for (const role of Object.keys(profile).sort()) {
+      required.add(`world.country.${id}.agency.${role}`);
+    }
+  }
+  for (const key of [...required].sort()) {
+    if (source[key] === undefined) {
+      issues.push({
+        file: `locales/${SOURCE_LANGUAGE}`,
+        path: key,
+        message: "a role with an agency profile needs a name",
+      });
+    }
+  }
+  const named = Object.keys(source)
+    .filter((key) => key.startsWith("world.country.") && key.includes(".agency."))
+    .sort();
+  for (const language of languages) {
+    if (language === SOURCE_LANGUAGE) {
+      continue;
+    }
+    const map = byLanguage[language] ?? {};
+    const missing = named.filter((key) => map[key] === undefined);
+    for (const key of missing.slice(0, 20)) {
+      issues.push({
+        file: `locales/${language}`,
+        path: key,
+        message: "every language names the agencies; English is not a fallback here",
+      });
+    }
+    if (missing.length > 20) {
+      issues.push({
+        file: `locales/${language}`,
+        path: "",
+        message: `${missing.length} agency names are missing`,
+      });
+    }
+  }
+}
+
 /** Locale keys of the domains the core validator does not walk. */
 function validateDomainLocaleKeys(
   loaded: Records,
@@ -1058,6 +1125,7 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   crossReferences(loaded, issues);
   validateDomainScripts(loaded, ctx, issues);
   validateDomainLocaleKeys(loaded, new Set(Object.keys(locales)), issues);
+  validateAgencyNames(loaded, byLanguage, issues);
   coverage(loaded, locales, issues);
 
   const serialized = stableStringify(bundle);

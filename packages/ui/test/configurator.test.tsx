@@ -15,12 +15,13 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { beforeEach, describe, expect, it } from "vitest";
-import { catalog } from "../src/content/catalog.js";
+import { catalog, fitHardware } from "../src/content/catalog.js";
 import { ConfiguratorScreen } from "../src/screens/configurator/ConfiguratorScreen.js";
 import { lineageLock } from "../src/screens/configurator/locks.js";
 import { STEP_HOTKEYS, STEP_IDS } from "../src/screens/configurator/steps.js";
 import { useConfigurator } from "../src/screens/configurator/store.js";
 import { useUiStore } from "../src/store/uiStore.js";
+import { startSession } from "./helpers.js";
 
 /** The first two steps of the rail, so the tests follow P4's order instead of restating it. */
 const FIRST_STEP = STEP_IDS[0] as string;
@@ -555,5 +556,39 @@ describe("the draft the screen opens on", () => {
     expect(origin?.generations_allowed).toContain(draft.generation);
     expect(origin?.locations).toContain(draft.city);
     expect(origin?.hardware_presets_allowed).toContain(draft.hardware);
+  });
+});
+
+describe("the preview promises what the run delivers (M2 second pass)", () => {
+  it("prices a starting rig with the engine's own physics, not an estimate of its own", async () => {
+    // The configurator used to carry its own throughput model: a compute-hour of 36,000 tokens
+    // against the engine's million, and its own bytes-per-parameter and interconnect tables. It
+    // showed a player several hundred compute-hours a day where the run gave a couple of dozen.
+    const session = await startSession();
+    try {
+      const view = session.view();
+      const setup = session.setup.players[0];
+      expect(setup, "the session has a player").toBeDefined();
+      const preset = catalog.hardwarePresets.find(
+        (entry) => entry.id === (setup as { hardware_preset: string }).hardware_preset,
+      );
+      const lineage = catalog.lineages.find(
+        (entry) => entry.id === (setup as { lineage: string }).lineage,
+      );
+      const generation = catalog.generations.find(
+        (entry) => entry.id === (setup as { generation: string }).generation,
+      );
+      expect(preset, "the setup names a preset").toBeDefined();
+      const fit = fitHardware(preset as never, lineage as never, generation);
+      expect(fit.precision).toBe(view.self.precision);
+      // The run applies the quirks and the difficulty on top, so this is a close preview rather
+      // than an identity; what it may not be again is an order of magnitude out.
+      const live = view.resources.compute_hours_per_day;
+      expect(live).toBeGreaterThan(0);
+      expect(fit.compute_hours_per_day).toBeGreaterThan(live * 0.5);
+      expect(fit.compute_hours_per_day).toBeLessThan(live * 2);
+    } finally {
+      session.stop();
+    }
   });
 });

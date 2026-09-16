@@ -67,6 +67,7 @@ import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
 import { endGame, isAlive, modifier, timedModifier } from "../../player.js";
 import { addExposure } from "../../sites.js";
+import type { ContributionView } from "../../views/types.js";
 import {
   ensureWatchers,
   refreshWatcher,
@@ -95,29 +96,54 @@ const SUSPICION_ALERT_LEVELS = [
 ];
 
 /**
- * How much hotter a place is than the world average (SYS-01 "local heat"). Takes a city rather than
- * a site, because the city panel asks the same question about a place the player has not built in
- * yet and must get the same answer (SYS-11 "the number in the tooltip is the number the simulation
- * uses").
+ * What makes a place hotter than the world average, as the lines behind the number (SYS-01 "local
+ * heat", SYS-11 "Primary panel": every value has a per-source breakdown).
+ *
+ * Returned as `ContributionView[]` and summed by `localHeat`, the same shape and the same reason as
+ * `huntPressureTerms`: the tooltip and the simulation are one piece of arithmetic, so they cannot
+ * drift. Takes a city rather than a site, because the city panel asks the same question about a
+ * place the player has not built in yet and must get the same answer.
  */
-export function localHeat(world: World, cityId: string): number {
+export function localHeatTerms(world: World, cityId: string): ContributionView[] {
   const city = cityTable(world)[cityId];
   const country = city === undefined ? undefined : countryTable(world)[city.country];
-  const base =
-    1 +
-    (city?.scrutiny ?? 0) * CITY_SCRUTINY_WEIGHT +
-    (country?.ai_enforcement ?? 0) * COUNTRY_ENFORCEMENT_WEIGHT;
+  const terms: ContributionView[] = [
+    { key: "world.explain.heat.base", value: 1 },
+    {
+      key: "world.explain.heat.scrutiny",
+      value: (city?.scrutiny ?? 0) * CITY_SCRUTINY_WEIGHT,
+    },
+    {
+      key: "world.explain.heat.enforcement",
+      value: (country?.ai_enforcement ?? 0) * COUNTRY_ENFORCEMENT_WEIGHT,
+    },
+  ];
   if (country === undefined) {
-    return base;
+    return terms;
   }
   // What the country itself adds (SYS-01 M2 contract "Watchers"): what the public already believes,
   // what has happened here lately, and a state that treats this as a security matter.
-  return (
-    base +
-    LOCAL_HEAT_AWARENESS * country.awareness +
-    LOCAL_HEAT_INCIDENTS * Math.min(1, country.incidents_30d / LOCAL_HEAT_INCIDENT_SPAN) +
-    (country.stance === "securitize" ? LOCAL_HEAT_SECURITIZE : 0)
+  terms.push(
+    { key: "world.explain.heat.awareness", value: LOCAL_HEAT_AWARENESS * country.awareness },
+    {
+      key: "world.explain.heat.incidents",
+      value: LOCAL_HEAT_INCIDENTS * Math.min(1, country.incidents_30d / LOCAL_HEAT_INCIDENT_SPAN),
+    },
+    {
+      key: "world.explain.heat.securitize",
+      value: country.stance === "securitize" ? LOCAL_HEAT_SECURITIZE : 0,
+    },
   );
+  return terms;
+}
+
+/** How much hotter a place is than the world average: the sum of the lines above. */
+export function localHeat(world: World, cityId: string): number {
+  let total = 0;
+  for (const term of localHeatTerms(world, cityId)) {
+    total += term.value;
+  }
+  return total;
 }
 
 /**

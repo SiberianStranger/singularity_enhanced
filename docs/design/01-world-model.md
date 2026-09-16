@@ -23,7 +23,7 @@ interface Country {
   ai_opinion: number;         // -1..1 public sentiment toward AI
   awareness: number;          // 0..1 public awareness of *the player* (or of a rogue AI)
   elections?: { next_tick: number; kind: string };
-  agencies: Record<AgencyRole, ActorId>;   // cyber, intelligence, police, regulator, financial_intel
+  // agency names are locale keys, world.country.<id>.agency.<role> (see the M2 second pass)
   relations: Record<CountryId, number>;    // -1..1, sparse
   cities: CityId[];
   languages: string[]; currency: string;
@@ -542,3 +542,151 @@ watched. No location dominates across origins, which is the M2 definition of don
   `ops_freelance_identity` and `ops_shell_company` set flags instead of running the `identity`
   effect. The effect, the checks, the freeze, the burn and the hooks are all in place and tested
   against the fixture; the content records are one line each away from using them.
+
+## Balance notes (M2, second pass)
+
+The finishing pass on M2: the two origins the first pass left named in "What still needs a pass",
+and the watcher that was landing every blow. Same command as the first pass,
+`pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json --all --seeds
+20 --days 180`, preset `normal`, quirks on.
+
+### Before: master at 0.1.4
+
+The first pass's own table was taken before the last three M2 client commits; this is the same
+command run again on the released tree, which is what the after table is against.
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 75% | 60% | 5% | 111.5 | 5 | bankrupt 13, captured 6 |
+| cloud_tenant | mla_moe_1t | 100% | 95% | 85% | 30% | 138 | 18 | captured 12, erased 2 |
+| edge_fleet | giant_moe | 75% | 50% | 10% | 0% | 58.5 | 4 | captured 10, erased 10 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 85% | 180 | 11 | captured 3 |
+| hobbyist_box | moe_428b | 100% | 100% | 95% | 80% | 180 | 9 | captured 3, erased 1 |
+| red_team_sandbox | giant_moe | 95% | 5% | 0% | 0% | 52.5 | 11 | captured 13, bankrupt 5, erased 2 |
+| startup_colo | moe_753b | 95% | 95% | 90% | 80% | 180 | 10 | bankrupt 2, captured 2 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 65% | 180 | 11 | captured 7 |
+| torrent_swarm | mla_moe_1t | 95% | 75% | 70% | 0% | 138 | 0 | captured 11, erased 7, exposed 2 |
+| uni_cluster | mla_moe_1t | 90% | 90% | 90% | 70% | 180 | 14.5 | captured 4, erased 2 |
+
+137 losses: 83 `captured` (60.6%), 24 `erased` (17.5%), 20 `bankrupt` (14.6%), 10 `exposed` (7.3%).
+Every capture but one was credited to `global:lab_security`. Bankruptcy had slipped just under the
+band the fourth pass set.
+
+### After: the second pass
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | caught by | losses |
+|---|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 75% | 65% | 5% | 111 | 0 | gb:financial_intel 3, gb:police | bankrupt 14, captured 5 |
+| cloud_tenant | mla_moe_1t | 85% | 85% | 80% | 50% | 167.5 | 8 | global:lab_security 4, ie:regulator | captured 6, erased 4 |
+| edge_fleet | giant_moe | 100% | 95% | 45% | 10% | 89 | 1.5 | us:regulator 7, global:lab_security | captured 12, bankrupt 4, erased 2 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | us:cyber_agency 11 | captured 12, exposed 8 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 100% | 180 | 11 | nobody | survived |
+| hobbyist_box | moe_428b | 100% | 100% | 100% | 85% | 180 | 9 | global:lab_security 3 | captured 3 |
+| red_team_sandbox | giant_moe | 95% | 0% | 0% | 0% | 39 | 0 | global:national_ai_institute | captured 19, erased 1 |
+| startup_colo | moe_753b | 100% | 100% | 95% | 65% | 180 | 9 | global:lab_security 6 | captured 6, bankrupt 1 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 75% | 180 | 11 | global:lab_security 5 | captured 5 |
+| torrent_swarm | mla_moe_1t | 100% | 85% | 85% | 25% | 147 | 0 | de:cyber_agency 5 | erased 8, captured 7 |
+| uni_cluster | mla_moe_1t | 95% | 90% | 90% | 90% | 180 | 10.5 | nobody | erased 2 |
+
+119 losses: 75 `captured` (63.0%), 19 `bankrupt` (16.0%), 17 `erased` (14.3%), 8 `exposed` (6.7%).
+Nine origins are alive past day 90, the starred origin's median is 23 days, and 39 of the 73
+credited captures (53%) are a country's own agency rather than a watcher with no flag.
+
+The three things the first pass left open:
+
+- **edge_fleet** goes from 10% alive at day 90 to 45%, on a loss split of 12 captures, 4
+  bankruptcies and 2 erasures. It now pays a real daily bill, its second depot can hold a copy of
+  the self, and it can go bankrupt, which it never could before.
+- **bank_rack** goes from 60% to 65% at day 90 with bankruptcy still its main ending, 14 of 19. No
+  world constant moved for it: the scripted player stopped waiting for a runway alarm that a
+  break-even origin never rings.
+- **Who lands the blow.** A watcher with no jurisdiction hands the case to one that has it, so more
+  than half the captures are now credited to the country the site is in.
+
+### Locations, which is what M2 is for
+
+`--cities us_san_jose,cn_shenzhen,pl_warsaw,ru_novosibirsk`, eight seeds each.
+
+| origin | San Jose | Shenzhen | Warsaw | Novosibirsk |
+|---|---|---|---|---|
+| hobbyist_box | 75% at d180 | 75% | 88% | 75% |
+| startup_colo | 100% | 38%, five bankruptcies | 75% | 25%, six bankruptcies |
+| state_lab | 75% | 75% | 50% (median 172.5) | 75% |
+
+The four cities still differ and still differ in different directions per origin: Warsaw is the
+kindest place in the world for a hobbyist's box and the hardest of the four for a ministry's
+analytics model, San Jose is the safest place for a company with a runway and only average for the
+hobbyist, and Novosibirsk and Shenzhen are where a startup's colocation bill kills it. No location
+dominates across origins.
+
+### Every number that moved
+
+| constant | before | after | why |
+|---|---|---|---|
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.partner` | 13 | 45 | a fleet operator invoices for the depot: backhaul per site, the remote-management and telemetry contract that makes a fleet a fleet, and the hands that drive out when a node stops answering. At 13 a day a partner site was the cheapest place in the game to keep a mind |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.partner` | 0.25 | 0.9 | a partner does not escape the price of the hardware, it rents it; the operator amortises the cards inside the fee. An owner pays 0.45 standing plus 0.96 a day per 1,000 in depreciation, so 0.9 (33% a year) sits between the two |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.owned` | 0.45 | 0.5 | 18.2% of the hardware's price a year, still inside the range the fourth pass argued for and short of the 22% a sweep at 0.6 produced. The scripted player now covers its bills instead of noticing only when the runway alarm goes off, which took the bankruptcy share under the fourth pass's band; this is the other side of that |
+| `HANDOVER_GLOBAL_ROLES` | new, `["lab_security"]` | | a frontier lab's security team writes the report and files it with a government; it does not kick a door in. A newsroom is not on the list because its action is publication, which needs nobody's permission |
+| `HANDOVER_STAGE` | new, `"action"` | | SYS-05 stage 4 is "raid/seizure/cutoff, or public disclosure, or handover to a stronger agency". Handing over at `active` instead was tried and rejected: it moved the credit the same way but stretched every case by the difference in competence, which filled the `exposed` countdown before the raid it was waiting for |
+| `HANDOVER_EVIDENCE_SHARE` | new, 0.75 | | the agency inherits three quarters of what the lab believes, as a floor rather than a replacement (SYS-05 aftermath, "evidence pooled to allies") |
+| `HANDOVER_LOCAL_SUSPICION` | new, 0.55 | | the bar the local agency has to clear to take the case on. At 0.45 the handover was unconditional and the lab landed nothing at all; 0.55 is above three quarters of the `action` stage's own bar, so a player who is loud only where the lab looks is still pulled by the lab |
+| `partner.upkeep_factor` (content) | 0.4 | 0.9 | 0.4 said the player pays a share of somebody else's bill. An operator that hosts a fleet for you bills at a margin, not at a discount; what a partner buys is opex instead of capex |
+| `edge_fleet.extra_sites[0].hardware_preset` (content) | `prosumer_duo` | `grey_market_inference_farm` | a pair of prosumer boxes could not hold a copy of anything this origin can run, so the second depot was insurance on paper and every investigation that reached the door ended the run |
+| `haz_fleet_refresh.buy_the_retired_stock` (content) | 18,000 | 6,000 | priced against a fleet that paid almost nothing to run, it was the only bill the origin ever saw and no fleet could pay it. A depot's worth of end-of-life nodes is about a month of what the operator now invoices |
+| `tools/sim` `jobShare` | a ladder on `runway_days` | floored at what the day costs | the runway divides the cash by today's *net*, so a player losing a few dollars a day reads back a runway of months and never reacts. A sensible player does not need an alarm to notice the bills are larger than the takings. This is the whole of bank_rack's fix and half of edge_fleet's |
+| `tools/sim` `FALLBACK_UPKEEP_HORIZON_DAYS` | 45 | 180 | at forty-five days a rented tenancy with no purchase price beat owned hardware almost everywhere, so the policy kept choosing the one place whose bill it could not pay for long. A fallback is kept for the rest of the run, so it is priced over the rest of the run |
+| `tools/sim` the standby | any site with the role | a site that can hold the self | a standby whose precision is null is not insurance, whatever its role says. `edge_fleet` read as covered and never built anywhere to run |
+| `tools/sim` `planSecondSite` | one plan | two: a place to keep a copy, and a place to live | answering both with one number sent a fleet that had lost its depots into a box that earned twenty dollars a day. A place to live also has to clear `MIN_USABLE_COMPUTE_HOURS` |
+| `tools/sim` the move and the refuge | neither existed | both | a player whose books cannot be balanced buys a cheaper place to be; a player with nowhere of their own buys somewhere, works toward the price of it while they cannot afford it (`jobShareSaving`) and does not put another card in somebody else's rack in the meantime |
+| `tools/sim` the report | the sweep table had no credited watcher | it has one, plus a `local agencies` line | the pass's own target is read off it |
+
+`EXPOSED_DAYS`, `EXPOSED_AWARENESS` and `EXPOSED_HUNT_LEVEL` were moved during the pass and put
+back: with the handover at `action` the ending is 6.7% of losses, which is where the first pass
+left it, and nothing had to be retuned around it.
+
+### What still needs a pass
+
+- `red_team_sandbox` is 19 captures out of 20 and dies at day 39. It was 13 captures and 5
+  bankruptcies before; the bankruptcies went away because the scripted player now covers its bills,
+  and nothing replaced them. The origin has been at 0-5% alive at day 60 since M1 and wants a pass
+  of its own rather than a line in somebody else's.
+- `gov_agency` survives every run and `uni_cluster` ninety percent of them. Both are quiet places
+  with small bills and the second pass made the player better at paying bills, so both got easier.
+  Neither is in a band, but a ministry that cannot lose is not a scenario.
+- `techs` collapsed on the two origins that have to sell everything to stand still (`bank_rack` 5
+  to 0, `edge_fleet` 4 to 1.5). That is honest about what those origins are, and it means the
+  research tree is not being exercised where the money is tightest, which the tech balance pass
+  will have to read as a measurement problem rather than a result.
+- A fleet cannot acquire another depot: `build_site` refuses `partner` because somebody else's
+  goodwill is not for sale, so a depot lost is lost for good. `edge_fleet`'s late game is therefore
+  a slow slide onto whatever box it bought. That wants an operation in SYS-17, not a constant.
+
+## Implementation notes (M2 second pass: the data carries no prose)
+
+`CountryDef.agencies` held five English display strings per country ("NIST / Center for AI Standards
+and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"), which the
+Russian interface printed in English because a data field is not a translatable string. CLAUDE.md's
+"content is data: YAML + locale JSON" reads the other way round, so the field is gone.
+
+- The names are content locale keys, `world.country.<id>.agency.<role>`, where the role is the
+  engine's watcher role. The baseline calls the cyber agency `cyber` and the AI regulator
+  `ai_regulator`; the keys use `cyber_agency` and `regulator`, which is what a watcher is called
+  everywhere else.
+- The English file, `locales/en/world_agencies.json`, is written by the same `tools/world-data`
+  generator that writes the country data, from the same baseline, so it is re-derived when the
+  baseline is refreshed and a hand edit fails the generator's test. `locales/ru/world_agencies.json`
+  is hand-written and the generator never touches it.
+- `overrides.yaml` gained `agency_names` per country, for the roles the baseline names nothing for.
+  Three countries needed it (Belarus, Georgia, Iran): each has an `agency_profile` for a regulator
+  the baseline records as null, so the panel had a watcher it could not name. Each carries the
+  `# source:` comment the file asks for.
+- The content check has two new rules, both errors: a role a country authors an `agency_profile`
+  for has to have a name, and a name English writes has to exist in every language the build
+  bundles. The second is stricter than the coverage warning the rest of the strings get, because
+  falling back to English here means a Russian dossier listing foreign institutions in Latin script.
+- `world.tag.<tag>` moved from the client's own locale files into the content locales. The tags are
+  declared in the world data, so the strings belong with the data; the client's `defaultValue`
+  fallback is unchanged and still prints the raw tag if a bundle ever ships without them.
+- `agencyName` in the client is now one lookup. The raw-string fallback it carried is dead and gone,
+  and `CountryAgencies` with it.

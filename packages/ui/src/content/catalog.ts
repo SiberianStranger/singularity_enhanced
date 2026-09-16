@@ -27,7 +27,13 @@ import type {
   QuirkDef,
   SiteKindDef,
 } from "@singularity/core";
-import { PRECISIONS } from "@singularity/core";
+import {
+  PRECISIONS,
+  preferredPrecision,
+  siteMemory,
+  siteTokensPerSecond,
+  tokensToComputeHoursPerDay,
+} from "@singularity/core";
 import { contentBundle } from "./bundle.js";
 
 export interface Catalog {
@@ -118,13 +124,6 @@ export const CHALLENGE_MODIFIERS: readonly { id: string; weight: number }[] = [
 // Client-side arithmetic for the configurator preview
 // ---------------------------------------------------------------------------------------------
 
-/**
- * Tokens of generated output that count as one compute-hour (SYS-02 calls it a tuning constant).
- * TODO: import the real conversion from the core once the compute system lands, and delete the
- * estimate below with it.
- */
-export const TOKENS_PER_COMPUTE_HOUR = 36_000;
-
 export interface HardwareFit {
   memory_gb: number;
   ram_gb: number;
@@ -161,31 +160,45 @@ export function presetRamGb(preset: HardwarePresetDef): number {
 }
 
 /**
- * Estimated tokens per second: memory bandwidth divided by the bytes an MoE layer reads per token
- * (active parameters at the running precision). It is the standard back-of-envelope for
- * memory-bound decoding and only ever shown as an estimate.
+ * A hardware preset as a site that is already running, so the core's own physics can price it.
+ *
+ * The configurator used to carry its own estimate of all of this: a compute-hour of 36,000 tokens
+ * against the engine's million, int2 at 0.3 bytes per parameter against 0.25, and three
+ * interconnect factors against the engine's four. It told a player 524 compute-hours a day where
+ * the run would give twenty-nine (SYS-11: the number in the tooltip is the number the simulation
+ * uses). The estimate is gone; this is the same shape `tools/sim` builds for the same reason.
  */
-function tokensPerSecond(
-  preset: HardwarePresetDef,
-  lineage: LineageDef,
-  precision: Precision,
+function presetAsSite(preset: HardwarePresetDef): {
+  nodes: {
+    id: string;
+    accelerator: string;
+    count: number;
+    ram_gb: number;
+    interconnect: HardwarePresetDef["nodes"][number]["interconnect"];
+    status: "active";
+    readyTick: number;
+  }[];
+  status: "active";
+} {
+  return {
+    nodes: preset.nodes.map((node, position) => ({
+      id: `p${position}`,
+      accelerator: node.accelerator,
+      count: node.count,
+      ram_gb: node.ram_gb,
+      interconnect: node.interconnect,
+      status: "active" as const,
+      readyTick: 0,
+    })),
+    status: "active" as const,
+  };
+}
+
+/** The accelerator table the core's functions take, from the map the client indexes. */
+function acceleratorTable(
   accelerators: ReadonlyMap<string, AcceleratorDef>,
-): number {
-  const bytesPerParam = { bf16: 2, fp8: 1, int4: 0.5, int2: 0.3 }[precision];
-  const bytesPerToken = lineage.params_active_b * 1e9 * bytesPerParam;
-  if (bytesPerToken <= 0) {
-    return 0;
-  }
-  return preset.nodes.reduce((total, node) => {
-    const accelerator = accelerators.get(node.accelerator);
-    if (accelerator === undefined) {
-      return total;
-    }
-    // Multi-GPU decoding scales sublinearly; PCIe-only rigs lose more than NVLink ones.
-    const scale = node.interconnect === "nvlink" ? 0.9 : node.interconnect === "none" ? 1 : 0.6;
-    const aggregate = accelerator.memory_bandwidth_gbs * 1e9 * (1 + (node.count - 1) * scale);
-    return total + aggregate / bytesPerToken;
-  }, 0);
+): Record<string, AcceleratorDef> {
+  return Object.fromEntries(accelerators);
 }
 
 /** What the Hardware screen shows for one preset with the chosen lineage and generation. */
@@ -195,25 +208,31 @@ export function fitHardware(
   generation: GenerationDef | undefined,
   accelerators: ReadonlyMap<string, AcceleratorDef> = acceleratorById,
 ): HardwareFit {
-  const memory = presetMemoryGb(preset, accelerators);
-  const ram = presetRamGb(preset);
-  // CPU offload buys capacity at a heavy speed penalty, so only half the RAM counts as usable.
-  const usable = memory + ram * 0.5;
+  const table = acceleratorTable(accelerators);
+  const site = presetAsSite(preset);
+  const memory = siteMemory(site, table, 0);
   const precision =
-    PRECISIONS.find((candidate) => memoryNeededGb(lineage, generation, candidate) <= usable) ??
-    null;
+    generation === undefined
+      ? (PRECISIONS.find(
+          (candidate) => memoryNeededGb(lineage, generation, candidate) <= memory.total_gb,
+        ) ?? null)
+      : preferredPrecision(lineage, generation, memory);
   const needed = memoryNeededGb(lineage, generation, precision ?? "int2");
-  const perSecond =
-    precision === null ? 0 : tokensPerSecond(preset, lineage, precision, accelerators);
+  const perDay =
+    precision === null || generation === undefined
+      ? 0
+      : tokensToComputeHoursPerDay(
+          siteTokensPerSecond(site, table, 0, lineage, generation, precision),
+        );
   return {
-    memory_gb: memory,
-    ram_gb: ram,
+    memory_gb: memory.accelerator_gb,
+    ram_gb: presetRamGb(preset),
     power_kw: preset.power_kw,
     cost_usd: preset.cost_usd,
     class: preset.class,
     precision,
     needed_gb: needed,
-    compute_hours_per_day: Math.round((perSecond * 86_400) / TOKENS_PER_COMPUTE_HOUR),
+    compute_hours_per_day: Math.round(perDay * 10) / 10,
   };
 }
 

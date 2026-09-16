@@ -9,6 +9,8 @@ import {
   EXPOSED_AWARENESS,
   EXPOSED_DAYS,
   FINANCIAL_INTEL_FINANCIAL_ATTENTION,
+  HANDOVER_EVIDENCE_SHARE,
+  HANDOVER_LOCAL_SUSPICION,
   HUNT_PRESSURE_AWARENESS,
   HUNT_PRESSURE_PER_INVESTIGATION,
   LOCAL_HEAT_AWARENESS,
@@ -17,12 +19,19 @@ import {
   VAR_AWARENESS_PRESENCE,
   VAR_HUNT_PRESSURE,
 } from "../src/balance.js";
-import { awarenessPresence, type CountryState, countryTable } from "../src/entities.js";
-import { createGame } from "../src/index.js";
-import { localHeat } from "../src/systems/detection/index.js";
-import { huntPressure } from "../src/systems/detection/investigations.js";
+import type { Investigation } from "../src/domain.js";
+import {
+  awarenessPresence,
+  type CountryState,
+  countryTable,
+  investigationTable,
+  watcherTable,
+} from "../src/entities.js";
+import { createGame, type Game } from "../src/index.js";
+import { localHeat, localHeatTerms } from "../src/systems/detection/index.js";
+import { huntPressure, openInvestigationFor } from "../src/systems/detection/investigations.js";
 import { agencyProfile, attentionFor, countryAttention } from "../src/watchers.js";
-import { m1Content, m1Setup } from "./fixtures/m1/index.js";
+import { loudSetup, m1Content, m1Setup } from "./fixtures/m1/index.js";
 
 function game(overrides: Parameters<typeof m1Setup>[0] = {}) {
   return createGame({ content: m1Content, setup: m1Setup(overrides) });
@@ -105,6 +114,27 @@ describe("local heat", () => {
       6,
     );
   });
+
+  it("publishes the lines the figure is made of, and they add up to it", () => {
+    // M2 second pass: the City panel's tooltip is the same arithmetic the simulation runs.
+    const started = game();
+    const iceland = countryTable(started.world).is as CountryState;
+    iceland.awareness = 0.4;
+    iceland.stance = "securitize";
+    const terms = localHeatTerms(started.world, "reykjavik");
+    expect(terms.map((term) => term.key)).toEqual([
+      "world.explain.heat.base",
+      "world.explain.heat.scrutiny",
+      "world.explain.heat.enforcement",
+      "world.explain.heat.awareness",
+      "world.explain.heat.incidents",
+      "world.explain.heat.securitize",
+    ]);
+    const sum = terms.reduce((total, term) => total + term.value, 0);
+    expect(sum).toBeCloseTo(localHeat(started.world, "reykjavik"), 9);
+    // A city with no country behind it still reads, with the three lines it can answer.
+    expect(localHeatTerms(started.world, "nowhere")).toHaveLength(3);
+  });
 });
 
 describe("the hunt", () => {
@@ -172,5 +202,83 @@ describe("the hunt", () => {
       started.tick(24);
     }
     expect(started.snapshot("p1").game_over?.reason).toBe("exposed");
+  });
+});
+
+/**
+ * A case the frontier lab has built, one hour from the stage that needs a warrant, with the local
+ * agencies believing what the caller says they believe (SYS-05 "the handover").
+ */
+function caseAtTheDoor(seed: string, labSuspicion: number, local: Record<string, number>): Game {
+  const started = createGame({ content: m1Content, setup: loudSetup({ seed }) });
+  started.tick(24 * 40);
+  expect(started.snapshot("p1").game_over).toBeNull();
+  const watchers = watcherTable(started.world);
+  for (const watcher of Object.values(watchers)) {
+    if (watcher.playerId !== "p1") {
+      continue;
+    }
+    const actor = watcher.id.split("/", 2)[1] ?? "";
+    watcher.suspicion = actor === "global:lab_security" ? labSuspicion : (local[actor] ?? 0);
+  }
+  const site = started.snapshot("p1").sites.find((entry) => entry.status !== "lost");
+  const investigation: Investigation = {
+    id: "handover1",
+    playerId: "p1",
+    watcher: "global:lab_security",
+    siteId: site?.id ?? null,
+    stage: "active",
+    stageStartedTick: started.world.clock.tick,
+    stageDeadlineTick: started.world.clock.tick,
+    evidence: 1,
+    visible: true,
+  };
+  investigationTable(started.world).handover1 = investigation;
+  return started;
+}
+
+describe("the handover (SYS-05 stage 4)", () => {
+  it("gives the case to the agency with jurisdiction, with the file behind it", () => {
+    const started = caseAtTheDoor("handover", 0.95, { "us:police": 0.6, "us:regulator": 0.2 });
+    started.tick(1);
+    const investigation = investigationTable(started.world).handover1 as Investigation;
+    expect(investigation.stage).toBe("action");
+    // The loudest American agency takes it, not the one that happens to be created first.
+    expect(investigation.watcher).toBe("us:police");
+    const police = watcherTable(started.world)["p1/us:police"];
+    expect(police?.suspicion ?? 0).toBeGreaterThanOrEqual(0.95 * HANDOVER_EVIDENCE_SHARE - 1e-9);
+    expect(started.world.log.some((entry) => entry.key === "log.investigation_handover")).toBe(
+      true,
+    );
+    expect(
+      started.snapshot("p1").notifications.some((e) => e.key === "alerts.investigation_handover"),
+    ).toBe(true);
+  });
+
+  it("leaves the case with the analyst when nobody local believes the file", () => {
+    // Just over the bar the `action` stage needs, so three quarters of it is under the bar an
+    // agency has to clear to take the case on, and no local agency believes anything by itself.
+    const labSuspicion = 0.72;
+    expect(labSuspicion * HANDOVER_EVIDENCE_SHARE).toBeLessThan(HANDOVER_LOCAL_SUSPICION);
+    const started = caseAtTheDoor("quiet-handover", labSuspicion, {});
+    started.tick(1);
+    const investigation = investigationTable(started.world).handover1 as Investigation;
+    expect(investigation.stage).toBe("action");
+    expect(investigation.watcher).toBe("global:lab_security");
+    expect(started.world.log.some((entry) => entry.key === "log.investigation_handover")).toBe(
+      false,
+    );
+  });
+
+  it("folds the agency's own file into the case it is handed", () => {
+    const started = caseAtTheDoor("handover", 0.95, { "us:police": 0.6 });
+    // The American police already have a file of their own by day forty; it is the same siege.
+    const own = openInvestigationFor(started.world, "p1", "us:police");
+    expect(own).toBeDefined();
+    started.tick(1);
+    const table = investigationTable(started.world);
+    expect(table[own?.id ?? ""]).toBeUndefined();
+    expect((table.handover1 as Investigation).watcher).toBe("us:police");
+    expect(Object.values(table).filter((entry) => entry.watcher === "us:police")).toHaveLength(1);
   });
 });

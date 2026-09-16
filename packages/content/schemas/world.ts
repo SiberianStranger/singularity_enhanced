@@ -40,14 +40,6 @@ export const AgencyProfileEntrySchema = z.object({
   budget: z.number().min(0).max(1),
 });
 
-export const CountryAgenciesSchema = z.object({
-  cyber: z.string().optional(),
-  intelligence: z.string().optional(),
-  police: z.string().optional(),
-  regulator: z.string().optional(),
-  financial_intel: z.string().optional(),
-});
-
 export const CountryDefSchema = z.object({
   id: z.string().regex(/^[a-z]{2}$/),
   iso3: z.string().regex(/^[A-Z]{3}$/),
@@ -66,7 +58,6 @@ export const CountryDefSchema = z.object({
   ai_opinion: z.number().min(-1).max(1),
   electricity_usd_per_kwh: z.number().nullable(),
   chip_access: z.enum(["unrestricted", "restricted", "banned"]),
-  agencies: CountryAgenciesSchema,
   cities: z.array(z.string()),
   languages: z.array(z.string()),
   currency: z.string(),

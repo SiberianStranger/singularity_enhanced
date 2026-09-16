@@ -277,11 +277,15 @@
   vars:
     site_name: "site.name"
   options:
+    # M2 second pass: 18,000 was priced against a fleet that paid almost nothing to run, so it was
+    # the only bill the origin ever saw and no fleet could pay it. A depot's worth of end-of-life
+    # nodes is about a month of what the operator now invoices for the fleet, which is a sum a careful
+    # fleet has on hand between refreshes.
     - id: buy_the_retired_stock
       text_key: events.haz_fleet_refresh.opt.buy
-      enabled_if: { var: "player.cash", gte: 18000 }
+      enabled_if: { var: "player.cash", gte: 6000 }
       effects:
-        - { add: { var: "player.cash", value: -18000 } }
+        - { add: { var: "player.cash", value: -6000 } }
         - { add: { var: "site.exposure.human", value: 0.05 } }
         - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
     - id: hide_in_the_new_image

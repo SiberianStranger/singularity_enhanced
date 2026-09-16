@@ -421,5 +421,15 @@
   "world.stance.regulate.desc": "Закон действует, штрафы прописаны, орган ведёт дела медленно. Уровень регулирования идёт к 0,80.",
   "world.stance.regulate.name": "Регулировать",
   "world.stance.securitize.desc": "Автономные системы здесь вопрос безопасности, а не соблюдения требований. Регулирование идёт к 0,70, каждое местное ведомство сильнее смотрит на людей, а отвечает за это разведка.",
-  "world.stance.securitize.name": "Охранять"
+  "world.stance.securitize.name": "Охранять",
+  "world.tag.conflict": "Зона конфликта",
+  "world.tag.datacenter_hub": "Узел дата-центров",
+  "world.tag.finance": "Финансы",
+  "world.tag.government": "Власть",
+  "world.tag.industry": "Промышленность",
+  "world.tag.mining": "Добыча",
+  "world.tag.port": "Порт",
+  "world.tag.tech": "Технологии",
+  "world.tag.university": "Университет",
+  "world.tag.urban": "Город"
 }

@@ -14,8 +14,10 @@
 #   democracy_index         <- democracy_index_2024 (EIU, 2025 edition)
 #   electricity_usd_per_kwh <- electricity_price_usd_per_kwh_industrial
 #   chip_access             <- chip_access_tier
-#   agencies                <- agencies (ai_regulator becomes "regulator"; a list of services is
-#                              joined with ", " because the field is a display name)
+#   The agency display names are no longer here: they are locale keys
+#   (world.country.<id>.agency.<role>) in locales/en/world_agencies.json, written by the same
+#   generator, so a Russian dossier reads Russian institution names (SYS-01, M2 second pass).
+#   A list of services is joined with a comma, because the string is a display name.
 #
 # Derived, from ai_policy_posture and the capacity proxies in the same record:
 #
@@ -90,12 +92,6 @@
   colo_availability: 0.37
   hardware_availability: 0.5
   engineer_pool: 60400
-  agencies:
-    cyber: "UAE Cyber Security Council / TDRA"
-    intelligence: "Signals Intelligence Agency (SIA)"
-    police: "Ministry of Interior"
-    regulator: "UAE AI Office / Ministry of State for Artificial Intelligence (world's first dedicated AI minister, since 2017)"
-    financial_intel: "UAE FIU"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.7 }
     intelligence: { competence: 0.7, budget: 0.8 }
@@ -131,10 +127,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 14300
-  agencies:
-    cyber: "none functioning"
-    intelligence: "General Directorate of Intelligence (GDI)"
-    police: "Taliban-run General Directorate of Police Services"
   cities: ["af_kabul", "af_kandahar"]
   languages: ["ps", "fa"]
   currency: "AFN"
@@ -164,11 +156,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 6800
-  agencies:
-    cyber: "CERT-AM"
-    intelligence: "National Security Service (NSS)"
-    police: "Police of Armenia"
-    financial_intel: "FMC"
   cities: ["am_yerevan"]
   languages: ["hy"]
   currency: "AMD"
@@ -198,11 +185,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 34900
-  agencies:
-    cyber: "CERT Angola (nascent)"
-    intelligence: "SINSE"
-    police: "Polícia Nacional"
-    financial_intel: "UIF Angola"
   cities: ["ao_luanda"]
   languages: ["pt"]
   currency: "AOA"
@@ -235,11 +217,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-10-24", kind: "general" }
-  agencies:
-    cyber: "Dirección Nacional de Ciberseguridad"
-    intelligence: "Agencia Federal de Inteligencia (AFI)"
-    police: "Policía Federal Argentina"
-    financial_intel: "UIF"
   cities: ["ar_buenos_aires", "ar_cordoba"]
   languages: ["es"]
   currency: "ARS"
@@ -269,12 +246,6 @@
   colo_availability: 0.19
   hardware_availability: 0.9
   engineer_pool: 50800
-  agencies:
-    cyber: "GovCERT Austria"
-    intelligence: "DSN (Direktion Staatsschutz und Nachrichtendienst), HNaA (military intelligence)"
-    police: "Bundeskriminalamt"
-    regulator: "RTR (Rundfunk und Telekom Regulierungs-GmbH)"
-    financial_intel: "A-FIU"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.5 }
     intelligence: { competence: 0.5, budget: 0.45 }
@@ -311,12 +282,6 @@
   hardware_availability: 0.9
   engineer_pool: 160300
   incident_report_hours: 72
-  agencies:
-    cyber: "Australian Signals Directorate (ASD) / Australian Cyber Security Centre (ACSC)"
-    intelligence: "ASIO (domestic), ASIS (foreign), ASD (signals)"
-    police: "Australian Federal Police (AFP)"
-    regulator: "Department of Industry, Science and Resources — proposed 'mandatory guardrails' for high-risk AI (under consultation)"
-    financial_intel: "AUSTRAC"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.65 }
     intelligence: { competence: 0.7, budget: 0.7 }
@@ -352,12 +317,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 197100
-  agencies:
-    cyber: "BGD e-GOV CIRT"
-    intelligence: "National Security Intelligence (NSI), DGFI"
-    police: "Bangladesh Police"
-    regulator: "ICT Division (policy only, no dedicated regulator)"
-    financial_intel: "BFIU"
   cities: ["bd_dhaka"]
   languages: ["bn"]
   currency: "BDT"
@@ -387,12 +346,6 @@
   colo_availability: 0.26
   hardware_availability: 0.9
   engineer_pool: 68600
-  agencies:
-    cyber: "Centre for Cybersecurity Belgium (CCB)"
-    intelligence: "VSSE, SGRS"
-    police: "Federal Police"
-    regulator: "Belgian Data Protection Authority (coordinating EU AI Office liaison)"
-    financial_intel: "CTIF-CFI"
   cities: ["be_brussels", "be_saint_ghislain"]
   languages: ["nl", "fr", "de"]
   currency: "EUR"
@@ -422,11 +375,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 14500
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Agence Nationale de Renseignement (ANR)"
-    police: "Police Nationale"
-    financial_intel: "CENTIF Burkina Faso"
   cities: ["bf_ouagadougou"]
   languages: ["fr"]
   currency: "XOF"
@@ -456,12 +404,6 @@
   colo_availability: 0.16
   hardware_availability: 0.9
   engineer_pool: 17200
-  agencies:
-    cyber: "National CSIRT (State e-Government Agency)"
-    intelligence: "DANS, SIS (foreign)"
-    police: "MVR"
-    regulator: "CPDP (Commission for Personal Data Protection)"
-    financial_intel: "FID SANS"
   cities: ["bg_sofia"]
   languages: ["bg"]
   currency: "EUR"
@@ -491,12 +433,6 @@
   colo_availability: 0.3
   hardware_availability: 0.5
   engineer_pool: 491300
-  agencies:
-    cyber: "Gabinete de Segurança Institucional (GSI) / CTIR Gov"
-    intelligence: "Agência Brasileira de Inteligência (ABIN)"
-    police: "Polícia Federal"
-    regulator: "Autoridade Nacional de Proteção de Dados (ANPD), expected to gain AI oversight role under pending PL 2338"
-    financial_intel: "COAF"
   agency_profile:
     cyber_agency: { competence: 0.45, budget: 0.4 }
     intelligence: { competence: 0.45, budget: 0.4 }
@@ -532,11 +468,6 @@
   colo_availability: 0.13
   hardware_availability: 0.15
   engineer_pool: 23200
-  agencies:
-    cyber: "Operations and Analysis Center (OAC)"
-    intelligence: "KGB"
-    police: "MVD"
-    financial_intel: "Department for Financial Monitoring"
   agency_profile:
     cyber_agency: { competence: 0.45, budget: 0.4 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -572,12 +503,6 @@
   colo_availability: 0.35
   hardware_availability: 0.9
   engineer_pool: 446700
-  agencies:
-    cyber: "Canadian Centre for Cyber Security (CSE)"
-    intelligence: "CSIS, CSE"
-    police: "RCMP"
-    regulator: "Innovation, Science and Economic Development Canada (ISED) — voluntary code of conduct; AIDA bill died on 2025 prorogation"
-    financial_intel: "FINTRAC"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.65 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -613,11 +538,6 @@
   colo_availability: 0.1
   hardware_availability: 0.5
   engineer_pool: 47100
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Agence Nationale de Renseignements (ANR)"
-    police: "Police Nationale Congolaise"
-    financial_intel: "CENAREF"
   cities: ["cd_kinshasa", "cd_goma", "cd_rubaya"]
   languages: ["fr"]
   currency: "CDF"
@@ -647,12 +567,6 @@
   colo_availability: 0.28
   hardware_availability: 0.9
   engineer_pool: 106900
-  agencies:
-    cyber: "NCSC (National Cyber Security Centre)"
-    intelligence: "FIS/NDB (Federal Intelligence Service)"
-    police: "fedpol"
-    regulator: "no dedicated statute yet; FDPIC (data protection) plus sectoral regulators"
-    financial_intel: "MROS"
   agency_profile:
     cyber_agency: { competence: 0.65, budget: 0.6 }
     intelligence: { competence: 0.6, budget: 0.55 }
@@ -688,12 +602,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 30400
-  agencies:
-    cyber: "CI-CERT"
-    intelligence: "Direction Générale des Renseignements (DGR)"
-    police: "Police Nationale"
-    regulator: "ARTCI"
-    financial_intel: "CENTIF"
   cities: ["ci_abidjan"]
   languages: ["fr"]
   currency: "XOF"
@@ -723,12 +631,6 @@
   colo_availability: 0.26
   hardware_availability: 0.5
   engineer_pool: 61600
-  agencies:
-    cyber: "Agencia Nacional de Ciberseguridad (ANCI, est. 2024)"
-    intelligence: "Agencia Nacional de Inteligencia (ANI)"
-    police: "Carabineros de Chile / PDI"
-    regulator: "draft horizontal AI bill (Boletín 16821) advancing in Congress"
-    financial_intel: "UAF"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.35 }
     intelligence: { competence: 0.4, budget: 0.35 }
@@ -764,12 +666,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 29100
-  agencies:
-    cyber: "CIRT-CM (under ANTIC)"
-    intelligence: "Direction Générale de la Recherche Extérieure (DGRE)"
-    police: "Délégation Générale à la Sûreté Nationale"
-    regulator: "ANTIC"
-    financial_intel: "ANIF"
   cities: ["cm_yaounde", "cm_douala"]
   languages: ["fr", "en"]
   currency: "XAF"
@@ -800,12 +696,6 @@
   hardware_availability: 0.15
   engineer_pool: 7526000
   incident_report_hours: 24
-  agencies:
-    cyber: "MSS cyber bureau / CNCERT/CC"
-    intelligence: "Ministry of State Security (MSS)"
-    police: "Ministry of Public Security (MPS)"
-    regulator: "Cyberspace Administration of China (CAC) — algorithm registration and generative-AI measures"
-    financial_intel: "CAMLMAC"
   agency_profile:
     cyber_agency: { competence: 0.8, budget: 0.85 }
     intelligence: { competence: 0.8, budget: 0.9 }
@@ -841,11 +731,6 @@
   colo_availability: 0.17
   hardware_availability: 0.5
   engineer_pool: 108900
-  agencies:
-    cyber: "colCERT"
-    intelligence: "Dirección Nacional de Inteligencia (DNI)"
-    police: "Policía Nacional"
-    financial_intel: "UIAF"
   cities: ["co_bogota", "co_medellin"]
   languages: ["es"]
   currency: "COP"
@@ -875,10 +760,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 17600
-  agencies:
-    cyber: "under Ministry of Interior (MININT)"
-    intelligence: "Dirección de Inteligencia (DGI)"
-    police: "Policía Nacional Revolucionaria (PNR)"
   cities: ["cu_havana"]
   languages: ["es"]
   currency: "CUP"
@@ -908,12 +789,6 @@
   colo_availability: 0.13
   hardware_availability: 0.9
   engineer_pool: 4200
-  agencies:
-    cyber: "Digital Security Authority"
-    intelligence: "KYP"
-    police: "Cyprus Police"
-    regulator: "Office of the Commissioner for Personal Data Protection"
-    financial_intel: "MOKAS"
   cities: ["cy_nicosia", "cy_limassol"]
   languages: ["el", "tr"]
   currency: "EUR"
@@ -943,12 +818,6 @@
   colo_availability: 0.19
   hardware_availability: 0.9
   engineer_pool: 42000
-  agencies:
-    cyber: "NÚKIB"
-    intelligence: "BIS (domestic), ÚZSI (foreign)"
-    police: "Policie ČR"
-    regulator: "ÚOOÚ"
-    financial_intel: "FAÚ"
   cities: ["cz_prague", "cz_ostrava"]
   languages: ["cs"]
   currency: "CZK"
@@ -982,12 +851,6 @@
   election_cadence_years: 4
   elections:
     - { date: "2027-01-30", kind: "presidential" }
-  agencies:
-    cyber: "BSI"
-    intelligence: "BND, BfV"
-    police: "BKA"
-    regulator: "Bundesnetzagentur (AI Act market surveillance, designated 2025)"
-    financial_intel: "FIU Deutschland"
   agency_profile:
     cyber_agency: { competence: 0.75, budget: 0.7 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -1023,12 +886,6 @@
   colo_availability: 0.29
   hardware_availability: 0.9
   engineer_pool: 36100
-  agencies:
-    cyber: "CFCS (Center for Cybersikkerhed)"
-    intelligence: "PET, FE"
-    police: "Rigspolitiet"
-    regulator: "Datatilsynet"
-    financial_intel: "Hvidvasksekretariatet"
   cities: ["dk_copenhagen", "dk_odense"]
   languages: ["da"]
   currency: "DKK"
@@ -1058,11 +915,6 @@
   colo_availability: 0.14
   hardware_availability: 0.5
   engineer_pool: 88200
-  agencies:
-    cyber: "national CERT (nascent)"
-    intelligence: "DGSI"
-    police: "DGSN (Sûreté Nationale)"
-    financial_intel: "CTRF"
   cities: ["dz_algiers"]
   languages: ["ar", "fr"]
   currency: "DZD"
@@ -1092,11 +944,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 34900
-  agencies:
-    cyber: "EcuCERT"
-    intelligence: "Secretaría Nacional de Inteligencia (SNI)"
-    police: "Policía Nacional"
-    financial_intel: "UAFE"
   cities: ["ec_quito", "ec_guayaquil"]
   languages: ["es"]
   currency: "USD"
@@ -1130,12 +977,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-03-07", kind: "parliamentary" }
-  agencies:
-    cyber: "RIA (Estonian Information System Authority); hosts NATO CCDCOE"
-    intelligence: "Välisluureamet (EFIS), KAPO"
-    police: "PPA"
-    regulator: "Andmekaitse Inspektsioon (AKI)"
-    financial_intel: "FIU Estonia"
   agency_profile:
     cyber_agency: { competence: 0.75, budget: 0.55 }
     intelligence: { competence: 0.6, budget: 0.45 }
@@ -1171,12 +1012,6 @@
   colo_availability: 0.2
   hardware_availability: 0.5
   engineer_pool: 178700
-  agencies:
-    cyber: "EG-CERT"
-    intelligence: "General Intelligence Service (GIS)"
-    police: "Ministry of Interior"
-    regulator: "National Council for Artificial Intelligence (NCAI), under MCIT"
-    financial_intel: "EMLCU"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.35 }
     intelligence: { competence: 0.6, budget: 0.55 }
@@ -1216,12 +1051,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-08-22", kind: "general" }
-  agencies:
-    cyber: "INCIBE / CCN-CERT"
-    intelligence: "CNI"
-    police: "Policía Nacional / Guardia Civil"
-    regulator: "AESIA (Agencia Española de Supervisión de Inteligencia Artificial) — EU's first dedicated national AI regulator, est. 2023"
-    financial_intel: "SEPBLAC"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.55 }
     intelligence: { competence: 0.6, budget: 0.55 }
@@ -1257,12 +1086,6 @@
   colo_availability: 0.14
   hardware_availability: 0.5
   engineer_pool: 49300
-  agencies:
-    cyber: "Information Network Security Administration (INSA)"
-    intelligence: "National Intelligence and Security Service (NISS)"
-    police: "Federal Police Commission"
-    regulator: "Ethiopian Artificial Intelligence Institute (EAII)"
-    financial_intel: "Financial Intelligence Center (FIC)"
   cities: ["et_addis_ababa"]
   languages: ["am"]
   currency: "ETB"
@@ -1296,12 +1119,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-04-18", kind: "parliamentary" }
-  agencies:
-    cyber: "NCSC-FI (under Traficom)"
-    intelligence: "SUPO"
-    police: "Poliisi"
-    regulator: "Traficom"
-    financial_intel: "Rahanpesun selvittelykeskus"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.55 }
     intelligence: { competence: 0.6, budget: 0.5 }
@@ -1341,12 +1158,6 @@
   election_cadence_years: 4
   elections:
     - { date: "2027-04-18", kind: "presidential" }
-  agencies:
-    cyber: "ANSSI"
-    intelligence: "DGSE, DGSI"
-    police: "Police Nationale"
-    regulator: "CNIL, with a national AI coordination unit under SGDSEN"
-    financial_intel: "TRACFIN"
   agency_profile:
     cyber_agency: { competence: 0.75, budget: 0.7 }
     intelligence: { competence: 0.75, budget: 0.75 }
@@ -1382,12 +1193,6 @@
   colo_availability: 0.36
   hardware_availability: 0.9
   engineer_pool: 775100
-  agencies:
-    cyber: "NCSC"
-    intelligence: "MI5, SIS/MI6, GCHQ"
-    police: "National Crime Agency / Metropolitan Police"
-    regulator: "sectoral (DSIT sets policy; AI Security Institute tests frontier models; ICO for data)"
-    financial_intel: "UKFIU (NCA)"
   agency_profile:
     cyber_agency: { competence: 0.8, budget: 0.75 }
     intelligence: { competence: 0.8, budget: 0.8 }
@@ -1423,11 +1228,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 8700
-  agencies:
-    cyber: "CERT.GOV.GE"
-    intelligence: "State Security Service of Georgia (SSSG)"
-    police: "Ministry of Internal Affairs"
-    financial_intel: "FMS"
   agency_profile:
     cyber_agency: { competence: 0.35, budget: 0.3 }
     intelligence: { competence: 0.45, budget: 0.4 }
@@ -1463,12 +1263,6 @@
   colo_availability: 0.13
   hardware_availability: 0.5
   engineer_pool: 55000
-  agencies:
-    cyber: "Cyber Security Authority (CSA)"
-    intelligence: "Bureau of National Investigations (BNI)"
-    police: "Ghana Police Service"
-    regulator: "Data Protection Commission"
-    financial_intel: "Financial Intelligence Centre (FIC)"
   cities: ["gh_accra"]
   languages: ["en"]
   currency: "GHS"
@@ -1498,11 +1292,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 12400
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Direction Générale des Services Spéciaux"
-    police: "Police Nationale"
-    financial_intel: "CENTIF Guinée"
   cities: ["gn_conakry"]
   languages: ["fr"]
   currency: "GNF"
@@ -1536,12 +1325,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-07-25", kind: "parliamentary" }
-  agencies:
-    cyber: "National Cyber Security Authority"
-    intelligence: "EYP"
-    police: "Hellenic Police"
-    regulator: "Hellenic Data Protection Authority (HDPA)"
-    financial_intel: "Anti-Money Laundering Authority"
   cities: ["gr_athens"]
   languages: ["el"]
   currency: "EUR"
@@ -1571,11 +1354,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 26900
-  agencies:
-    cyber: "none dedicated"
-    intelligence: "Dirección de Inteligencia Civil (DIGICI)"
-    police: "Policía Nacional Civil (PNC)"
-    financial_intel: "Intendencia de Verificación Especial (IVE)"
   cities: ["gt_guatemala_city"]
   languages: ["es"]
   currency: "GTQ"
@@ -1605,12 +1383,6 @@
   colo_availability: 0.27
   hardware_availability: 0.5
   engineer_pool: 41800
-  agencies:
-    cyber: "HKCERT"
-    intelligence: "falls under mainland MSS post-2020 NSL; local Security Bureau"
-    police: "Hong Kong Police Force (with National Security Department)"
-    regulator: "Office of the Government Chief Information Officer / Privacy Commissioner for Personal Data (ethics guidance only)"
-    financial_intel: "Joint Financial Intelligence Unit (JFIU)"
   agency_profile:
     cyber_agency: { competence: 0.65, budget: 0.6 }
     intelligence: { competence: 0.7, budget: 0.7 }
@@ -1646,12 +1418,6 @@
   colo_availability: 0.2
   hardware_availability: 0.9
   engineer_pool: 33200
-  agencies:
-    cyber: "NBSZ / National Cybersecurity Center"
-    intelligence: "Information Office (IH), Constitution Protection Office (AH)"
-    police: "Rendőrség"
-    regulator: "NAIH"
-    financial_intel: "NAV financial-intelligence unit"
   cities: ["hu_budapest", "hu_debrecen"]
   languages: ["hu"]
   currency: "HUF"
@@ -1681,12 +1447,6 @@
   colo_availability: 0.23
   hardware_availability: 0.5
   engineer_pool: 490600
-  agencies:
-    cyber: "BSSN"
-    intelligence: "BIN (Badan Intelijen Negara)"
-    police: "POLRI"
-    regulator: "Kominfo/Komdigi (Ministry of Communication and Digital Affairs) — 2023 ethics guidelines, no binding law"
-    financial_intel: "PPATK"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.4 }
     intelligence: { competence: 0.45, budget: 0.45 }
@@ -1723,12 +1483,6 @@
   hardware_availability: 0.9
   engineer_pool: 32200
   incident_report_hours: 72
-  agencies:
-    cyber: "NCSC-IE"
-    intelligence: "G2 (military intelligence), Garda Security & Intelligence"
-    police: "An Garda Síochána"
-    regulator: "Data Protection Commission (DPC) — lead EU enforcer for most US Big Tech"
-    financial_intel: "FIU Ireland (Garda)"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.55 }
     intelligence: { competence: 0.5, budget: 0.45 }
@@ -1764,12 +1518,6 @@
   colo_availability: 0.26
   hardware_availability: 0.9
   engineer_pool: 109100
-  agencies:
-    cyber: "Israel National Cyber Directorate (INCD)"
-    intelligence: "Mossad, Shin Bet (ISA), Unit 8200 (military SIGINT)"
-    police: "Israel Police"
-    regulator: "Ministry of Innovation, Science and Technology — voluntary/soft-law approach, no binding AI statute"
-    financial_intel: "IMPA"
   agency_profile:
     cyber_agency: { competence: 0.85, budget: 0.8 }
     intelligence: { competence: 0.85, budget: 0.85 }
@@ -1805,12 +1553,6 @@
   colo_availability: 0.33
   hardware_availability: 0.5
   engineer_pool: 4362900
-  agencies:
-    cyber: "CERT-In / NCIIPC"
-    intelligence: "RAW (external), Intelligence Bureau (internal)"
-    police: "CBI / state police forces"
-    regulator: "MeitY (Ministry of Electronics and IT) — no binding AI statute yet"
-    financial_intel: "FIU-IND"
   agency_profile:
     cyber_agency: { competence: 0.5, budget: 0.5 }
     intelligence: { competence: 0.55, budget: 0.55 }
@@ -1846,11 +1588,6 @@
   colo_availability: 0.13
   hardware_availability: 0.5
   engineer_pool: 88700
-  agencies:
-    cyber: "Iraqi National ICT/cyber directorate"
-    intelligence: "Iraqi National Intelligence Service (INIS)"
-    police: "Ministry of Interior"
-    financial_intel: "Iraqi AML Office"
   cities: ["iq_baghdad", "iq_erbil"]
   languages: ["ar", "ku"]
   currency: "IQD"
@@ -1880,11 +1617,6 @@
   colo_availability: 0.14
   hardware_availability: 0.15
   engineer_pool: 168100
-  agencies:
-    cyber: "IRGC Cyber Command / Cyber Police (FATA)"
-    intelligence: "MOIS, IRGC Intelligence Organization"
-    police: "FARAJA"
-    financial_intel: "FIU Iran"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.5 }
     intelligence: { competence: 0.7, budget: 0.65 }
@@ -1921,12 +1653,6 @@
   hardware_availability: 0.9
   engineer_pool: 2300
   incident_report_hours: 72
-  agencies:
-    cyber: "CERT-IS"
-    intelligence: "National Commissioner of Police security unit"
-    police: "Lögreglan"
-    regulator: "Persónuvernd"
-    financial_intel: "FIU Iceland"
   agency_profile:
     cyber_agency: { competence: 0.5, budget: 0.4 }
     intelligence: { competence: 0.35, budget: 0.3 }
@@ -1966,12 +1692,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-12-22", kind: "general" }
-  agencies:
-    cyber: "ACN (Agenzia per la Cybersicurezza Nazionale)"
-    intelligence: "AISE, AISI"
-    police: "Polizia di Stato / Carabinieri"
-    regulator: "AgID and ACN, jointly, under Italy's 2025 national AI law"
-    financial_intel: "UIF (Banca d'Italia)"
   cities: ["it_milan", "it_bologna"]
   languages: ["it"]
   currency: "EUR"
@@ -2001,12 +1721,6 @@
   colo_availability: 0.38
   hardware_availability: 0.9
   engineer_pool: 461200
-  agencies:
-    cyber: "NISC, plus a new 2025 Active Cyber Defense law"
-    intelligence: "Cabinet Intelligence and Research Office (CIRO), Public Security Intelligence Agency (PSIA)"
-    police: "National Police Agency"
-    regulator: "AI Strategy Council (Cabinet Office) under the 2025 AI Promotion Act — soft-law, promotion-first approach"
-    financial_intel: "JAFIC"
   agency_profile:
     cyber_agency: { competence: 0.65, budget: 0.65 }
     intelligence: { competence: 0.6, budget: 0.6 }
@@ -2045,12 +1759,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-08-10", kind: "general" }
-  agencies:
-    cyber: "National KE-CIRT/CC"
-    intelligence: "National Intelligence Service (NIS)"
-    police: "National Police Service"
-    regulator: "draft national AI policy under the ICT Ministry (2025)"
-    financial_intel: "Financial Reporting Centre (FRC)"
   cities: ["ke_nairobi"]
   languages: ["sw", "en"]
   currency: "KES"
@@ -2080,11 +1788,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 26700
-  agencies:
-    cyber: "Cambodia National Cybersecurity Committee"
-    intelligence: "General Department of Intelligence"
-    police: "National Police (Cambodia)"
-    financial_intel: "CAFIU"
   cities: ["kh_phnom_penh"]
   languages: ["km"]
   currency: "KHR"
@@ -2114,10 +1817,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 0
-  agencies:
-    cyber: "Reconnaissance General Bureau (runs the Lazarus Group)"
-    intelligence: "Reconnaissance General Bureau (RGB), Ministry of State Security"
-    police: "Ministry of Social Security"
   cities: ["kp_pyongyang"]
   languages: ["ko"]
   currency: "KPW"
@@ -2148,12 +1847,6 @@
   hardware_availability: 0.9
   engineer_pool: 441600
   incident_report_hours: 72
-  agencies:
-    cyber: "KISA / NIS cyber bureau"
-    intelligence: "National Intelligence Service (NIS)"
-    police: "Korean National Police Agency"
-    regulator: "Personal Information Protection Commission (PIPC), under the 'AI Basic Act' (passed Dec 2024, effective Jan 2026)"
-    financial_intel: "KoFIU"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.7 }
     intelligence: { competence: 0.7, budget: 0.7 }
@@ -2189,12 +1882,6 @@
   colo_availability: 0.22
   hardware_availability: 0.5
   engineer_pool: 57300
-  agencies:
-    cyber: "National Cybersecurity Coordination Center"
-    intelligence: "KNB (Committee for National Security)"
-    police: "Ministry of Internal Affairs"
-    regulator: "Ministry of Digital Development, Innovations and Aerospace Industry"
-    financial_intel: "Financial Monitoring Agency"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.4 }
     intelligence: { competence: 0.55, budget: 0.5 }
@@ -2230,11 +1917,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 27700
-  agencies:
-    cyber: "Sri Lanka CERT|CC"
-    intelligence: "State Intelligence Service (SIS)"
-    police: "Sri Lanka Police"
-    financial_intel: "FIU Sri Lanka"
   cities: ["lk_colombo"]
   languages: ["si", "ta"]
   currency: "LKR"
@@ -2265,12 +1947,6 @@
   hardware_availability: 0.9
   engineer_pool: 4100
   incident_report_hours: 72
-  agencies:
-    cyber: "GOVCERT.LU"
-    intelligence: "SREL"
-    police: "Police Grand-Ducale"
-    regulator: "CNPD"
-    financial_intel: "CRF"
   agency_profile:
     cyber_agency: { competence: 0.55, budget: 0.5 }
     intelligence: { competence: 0.45, budget: 0.4 }
@@ -2306,12 +1982,6 @@
   colo_availability: 0.18
   hardware_availability: 0.5
   engineer_pool: 78500
-  agencies:
-    cyber: "DGSSI"
-    intelligence: "DGED (external), DGST (internal)"
-    police: "DGSN"
-    regulator: "CNDP (data protection authority)"
-    financial_intel: "UTRF"
   cities: ["ma_rabat", "ma_casablanca", "ma_benguerir"]
   languages: ["ar", "fr"]
   currency: "MAD"
@@ -2341,11 +2011,6 @@
   colo_availability: 0.1
   hardware_availability: 0.5
   engineer_pool: 12500
-  agencies:
-    cyber: "none formal"
-    intelligence: "Direction Générale des Services Spéciaux"
-    police: "Police Nationale"
-    financial_intel: "SAMIFIN"
   cities: ["mg_antananarivo"]
   languages: ["mg", "fr"]
   currency: "MGA"
@@ -2375,11 +2040,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 18300
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Direction Générale de la Sécurité d'État"
-    police: "fragmented"
-    financial_intel: "CENTIF Mali"
   cities: ["ml_bamako"]
   languages: ["fr"]
   currency: "XOF"
@@ -2409,10 +2069,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 49000
-  agencies:
-    cyber: "none functioning independently"
-    intelligence: "Military Security Affairs (MI)"
-    police: "Myanmar Police Force"
   cities: ["mm_naypyidaw", "mm_yangon"]
   languages: ["my"]
   currency: "MMK"
@@ -2442,12 +2098,6 @@
   colo_availability: 0.12
   hardware_availability: 0.9
   engineer_pool: 2900
-  agencies:
-    cyber: "national CSIRT (MITA)"
-    intelligence: "Security Service"
-    police: "Malta Police Force"
-    regulator: "Malta Digital Innovation Authority (MDIA) + Information and Data Protection Commissioner"
-    financial_intel: "FIAU"
   cities: ["mt_valletta"]
   languages: ["mt", "en"]
   currency: "EUR"
@@ -2477,11 +2127,6 @@
   colo_availability: 0.1
   hardware_availability: 0.5
   engineer_pool: 8200
-  agencies:
-    cyber: "mwCERT"
-    intelligence: "National Intelligence Bureau"
-    police: "Malawi Police Service"
-    financial_intel: "Financial Intelligence Authority"
   cities: ["mw_lilongwe"]
   languages: ["en", "ny"]
   currency: "MWK"
@@ -2514,12 +2159,6 @@
   election_cadence_years: 4
   elections:
     - { date: "2027-06-06", kind: "legislative" }
-  agencies:
-    cyber: "Guardia Nacional cyber division"
-    intelligence: "Centro Nacional de Inteligencia (CNI)"
-    police: "Guardia Nacional"
-    regulator: "none dedicated; data-protection functions folded into executive branch after INAI's 2025 dissolution"
-    financial_intel: "UIF"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.35 }
     intelligence: { competence: 0.45, budget: 0.4 }
@@ -2555,12 +2194,6 @@
   colo_availability: 0.33
   hardware_availability: 0.5
   engineer_pool: 96900
-  agencies:
-    cyber: "NACSA"
-    intelligence: "Malaysian External Intelligence Organisation (MEIO)"
-    police: "Royal Malaysia Police (PDRM)"
-    regulator: "National AI Office (2024), under MOSTI"
-    financial_intel: "Bank Negara AMLA unit"
   agency_profile:
     cyber_agency: { competence: 0.45, budget: 0.45 }
     intelligence: { competence: 0.45, budget: 0.45 }
@@ -2596,11 +2229,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 14600
-  agencies:
-    cyber: "CERT.MZ"
-    intelligence: "SISE"
-    police: "Polícia da República de Moçambique"
-    financial_intel: "GIFiM"
   cities: ["mz_maputo"]
   languages: ["pt"]
   currency: "MZN"
@@ -2630,11 +2258,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 22300
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Documentation et de la Sécurité Extérieure (DGDSE)"
-    police: "fragmented under junta"
-    financial_intel: "CENTIF Niger"
   cities: ["ne_niamey"]
   languages: ["fr"]
   currency: "XOF"
@@ -2664,12 +2287,6 @@
   colo_availability: 0.19
   hardware_availability: 0.5
   engineer_pool: 191900
-  agencies:
-    cyber: "ngCERT"
-    intelligence: "National Intelligence Agency (NIA), DSS (domestic)"
-    police: "Nigeria Police Force"
-    regulator: "National Information Technology Development Agency (NITDA)"
-    financial_intel: "NFIU"
   agency_profile:
     cyber_agency: { competence: 0.35, budget: 0.3 }
     intelligence: { competence: 0.4, budget: 0.35 }
@@ -2706,12 +2323,6 @@
   hardware_availability: 0.9
   engineer_pool: 105700
   incident_report_hours: 72
-  agencies:
-    cyber: "NCSC-NL"
-    intelligence: "AIVD, MIVD"
-    police: "Politie"
-    regulator: "Autoriteit Persoonsgegevens (AP)"
-    financial_intel: "FIU-Nederland"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.65 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -2748,12 +2359,6 @@
   hardware_availability: 0.9
   engineer_pool: 33500
   incident_report_hours: 72
-  agencies:
-    cyber: "NSM"
-    intelligence: "Etterretningstjenesten (NIS), PST"
-    police: "Politiet"
-    regulator: "Datatilsynet"
-    financial_intel: "Økokrim"
   agency_profile:
     cyber_agency: { competence: 0.6, budget: 0.6 }
     intelligence: { competence: 0.6, budget: 0.6 }
@@ -2789,11 +2394,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 59500
-  agencies:
-    cyber: "Nepal CERT"
-    intelligence: "National Investigation Department (NID)"
-    police: "Nepal Police"
-    financial_intel: "FIU Nepal"
   cities: ["np_kathmandu"]
   languages: ["ne"]
   currency: "NPR"
@@ -2823,12 +2423,6 @@
   colo_availability: 0.18
   hardware_availability: 0.9
   engineer_pool: 26600
-  agencies:
-    cyber: "National Cyber Security Centre (NCSC-NZ), under GCSB"
-    intelligence: "GCSB, NZSIS"
-    police: "New Zealand Police"
-    regulator: "Department of Internal Affairs / Privacy Commissioner — voluntary 'Trustworthy AI' guidelines"
-    financial_intel: "NZ Police Financial Intelligence Unit"
   agency_profile:
     cyber_agency: { competence: 0.55, budget: 0.45 }
     intelligence: { competence: 0.55, budget: 0.5 }
@@ -2864,11 +2458,6 @@
   colo_availability: 0.14
   hardware_availability: 0.5
   engineer_pool: 9800
-  agencies:
-    cyber: "none formal (CSIRT-Panama)"
-    intelligence: "Consejo de Seguridad Pública y Defensa Nacional"
-    police: "Policía Nacional"
-    financial_intel: "UAF"
   cities: ["pa_panama_city"]
   languages: ["es"]
   currency: "USD/PAB"
@@ -2898,12 +2487,6 @@
   colo_availability: 0.13
   hardware_availability: 0.5
   engineer_pool: 74100
-  agencies:
-    cyber: "none dedicated"
-    intelligence: "Dirección Nacional de Inteligencia (DINI)"
-    police: "Policía Nacional del Perú"
-    regulator: "Secretaría de Gobierno y Transformación Digital (nominal)"
-    financial_intel: "UIF-Perú"
   cities: ["pe_lima"]
   languages: ["es"]
   currency: "PEN"
@@ -2933,12 +2516,6 @@
   colo_availability: 0.18
   hardware_availability: 0.5
   engineer_pool: 176100
-  agencies:
-    cyber: "DICT Cybersecurity Bureau / CERT-PH"
-    intelligence: "National Intelligence Coordinating Agency (NICA)"
-    police: "Philippine National Police (PNP)"
-    regulator: "Department of Information and Communications Technology (DICT) — policy only"
-    financial_intel: "AMLC"
   agency_profile:
     cyber_agency: { competence: 0.35, budget: 0.3 }
     intelligence: { competence: 0.4, budget: 0.35 }
@@ -2974,12 +2551,6 @@
   colo_availability: 0.13
   hardware_availability: 0.5
   engineer_pool: 291500
-  agencies:
-    cyber: "National Telecom and IT Security Board / PakCERT"
-    intelligence: "ISI, Intelligence Bureau"
-    police: "FIA / provincial police"
-    regulator: "draft National AI Policy (2023) under the Ministry of IT and Telecom"
-    financial_intel: "Financial Monitoring Unit (FMU)"
   cities: ["pk_karachi", "pk_lahore", "pk_islamabad"]
   languages: ["ur", "en"]
   currency: "PKR"
@@ -3013,12 +2584,6 @@
   election_cadence_years: 5
   elections:
     - { date: "2027-11-11", kind: "parliamentary" }
-  agencies:
-    cyber: "CSIRT NASK / CSIRT GOV"
-    intelligence: "ABW (internal), AW (foreign)"
-    police: "Policja"
-    regulator: "UODO plus Ministry of Digital Affairs"
-    financial_intel: "GIIF"
   agency_profile:
     cyber_agency: { competence: 0.65, budget: 0.55 }
     intelligence: { competence: 0.6, budget: 0.55 }
@@ -3054,12 +2619,6 @@
   colo_availability: 0.25
   hardware_availability: 0.9
   engineer_pool: 41800
-  agencies:
-    cyber: "CNCS (Centro Nacional de Cibersegurança)"
-    intelligence: "SIS, SIED"
-    police: "PSP / GNR"
-    regulator: "CNPD"
-    financial_intel: "UIF"
   cities: ["pt_lisbon", "pt_sines"]
   languages: ["pt"]
   currency: "EUR"
@@ -3089,12 +2648,6 @@
   colo_availability: 0.22
   hardware_availability: 0.5
   engineer_pool: 19800
-  agencies:
-    cyber: "Q-CERT"
-    intelligence: "State Security Bureau"
-    police: "Ministry of Interior"
-    regulator: "Ministry of Communications and Information Technology (National AI Strategy, 2019)"
-    financial_intel: "QFIU"
   cities: ["qa_doha"]
   languages: ["ar"]
   currency: "QAR"
@@ -3125,12 +2678,6 @@
   hardware_availability: 0.9
   engineer_pool: 62200
   incident_report_hours: 72
-  agencies:
-    cyber: "DNSC (Directoratul Național de Securitate Cibernetică)"
-    intelligence: "SRI (internal), SIE (foreign)"
-    police: "Poliția Română"
-    regulator: "ANSPDCP"
-    financial_intel: "ONPCSB"
   agency_profile:
     cyber_agency: { competence: 0.55, budget: 0.45 }
     intelligence: { competence: 0.6, budget: 0.55 }
@@ -3166,12 +2713,6 @@
   colo_availability: 0.27
   hardware_availability: 0.15
   engineer_pool: 442500
-  agencies:
-    cyber: "FSB Center for Information Security / NKTsKI"
-    intelligence: "FSB, SVR, GRU"
-    police: "MVD"
-    regulator: "state-directed via Ministry of Digital Development (no independent regulator)"
-    financial_intel: "Rosfinmonitoring"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.6 }
     intelligence: { competence: 0.8, budget: 0.75 }
@@ -3207,12 +2748,6 @@
   colo_availability: 0.35
   hardware_availability: 0.5
   engineer_pool: 151900
-  agencies:
-    cyber: "National Cybersecurity Authority (NCA)"
-    intelligence: "General Intelligence Presidency (GIP)"
-    police: "Public Security (Ministry of Interior)"
-    regulator: "SDAIA (Saudi Data and Artificial Intelligence Authority)"
-    financial_intel: "SAFIU"
   agency_profile:
     cyber_agency: { competence: 0.55, budget: 0.7 }
     intelligence: { competence: 0.65, budget: 0.8 }
@@ -3248,10 +2783,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 20600
-  agencies:
-    cyber: "none functioning"
-    intelligence: "General Intelligence Service (fragmented)"
-    police: "fragmented"
   cities: ["sd_khartoum", "sd_port_sudan"]
   languages: ["ar", "en"]
   currency: "SDG"
@@ -3282,12 +2813,6 @@
   hardware_availability: 0.9
   engineer_pool: 61000
   incident_report_hours: 72
-  agencies:
-    cyber: "MSB / national Cybersecurity Center"
-    intelligence: "SÄPO, MUST, FRA"
-    police: "Polismyndigheten"
-    regulator: "IMY (Integritetsskyddsmyndigheten)"
-    financial_intel: "FIPO"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.6 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -3323,12 +2848,6 @@
   colo_availability: 0.34
   hardware_availability: 0.9
   engineer_pool: 69200
-  agencies:
-    cyber: "Cyber Security Agency of Singapore (CSA)"
-    intelligence: "Security and Intelligence Division (SID), Internal Security Department (ISD)"
-    police: "Singapore Police Force"
-    regulator: "IMDA (Model AI Governance Framework — soft law, widely emulated globally) / PDPC for data"
-    financial_intel: "STRO"
   agency_profile:
     cyber_agency: { competence: 0.75, budget: 0.7 }
     intelligence: { competence: 0.7, budget: 0.7 }
@@ -3364,12 +2883,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 25100
-  agencies:
-    cyber: "national cyber agency"
-    intelligence: "Direction de la Sécurité de l'État"
-    police: "Police Nationale / Gendarmerie"
-    regulator: "CDP (Commission de Protection des Données Personnelles)"
-    financial_intel: "CENTIF Sénégal"
   cities: ["sn_dakar"]
   languages: ["fr"]
   currency: "XOF"
@@ -3399,11 +2912,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 11600
-  agencies:
-    cyber: "none functioning"
-    intelligence: "National Intelligence and Security Agency (NISA)"
-    police: "Somali Police Force"
-    financial_intel: "Financial Reporting Center"
   cities: ["so_mogadishu"]
   languages: ["so", "ar"]
   currency: "SOS"
@@ -3433,10 +2941,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 2200
-  agencies:
-    cyber: "none functioning"
-    intelligence: "National Security Service (NSS)"
-    police: "South Sudan National Police Service"
   cities: ["ss_juba"]
   languages: ["en"]
   currency: "SSP"
@@ -3466,10 +2970,6 @@
   colo_availability: 0.1
   hardware_availability: 0.5
   engineer_pool: 27000
-  agencies:
-    cyber: "none functioning"
-    intelligence: "General Intelligence Directorate (transitional)"
-    police: "Internal Security Forces"
   cities: ["sy_damascus"]
   languages: ["ar"]
   currency: "SYP"
@@ -3499,11 +2999,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 5200
-  agencies:
-    cyber: "none functioning"
-    intelligence: "Agence Nationale de Sécurité (ANS)"
-    police: "Police Nationale"
-    financial_intel: "CENTIF Tchad"
   cities: ["td_ndjamena"]
   languages: ["fr", "ar"]
   currency: "XAF"
@@ -3533,12 +3028,6 @@
   colo_availability: 0.22
   hardware_availability: 0.5
   engineer_pool: 162000
-  agencies:
-    cyber: "National Cyber Security Agency (NCSA)"
-    intelligence: "National Intelligence Agency (Thailand)"
-    police: "Royal Thai Police"
-    regulator: "Electronic Transactions Development Agency (ETDA) — draft AI royal decree"
-    financial_intel: "AMLO"
   cities: ["th_bangkok"]
   languages: ["th"]
   currency: "THB"
@@ -3568,12 +3057,6 @@
   colo_availability: 0.24
   hardware_availability: 0.5
   engineer_pool: 250500
-  agencies:
-    cyber: "USOM (under BTK)"
-    intelligence: "MİT"
-    police: "EGM (Turkish National Police)"
-    regulator: "KVKK (Personal Data Protection Authority) plus Presidency Digital Transformation Office"
-    financial_intel: "MASAK"
   agency_profile:
     cyber_agency: { competence: 0.5, budget: 0.5 }
     intelligence: { competence: 0.65, budget: 0.6 }
@@ -3609,12 +3092,6 @@
   colo_availability: 0.3
   hardware_availability: 0.9
   engineer_pool: 108000
-  agencies:
-    cyber: "Administration for Cyber Security (ACS), Ministry of Digital Affairs"
-    intelligence: "National Security Bureau (NSB)"
-    police: "National Police Agency"
-    regulator: "National Science and Technology Council (NSTC) — draft AI Basic Act under legislative review"
-    financial_intel: "Anti-Money Laundering Division"
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.65 }
     intelligence: { competence: 0.7, budget: 0.65 }
@@ -3650,11 +3127,6 @@
   colo_availability: 0.12
   hardware_availability: 0.5
   engineer_pool: 45600
-  agencies:
-    cyber: "TZ-CERT"
-    intelligence: "Tanzania Intelligence and Security Service (TISS)"
-    police: "Tanzania Police Force"
-    financial_intel: "FIU Tanzania"
   cities: ["tz_dodoma", "tz_dar_es_salaam"]
   languages: ["sw", "en"]
   currency: "TZS"
@@ -3684,12 +3156,6 @@
   colo_availability: 0.1
   hardware_availability: 0.5
   engineer_pool: 56600
-  agencies:
-    cyber: "SSSCIP / CERT-UA"
-    intelligence: "SBU, HUR (GUR)"
-    police: "National Police of Ukraine"
-    regulator: "Ministry of Digital Transformation (also runs the 'Diia' e-government platform)"
-    financial_intel: "SDFM"
   agency_profile:
     cyber_agency: { competence: 0.65, budget: 0.45 }
     intelligence: { competence: 0.65, budget: 0.5 }
@@ -3725,11 +3191,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 8500
-  agencies:
-    cyber: "National Information Security Advisory Group"
-    intelligence: "Internal Security Organisation (ISO), External Security Organisation (ESO)"
-    police: "Uganda Police Force"
-    financial_intel: "Financial Intelligence Authority"
   cities: ["ug_kampala"]
   languages: ["en", "sw"]
   currency: "UGX"
@@ -3760,12 +3221,6 @@
   hardware_availability: 0.9
   engineer_pool: 3884000
   incident_report_hours: 72
-  agencies:
-    cyber: "CISA"
-    intelligence: "NSA, CIA, ODNI"
-    police: "FBI"
-    regulator: "NIST / Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"
-    financial_intel: "FinCEN"
   agency_profile:
     cyber_agency: { competence: 0.75, budget: 0.8 }
     intelligence: { competence: 0.85, budget: 0.9 }
@@ -3801,12 +3256,6 @@
   colo_availability: 0.14
   hardware_availability: 0.5
   engineer_pool: 79100
-  agencies:
-    cyber: "UZ-CERT / State Security Service cyber unit"
-    intelligence: "SGB (State Security Service)"
-    police: "Ministry of Internal Affairs"
-    regulator: "Ministry for Digital Technologies"
-    financial_intel: "Department for Combating Economic Crimes"
   agency_profile:
     cyber_agency: { competence: 0.35, budget: 0.35 }
     intelligence: { competence: 0.55, budget: 0.5 }
@@ -3842,11 +3291,6 @@
   colo_availability: 0.11
   hardware_availability: 0.15
   engineer_pool: 49000
-  agencies:
-    cyber: "none functioning"
-    intelligence: "SEBIN (legacy)"
-    police: "Policía Nacional Bolivariana (PNB)"
-    financial_intel: "UNIF"
   cities: ["ve_caracas"]
   languages: ["es"]
   currency: "VES"
@@ -3876,12 +3320,6 @@
   colo_availability: 0.21
   hardware_availability: 0.5
   engineer_pool: 201400
-  agencies:
-    cyber: "Authority of Information Security (AIS) / Dept A05, Ministry of Public Security"
-    intelligence: "General Department of Intelligence"
-    police: "Ministry of Public Security"
-    regulator: "Ministry of Information and Communications (MIC) — 2021 National AI Strategy"
-    financial_intel: "State Bank of Vietnam AML Dept"
   agency_profile:
     cyber_agency: { competence: 0.5, budget: 0.5 }
     intelligence: { competence: 0.55, budget: 0.55 }
@@ -3917,10 +3355,6 @@
   colo_availability: 0.1
   hardware_availability: 0.15
   engineer_pool: 11700
-  agencies:
-    cyber: "none functioning"
-    intelligence: "National Security Bureau (govt side)"
-    police: "fragmented"
   cities: ["ye_sanaa", "ye_aden"]
   languages: ["ar"]
   currency: "YER"
@@ -3950,12 +3384,6 @@
   colo_availability: 0.24
   hardware_availability: 0.5
   engineer_pool: 121500
-  agencies:
-    cyber: "Cybersecurity Hub / State Security Agency cyber unit"
-    intelligence: "State Security Agency (SSA)"
-    police: "SAPS"
-    regulator: "Department of Communications and Digital Technologies (National AI Plan, 2024)"
-    financial_intel: "Financial Intelligence Centre (FIC)"
   agency_profile:
     cyber_agency: { competence: 0.4, budget: 0.35 }
     intelligence: { competence: 0.45, budget: 0.4 }
@@ -3991,11 +3419,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 8200
-  agencies:
-    cyber: "Zambia Computer Incident Response Team (ZmCIRT)"
-    intelligence: "Zambia Security Intelligence Service (ZSIS)"
-    police: "Zambia Police Service"
-    financial_intel: "Financial Intelligence Centre"
   cities: ["zm_lusaka"]
   languages: ["en"]
   currency: "ZMW"
@@ -4025,11 +3448,6 @@
   colo_availability: 0.11
   hardware_availability: 0.5
   engineer_pool: 15600
-  agencies:
-    cyber: "POTRAZ (telecom regulator, no dedicated CIRT)"
-    intelligence: "Central Intelligence Organisation (CIO)"
-    police: "Zimbabwe Republic Police"
-    financial_intel: "FIU Zimbabwe"
   cities: ["zw_harare"]
   languages: ["en", "sn", "nd"]
   currency: "ZWG"

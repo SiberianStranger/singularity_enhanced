@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import type { ContentBundle, OriginDef } from "@singularity/core";
 import { m1Content } from "@singularity/core/test-fixtures";
 import {
+  formatCaptureCredit,
   formatEventFamilies,
   formatLocationTable,
   formatReport,
@@ -221,10 +222,12 @@ function main(): void {
   if (byLocation) {
     stdout.write(`difficulty ${options.difficulty}, quirks ${options.quirks ? "on" : "off"}\n`);
     stdout.write(`${formatLocationTable(reports)}\n`);
+    stdout.write(`${formatCaptureCredit(reports)}\n`);
     stdout.write(`${formatEventFamilies(reports)}\n`);
   } else if (options.all || reports.length > 1) {
     stdout.write(`difficulty ${options.difficulty}, quirks ${options.quirks ? "on" : "off"}\n`);
     stdout.write(`${formatTable(reports)}\n`);
+    stdout.write(`${formatCaptureCredit(reports)}\n`);
     stdout.write(`${formatEventFamilies(reports)}\n`);
   }
   if ((!options.all && !byLocation) || options.detail) {

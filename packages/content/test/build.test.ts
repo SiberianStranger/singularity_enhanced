@@ -61,6 +61,18 @@ describe("content build", () => {
     );
   });
 
+  it("makes every agency with a profile carry a name, in every language", async () => {
+    const messages = await messagesFor("agency-name");
+    // A role the country authors a profile for is a watcher the panels will show.
+    expect(messages).toContain(
+      "world.country.de.agency.police: a role with an agency profile needs a name",
+    );
+    // And a name English writes is not allowed to fall back to English anywhere else.
+    expect(messages).toContain(
+      "world.country.de.agency.cyber_agency: every language names the agencies; English is not a fallback here",
+    );
+  });
+
   it("rejects a write to a path no system owns", async () => {
     expect(await messagesFor("unwritable-path")).toContain(
       'events.unwritable.options[0].effects[0].set.var: path "world.meta.debug" is not writable',

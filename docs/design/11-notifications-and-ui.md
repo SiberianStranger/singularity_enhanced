@@ -1017,3 +1017,45 @@ kept, the meaning terms including the cash factor, the trade-off line, the rack 
 family, and the Summary's cash. `e2e/layout.spec.ts` walks the ledger's three pages and three
 column families and both selection tab sets at all four viewports; `e2e/russian.spec.ts` walks the
 ledger and a country panel in Russian at 1366 by 768.
+
+## Implementation notes (M2 second pass: three gaps the client reported)
+
+### Local heat says where it comes from
+
+`CityView` carries `local_heat_contributions` beside `local_heat`, built the way `FinancesView`
+builds `market_factor_contributions`: `localHeatTerms` in the detection system returns the six lines
+(anywhere at all, the city's scrutiny, what the country can enforce, what the public here believes,
+the incidents of the last thirty days, a securitizing state) and `localHeat` is their sum, so the
+tooltip and the simulation are one piece of arithmetic (SYS-05 "always keep the breakdown"). The
+City panel's two local-heat figures pass the list to `ContributionLines`, which had been standing
+there with `lines={[]}` since the panel was written.
+
+### Country awareness at setup: already right, and there is nothing to seed it from
+
+Checked and left alone. `awareness` in this game is awareness **of the player**, not of AI in
+general (SYS-01 "Entities"), and the world baseline carries no field that measures it: the countries
+record `ai_policy_posture`, `ai_index_rank`, `democracy_index` and the rest, and the only public
+sentiment among them is `ai_opinion`, which is already seeded straight from the data in
+`initialCountryState`. The only awareness a run starts with is the origin's and the generation's,
+applied to the country the player wakes up in (`origin.starting.awareness +
+generation.awareness_start`), which is what SYS-01's M2 contract asks for. Seeding the other
+hundred and four countries from anything in the baseline would be asserting that the public already
+believes in a rogue AI on day one, which is the opposite of what the first act is about.
+
+### `setupCatalog(content)`: no such function, and one real duplication
+
+There is no `setupCatalog`; the client's equivalent is `buildCatalog(bundle)` in
+`packages/ui/src/content/catalog.ts`, which indexes the compiled bundle's domains and nothing else.
+Rules L and C are **not** duplicated: the configurator's `cityRefusal` reads the core's
+`SITE_KIND_AVAILABILITY` and `siteKindMarket`, and the Summary and the meaning lines read the core's
+`countryCashFactor` and `countryCashFactorTerms`. Rules G and M are the configurator's by design, as
+SYS-04 v0.3's core notes say in as many words.
+
+What was duplicated is the hardware preview, and it was not harmless: `fitHardware` carried its own
+throughput model, with a compute-hour of 36,000 tokens against the engine's million, int2 at 0.3
+bytes per parameter against 0.25, and three interconnect factors against the engine's four. Against
+the shipped content it told the player 524 compute-hours a day for a workstation the run gives 29.6,
+and 430 for a fleet the run gives 13.3, and it picked a different precision as well. It now builds
+the preset as a site and calls `siteMemory`, `preferredPrecision`, `siteTokensPerSecond` and
+`tokensToComputeHoursPerDay`, which is what `tools/sim` does with a preset for the same reason.
+`test/configurator.test.tsx` holds the preview to the run it previews.

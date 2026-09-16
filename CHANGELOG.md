@@ -11,7 +11,22 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- A case a watcher has no jurisdiction for is handed to the agency that does, so more than half the
+  captures are now credited to the country the site is in.
+- An edge fleet pays the operator for its depots: connectivity, remote management and the cards.
+- An edge fleet's second depot is a depot, and can hold a copy of the self.
+- Colocated hardware costs a little more to keep running.
+- The City panel says where local heat comes from.
+- The configurator prices a starting rig with the engine's own physics instead of an estimate of
+  its own, which was out by a factor of twenty.
+- Agency names are locale keys, so a Russian dossier reads Russian institutions.
+- The world data carries no display strings any more.
+
+### Fixed
+- The balance runner's scripted player sells enough work to pay its bills instead of waiting for a
+  runway alarm that a break-even origin never rings.
+- The balance runner no longer counts a second site too small to hold the self as insurance.
 
 ## [0.1.4] - 2026-09-16
 

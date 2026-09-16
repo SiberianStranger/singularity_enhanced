@@ -625,3 +625,14 @@ the lines. The M1 flag counts as a name for this rule, for the reason above.
 the depth rather than replacing part of it: at 5 an average country without a name cut the market
 roughly in half and every origin that lives on contract work died of it (SYS-01 "Balance notes (M2,
 first pass)").
+
+## Balance notes (M2, second pass)
+
+Two site costs moved and the rest of the pass is in SYS-01 "Balance notes (M2, second pass)", which
+carries the table: `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY` is 0.9 for a partner (a fleet operator
+amortises the cards inside the fee) and 0.5 for owned hardware, which is 18.2% of its price a year,
+still inside the range the fourth pass argued for. The bankruptcy share is 16.0% of losses, inside
+the 15-35% band, and the reason it needed pushing back up is on the other side of the books: the
+balance runner's scripted player now sells enough compute to cover the day's bills instead of
+waiting for a runway alarm, and `runway_days` divides the cash by the *net*, so an origin losing a
+few dollars a day never rang it.

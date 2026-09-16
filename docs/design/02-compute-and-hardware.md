@@ -296,3 +296,13 @@ can reach, which is what a domestic accelerator under an export regime looks lik
   wakes itself.
 - A clean decommission pays `DECOMMISSION_NOTICE_DAYS` of the site's standing charge. Abandoning
   still pays nothing and costs attention instead, which is the whole difference between the two.
+
+## Implementation notes (M2 second pass)
+
+A `partner` site pays the operator. The fee is `OWNERSHIP_UPKEEP_USD_PER_DAY.partner` (45 a day for
+the depot: backhaul, the remote-management and telemetry contract, the hands that drive out) plus
+`UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.partner` (0.9 per 1,000 USD of installed hardware per
+day), times the kind's `upkeep_factor`, which went from 0.4 to 0.9. A partner still pays no
+depreciation, because the operator owns the cards; what it buys is opex instead of capex, at a
+margin, which is why the fee now lands just under what owning the same cards costs. The figures and
+the reasoning are in SYS-01 "Balance notes (M2, second pass)".

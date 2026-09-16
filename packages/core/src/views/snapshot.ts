@@ -110,7 +110,7 @@ import {
 } from "../player.js";
 import { blockedBy } from "../requirements.js";
 import { siteKindUnavailable } from "../sites.js";
-import { localHeat } from "../systems/detection/index.js";
+import { localHeat, localHeatTerms } from "../systems/detection/index.js";
 import {
   actorIdOf,
   huntLevel,
@@ -668,6 +668,7 @@ function buildCities(world: World, ctx: SystemContext, playerId: PlayerId): City
         population: def?.population ?? 0,
         scrutiny: city?.scrutiny ?? 0,
         local_heat: localHeat(world, id),
+        local_heat_contributions: localHeatTerms(world, id),
         power_headroom: city?.power_headroom ?? 0,
         colo_price_index: city?.colo_price_index ?? 1,
         electricity_usd_per_kwh: price === null ? null : price * (country?.power_price_index ?? 1),

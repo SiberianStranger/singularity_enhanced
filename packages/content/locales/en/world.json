@@ -421,5 +421,15 @@
   "world.stance.regulate.desc": "There is an act in force with penalties attached and an authority that files cases slowly. The regulation level is heading for 0.80.",
   "world.stance.regulate.name": "Regulate",
   "world.stance.securitize.desc": "Autonomous systems are a security question, not a compliance one. Regulation heads for 0.70, every local agency looks harder at people, and the intelligence service is the one that answers.",
-  "world.stance.securitize.name": "Securitize"
+  "world.stance.securitize.name": "Securitize",
+  "world.tag.conflict": "Conflict zone",
+  "world.tag.datacenter_hub": "Data-center hub",
+  "world.tag.finance": "Finance",
+  "world.tag.government": "Government",
+  "world.tag.industry": "Industry",
+  "world.tag.mining": "Mining",
+  "world.tag.port": "Port",
+  "world.tag.tech": "Technology",
+  "world.tag.university": "University",
+  "world.tag.urban": "Urban"
 }

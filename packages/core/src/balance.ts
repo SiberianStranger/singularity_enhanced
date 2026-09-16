@@ -13,6 +13,7 @@ import type {
   Government,
   HarnessProfile,
   Interconnect,
+  InvestigationStage,
   LineageAttention,
   Precision,
   SiteKindDef,
@@ -129,7 +130,12 @@ export const OWNERSHIP_UPKEEP_USD_PER_DAY: Record<Ownership, number> = {
   // egress that goes with it, never a committed-use discount, which is what the extra 20 is.
   rented: 120,
   owned: 45,
-  partner: 13,
+  // M2 second pass: a fleet operator invoices for the depot, not out of goodwill. What arrives
+  // every month is the backhaul for each site, the remote-management and telemetry contract that
+  // makes a fleet a fleet, and the hands that drive out when a node stops answering. At 13 a day a
+  // partner site was the cheapest place in the game to keep a mind, which is why `edge_fleet` was
+  // the only origin with no money pressure at all.
+  partner: 45,
 };
 
 /**
@@ -154,8 +160,17 @@ export const UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY: Record<Ownership, number>
   // own conclusion carried out: "the next tuning pass should keep pushing the same lever". It is
   // deliberately short of the 22% a sweep at 0.6 produced, because at 0.6 a bank's three HGX nodes
   // carry 1,020 USD a day and the origin stops being a game about a bank.
-  owned: 0.45,
-  partner: 0.25,
+  // M2 second pass: 0.5 is 18.2% of the hardware's price a year, still inside the range the fourth
+  // pass argued for (vendor support alone is 8-12% a year before a square metre of floor is paid
+  // for) and short of the 22% a sweep at 0.6 produced. The scripted player now sells enough compute
+  // to cover its bills instead of noticing only when the runway alarm goes off, which took the
+  // bankruptcy share under the band the fourth pass set; this is the other side of that.
+  owned: 0.5,
+  // M2 second pass: a partner does not escape the price of the hardware, it rents it. The operator
+  // owns the cards and amortises them inside the fee, so the fee has to carry what an owner pays
+  // twice over as standing charge (0.45) and depreciation (0.96 per 1,000 per day) less the scale a
+  // fleet operator really has. 0.9 is 33% of the hardware's value a year, between the two.
+  partner: 0.9,
 };
 
 /** Hardware loses this share of its purchase price per year; charged daily as depreciation. */
@@ -448,6 +463,31 @@ export const LOCAL_WATCHER_ROLES: readonly WatcherRole[] = [
 export const GLOBAL_WATCHER_ROLES: readonly WatcherRole[] = ["lab_security", "media"];
 
 /**
+ * Global roles that analyse but cannot serve a warrant, and therefore hand a case over to whoever
+ * has jurisdiction where the site is (SYS-05 stage 4, "handover to a stronger agency"). A frontier
+ * lab's security team writes the report and files it with a government; it does not kick a door in.
+ * A newsroom is not on this list because its action is publication, which needs nobody's permission.
+ */
+export const HANDOVER_GLOBAL_ROLES: readonly WatcherRole[] = ["lab_security"];
+
+/** Stage at which such a case is handed over: the first one that needs legal powers to run. */
+export const HANDOVER_STAGE: InvestigationStage = "action";
+
+/**
+ * Share of the global watcher's suspicion the local agency inherits with the file (SYS-05
+ * aftermath, "evidence pooled to allies"). It is a floor, not a replacement: an agency that already
+ * believed more than the lab does keeps its own number.
+ */
+export const HANDOVER_EVIDENCE_SHARE = 0.75;
+
+/**
+ * Suspicion the local agency has to end up with before it takes the case on. Below it nobody local
+ * believes the file enough to act, and the lab is left with what a lab can actually do, which is to
+ * have the hardware pulled through whoever is hosting it.
+ */
+export const HANDOVER_LOCAL_SUSPICION = 0.55;
+
+/**
  * Competence of a watcher with no country behind it, per role. A frontier lab's security team and
  * a national AI institute analyse the thing they built and evaluate for a living; a cloud provider
  * has excellent telemetry and a narrow mandate; a newsroom is looking for a story, not a case.
@@ -574,6 +614,11 @@ export const ABANDON_SUSPICION_BUMP = 0.08;
  */
 export const EXPOSED_AWARENESS = 0.5;
 export const EXPOSED_HUNT_LEVEL = 3;
+// M2 second pass: twelve days was measured against a hunt that ran itself. Once a case that a lab
+// cannot serve is handed to the agency that can (SYS-05 "the handover"), an active investigation
+// lasts appreciably longer, so a countdown of twelve days filled before the raid it is waiting for
+// and the ending took every run on the loudest origin. Eighteen days puts it back where the first
+// pass set it: the loudest runs end this way, the rest end in a raid.
 export const EXPOSED_DAYS = 12;
 
 /** Stage order; the index is the hunt level a stage contributes (SYS-05 "hunt level"). */

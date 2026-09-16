@@ -422,6 +422,8 @@ export interface CityView {
   scrutiny: number;
   /** How much hotter than the world average this city is for this player (SYS-01 "local heat"). */
   local_heat: number;
+  /** The lines that figure is made of, for the tooltip (SYS-11 "Primary panel"). */
+  local_heat_contributions: ContributionView[];
   power_headroom: number;
   colo_price_index: number;
   /** The country's price times its `power_price_index`; null where there is no published price. */
