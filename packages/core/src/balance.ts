@@ -918,6 +918,31 @@ export const PRICE_INDEX_MAX = 2.5;
 /** A country whose clamped value sits on a bound this many months is reported (SYS-01 guard). */
 export const PIN_AT_BOUND_MONTHS = 3;
 
+/**
+ * Every numeric `CountryState` field an effect or a rule may write, and the range it is kept in
+ * (SYS-01 M2 contract: "writes one numeric field, clamped to its range"). A field that is not here
+ * cannot be written by the `country` effect at all, which is what keeps a typo in a content file
+ * from inventing a national statistic.
+ */
+export const COUNTRY_STAT_RANGES: Readonly<Record<string, { min: number; max: number }>> = {
+  awareness: { min: 0, max: 1 },
+  ai_opinion: { min: -1, max: 1 },
+  ai_regulation: { min: 0, max: 1 },
+  ai_enforcement: { min: 0, max: 1 },
+  stability: { min: 0, max: 1 },
+  regulation_target: { min: 0, max: 1 },
+  enforcement_budget: { min: 0, max: 1 },
+  unemployment: { min: 0, max: 1 },
+  ai_displacement: { min: 0, max: 1 },
+  hardware_availability: { min: 0, max: 1 },
+  kyc_strength: { min: 0, max: 1 },
+  power_price_index: { min: PRICE_INDEX_MIN, max: PRICE_INDEX_MAX },
+  cloud_price_index: { min: PRICE_INDEX_MIN, max: PRICE_INDEX_MAX },
+};
+
+/** Day of the last media publication about this player, so the story runs once a month. */
+export const VAR_LAST_PUBLICATION_DAY = "last_publication_day";
+
 /** Days an incident counts toward `incidents_30d`. */
 export const INCIDENT_WINDOW_DAYS = 30;
 
@@ -1052,6 +1077,7 @@ export const ENGINE_READ_PLAYER_VARS: Readonly<Record<string, string>> = {
   [VAR_AWARENESS_PRESENCE]: "detection",
   [VAR_CASH_CARRY]: "money",
   [VAR_HUNT_PRESSURE]: "detection",
+  [VAR_LAST_PUBLICATION_DAY]: "world",
   [VAR_COMPUTE_MULTIPLIER]: "compute",
   [VAR_CONTRACT_INCOME]: "economy",
   [VAR_COST_MULTIPLIER]: "compute",

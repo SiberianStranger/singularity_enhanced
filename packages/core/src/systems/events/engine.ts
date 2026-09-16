@@ -130,6 +130,32 @@ export function legalOptions(def: EventDef, ctx: DslContext): LegalOption[] {
   return [...regular, ...fallbacks];
 }
 
+/**
+ * The option an event that is never asked resolves itself with (SYS-01 "M2 contract": "the
+ * `fallback` option applies without asking"). A writer's fallback is the answer for a country
+ * nobody is in; an event without one takes its first legal option, which is what every automatic
+ * resolution did before M2.
+ */
+export function autoOption(
+  def: EventDef,
+  options: readonly LegalOption[],
+  ctx: DslContext,
+): LegalOption | undefined {
+  for (const option of def.options) {
+    if (option.fallback !== true) {
+      continue;
+    }
+    if (option.if !== undefined && !evaluateCondition(option.if, ctx)) {
+      continue;
+    }
+    if (option.enabled_if !== undefined && !evaluateCondition(option.enabled_if, ctx)) {
+      continue;
+    }
+    return { option, enabled: true };
+  }
+  return options.find((entry) => entry.enabled);
+}
+
 function toPendingOption(entry: LegalOption): PendingOption {
   return {
     id: entry.option.id,
@@ -140,6 +166,17 @@ function toPendingOption(entry: LegalOption): PendingOption {
 }
 
 export type FireResult = "fired" | "queued" | "skipped";
+
+/**
+ * Who an event is asked of (SYS-01 "M2 contract"): a country-scoped event is evaluated once for
+ * the country and then offered to every player present there, and a country nobody is in answers
+ * itself. `audience` is the players to put the choice in front of, the first of whom is the one it
+ * was evaluated for; `auto` resolves it without asking anybody.
+ */
+export interface EventDelivery {
+  audience?: readonly PlayerId[];
+  auto?: boolean;
+}
 
 /**
  * Runs an event for one player, optionally against a target entity. `why` carries the reasons the
@@ -153,8 +190,10 @@ export function fireEvent(
   playerId: PlayerId,
   target?: EventTarget,
   why: readonly ChoiceReason[] = [],
+  delivery: EventDelivery = {},
 ): FireResult {
-  const blocking = def.hidden === true ? false : (def.blocking ?? def.options.length > 1);
+  const asks = delivery.auto !== true && def.auto !== true;
+  const blocking = def.hidden === true || !asks ? false : (def.blocking ?? def.options.length > 1);
   if (blocking && !blockingAllowed(world, playerId)) {
     // One blocking event per player per day; the rest wait for the next day.
     world.events.scheduled.push({
@@ -182,7 +221,7 @@ export function fireEvent(
   const descKey = resolveDescKey(def, dctx);
 
   const reasons: ChoiceReason[] = [...why, ...describeCondition(def.trigger)];
-  const pendingAllowed = def.hidden !== true && options.length > 0;
+  const pendingAllowed = def.hidden !== true && asks && options.length > 0;
   const hasDeadline = def.ttl_days !== undefined;
   if (pendingAllowed && (blocking || hasDeadline)) {
     // The loop dial is how fast the self notices at all (SYS-04 v0.2: "loop sets the reaction delay
@@ -212,6 +251,21 @@ export function fireEvent(
     };
     world.events.pending.push(choice);
     ctx.outbox.pendingChoice(choice);
+    // Everybody else who lives there is asked the same question, with their own instance to answer
+    // it by; the event's `immediate` effects ran once, because the country only happened once.
+    for (const [index, other] of (delivery.audience ?? []).slice(1).entries()) {
+      const copy: PendingChoice = {
+        ...choice,
+        instanceId: `${instanceId}p${index + 2}`,
+        playerId: other,
+      };
+      world.events.pending.push(copy);
+      ctx.outbox.pendingChoice(copy);
+      if (blocking) {
+        world.events.lastBlockingTick[other] = world.clock.tick;
+      }
+      ctx.outbox.log({ key: "log.event_fired", vars: { event: def.id }, playerId: other });
+    }
     if (blocking) {
       world.events.lastBlockingTick[playerId] = world.clock.tick;
     } else {
@@ -227,7 +281,9 @@ export function fireEvent(
     return "fired";
   }
 
-  const auto = options.find((entry) => entry.enabled);
+  // Not asked: either nobody is there to ask (a country pulse with no presence) or the event says
+  // so with `auto`. The writer's fallback is the answer; otherwise the first legal option is.
+  const auto = asks ? options.find((entry) => entry.enabled) : autoOption(def, options, dctx);
   if (auto !== undefined) {
     runEffects(auto.option.effects, dctx);
   }
@@ -336,9 +392,10 @@ export function fireSelected(
   selection: EventSelection,
   playerId: PlayerId,
   why: readonly ChoiceReason[] = [],
+  delivery: EventDelivery = {},
 ): FireResult {
   const target = selection.targets.length > 0 ? ctx.rng.pick(selection.targets) : undefined;
-  return fireEvent(world, ctx, selection.def, playerId, target, why);
+  return fireEvent(world, ctx, selection.def, playerId, target, why, delivery);
 }
 
 /** Fires an event by id if its guard passes; used by hooks and by scheduled events. */
@@ -348,6 +405,7 @@ export function fireEventById(
   id: string,
   playerId: PlayerId,
   target?: EventTarget,
+  delivery: EventDelivery = {},
 ): FireResult {
   const def = contentIndex(ctx.content).events[id];
   if (def === undefined) {
@@ -358,7 +416,7 @@ export function fireEventById(
   if (selection === undefined) {
     return "skipped";
   }
-  return fireSelected(world, ctx, selection, playerId);
+  return fireSelected(world, ctx, selection, playerId, [], delivery);
 }
 
 /** Resolves non-blocking choices whose TTL has passed, applying `on_expire`. */

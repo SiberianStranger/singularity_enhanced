@@ -57,6 +57,7 @@ import {
 import { createOperationsSystem } from "./systems/operations/index.js";
 import { createResearchSystem } from "./systems/research/index.js";
 import { createTimeSystem } from "./systems/time/index.js";
+import { createWorldSystem } from "./systems/world/index.js";
 import { buildPlayerView } from "./views/snapshot.js";
 import type { PlayerView } from "./views/types.js";
 
@@ -110,6 +111,9 @@ export function defaultSystems(notifications?: NotificationsOptions): System[] {
     createTimeSystem(),
     createComputeSystem(),
     createResearchSystem(),
+    // The world runs before the economy and detection, so the day's prices and heat are in place
+    // before anything is billed or watched (SYS-01 "M2 contract").
+    createWorldSystem(),
     createEconomySystem(),
     createOperationsSystem(),
     createDetectionSystem(),
@@ -328,6 +332,7 @@ export * from "./dsl/validate.js";
 export * from "./dsl/weight.js";
 export * from "./entities.js";
 export * from "./explain.js";
+export * from "./identities.js";
 export * from "./kernel/assert.js";
 export * from "./kernel/clock.js";
 export * from "./kernel/commands.js";
@@ -351,6 +356,7 @@ export * from "./systems/notifications/index.js";
 export * from "./systems/operations/index.js";
 export * from "./systems/research/index.js";
 export * from "./systems/time/index.js";
+export * from "./systems/world/index.js";
 export * from "./views/snapshot.js";
 export * from "./views/types.js";
 export * from "./watchers.js";

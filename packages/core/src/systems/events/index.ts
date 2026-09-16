@@ -25,7 +25,7 @@ import type { System, SystemContext } from "../../kernel/system.js";
 import { instanceKey, type World } from "../../kernel/world.js";
 import { alertDecisions, takeDecisionCommand, tickDecisions } from "./decisions.js";
 import { eventContext, expirePendingChoices, fireEvent, targetFromRef } from "./engine.js";
-import { fireEntityPulse, fireHook, firePlayerPulse } from "./hooks.js";
+import { allPresenceCountries, fireEntityPulse, fireHook, firePlayerPulse } from "./hooks.js";
 import {
   autoStartJournals,
   finishJournal,
@@ -227,6 +227,9 @@ export function createEventsSystem(): EventsSystem {
       }
       if (isWeekStart(world.clock)) {
         firePlayerPulse(world, ctx, "on_player_week");
+        // The weekly country pass is for the places the player is in; the rest of the world runs
+        // monthly (SYS-01 "Depth policy": depth is spent where the player acts).
+        fireEntityPulse(world, ctx, "on_country_week", "country", allPresenceCountries(world));
       }
       if (isMonthStart(world.clock)) {
         firePlayerPulse(world, ctx, "on_player_month");
@@ -249,5 +252,12 @@ export {
   isAvailable,
   legalOptions,
 } from "./engine.js";
-export { fireHook, firePlayerPulse, pulseCadenceTicks } from "./hooks.js";
+export {
+  allPresenceCountries,
+  fireEntityPulse,
+  fireHook,
+  firePlayerPulse,
+  playersPresentIn,
+  pulseCadenceTicks,
+} from "./hooks.js";
 export { autoStartJournals, journalStateFor, startJournal, tickJournals } from "./journal.js";

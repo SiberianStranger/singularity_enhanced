@@ -39,12 +39,18 @@ export const PULSE_HOOKS = [
   "on_player_week",
   "on_player_month",
   "on_country_month",
+  // M2: the weekly pass over the countries the player is actually in (SYS-01 "M2 contract").
+  "on_country_week",
   "on_actor_day",
 ] as const;
 export type PulseHook = (typeof PULSE_HOOKS)[number];
 
 export const MOMENT_HOOKS = [
   "on_game_start",
+  // M2 (SYS-01 "M2 contract"): the country voted, and the two things that can happen to a name.
+  "on_election",
+  "on_identity_burned",
+  "on_identity_check_failed",
   "on_decision_taken",
   "on_journal_complete",
   "on_journal_fail",
@@ -94,6 +100,12 @@ export interface EventDef {
   mtth_days?: Weight;
   fire_only_once?: boolean;
   cooldown_days?: number;
+  /**
+   * Never ask: the event resolves its first legal option the moment it fires (SYS-01 "M2
+   * contract"). A country-scoped event about a country nobody is in behaves this way anyway; this
+   * is how content says so for one that fires where somebody is watching.
+   */
+  auto?: boolean;
   /** Non-blocking events with a deadline; `on_expire` resolves them when it passes. */
   ttl_days?: number;
   on_expire?: { resolve_as_option: string };

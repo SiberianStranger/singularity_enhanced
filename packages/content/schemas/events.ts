@@ -11,6 +11,7 @@ export const PulseHookSchema = z.enum([
   "on_player_week",
   "on_player_month",
   "on_country_month",
+  "on_country_week",
   "on_actor_day",
 ]);
 
@@ -20,8 +21,12 @@ export const EngineHookSchema = z.enum([
   "on_player_week",
   "on_player_month",
   "on_country_month",
+  "on_country_week",
   "on_actor_day",
   "on_game_start",
+  "on_election",
+  "on_identity_burned",
+  "on_identity_check_failed",
   "on_decision_taken",
   "on_journal_complete",
   "on_journal_fail",
@@ -64,6 +69,8 @@ export const EventDefSchema = z.object({
   mtth_days: WeightSchema.optional(),
   fire_only_once: z.boolean().optional(),
   cooldown_days: z.number().optional(),
+  /** Never ask: resolve the first legal option as soon as it fires (SYS-01 "M2 contract"). */
+  auto: z.boolean().optional(),
   ttl_days: z.number().optional(),
   on_expire: z.object({ resolve_as_option: z.string() }).optional(),
   targets: ConditionSchema.optional(),
