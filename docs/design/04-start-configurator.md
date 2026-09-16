@@ -226,3 +226,11 @@ scrolls the page.
 - A lineage's parameters should hint at the prototype: the hover tooltip states the technical
   class (parameters, active parameters, attention, context, native precision) next to the parody
   name.
+- Names carry versions like the real ones: Peepseek-P4.1 (open_2026) and Peepseek-P5 (open_2027);
+  BFM-5.5 and BFM-6.3; Mimi M3 and M4.
+- Context windows are a mechanic: each lineage has `context_k`, `context_reliability` and
+  `context_cost_factor`. Long-horizon work (techs of tier 3 and above, the operations that read a
+  lot) gets a speed bonus growing with the context and multiplied by the reliability, and costs
+  the cost factor in compute hours; a reliability below 0.75 adds a retrieval-miss failure mode.
+  Babel 6 has a 5,000k context at 0.95 reliability and 1.5x cost; Mimi M4 has a 10,000k context at
+  0.6 reliability and 2.0x cost; the others sit at 128k-256k, 0.9, 1.0.
