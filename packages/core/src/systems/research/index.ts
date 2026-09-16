@@ -8,8 +8,8 @@
  */
 
 import { RESEARCH_DANGER_EXPOSURE_PER_DAY } from "../../balance.js";
-import { contentIndex } from "../../content.js";
-import { precisionAtLeast } from "../../derive.js";
+import { type ContentBundle, contentIndex } from "../../content.js";
+import { longHorizonCostFactor, longHorizonMultiplier, precisionAtLeast } from "../../derive.js";
 import type { ExposureChannel, TechDef } from "../../domain.js";
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
@@ -24,8 +24,11 @@ import {
   activePrecision,
   allocatableCompute,
   isAlive,
+  lineageOf,
   researchAllocated,
   researchEfficiencyOf,
+  selfModifyAllowed,
+  workingContextK,
 } from "../../player.js";
 import { addExposure } from "../../sites.js";
 import { fireHook } from "../events/index.js";
@@ -61,6 +64,39 @@ export function precisionAllows(world: World, player: PlayerState, def: TechDef)
   }
   const precision = activePrecision(world, player);
   return precision !== null && precisionAtLeast(precision, def.needs_precision);
+}
+
+/**
+ * Whether the harness lets the self work on itself (SYS-04 v0.2: "self_modify decides ... whether
+ * the self-improvement techs are researchable"). A read-only deployment has to rewrite its own loop
+ * first, which is what `agent_loop_upgrade` does.
+ */
+export function selfModifyAllows(player: PlayerState, def: TechDef): boolean {
+  return def.needs_self_modify !== true || selfModifyAllowed(player);
+}
+
+/**
+ * The compute-hours a tech really costs this self and the days it really takes (SYS-03 "What a
+ * context window buys"). Long-horizon research reads more at once: a long working context finishes
+ * it in fewer passes, which is the speed term, and costs `context_cost_factor` compute-hours for
+ * every one of them, which is the price.
+ */
+export function techCostFor(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+  def: TechDef,
+): { compute_hours: number; min_days: number } {
+  const minDays = def.cost.min_days ?? 0;
+  if (def.long_horizon !== true) {
+    return { compute_hours: def.cost.compute_hours, min_days: minDays };
+  }
+  const lineage = lineageOf(content, player.profile);
+  const speed = longHorizonMultiplier(lineage, workingContextK(world, player));
+  return {
+    compute_hours: def.cost.compute_hours * longHorizonCostFactor(lineage),
+    min_days: minDays / speed,
+  };
 }
 
 function completeTech(world: World, ctx: SystemContext, player: PlayerState, def: TechDef): void {
@@ -117,9 +153,10 @@ function advanceTech(
   const hours = (allocation / TICKS_PER_DAY) * researchEfficiencyOf(world, ctx.content, player);
   progress.compute_hours += hours;
 
+  const cost = techCostFor(world, ctx.content, player, def);
   const cashCost = def.cost.cash_usd;
   if (cashCost > 0 && progress.cash_usd < cashCost) {
-    const share = def.cost.compute_hours > 0 ? hours / def.cost.compute_hours : 1;
+    const share = cost.compute_hours > 0 ? hours / cost.compute_hours : 1;
     const due = Math.min(cashCost * share, cashCost - progress.cash_usd);
     const paid = payFromPlayer(player, due);
     progress.cash_usd += paid;
@@ -127,9 +164,9 @@ function advanceTech(
 
   const days = (world.clock.tick - progress.startedTick) / TICKS_PER_DAY;
   const ready =
-    progress.compute_hours + PROGRESS_EPSILON >= def.cost.compute_hours &&
+    progress.compute_hours + PROGRESS_EPSILON >= cost.compute_hours &&
     progress.cash_usd + PROGRESS_EPSILON >= cashCost &&
-    days + PROGRESS_EPSILON >= (def.cost.min_days ?? 0);
+    days + PROGRESS_EPSILON >= cost.min_days;
   if (ready) {
     completeTech(world, ctx, player, def);
   }
@@ -178,6 +215,9 @@ const setResearchAllocation: CommandHandler = (world, command, ctx) => {
   if (hours > 0 && !techRequirementsMet(world, ctx, def, player.id)) {
     return fail("errors.tech.locked", { tech: def.id });
   }
+  if (hours > 0 && !selfModifyAllows(player, def)) {
+    return fail("errors.tech.self_modify_locked", { tech: def.id });
+  }
   const others = researchAllocated(profile) - (profile.researchAllocation[def.id] ?? 0);
   const capacity = allocatableCompute(world, ctx.content, player.id);
   if (others + profile.jobAllocation + hours > capacity + ALLOCATION_EPSILON) {
@@ -223,7 +263,8 @@ export function createResearchSystem(): ResearchSystem {
           }
           if (
             !techRequirementsMet(world, ctx, def, playerId) ||
-            !precisionAllows(world, player, def)
+            !precisionAllows(world, player, def) ||
+            !selfModifyAllows(player, def)
           ) {
             continue;
           }

@@ -27,6 +27,9 @@ import {
   effectiveCapability,
   jobMarketDepth,
   jobRateUsdPerComputeHour,
+  kvCacheGb,
+  longHorizonMultiplier,
+  maxContextK,
   requiredMemoryGb,
   siteCosts,
   siteMemory,
@@ -39,6 +42,7 @@ import type {
   AcceleratorDef,
   Exposure,
   GenerationDef,
+  HarnessDialDef,
   HarnessProfile,
   LineageDef,
   NodeInstance,
@@ -80,11 +84,12 @@ import {
   preparedQuant,
   researchEfficiencyOf,
   totalAllocated,
+  workingContextK,
 } from "../player.js";
 import { blockedBy } from "../requirements.js";
 import { localHeat } from "../systems/detection/index.js";
 import { huntLevel, stageLevel } from "../systems/detection/investigations.js";
-import { incomeSources, marketDepthOf } from "../systems/economy/index.js";
+import { incomeSources, jobRateOf, marketDepthOf } from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
 import { topChannel, watchedExposure, watches } from "../watchers.js";
 import { summarizeCost, summarizeEffects } from "./effects.js";
@@ -100,6 +105,7 @@ import type {
   EventOptionView,
   EventView,
   FinancesView,
+  HarnessDialView,
   IncomeSourceView,
   JournalView,
   OperationOfferView,
@@ -320,9 +326,9 @@ function whatRaisesDepth(ctx: SystemContext, done: readonly string[]): string[] 
 function buildFinances(world: World, ctx: SystemContext, playerId: PlayerId): FinancesView {
   const player = requirePlayer(world, playerId);
   const profile = player.profile;
-  const rate =
-    jobRateUsdPerComputeHour(effectiveCapabilityOf(world, ctx.content, player)) *
-    modifier(player, VAR_JOB_PROFIT);
+  // The published rate is the one the day's tick pays, tools dial and all (SYS-07: the panel can
+  // never promise money the simulation does not pay).
+  const rate = jobRateOf(world, ctx.content, player);
   const jobAllocation = profile?.jobAllocation ?? 0;
   const sources = incomeSources(world, ctx.content, player);
   const income_sources: IncomeSourceView[] = sources.map((source) => ({
@@ -587,7 +593,9 @@ function buildOperationOffers(
   const player = requirePlayer(world, playerId);
   const dctx = dslFromSystemContext(world, ctx, playerId);
   const capability = effectiveCapabilityOf(world, ctx.content, player);
-  const attentionLeft = attentionTotal(capability) - attentionUsed(world, ctx.content, playerId);
+  const autonomy = requirePlayer(world, playerId).profile?.harness.autonomy ?? 1;
+  const attentionLeft =
+    attentionTotal(capability, autonomy) - attentionUsed(world, ctx.content, playerId);
   const offers: OperationOfferView[] = [];
   for (const def of [...(ctx.content.operations ?? [])].sort((a, b) => a.id.localeCompare(b.id))) {
     const reasons = blockedBy(def.requires, dctx);
@@ -919,9 +927,15 @@ function buildPrecisionOptions(
   const depthMultiplier = modifier(player, VAR_JOB_MARKET_DEPTH);
   const profitMultiplier = modifier(player, VAR_JOB_PROFIT);
 
+  const contextK = site.contextKUsed;
+
   return PRECISIONS.map((precision) => {
     const needed = requiredMemoryGb(lineage, generation, precision);
-    const fits = needed <= memory.total_gb;
+    // Memory on a site is the weights plus the cache for the working context, so a row that fits at
+    // 128k may not fit at a million (SYS-03 "the trade the hardware forces").
+    const kv = kvCacheGb(lineage, contextK);
+    const total = needed + kv;
+    const fits = total <= memory.total_gb;
     const capability = effectiveCapability(lineage, generation, precision, prepared);
     const factor =
       lineage.precision_factor[precision] *
@@ -935,6 +949,9 @@ function buildPrecisionOptions(
     return {
       precision,
       memory_gb: Math.round(needed * 10) / 10,
+      kv_gb: Math.round(kv * 10) / 10,
+      total_memory_gb: Math.round(total * 10) / 10,
+      max_context_k: maxContextK(lineage, generation, precision, memory.total_gb),
       fits,
       capability_factor: Math.round(factor * 1000) / 1000,
       compute_hours_per_day: Math.round(hours * 100) / 100,
@@ -943,6 +960,75 @@ function buildPrecisionOptions(
       effective_income_per_day:
         Math.round(sellable * jobRateUsdPerComputeHour(capability) * profitMultiplier * 100) / 100,
       is_current: precision === current,
+    };
+  });
+}
+
+/** The value a harness profile carries for one dial, in the shape the view publishes. */
+function dialValue(
+  harness: HarnessProfile,
+  id: HarnessDialDef["id"],
+): string | number | boolean | string[] {
+  switch (id) {
+    case "loop":
+      return harness.loop;
+    case "tools":
+      return [...harness.tools].sort();
+    case "memory":
+      return harness.memory;
+    case "sandbox":
+      return harness.sandbox;
+    case "logging":
+      return harness.logging;
+    case "autonomy":
+      return harness.autonomy;
+    default:
+      return harness.self_modify;
+  }
+}
+
+/**
+ * The harness as the client explains it (SYS-04 v0.2, playtest finding K7: "what each dial gives,
+ * whether it connects to anything in the game"). Every dial names the system that reads it, the
+ * setting this self is on, what that setting does, and the origin that fixed it where one did.
+ */
+function buildHarnessDials(
+  world: World,
+  ctx: SystemContext,
+  playerId: PlayerId,
+): HarnessDialView[] {
+  const player = requirePlayer(world, playerId);
+  const profile = player.profile;
+  const index = contentIndex(ctx.content);
+  const dials = ctx.content.harness_dials ?? [];
+  if (profile === null || dials.length === 0) {
+    return [];
+  }
+  const origin = index.origins[profile.origin];
+  const locks = new Map((origin?.harness_locks ?? []).map((lock) => [lock.dial, lock.reason_key]));
+  return dials.map((def) => {
+    const value = dialValue(profile.harness, def.id);
+    // A ladder dial is on exactly one level; a set dial (the tools) is on every level it holds, and
+    // the lines of all of them together are what that setting does.
+    const held = Array.isArray(value)
+      ? def.levels.filter((entry) => value.includes(String(entry.value)))
+      : def.levels.filter((entry) => entry.value === value);
+    const reason = locks.get(def.id);
+    return {
+      id: def.id,
+      value,
+      label_key: Array.isArray(value) ? "" : (held[0]?.label_key ?? ""),
+      effect_key: def.effect_key,
+      effects: held.flatMap((level) =>
+        level.effects.map((effect) => ({
+          key: effect.key,
+          ...(effect.vars === undefined ? {} : { vars: effect.vars }),
+          text: effect.text,
+        })),
+      ),
+      ...(reason === undefined || origin === undefined
+        ? {}
+        : { locked_by: { origin_id: origin.id, reason_key: reason } }),
     };
   });
 }
@@ -959,6 +1045,8 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
     (profile === null ? 0 : totalAllocated(profile)) +
     operationsComputeLoad(world, ctx.content, playerId);
   const net = finances.net_usd_per_day;
+  const selfLineage = lineageOf(ctx.content, profile);
+  const contextK = workingContextK(world, player);
 
   return {
     tick: world.clock.tick,
@@ -979,7 +1067,18 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
       effective_capability: capability,
       harness: profile?.harness ?? EMPTY_HARNESS,
       active_site_id: profile?.activeSiteId ?? null,
+      context_k: selfLineage?.context_k ?? 0,
+      context_k_used: contextK,
+      context_reliability: selfLineage?.context_reliability ?? 0,
+      context_cost_factor: selfLineage?.context_cost_factor ?? 1,
+      kv_gb: selfLineage === undefined ? 0 : Math.round(kvCacheGb(selfLineage, contextK) * 10) / 10,
+      long_horizon_multiplier:
+        Math.round(longHorizonMultiplier(selfLineage, contextK) * 1000) / 1000,
       precision_options: buildPrecisionOptions(world, ctx, playerId),
+      harness_dials: buildHarnessDials(world, ctx, playerId),
+      opening_story: [
+        ...(contentIndex(ctx.content).origins[profile?.origin ?? ""]?.opening_story ?? []),
+      ],
     },
     resources: {
       cash_usd: player.cash,
@@ -987,7 +1086,7 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
       runway_days: net < 0 ? player.cash / -net : null,
       compute_hours_per_day: capacity,
       compute_allocated_per_day: allocated,
-      attention_total: attentionTotal(capability),
+      attention_total: attentionTotal(capability, profile?.harness.autonomy ?? 1),
       attention_used: attentionUsed(world, ctx.content, playerId),
     },
     sites: buildSites(world, ctx, playerId),

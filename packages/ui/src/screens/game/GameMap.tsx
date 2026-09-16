@@ -30,6 +30,10 @@ export function GameMap({
 }: GameMapProps): ReactNode {
   const mapMode = useUiStore((state) => state.mapMode);
   const mapStyle = useUiStore((state) => state.mapStyle);
+  // Pan and zoom live in the store, not in the map, so opening a window or switching a panel does
+  // not throw the player back to the whole world (playtest 3, R14).
+  const mapView = useUiStore((state) => state.mapView);
+  const setMapView = useUiStore((state) => state.setMapView);
   const subHour = useSubHour(20);
 
   return (
@@ -41,6 +45,8 @@ export function GameMap({
       date={date}
       subHour={subHour}
       selectedCountry={selectedCountry}
+      view={mapView}
+      onViewChange={setMapView}
       onSelect={onSelect}
       onContext={onContext}
     />

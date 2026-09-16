@@ -2,6 +2,7 @@ import type { PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { Glyph, sceneGlyph } from "../../components/glyphs.js";
 import { Bar } from "../../components/Meter.js";
 import { dayOf, fraction } from "../../lib/format.js";
 import { siteName } from "../../lib/labels.js";
@@ -10,7 +11,7 @@ import { useUiStore } from "../../store/uiStore.js";
 function Section({ title, children }: { title: string; children: ReactNode }): ReactNode {
   return (
     <section className="flex flex-col gap-1">
-      <h3 className="text-[0.7rem] uppercase tracking-wide text-muted">{title}</h3>
+      <h3 className="text-xs uppercase tracking-wide text-muted">{title}</h3>
       {children}
     </section>
   );
@@ -31,7 +32,13 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   const select = useUiStore((state) => state.select);
 
   if (!open) {
-    return null;
+    // The map-mode strip used to carry this control; the strip is gone (playtest 3, R10), so the
+    // one way back is a button where the outliner itself was.
+    return (
+      <div className="pointer-events-auto absolute end-2 top-2 z-20">
+        <Button onClick={() => setOpen(true)}>{t("outliner.expand")}</Button>
+      </div>
+    );
   }
 
   const empty = <p className="text-xs text-muted">{t("outliner.empty")}</p>;
@@ -39,7 +46,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   return (
     <aside
       aria-label={t("outliner.title")}
-      className="pointer-events-auto absolute end-2 top-2 z-20 flex max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] flex-col gap-3 overflow-auto rounded border border-line bg-panel/97 p-2 shadow-xl"
+      className="pointer-events-auto absolute end-2 top-2 z-20 flex max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] flex-col gap-3 overflow-auto border border-line bg-panel/97 p-2"
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">{t("outliner.title")}</h2>
@@ -55,13 +62,17 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               <button
                 key={site.id}
                 type="button"
-                className="flex justify-between gap-2 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                className="flex justify-between gap-2 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => {
                   select({ kind: "site", id: site.id });
                   openTab("compute", site.id);
                 }}
               >
-                <span className="truncate text-fg">{siteName(t, site)}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-1 text-fg">
+                  {/* The glyph learned on the configurator's origin list (playtest 3, R15). */}
+                  <Glyph name={sceneGlyph(site.kind)} size={13} />
+                  <span className="truncate">{siteName(t, site)}</span>
+                </span>
                 <span className="text-muted">{t(`compute.status.${site.status}`)}</span>
               </button>
             ))}
@@ -74,7 +85,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               <button
                 key={operation.instance_id}
                 type="button"
-                className="flex flex-col gap-0.5 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("operations", operation.instance_id)}
               >
                 <span className="truncate text-fg">
@@ -98,7 +109,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               <button
                 key={tech.id}
                 type="button"
-                className="flex flex-col gap-0.5 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("research", tech.id)}
               >
                 <span className="truncate text-fg">{t(`techs.${tech.id}.name`)}</span>
@@ -114,7 +125,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               <button
                 key={entry.key}
                 type="button"
-                className="flex flex-col gap-0.5 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("journal", entry.id)}
               >
                 <span className="truncate text-fg">{t(`journal.${entry.id}.title`)}</span>
@@ -130,7 +141,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               <button
                 key={investigation.id}
                 type="button"
-                className="flex justify-between gap-2 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                className="flex justify-between gap-2 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("detection", investigation.id)}
               >
                 <span className="truncate text-fg">

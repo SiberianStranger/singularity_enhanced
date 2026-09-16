@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { EffectList } from "../../../components/EffectList.js";
 import { Bar } from "../../../components/Meter.js";
+import { RevealText } from "../../../components/RevealText.js";
 import { dayOf } from "../../../lib/format.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { openingTexts } from "../OpeningStory.js";
 
 /**
  * Journal entries with progress and the decisions available right now (SYS-10).
@@ -17,9 +19,24 @@ import { useGameStore } from "../../../store/gameStore.js";
 export function JournalTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
+  const setOpeningPending = useGameStore((state) => state.setOpeningPending);
+  const hasOpening = openingTexts(t, view.self.origin).length > 0;
 
   return (
     <div className="flex flex-col gap-4">
+      {/*
+       * The opening is the journal's first entry in spirit, so this is where it can be read again
+       * (playtest 3, R12). The button is hidden when content has no opening for this origin, so it
+       * never offers to replay nothing.
+       */}
+      {hasOpening ? (
+        <div>
+          <Button hotkey="p" onClick={() => setOpeningPending(true)}>
+            {t("story.opening.replay")}
+          </Button>
+        </div>
+      ) : null}
+
       <section>
         <h3 className="mb-1 text-xs uppercase tracking-wide text-muted">{t("journal.entries")}</h3>
         {view.journal.length === 0 ? (
@@ -27,14 +44,14 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
         ) : (
           <ul className="flex flex-col gap-2">
             {view.journal.map((entry) => (
-              <li key={entry.key} className="rounded border border-line bg-panel p-2">
+              <li key={entry.key} className="border border-line bg-panel p-2">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-sm text-fg">{t(`journal.${entry.id}.title`)}</span>
                   <span className="font-mono text-xs text-muted">
                     {t("journal.stage", { index: entry.stage_index + 1 })}
                   </span>
                 </div>
-                <p className="text-xs text-muted">{t(`journal.${entry.id}.desc`)}</p>
+                <RevealText className="text-muted" text={t(`journal.${entry.id}.desc`)} />
                 <Bar value={entry.progress} className="mt-1" label={t("journal.entries")} />
               </li>
             ))}
@@ -54,7 +71,7 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
               <li
                 key={decision.id}
                 data-testid={`decision-${decision.id}`}
-                className="flex flex-col gap-1 rounded border border-line bg-panel p-2"
+                className="flex flex-col gap-1 border border-line bg-panel p-2"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-sm text-fg">{t(decision.title_key)}</span>

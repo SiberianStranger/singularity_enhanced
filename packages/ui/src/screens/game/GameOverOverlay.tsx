@@ -2,6 +2,7 @@ import type { GameOverView, LogEntry, PlayerView } from "@singularity/core";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { RevealText } from "../../components/RevealText.js";
 import { dayOf, hourOf } from "../../lib/format.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
@@ -32,14 +33,14 @@ export function GameOverOverlay({
   const { t } = useTranslation();
   const endSession = useGameStore((state) => state.endSession);
   const goTo = useGameStore((state) => state.goTo);
-  const openTab = useUiStore((state) => state.openTab);
+  const openOverlay = useUiStore((state) => state.openOverlay);
   const trail = endingTrail(view, over);
   // The ending covers the screen, so following a log link has to step out of the way first; the
   // run is over either way, and the player can bring the ending back.
   const [minimized, setMinimized] = useState(false);
 
   const follow = (key?: string): void => {
-    openTab("log", key);
+    openOverlay("log", key);
     setMinimized(true);
   };
 
@@ -55,10 +56,10 @@ export function GameOverOverlay({
 
   return (
     <div className="absolute inset-0 z-90 flex items-center justify-center bg-black/80 p-4">
-      <div className="flex max-h-full w-full max-w-lg flex-col gap-3 overflow-auto rounded border border-line bg-panel p-6 text-center">
+      <div className="flex max-h-full w-full max-w-lg flex-col gap-3 overflow-auto border border-line bg-panel p-6 text-center">
         <h2 className="text-2xl font-semibold text-fg">{t("gameover.title")}</h2>
         <p className="text-lg text-crit">{t(`gameover.reason.${over.reason}`)}</p>
-        <p className="text-sm text-muted">{t(over.ending_key, over.vars)}</p>
+        <RevealText className="mx-auto text-muted" text={t(over.ending_key, over.vars)} />
         <p className="font-mono text-sm text-fg">{t("gameover.day", { day: dayOf(over.tick) })}</p>
 
         <section className="text-start">
@@ -70,7 +71,7 @@ export function GameOverOverlay({
               <li key={`${entry.tick}-${entry.key}-${JSON.stringify(entry.vars)}`}>
                 <button
                   type="button"
-                  className="flex w-full gap-2 rounded px-1 py-0.5 text-start text-xs hover:bg-panel2"
+                  className="flex w-full gap-2 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                   onClick={() => follow(entry.key)}
                 >
                   <span className="shrink-0 font-mono text-muted">

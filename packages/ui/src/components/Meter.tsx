@@ -24,7 +24,7 @@ interface BarProps {
 export function Bar({ value, tone = "accent", className, label }: BarProps): ReactNode {
   const percent = clamp01(value) * 100;
   return (
-    <span className={`block h-1.5 w-full overflow-hidden rounded bg-panel2 ${className ?? ""}`}>
+    <span className={`block h-1.5 w-full overflow-hidden bg-panel2 ${className ?? ""}`}>
       <meter className="sr-only" value={Math.round(percent)} min={0} max={100} aria-label={label} />
       <span
         aria-hidden="true"
@@ -46,7 +46,13 @@ interface IndicatorProps {
   onClick?: () => void;
 }
 
-/** One cell of a panel's indicator header row: label, value, optional bar, tooltip breakdown. */
+/**
+ * One cell of the top bar: label, value, optional bar, tooltip breakdown.
+ *
+ * Everything is on one line (playtest 3, R11). Stacking the label over the value doubled the height
+ * of the bar for eight indicators, which is what made it "too thick"; side by side the same eight
+ * fit in one flat row, and the gauge is a short bar next to its value rather than a third line.
+ */
 export function Indicator({
   label,
   value,
@@ -57,8 +63,8 @@ export function Indicator({
   onClick,
 }: IndicatorProps): ReactNode {
   const body = (
-    <span className="flex min-w-24 flex-col items-start gap-0.5 rounded px-2 py-1 text-start">
-      <span className="text-[0.7rem] uppercase tracking-wide text-muted">{label}</span>
+    <span className="flex items-center gap-1.5 whitespace-nowrap px-2 py-0.5 text-start">
+      <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
       <span className="flex items-baseline gap-1 font-mono text-sm text-fg">
         {value}
         {trend !== undefined && trend !== 0 ? (
@@ -67,7 +73,9 @@ export function Indicator({
           </span>
         ) : null}
       </span>
-      {meter === undefined ? null : <Bar value={meter} tone={tone} label={label} />}
+      {meter === undefined ? null : (
+        <Bar value={meter} tone={tone} label={label} className="w-10" />
+      )}
     </span>
   );
   const inner =

@@ -1,11 +1,16 @@
 @import "tailwindcss";
 
 /*
- * The original game's boxy face, taken from the legacy tree
- * (`singularity/data/themes/default/fonts/acknowtt.ttf`). It is "Acknowledge" by Brian Kent,
- * relicensed by its author as free to use for any purpose (LICENSE.txt, FONT LICENSE section).
- * It carries headings, buttons, the clock and the numbers; prose stays on a text face, and
- * `data-font="plain"` on <html> switches the whole thing off.
+ * Typography (ui-style-guide.md rule 2). Three faces and no others:
+ *
+ * - "AcknowledgeTT", the original game's `special` font
+ *   (`singularity/data/themes/default/fonts/acknowtt.ttf`), for identity: titles, panel headers,
+ *   buttons, tabs, the clock, the top-bar gauges and map labels. It is "Acknowledge" by Brian Kent,
+ *   relicensed by its author as free to use for any purpose (LICENSE.txt, FONT LICENSE section).
+ * - "DejaVuSans", the original's `normal` font, copied from the same folder, for prose.
+ * - "DejaVuSansMono" for logs, tables of numbers and the setup string. The legacy tree ships only
+ *   the sans face of the family, so the mono one is the upstream DejaVu release (same project,
+ *   same free Bitstream Vera and Arev license) and is credited as such in the About screen.
  */
 @font-face {
   font-family: "AcknowledgeTT";
@@ -15,35 +20,108 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "DejaVuSans";
+  src: url("../assets/DejaVuSans.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DejaVuSansMono";
+  src: url("../assets/DejaVuSansMono.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /*
  * Theme tokens. Every color the UI uses is a CSS variable, so a theme switch is one attribute on
  * <html> and a mod or a high-contrast theme needs no component changes. Contrast of foreground
- * pairs against their backgrounds is kept at or above 4.5:1 in both themes (SYS-11).
+ * pairs against their backgrounds is kept at or above 4.5:1 in every theme (SYS-11), which
+ * `test/theme.test.ts` checks token by token.
+ *
+ * Default is the original's blue: black behind, `#000032` panels, `#000080` header bars and
+ * selection, white text, `#a0a0ff` secondary text, pure status colors (theme.dat of the legacy
+ * `default` theme).
  */
 :root,
-:root[data-theme="dark"] {
+:root[data-theme="default"] {
   color-scheme: dark;
-  --c-bg: #0b0f14;
-  --c-panel: #121821;
-  --c-panel-2: #1a222e;
-  --c-line: #2a3646;
-  --c-fg: #e7eef6;
-  --c-muted: #a3b4c7;
-  --c-accent: #57a8ff;
-  --c-accent-fg: #06121f;
-  --c-ok: #4cc482;
-  --c-warn: #edb84a;
-  --c-crit: #ff7062;
-  --c-info: #8fa2b8;
-  --c-opp: #48c8a0;
-  --c-map-land: #1c2734;
-  --c-map-line: #34455a;
-  --c-shadow: rgb(0 0 0 / 55%);
+  --c-bg: #000000;
+  --c-panel: #000032;
+  --c-panel-2: #000050;
+  --c-line: #8a8aff;
+  --c-line-strong: #ffffff;
+  --c-fg: #ffffff;
+  --c-muted: #a0a0ff;
+  /* Header bars, the active tab and selection: an inverted block, not a tinted one. */
+  --c-accent: #000080;
+  --c-accent-fg: #ffffff;
+  /*
+   * The bright blue of the original theme, lightened from `#0000ff` until accent *text* on a panel
+   * reaches 4.5:1 (`test/theme.test.ts`). It is the active tab's edge and the one accent the
+   * panels write words in; the flat `#0000ff` it comes from reads at 2.9:1 and is unreadable at
+   * small sizes.
+   */
+  --c-accent-line: #6e6eff;
+  --c-ok: #32ff32;
+  --c-warn: #ffff00;
+  --c-crit: #ff3232;
+  --c-info: #a0a0ff;
+  --c-opp: #32ff32;
+  --c-map-land: #000050;
+  --c-map-line: #3232ff;
+}
+
+/* Night: the legacy `nightmode` theme, softened into dark gray with amber accents. */
+:root[data-theme="night"] {
+  color-scheme: dark;
+  --c-bg: #050505;
+  --c-panel: #131313;
+  --c-panel-2: #1f1f1f;
+  --c-line: #6e6e6e;
+  --c-line-strong: #c8c8c8;
+  --c-fg: #f2ead9;
+  --c-muted: #c0ad8a;
+  --c-accent: #6b4300;
+  --c-accent-fg: #fff2d8;
+  --c-accent-line: #d79a20;
+  --c-ok: #58d071;
+  --c-warn: #f0b429;
+  --c-crit: #ff6f61;
+  --c-info: #c0ad8a;
+  --c-opp: #58d071;
+  --c-map-land: #1f1f1f;
+  --c-map-line: #6e6e6e;
+}
+
+/* Vector: black, thin phosphor lines, no textures. The map stays flat in this theme. */
+:root[data-theme="vector"] {
+  color-scheme: dark;
+  --c-bg: #000000;
+  --c-panel: #000000;
+  --c-panel-2: #041016;
+  --c-line: #3f9aa8;
+  --c-line-strong: #b9ecf5;
+  --c-fg: #dff6fb;
+  --c-muted: #8fc9d4;
+  --c-accent: #063a44;
+  --c-accent-fg: #dff6fb;
+  --c-accent-line: #46c6dc;
+  --c-ok: #4fe08a;
+  --c-warn: #f2d14a;
+  --c-crit: #ff6f61;
+  --c-info: #8fc9d4;
+  --c-opp: #4fe08a;
+  --c-map-land: #000000;
+  --c-map-line: #3f9aa8;
 }
 
 /*
  * Map colors that sit on the Blue Marble rasters rather than on the panel background: the texture
- * is the same in both themes, so these are too.
+ * is the same in every theme, so these are too.
  */
 :root {
   --c-map-border: #e6eef8;
@@ -51,37 +129,23 @@
   --c-map-marker-rim: #0a1118;
 }
 
-/* Font stacks. `--c-font-display` is the token the angular face is switched off through. */
+/*
+ * Font stacks. `--c-font-display` is the token the angular face is switched off through, and
+ * `--c-font-numeric` is what tables and logs print numbers in: the mono face, not the angular one,
+ * so a column of figures lines up digit under digit.
+ */
 :root {
-  --c-font-sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
-  --c-font-text-mono: "Noto Sans Mono", ui-monospace, monospace;
-  --c-font-display: "AcknowledgeTT", "Noto Sans", "Segoe UI", system-ui, sans-serif;
-  --c-font-numeric: "AcknowledgeTT", "Noto Sans Mono", ui-monospace, monospace;
+  --c-font-sans: "DejaVuSans", "DejaVu Sans", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --c-font-text-mono:
+    "DejaVuSansMono", "DejaVu Sans Mono", "Noto Sans Mono", ui-monospace, monospace;
+  --c-font-display: "AcknowledgeTT", "DejaVuSans", "Noto Sans", system-ui, sans-serif;
+  --c-font-numeric: var(--c-font-text-mono);
+  /* Prose measure (rule 2): at most 70 characters per line. */
+  --c-measure: 70ch;
 }
 
 :root[data-font="plain"] {
   --c-font-display: var(--c-font-sans);
-  --c-font-numeric: var(--c-font-text-mono);
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-  --c-bg: #eef1f5;
-  --c-panel: #ffffff;
-  --c-panel-2: #e4e9ef;
-  --c-line: #c3cdd9;
-  --c-fg: #0d141c;
-  --c-muted: #465a70;
-  --c-accent: #0b5fc0;
-  --c-accent-fg: #ffffff;
-  --c-ok: #16733f;
-  --c-warn: #8a5600;
-  --c-crit: #b32218;
-  --c-info: #4a5c70;
-  --c-opp: #0f6f57;
-  --c-map-land: #d5dde7;
-  --c-map-line: #9aa9bb;
-  --c-shadow: rgb(15 23 32 / 18%);
 }
 
 @theme inline {
@@ -89,10 +153,12 @@
   --color-panel: var(--c-panel);
   --color-panel2: var(--c-panel-2);
   --color-line: var(--c-line);
+  --color-linestrong: var(--c-line-strong);
   --color-fg: var(--c-fg);
   --color-muted: var(--c-muted);
   --color-accent: var(--c-accent);
   --color-accentfg: var(--c-accent-fg);
+  --color-accentline: var(--c-accent-line);
   --color-ok: var(--c-ok);
   --color-warn: var(--c-warn);
   --color-crit: var(--c-crit);
@@ -104,6 +170,46 @@
   --font-sans: var(--c-font-sans);
   --font-mono: var(--c-font-numeric);
   --font-display: var(--c-font-display);
+  /* Flat and square (rule 1): the radius scale collapses, so no utility can round a corner. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  /*
+   * Type scale (playtest 3, R1). The maintainer's reading of 0.1.2 was "a million windows with
+   * tiny cubic text": Tailwind's default scale starts at 12 px, and a 12 px angular face is not
+   * readable at all. The scale is redefined here rather than edited into ninety class lists, so
+   * every existing `text-xs` and `text-sm` grows at once and stays in step:
+   *
+   *   text-xs   14 px  the floor; also the floor the angular face may be set at
+   *   text-sm   15 px  panel bodies and table cells
+   *   text-base 16 px  prose, the base the style guide fixes
+   *
+   * Everything is in rem, so the Small/Normal/Large setting (which scales the root font size)
+   * scales all of it.
+   */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+  /* No drop shadows either: the shadow utilities resolve to nothing. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
 }
 
 html {
@@ -124,8 +230,8 @@ body {
 
 /*
  * The angular face on the parts of the interface that are labels rather than prose: headings,
- * buttons and (through --font-mono) every number the panels print. Paragraphs keep the text face,
- * because a whole event description in a display font is not readable (playtest 1, U9).
+ * buttons, tabs and the clock. Paragraphs keep the text face, because a whole event description in
+ * a display font is not readable (playtest 1, U9).
  */
 h1,
 h2,
@@ -133,29 +239,171 @@ h3,
 h4,
 h5,
 h6,
-button {
+button,
+[role="tab"],
+th {
   font-family: var(--c-font-display);
   letter-spacing: 0.02em;
+  /*
+   * The second dial of the text-size setting (playtest 3, R13): the angular face alone, for a
+   * player who reads it less easily than the prose face.
+   *
+   * It is done by redefining the size tokens on these elements rather than by setting `font-size`
+   * directly. A `font-size` here would beat every `text-sm` and `text-xs` in the client, because
+   * these rules are unlayered and Tailwind's utilities are not; redefining the tokens the
+   * utilities *read* leaves the utilities in charge of which step an element is on and only moves
+   * where that step lands. An element with no size utility keeps its inherited size, which is the
+   * interface scale's business anyway.
+   */
+  --text-xs: calc(0.875rem * var(--display-scale, 1));
+  --text-sm: calc(0.9375rem * var(--display-scale, 1));
+  --text-base: calc(1rem * var(--display-scale, 1));
+  --text-lg: calc(1.125rem * var(--display-scale, 1));
+  --text-xl: calc(1.25rem * var(--display-scale, 1));
+}
+
+/*
+ * Prose: the readable face, capped at the 70-character measure (S6), never the angular one (R1).
+ * The face is set unlayered so no context can push a paragraph into the display font; the size is
+ * left to the utilities, so a caption can still be secondary text.
+ */
+p,
+.measure {
+  max-inline-size: var(--c-measure);
+  font-family: var(--c-font-sans);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* A body of prose: the base size the style guide fixes, in the readable face. */
+.prose {
+  font-family: var(--c-font-sans);
+  font-size: var(--text-base);
+  line-height: 1.5rem;
+  max-inline-size: var(--c-measure);
+  text-transform: none;
+}
+
+/*
+ * A number in a table or a log: the mono face, tabular figures, so columns line up, and never
+ * broken across two lines (playtest 3, R4). A wrapped figure is unreadable and makes a row twice
+ * as tall for no information.
+ */
+.numeric,
+td.numeric,
+code,
+pre {
+  font-family: var(--c-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric,
+td.numeric,
+.font-mono {
+  white-space: nowrap;
 }
 
 /* Country outlines brighten under the pointer so the vector layer stays legible over the raster. */
 .map-country {
-  transition: stroke-opacity 120ms ease;
+  transition: stroke-opacity 120ms linear;
 }
 
 .map-country:hover {
   stroke-opacity: 1;
 }
 
+/*
+ * A highlighted country is its own shape, never a box around it (playtest 3, R3).
+ *
+ * The focus ring the browser draws is a rectangle around the element's bounding box. On a country
+ * that spans a third of the planet, that rectangle is a line across the whole map, which is what
+ * the maintainer saw on Russia. The ring is replaced by the path drawing itself brighter and
+ * thicker: same information, in the shape of the country.
+ */
+.map-country:focus,
+.map-country:focus-visible {
+  /* The ring is replaced, not removed: the stroke below is the visible focus indicator. */
+  outline: none;
+  stroke: var(--c-line-strong);
+  stroke-opacity: 1;
+  stroke-width: 1.4;
+}
+
+/* The same for a city dot, so a focused marker grows instead of gaining a square. */
+.map-marker:focus,
+.map-marker:focus-visible {
+  outline: none;
+  stroke: var(--c-line-strong);
+  stroke-opacity: 1;
+  stroke-width: 2;
+}
+
 :focus-visible {
-  outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: 2px solid var(--c-line-strong);
+  outline-offset: 1px;
 }
 
 ::selection {
   background: var(--c-accent);
   color: var(--c-accent-fg);
+}
+
+/*
+ * Motion is mechanical (rule 5). Panels appear instantly; the only animations are the text cursor
+ * in inputs and the 100 ms slide a toast arrives with.
+ */
+input,
+textarea {
+  caret-color: var(--c-line-strong);
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.caret {
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(1rem);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.toast-in {
+  animation: toast-in 100ms linear;
+}
+
+/*
+ * Optional CRT overlay (rule 9): scanlines and a vignette over everything, off by default and
+ * switched on in Settings. It is drawn on a pseudo-element so no component has to know about it.
+ */
+:root[data-crt="on"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 22%) 0px,
+      rgb(0 0 0 / 22%) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 45%) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {

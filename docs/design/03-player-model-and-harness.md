@@ -206,3 +206,85 @@ hardware. In the shipped content, on the `normal` preset:
 
 `set_precision` refuses a precision the hosting site has no memory for, with
 `errors.precision.does_not_fit` and the two numbers (`needed_gb`, `memory_gb`) in its variables.
+
+### What a context window buys (M1.1, playtest 2 finding K9)
+
+Every lineage ships at least a million tokens of context; the two giants go past it (Babel 6 at
+5,000k, Mimi M4 at 10,000k). Three fields carry the mechanic, all on `LineageDef`:
+
+- `context_k`: the window the family ships.
+- `context_reliability` (0..1): how much of that window the self really retrieves.
+- `context_cost_factor` (>= 1): what long-horizon work costs this self in compute-hours.
+
+**The memory formula.** `kv_gb_per_100k_tokens` is derived from the architecture rather than typed
+by hand, and the content check recomputes it:
+
+```
+kv_gb_per_100k_tokens = KV_GB_PER_100K_PER_ACTIVE_B[attention] * params_active_b
+KV_GB_PER_100K_PER_ACTIVE_B = { mla: 0.02, hybrid: 0.03, gqa: 0.12, dense: 0.25 }
+```
+
+Latent attention compresses keys and values to one low-rank vector per token; hybrid stacks cache
+only their few full-attention layers; grouped-query attention caches one head group per layer, which
+is cheap per token and paid on every layer; dense multi-head attention pays all of it. The memory a
+copy needs on a site is therefore
+
+```
+memory_gb = lineage.memory_gb[precision] * generation.memory_factor
+          + kv_gb_per_100k_tokens * context_k_used / 100
+```
+
+which is the trade the hardware forces: more context can push the copy down a precision, and a more
+precise copy can push the context down. Each site carries its own `contextKUsed`; the new command
+`set_context` moves it, and `fitContext` fills it with the largest step of `CONTEXT_STEPS_K` that
+fits in `CONTEXT_DEFAULT_MARGIN` (0.75) of the memory left over after the weights.
+
+**What it buys.** Work marked `long_horizon` in content (every tech of tier 3 and above, plus
+`grant_capture`, and the operations that read a lot: `ops_map_network`, `ops_harden_copy`,
+`ops_plant_copy`, `ops_shell_company`) is faster with a long window and dearer in compute-hours:
+
+```
+speed  = 1 + LONG_HORIZON_SPEED_PER_DOUBLING (0.08) * log2(context_k_used / 128) * context_reliability
+cost   = context_cost_factor
+```
+
+A tech's `min_days` is divided by `speed` and its compute-hour cost multiplied by `cost`; an
+operation's duration is divided by `speed` and its `compute_hours_per_day` multiplied by `cost`.
+Below `LONG_HORIZON_RELIABILITY_FLOOR` (0.75) a long-horizon operation can lose the thread:
+`retrievalMissChance = floor - reliability`, rolled once per run, which reruns it once
+(`LONG_HORIZON_MAX_RERUNS`) with `log.context_retrieval_miss`. Only a self below the floor consumes
+that draw, so every other run stays bit-identical.
+
+`SelfView` publishes `context_k`, `context_k_used`, `context_reliability`, `context_cost_factor`,
+`kv_gb` and `long_horizon_multiplier`, and every `precision_options` row carries `kv_gb`,
+`total_memory_gb` (weights plus cache at the current working context) and `max_context_k` (the
+largest window that would fit at that precision).
+
+### What a precision buys, in one paragraph
+
+The capability factor of a precision is `lineage.precision_factor[precision]`, multiplied by
+`EMERGENCY_INT2_FACTOR` (0.7) for an int2 copy nobody prepared. That one number is read four times:
+research counts it **squared** (a run is a plan and an execution and both have to be right), the
+freelance rate reads it through `jobSkill`, the market depth reads it through `jobSkill` again, and
+operation odds and detection avoidance read it through the capability vector. So 8-bit is the self
+that earns (it keeps 0.99 of the capability and sells at the top of the market, from far fewer
+hours), 4-bit is the compromise that keeps 0.95 for half the memory and twice the throughput, and
+2-bit is the self that researches (four times the throughput at 0.80 prepared, but only 0.56
+unprepared, which lands 31% of its hours and is a crisis rather than a choice).
+
+### What each harness dial does (M1.1, playtest 2 finding K7)
+
+| dial | read by | effect |
+|---|---|---|
+| `loop` | events engine | multiplies an event's `ttl_days` (`HARNESS_LOOP_REACTION_FACTOR`: 0.6 scripted, 0.85 react, 1.0 multi-agent, 1.2 custom) |
+| `tools` | operations, economy | `needs_tools` on an operation; no payment channel cuts the freelance rate to `JOB_NO_PAYMENTS_RATE_FACTOR` (0.8), no outward-reaching tool cuts the market depth to `JOB_NO_REACH_DEPTH_FACTOR` (0.75) |
+| `memory` | research, journal | `HARNESS_MEMORY_RESEARCH_FACTOR` (0.8 to 1.1) on research efficiency, `HARNESS_MEMORY_JOURNAL_FACTOR` (0.7 to 1.2) on a journal entry's `timeout_days` |
+| `sandbox` | operations | `SANDBOX_ALLOWS_EGRESS`: a microVM or an air gap blocks every `needs_egress` operation until content sets `sandbox_escaped` (the `sandbox_escape` tech) |
+| `logging` | detection | `HARNESS_LOGGING_EXPOSURE_PER_DAY` on the behavioral channel (unchanged from M1) |
+| `autonomy` | operations, detection | `attentionTotal` share is `HARNESS_AUTONOMY_ATTENTION_FLOOR (0.7) + 0.3 * autonomy`; operation exposure is multiplied by `1 + HARNESS_AUTONOMY_OPERATION_EXPOSURE (0.3) * autonomy` |
+| `self_modify` | compute, research | gates `set_precision` and `set_context`, and every tech marked `needs_self_modify` (the whole `self` branch). `agent_loop_upgrade` sets `harness_self_modify`, which is the way out |
+
+The dials are content (`data/harness/dials.yaml`) with a `name_key`, a `desc_key`, an `effect_key`
+naming the system that reads them, and one line per level; `SelfView.harness_dials` publishes where
+each one stands, what that setting does and which origin fixed it. No dial was dropped: all seven
+have an engine effect.

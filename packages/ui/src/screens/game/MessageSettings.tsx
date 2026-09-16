@@ -76,7 +76,7 @@ export function MessageSettings(): ReactNode {
                 <td className="px-2 py-1">
                   <select
                     aria-label={key}
-                    className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+                    className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
                     value={modeFor(key, "info", preset, modes)}
                     onChange={(event) => setMode(key, event.target.value as MessageMode)}
                   >

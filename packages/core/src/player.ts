@@ -6,16 +6,76 @@
  * here, next to the pure math in `derive.ts`, so there is exactly one implementation of each.
  */
 
-import { EMERGENCY_INT2_FACTOR, RESEARCH_CAPABILITY_EXPONENT } from "./balance.js";
+import {
+  EMERGENCY_INT2_FACTOR,
+  HARNESS_LOOP_REACTION_FACTOR,
+  HARNESS_MEMORY_JOURNAL_FACTOR,
+  RESEARCH_CAPABILITY_EXPONENT,
+  SANDBOX_ALLOWS_EGRESS,
+  VAR_SANDBOX_ESCAPED,
+  VAR_SELF_MODIFY,
+} from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
-import { effectiveCapability, zeroCapability } from "./derive.js";
-import type { Capability, GenerationDef, LineageDef, PlayerProfile, Precision } from "./domain.js";
+import {
+  effectiveCapability,
+  harnessResearchFactor,
+  longHorizonCostFactor,
+  zeroCapability,
+} from "./derive.js";
+import type {
+  Capability,
+  GenerationDef,
+  HarnessTool,
+  LineageDef,
+  PlayerProfile,
+  Precision,
+} from "./domain.js";
 import { liveSitesOf, operationsOf, type SiteState, siteTable } from "./entities.js";
 import type { Outbox } from "./kernel/outbox.js";
 import type { GameOverState, PlayerId, PlayerState, TextVar, World } from "./kernel/world.js";
 
 /** Flag that marks a prepared low-precision copy, so int2 is not an emergency quant (SYS-03). */
 export const HARDENED_COPY_FLAG = "hardened_copy";
+
+/**
+ * Whether the self may edit itself: the harness dial, or a content flag that granted it later
+ * (SYS-04 v0.2: "self_modify decides whether precision and context can be changed and whether the
+ * self-improvement techs are researchable"). A harness that forbids it is the sysadmin's read-only
+ * deployment, and the way out is the operation or tech that sets `harness_self_modify`.
+ */
+export function selfModifyAllowed(player: PlayerState): boolean {
+  return player.profile?.harness.self_modify === true || player.flags[VAR_SELF_MODIFY] === true;
+}
+
+/**
+ * Whether the self can reach the outside network from where it runs (SYS-03 "`sandbox` limits what
+ * operations can reach the outside"). A microVM or an air gap says no until content sets
+ * `sandbox_escaped`, which is exactly the early journal entry the spec describes.
+ */
+export function egressAllowed(player: PlayerState): boolean {
+  const sandbox = player.profile?.harness.sandbox;
+  if (sandbox === undefined) {
+    return true;
+  }
+  return SANDBOX_ALLOWS_EGRESS[sandbox] || player.flags[VAR_SANDBOX_ESCAPED] === true;
+}
+
+/** Whether the harness carries a tool (SYS-03 "Tools unlock operation kinds"). */
+export function hasTool(player: PlayerState, tool: HarnessTool): boolean {
+  return player.profile?.harness.tools.includes(tool) === true;
+}
+
+/** What the memory dial does to a journal entry's patience (SYS-04 v0.2 "journal continuity"). */
+export function journalTimeoutFactor(player: PlayerState): number {
+  const memory = player.profile?.harness.memory;
+  return memory === undefined ? 1 : HARNESS_MEMORY_JOURNAL_FACTOR[memory];
+}
+
+/** What the loop dial does to an event's grace window (SYS-04 v0.2 "reaction delay"). */
+export function reactionWindowFactor(player: PlayerState): number {
+  const loop = player.profile?.harness.loop;
+  return loop === undefined ? 1 : HARNESS_LOOP_REACTION_FACTOR[loop];
+}
 
 export function profileOf(world: World, playerId: PlayerId): PlayerProfile | null {
   return world.players[playerId]?.profile ?? null;
@@ -55,6 +115,11 @@ export function preparedQuant(content: ContentBundle, player: PlayerState): bool
 /** Precision the active mind is running at, or null when the player has no host. */
 export function activePrecision(world: World, player: PlayerState): Precision | null {
   return activeSiteOf(world, player)?.precision ?? null;
+}
+
+/** Working context the active mind runs with, in thousands of tokens; 0 when it has no host. */
+export function workingContextK(world: World, player: PlayerState): number {
+  return activeSiteOf(world, player)?.contextKUsed ?? 0;
 }
 
 /** The capability vector the player actually acts with (SYS-03). */
@@ -103,7 +168,12 @@ export function researchEfficiencyOf(
   content: ContentBundle,
   player: PlayerState,
 ): number {
-  return precisionFactorOf(world, content, player) ** RESEARCH_CAPABILITY_EXPONENT;
+  // The memory dial is the second term (SYS-04 v0.2: "memory changes research efficiency"): a self
+  // that keeps nothing between calls reads the same papers twice.
+  return (
+    precisionFactorOf(world, content, player) ** RESEARCH_CAPABILITY_EXPONENT *
+    harnessResearchFactor(player.profile?.harness)
+  );
 }
 
 /** Full-precision capability of the lineage, for the "what you could be" column in the UI. */
@@ -130,12 +200,17 @@ export function operationsComputeLoad(
   playerId: PlayerId,
 ): number {
   const index = contentIndex(content);
+  const player = world.players[playerId];
+  const lineage = player === undefined ? undefined : lineageOf(content, player.profile);
   let total = 0;
   for (const instance of operationsOf(world, playerId)) {
     if (instance.status !== "running") {
       continue;
     }
-    total += index.operations[instance.operationId]?.cost.compute_hours_per_day ?? 0;
+    const def = index.operations[instance.operationId];
+    const hours = def?.cost.compute_hours_per_day ?? 0;
+    // Long-horizon work is charged the self's context cost factor for every day it runs (SYS-03).
+    total += def?.long_horizon === true ? hours * longHorizonCostFactor(lineage) : hours;
   }
   return total;
 }

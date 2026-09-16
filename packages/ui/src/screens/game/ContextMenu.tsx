@@ -26,7 +26,7 @@ interface ContextMenuProps {
 export function ContextMenu({ state, onClose, onBuild }: ContextMenuProps): ReactNode {
   const { t } = useTranslation();
   const select = useUiStore((state_) => state_.select);
-  const openTab = useUiStore((state_) => state_.openTab);
+  const openOverlay = useUiStore((state_) => state_.openOverlay);
   const box = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const isCity = state.target.kind === "city";
@@ -54,7 +54,7 @@ export function ContextMenu({ state, onClose, onBuild }: ContextMenuProps): Reac
     <div
       ref={box}
       role="menu"
-      className="pointer-events-auto fixed z-90 w-52 rounded border border-line bg-panel p-1 shadow-xl"
+      className="pointer-events-auto fixed z-90 w-52 border border-line bg-panel p-1"
       // Physical coordinates: these come from the pointer event, which is physical in both
       // writing directions.
       style={{ left: placement?.left ?? state.x, top: placement?.top ?? state.y }}
@@ -66,7 +66,7 @@ export function ContextMenu({ state, onClose, onBuild }: ContextMenuProps): Reac
       <button
         type="button"
         role="menuitem"
-        className="w-full rounded px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
+        className="w-full px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
         onClick={() => {
           select(state.target);
           onClose();
@@ -78,7 +78,7 @@ export function ContextMenu({ state, onClose, onBuild }: ContextMenuProps): Reac
         <button
           type="button"
           role="menuitem"
-          className="w-full rounded px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
+          className="w-full px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
           onClick={() => {
             onBuild(state.target.id);
             onClose();
@@ -90,10 +90,10 @@ export function ContextMenu({ state, onClose, onBuild }: ContextMenuProps): Reac
         <button
           type="button"
           role="menuitem"
-          className="w-full rounded px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
+          className="w-full px-2 py-1 text-start text-sm text-fg hover:bg-panel2"
           onClick={() => {
             select(state.target);
-            openTab("world", state.target.id);
+            openOverlay("world");
             onClose();
           }}
         >

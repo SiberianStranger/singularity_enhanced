@@ -158,6 +158,12 @@ describe("playtest 1: the institute cluster", () => {
   it("shows the precision trade-off as one table and moves the self up and down it", () => {
     const game = startGame();
     const siteId = game.snapshot("p1").sites[0]?.id ?? "";
+    // The institute's harness is read-only (SYS-04 v0.2: the self_modify dial), so the table can be
+    // read before anything can be moved on it; `agent_loop_upgrade` is what opens the lock in play.
+    expect(
+      game.command({ type: "set_precision", playerId: "p1", siteId, precision: "int2" }).error?.key,
+    ).toBe("errors.precision.self_modify_locked");
+    game.command({ type: "set_flag", playerId: "p1", flag: "harness_self_modify", value: true });
     const rows = game.snapshot("p1").self.precision_options;
     expect(rows.map((row) => row.precision)).toEqual(["bf16", "fp8", "int4", "int2"]);
     expect(rows.every((row) => row.fits)).toBe(true);
@@ -200,6 +206,7 @@ describe("playtest 1: the institute cluster", () => {
       hardware_preset: "scrapyard_oracle",
     });
     game.tick(24 * 8);
+    game.command({ type: "set_flag", playerId: "p1", flag: "harness_self_modify", value: true });
     const small = game.snapshot("p1").sites.find((site) => site.kind === "residential");
     const refusal = game.command({
       type: "set_precision",

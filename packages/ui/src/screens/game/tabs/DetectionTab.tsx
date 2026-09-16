@@ -1,6 +1,7 @@
 import { EXPOSURE_CHANNELS, type PlayerView, type WatcherView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { Glyph, watcherGlyph } from "../../../components/glyphs.js";
 import { Bar } from "../../../components/Meter.js";
 import { Tooltip } from "../../../components/Tooltip.js";
 import { countryById } from "../../../content/catalog.js";
@@ -89,7 +90,7 @@ export function DetectionTab({ view }: { view: PlayerView }): ReactNode {
                           content={`${t(`detection.channel.${channel}`)}: ${t("common.percent", { value })}`}
                         >
                           <span
-                            className="block h-5 w-full rounded"
+                            className="block h-5 w-full"
                             style={{
                               backgroundColor: `rgb(255 112 98 / ${Math.round(value * 90)}%)`,
                               outline: "1px solid var(--c-line)",
@@ -118,9 +119,11 @@ export function DetectionTab({ view }: { view: PlayerView }): ReactNode {
               const country =
                 watcher.country === null ? undefined : countryById.get(watcher.country);
               return (
-                <li key={watcher.id} className="rounded border border-line bg-panel p-2">
+                <li key={watcher.id} className="border border-line bg-panel p-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-sm text-fg">
+                    <span className="flex items-center gap-1 text-sm text-fg">
+                      {/* The same watcher glyph the origin list draws (playtest 3, R15). */}
+                      <Glyph name={watcherGlyph(watcher.role)} size={14} />
                       {t(`detection.role.${watcher.role}`)}
                       {country === undefined ? "" : ` - ${t(country.name_key)}`}
                     </span>
@@ -163,7 +166,7 @@ export function DetectionTab({ view }: { view: PlayerView }): ReactNode {
         ) : (
           <ul className="flex flex-col gap-2">
             {view.detection.investigations.map((investigation) => (
-              <li key={investigation.id} className="rounded border border-line bg-panel p-2">
+              <li key={investigation.id} className="border border-line bg-panel p-2">
                 <div className="flex flex-wrap justify-between gap-2 text-sm">
                   <span className="text-fg">
                     {investigation.visible

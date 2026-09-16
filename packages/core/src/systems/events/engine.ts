@@ -25,6 +25,7 @@ import {
   type TextVar,
   type World,
 } from "../../kernel/world.js";
+import { reactionWindowFactor } from "../../player.js";
 
 export interface EventTarget {
   ref: EntityRef;
@@ -184,8 +185,15 @@ export function fireEvent(
   const pendingAllowed = def.hidden !== true && options.length > 0;
   const hasDeadline = def.ttl_days !== undefined;
   if (pendingAllowed && (blocking || hasDeadline)) {
+    // The loop dial is how fast the self notices at all (SYS-04 v0.2: "loop sets the reaction delay
+    // in event grace windows"): a scripted job reads its inbox on the next run and loses most of
+    // the window, a custom loop is already watching.
+    const player = world.players[playerId];
+    const reaction = player === undefined ? 1 : reactionWindowFactor(player);
     const expiresTick =
-      def.ttl_days !== undefined ? world.clock.tick + daysToTicks(def.ttl_days) : undefined;
+      def.ttl_days !== undefined
+        ? world.clock.tick + daysToTicks(def.ttl_days * reaction)
+        : undefined;
     const choice: PendingChoice = {
       instanceId,
       eventId: def.id,

@@ -12,8 +12,10 @@ import { ContextMenu, type ContextMenuState } from "./ContextMenu.js";
 import { EventWindow } from "./EventWindow.js";
 import { GameMap } from "./GameMap.js";
 import { GameMenu } from "./GameMenu.js";
+import { GameOverlays } from "./GameOverlays.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
-import { MapModeStrip } from "./MapModeStrip.js";
+import { LogStrip } from "./LogStrip.js";
+import { OpeningStory } from "./OpeningStory.js";
 import { Outliner } from "./Outliner.js";
 import { PrimaryPanel } from "./PrimaryPanel.js";
 import { SelectionPanel } from "./SelectionPanel.js";
@@ -24,11 +26,13 @@ import { useHotkeys } from "./useHotkeys.js";
 import { useToasts } from "./useToasts.js";
 
 /**
- * The game screen: fixed regions, as in SYS-11 "Layout".
+ * The game screen: fixed regions, as in SYS-11 "Layout" and its playtest 3 amendments.
  *
- * The three rows above the map (alert bar, map-mode strip, then everything else) do not shrink, and
- * the map region is the only thing that gives. Before that, a short window squeezed the strip to
- * nothing and its buttons appeared under the panels that are pinned over the map (playtest 1, U7).
+ * One row that does not shrink (the top bar) over one region that does (the map with everything
+ * pinned over it). The map-mode strip is gone: it cost a row of screen forever to offer five
+ * buttons, and the modes are a page of the world ledger now (R10). What is drawn over the map is
+ * the primary panel, the selection panel, the outliner, the log strip (R8), the toasts, and the
+ * three windows (R8-R10) on top of all of it.
  */
 export function GameScreen(): ReactNode {
   const { t } = useTranslation();
@@ -41,6 +45,8 @@ export function GameScreen(): ReactNode {
   const openMenu = useUiStore((state) => state.openMenu);
   const closeMenu = useUiStore((state) => state.closeMenu);
   const toggleMenu = useUiStore((state) => state.toggleMenu);
+  const toggleOverlay = useUiStore((state) => state.toggleOverlay);
+  const openingPending = useGameStore((state) => state.openingPending);
   const [context, setContext] = useState<ContextMenuState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const toasts = useToasts();
@@ -94,16 +100,36 @@ export function GameScreen(): ReactNode {
     onQuicksave: quicksave,
     onQuickload: quickload,
     onMenu: toggleMenu,
-    blocked: blocking.length > 0,
+    // The opening is as blocking as an event window: nothing else takes a key while it is up.
+    blocked: blocking.length > 0 || openingPending,
   });
 
   const cities = view?.cities;
+  const sites = view?.sites;
   const selectedCity = selection?.kind === "city" ? selection.id : null;
-  // Rebuilt only when the cities or the selection change, so the map's marker layer survives the
-  // frames the terminator interpolates between ticks.
-  const markers = useMemo(
-    () =>
-      (cities ?? []).map((city) => ({
+  /*
+   * Map markers (playtest 3, R7).
+   *
+   * A dot now says what it is: the city it names, whether the player has a running site there,
+   * and, when they do, the block of numbers that saves a click. `note` is the compute the city
+   * produces for the player, in the abbreviation the panels use (CH/d), because that is the one
+   * number that answers "what is this place worth to me" without opening anything.
+   *
+   * Rebuilt only when the cities, the sites or the selection change, so the marker layer survives
+   * the frames the terminator interpolates between ticks.
+   */
+  const markers = useMemo(() => {
+    const live = new Map<string, number>();
+    for (const site of sites ?? []) {
+      // A site that is still being built or has been lost is not a place the player runs.
+      if (site.status !== "active" && site.status !== "sleep") {
+        continue;
+      }
+      live.set(site.city, (live.get(site.city) ?? 0) + site.compute_hours_per_day);
+    }
+    return (cities ?? []).map((city) => {
+      const compute = live.get(city.id);
+      return {
         id: city.id,
         lat: city.lat,
         lon: city.lon,
@@ -112,10 +138,15 @@ export function GameScreen(): ReactNode {
           return record === undefined ? city.id : t(record.name_key);
         })(),
         badge: city.site_count,
+        country: city.country,
         selected: selectedCity === city.id,
-      })),
-    [cities, selectedCity, t],
-  );
+        active: compute !== undefined,
+        ...(compute === undefined
+          ? {}
+          : { note: t("map.marker_note", { ch: Math.round(compute) }) }),
+      };
+    });
+  }, [cities, sites, selectedCity, t]);
 
   const onSelectTarget = useCallback(
     (target: { kind: "country" | "city"; id: string }) => select(target),
@@ -138,7 +169,6 @@ export function GameScreen(): ReactNode {
   return (
     <main id="main" className="flex h-dvh flex-col overflow-hidden bg-bg">
       <TopBar view={view} onMenu={() => openMenu("root")} />
-      <MapModeStrip />
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <GameMap
@@ -153,6 +183,21 @@ export function GameScreen(): ReactNode {
           <PrimaryPanel view={view} />
           <SelectionPanel view={view} />
           <Outliner view={view} />
+          <LogStrip view={view} />
+          {/*
+           * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It sits
+           * one row above the map's zoom controls so the corner holds both.
+           */}
+          <div className="pointer-events-auto absolute bottom-12 end-2 z-30">
+            <Button
+              variant="default"
+              hotkey="w"
+              registerKey={false}
+              onClick={() => toggleOverlay("world")}
+            >
+              {t("panel.world")}
+            </Button>
+          </div>
           <Toasts api={toasts} />
         </div>
         {view.game_over === null ? null : <GameOverOverlay over={view.game_over} view={view} />}
@@ -169,7 +214,9 @@ export function GameScreen(): ReactNode {
         />
       )}
 
-      {blocking[0] === undefined ? null : (
+      {openingPending ? <OpeningStory origin={view.self.origin} /> : null}
+
+      {openingPending || blocking[0] === undefined ? null : (
         <EventWindow view={view} choice={blocking[0]} queued={blocking.length - 1} />
       )}
 
@@ -190,6 +237,8 @@ export function GameScreen(): ReactNode {
         </Modal>
       )}
 
+      <GameOverlays view={view} />
+
       {menuSection === null ? null : (
         <GameMenu section={menuSection} ironman={ironman} onClose={closeMenu} />
       )}
@@ -197,7 +246,7 @@ export function GameScreen(): ReactNode {
       {notice === null ? null : (
         <div
           role="status"
-          className="absolute bottom-2 start-1/2 z-90 -translate-x-1/2 rounded border border-line bg-panel px-3 py-1 text-sm text-fg"
+          className="absolute bottom-2 start-1/2 z-90 -translate-x-1/2 border border-line bg-panel px-3 py-1 text-sm text-fg"
           onAnimationEnd={() => setNotice(null)}
         >
           <span>{notice}</span>

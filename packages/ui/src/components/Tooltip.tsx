@@ -85,10 +85,10 @@ export function Tooltip({ content, children, className, side = "top" }: TooltipP
           role="tooltip"
           id={id}
           data-side={placement?.side ?? side}
-          className="pointer-events-none fixed z-100 max-w-[min(20rem,calc(100vw-1rem))] whitespace-normal break-words rounded border border-line bg-panel2 px-2 py-1 text-xs leading-snug text-fg shadow-lg"
+          className="pointer-events-none fixed z-100 max-w-[min(24rem,calc(100vw-1rem))] whitespace-normal break-words border border-linestrong bg-panel px-2 py-1 text-xs leading-snug text-fg"
           style={{
-            // Physical `left`/`top`, not logical insets: these are viewport coordinates measured
-            // with `getBoundingClientRect`, which is physical in both writing directions.
+            // Physical`left`/`top`, not logical insets: these are viewport coordinates measured
+            // with`getBoundingClientRect`, which is physical in both writing directions.
             left: placement?.left ?? 0,
             top: placement?.top ?? 0,
             visibility: placement === null ? "hidden" : "visible",

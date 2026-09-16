@@ -21,7 +21,7 @@ export function LogTab({ view }: { view: PlayerView }): ReactNode {
       <label className="flex items-center gap-2 text-xs text-muted">
         {t("log.filter")}
         <input
-          className="flex-1 rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+          className="flex-1 border border-line bg-panel2 px-2 py-1 text-sm text-fg"
           value={active}
           onChange={(event) => setFilter(event.target.value)}
         />

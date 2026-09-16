@@ -5,6 +5,7 @@ import { Button } from "../../components/Button.js";
 import { EffectList } from "../../components/EffectList.js";
 import { CogIcon } from "../../components/Icon.js";
 import { Modal } from "../../components/Modal.js";
+import { RevealText } from "../../components/RevealText.js";
 import type { Translate } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
@@ -109,9 +110,9 @@ export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNo
       footer={<span className="w-full text-xs text-muted">{t("game.event.enter_hint")}</span>}
     >
       <div className="flex flex-col gap-4">
-        <p>{t(choice.descKey, choice.vars)}</p>
+        <RevealText text={t(choice.descKey, choice.vars)} />
 
-        <details className="rounded border border-line bg-panel2 p-2 text-xs">
+        <details className="border border-line bg-panel2 p-2 text-xs">
           <summary className="cursor-pointer text-muted">{t("game.event.why")}</summary>
           <ul className="mt-1 flex flex-col gap-0.5">
             {why.length === 0 ? (

@@ -1,7 +1,7 @@
 /** Zod schema for operations (SYS-17 v0). */
 
 import { z } from "zod";
-import { CapabilityAxisSchema, PartialExposureSchema } from "./common.js";
+import { CapabilityAxisSchema, HarnessToolSchema, PartialExposureSchema } from "./common.js";
 import { ConditionSchema, EffectListSchema } from "./dsl.js";
 
 export const OperationCategorySchema = z.enum([
@@ -36,6 +36,12 @@ export const OperationDefSchema = z.object({
   }),
   duration_days: z.object({ min: z.number().min(0), max: z.number().min(0) }),
   target_scope: z.enum(["site", "country", "city"]).optional(),
+  /** Harness tools the operation cannot run without (SYS-03 "Tools unlock operation kinds"). */
+  needs_tools: z.array(HarnessToolSchema).min(1).optional(),
+  /** The operation reaches the outside network, so a sandbox that blocks egress blocks it. */
+  needs_egress: z.boolean().optional(),
+  /** Long-context work: faster in days with a long window, dearer in compute-hours (SYS-03). */
+  long_horizon: z.boolean().optional(),
   exposure: PartialExposureSchema.optional(),
   skill: CapabilityAxisSchema,
   outcomes: z.array(OperationOutcomeSchema).min(2).max(3),

@@ -471,3 +471,153 @@ still fails on any console error.
 - The primary panel keeps Overview, Compute and sites, Research, Finances, Detection, Operations,
   Journal and decisions; Settings and Message settings live in the menu; Log, Knowledge and World
   live as described above.
+
+## Implementation notes (client, playtest 2 and 3), 2026-09-16
+
+What the web client changed in answer to the second and third playtests. Findings are referenced by
+their row in `docs/playtests/2026-09-16-playtest-2-configurator-and-style.md` (S, K) and
+`docs/playtests/2026-09-16-playtest-3-readability-and-map.md` (R).
+
+### The style guide is in the tokens, not in the components
+
+Every rule of `docs/design/ui-style-guide.md` that can live in `src/styles/index.css` lives there,
+so a component cannot break it by accident. The radius and shadow scales of Tailwind collapse to
+`0px` and `none`, which makes a rounded corner or a drop shadow unreachable from a utility class
+(S5). The three themes are token blocks under `:root[data-theme="..."]`, with the original's blue as
+the unattributed default; `test/theme.test.ts` asserts that each of the three defines every token a
+component reads, that the radius and shadow scales are collapsed, and that every pair the UI renders
+text in reaches 4.5:1. That last assertion moved `--c-accent-line` off the original's flat `#0000ff`,
+which reads at 2.9:1 on a panel, to `#6e6eff`.
+
+The type scale is redefined in the same place rather than edited into ninety class lists (R1):
+`text-xs` is 14 px, `text-sm` 15 px, `text-base` 16 px. Nothing in the client can be smaller than
+14 px, which is also the floor the style guide sets for the angular face. Paragraphs are pinned to
+the readable face unlayered, so no context can push prose into the display font, and `.prose` is the
+class for a body of text at the base size and the 70-character measure (S6).
+
+Three faces are bundled: `acknowtt.ttf` and `DejaVuSans.ttf` from
+`singularity/data/themes/default/fonts`, and `DejaVuSansMono.ttf` from the upstream DejaVu release,
+because the legacy tree ships only the sans face of that family. All three are credited in the About
+screen.
+
+### Hotkeys
+
+`lib/hotkeys.ts` registers one accelerator per control for as long as the control is mounted, and
+`components/Hotkey.tsx` underlines the letter in the label (S3). The underline is a real text
+underline on a `<u>`, never a border.
+
+Splitting a label into three elements has one consequence worth recording: an accessible-name
+computation walks the elements and puts a space between them, so a "Menu" button with its M
+underlined announced itself as "M enu" and every `getByRole("button", { name: "Menu" })` in the test
+suite stopped matching. The whole label is therefore in the DOM once, visually hidden and unsplit,
+and the split copy that is drawn is `aria-hidden`.
+
+### Configurator (K1, K2, K4-K7, K9)
+
+`ConfiguratorScreen` is a three-row grid at `h-dvh` with `overflow-hidden`: a title row, the content,
+a footer. The content is the step rail and the step, and every list and detail pane scrolls inside
+its own frame, so the page cannot scroll at 1366 by 768 (K1). The rail is vertical, every entry
+carries an underlined accelerator and a mark for done, attention or locked, and the marks are
+computed from the draft rather than tracked, so they cannot drift (K4).
+
+`parts/StepLayout.tsx` is the shape every step has: the list on the left, the detail on the right,
+and clicking the list replaces only the detail (K5). Each step opens once with a centered
+explanation window, remembered per browser in `uiStore.introSeen` and reopenable from the "?" in the
+step header (K6).
+
+`meaning.ts` generates the "What this means in the game" block from the bundle records. It is pure
+and has no React in it, so a test can assert the exact lines. Two rules hold it together: nothing in
+it names a content id, and every term is colored by comparing it with the same term on the other
+records of its domain (the median of the field), so adding a lineage or retuning one moves the
+colors with it. "Pros and cons" is the same list read back as sentences rather than a second body of
+text, because two lists that can disagree eventually do.
+
+`locks.ts` answers "what is blocked and why" (K7, K9) off `generations`, `origins_allowed` and
+`lineages_allowed` in the bundle. A locked entry is greyed in the list, and the detail names the step
+that decided it, the reason in that step's words, and a button that jumps there. Babel 6 and the
+abliterated variant are locked by those rules and by nothing in the client.
+
+The configurator draft repairs its own lineage (`store.ts`): an origin that allows exactly one
+lineage *is* the choice of that lineage, which is how the escaped-frontier origin forces Babel 6.
+
+### Layout amendments (R8-R11)
+
+The primary panel keeps seven tabs. The log is a two-line strip at the bottom of the map that opens
+the full log as a window; Knowledge opens from the top-right corner; the world ledger opens from the
+right edge and by `W`, and carries the map modes as a page, which is why the map-mode strip is gone
+and with it a row of screen that cost five buttons. One overlay is open at a time, which the store
+enforces by holding a single value rather than three flags. The top bar is one flat row: every
+indicator is a label and a value side by side with its gauge as a short bar beside them, rather than
+three stacked lines times eight.
+
+### Map (R3, R6, R7, R14)
+
+A country is highlighted by its own clipped path drawing brighter and thicker. The browser's focus
+ring is a rectangle around the element's bounding box, and on a country that spans a third of the
+planet that rectangle is a line across the whole map, which is what "Russia stretches across the
+whole map" was; `.map-country:focus` replaces the ring instead of removing it.
+
+Every shape gets a name: the bundle's key when the country is modelled, Natural Earth's English name
+when it is only drawn (Libya used to read "ly"), and a neutral wash rather than a hole in the map.
+
+City dots are dim by default. A dot glows when the player runs a live site there, and carries the
+compute that site produces; the selected dot, a dialog's candidate dots and every dot in the country
+under the pointer are lit. Hover and focus light the same dots, so the keyboard sees what the mouse
+sees.
+
+Longitude wraps, so the map does. The plate carree layers tile horizontally by construction, so
+panning east past the antimeridian needs the same content drawn once more one map width to the
+right, and the view box's x kept inside `[0, MAP_WIDTH)`. The copies hold the same React elements,
+so a country is selectable on either side of the seam, and the second copy only exists while the
+view box actually crosses it. Latitude is clamped. Pan and zoom live in `uiStore.mapView`, which is
+session state and not persisted, so opening a window does not throw the player back to the whole
+world.
+
+### Sound (S1)
+
+`audio/player.ts` mirrors the original mixer: the `music/` class shuffled with a two-to-twelve second
+pause between tracks, `win/` and `lose/` at the endings. The differences are the ones the web
+forces: nothing is fetched until the first user gesture, and the manifest is read at runtime rather
+than bundled, so a checkout without the pack plays no music and says so in Settings instead of
+failing to build. Everything non-deterministic is injected (the element factory, the random source,
+the timer), so a test can run a whole playlist without a sound card.
+
+Which class plays is decided in `App` and nowhere else, from the screen and `view.game_over`, so an
+ending cannot keep playing after the player returns to the menu.
+
+`audio/sfx.ts` synthesizes the three interface sounds the guide allows with the Web Audio API rather
+than shipping samples: nothing is downloaded and nothing is licensed. The click is on `Button`, so
+it is in one place rather than in forty handlers; the alert and the event sound fire once per batch
+of arrivals rather than once per notification, because six overlapping beeps at speed 5 are noise.
+
+### Progressive reveal (R2) and the opening (R12)
+
+`components/RevealText.tsx` streams text at 60 characters a second, completes on a click, restarts on
+a new text, and is off under `prefers-reduced-motion`. The whole text is in the DOM from the first
+frame in a visually hidden span, with the animating copy `aria-hidden`, so a screen reader is never
+handed a fragment nor reads the same sentence twice as it grows.
+
+The opening is two windows before the first blocking event, keyed `story.opening.<origin>.*`. An
+origin content has not written an opening for yields no windows and the run starts on the opening
+event it already fires, so the feature degrades to the previous behaviour rather than to a raw key.
+The journal offers to replay it.
+
+### Iconography (R15)
+
+`components/glyphs.tsx` is the one sprite: Lucide (ISC, from npm, no runtime fetch) for the generic
+shapes, and inline SVG on the same 24-unit grid for the ideas Lucide has no glyph for (a
+mixture-of-experts model, an air gap, a rack of racks). Nothing in it knows a content id: `sceneGlyph`
+matches the words content already uses in its ids, so a new origin called `uni_cluster_eu` gets the
+university glyph without anyone editing a table, and an id that matches nothing falls back to a
+generic glyph rather than to a blank square.
+
+### Tests
+
+`pnpm --filter @singularity/ui test` covers the theme tokens and their contrast, the tooltip
+placement maths, the antimeridian and the raster alignment, the clock face, the settings relocation,
+and one test per playtest finding against the real core through `LocalHost`.
+
+One test changed shape rather than expectation: the precision control's test now asserts that the
+engine either moves the precision or raises the refusal on screen, because a control that silently
+does nothing is the bug the refusal notice exists for, and which of the two happens is the core's
+business rather than the client's.

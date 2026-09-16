@@ -2207,7 +2207,7 @@
     police: "MVD"
     regulator: "state-directed via Ministry of Digital Development (no independent regulator)"
     financial_intel: "Rosfinmonitoring"
-  cities: ["ru_moscow", "ru_innopolis"]
+  cities: ["ru_moscow", "ru_novosibirsk", "ru_innopolis"]
   languages: ["ru"]
   currency: "RUB"
   lore_key: "world.country.ru.lore"
@@ -2629,7 +2629,7 @@
     police: "FBI"
     regulator: "NIST / Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"
     financial_intel: "FinCEN"
-  cities: ["us_san_francisco", "us_northern_virginia", "us_abilene", "us_seattle"]
+  cities: ["us_san_francisco", "us_san_jose", "us_northern_virginia", "us_abilene", "us_seattle"]
   languages: ["en"]
   currency: "USD"
   lore_key: "world.country.us.lore"

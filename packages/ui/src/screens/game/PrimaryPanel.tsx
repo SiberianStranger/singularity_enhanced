@@ -2,18 +2,32 @@ import type { PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { Hotkey } from "../../components/Hotkey.js";
 import { CloseIcon } from "../../components/Icon.js";
+import { HOTKEY_ATTRIBUTE } from "../../lib/hotkeys.js";
 import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
 import { ComputeTab } from "./tabs/ComputeTab.js";
 import { DetectionTab } from "./tabs/DetectionTab.js";
 import { FinancesTab } from "./tabs/FinancesTab.js";
 import { JournalTab } from "./tabs/JournalTab.js";
-import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
-import { LogTab } from "./tabs/LogTab.js";
 import { OperationsTab } from "./tabs/OperationsTab.js";
 import { OverviewTab } from "./tabs/OverviewTab.js";
 import { ResearchTab } from "./tabs/ResearchTab.js";
-import { WorldTab } from "./tabs/WorldTab.js";
+
+/**
+ * The accelerator each tab shows underlined (style guide rule 4). They are the same letters
+ * `PANEL_HOTKEYS` registers globally, so the strip advertises the keys that already work; the key
+ * itself stays registered once, in `useHotkeys`, rather than a second time per visible tab.
+ */
+const TAB_HOTKEY: Readonly<Record<PrimaryTab, string | undefined>> = {
+  overview: "v",
+  compute: "c",
+  research: "r",
+  finances: "f",
+  detection: "d",
+  operations: "o",
+  journal: "j",
+};
 
 function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
   switch (tab) {
@@ -29,12 +43,6 @@ function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
       return <OperationsTab view={view} />;
     case "journal":
       return <JournalTab view={view} />;
-    case "log":
-      return <LogTab view={view} />;
-    case "knowledge":
-      return <KnowledgeTab />;
-    case "world":
-      return <WorldTab view={view} />;
     default:
       return <OverviewTab view={view} />;
   }
@@ -45,8 +53,9 @@ function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
  * At phone width it covers the screen, which is the "full-screen tabs" rule.
  *
  * Settings and message settings are not tabs here; they are sections of the menu overlay
- * (playtest 1, U5). The panel is sized against its container, which starts below the map-mode
- * strip, so it can never cover it (U7).
+ * (playtest 1, U5), and Log, Knowledge and World are windows over the map (playtest 3, R8-R10).
+ * The panel is sized against its container rather than the viewport, so it can never reach above
+ * the top bar or below the bottom edge (U8).
  */
 export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
@@ -68,7 +77,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   return (
     <section
       aria-label={t(`panel.${tab}`)}
-      className="pointer-events-auto absolute inset-0 z-20 flex flex-col border border-line bg-panel/97 shadow-xl sm:inset-auto sm:start-2 sm:top-2 sm:max-h-[calc(100%-1rem)] sm:w-[34rem] sm:max-w-[calc(100%-1rem)] sm:rounded"
+      className="pointer-events-auto absolute inset-0 z-20 flex flex-col border border-line bg-panel/97 sm:inset-auto sm:start-2 sm:top-2 sm:max-h-[calc(100%-1rem)] sm:w-[34rem] sm:max-w-[calc(100%-1rem)]"
     >
       <div className="flex items-center gap-1 border-b border-line px-1 py-1">
         <div
@@ -82,10 +91,17 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
               type="button"
               role="tab"
               aria-selected={entry === tab}
-              className={`rounded px-2 py-1 text-xs ${entry === tab ? "bg-accent text-accentfg" : "text-muted hover:bg-panel2 hover:text-fg"}`}
+              {...(TAB_HOTKEY[entry] === undefined
+                ? {}
+                : { [HOTKEY_ATTRIBUTE]: TAB_HOTKEY[entry] })}
+              className={`border px-2 py-1 text-xs uppercase tracking-wide ${
+                entry === tab
+                  ? "border-linestrong bg-accent text-accentfg"
+                  : "border-line text-muted hover:bg-panel2 hover:text-fg"
+              }`}
               onClick={() => openTab(entry)}
             >
-              {t(`panel.${entry}`)}
+              <Hotkey label={t(`panel.${entry}`)} letter={TAB_HOTKEY[entry]} />
             </button>
           ))}
         </div>

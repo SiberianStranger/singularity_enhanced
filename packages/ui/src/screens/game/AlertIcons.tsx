@@ -61,12 +61,12 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
                 type="button"
                 data-severity={group.severity}
                 aria-label={t(group.key, group.latest.vars)}
-                className={`relative rounded p-1 hover:bg-panel2 ${SEVERITY_TONE[group.severity]}`}
+                className={`relative p-1 hover:bg-panel2 ${SEVERITY_TONE[group.severity]}`}
                 onClick={() => follow(group.latest.link?.panel, group.latest.link?.id)}
               >
                 <SeverityIcon severity={group.severity} />
                 {group.count > 1 ? (
-                  <span className="absolute -top-0.5 end-0 font-mono text-[0.6rem] text-fg">
+                  <span className="absolute -top-0.5 end-0 font-mono text-xs text-fg">
                     {group.count}
                   </span>
                 ) : null}
@@ -87,7 +87,7 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
       </Button>
 
       {open ? (
-        <div className="absolute end-0 top-full z-50 mt-1 max-h-96 w-80 overflow-auto rounded border border-line bg-panel p-2 shadow-xl">
+        <div className="absolute end-0 top-full z-50 mt-1 max-h-96 w-80 overflow-auto border border-line bg-panel p-2">
           {view.notifications.length === 0 ? (
             <p className="p-2 text-sm text-muted">{t("game.alerts.empty")}</p>
           ) : (
@@ -99,7 +99,7 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
                   <li key={notification.id}>
                     <button
                       type="button"
-                      className="flex w-full items-start gap-2 rounded px-2 py-1 text-start text-sm hover:bg-panel2"
+                      className="flex w-full items-start gap-2 px-2 py-1 text-start text-sm hover:bg-panel2"
                       onClick={() => {
                         follow(notification.link?.panel, notification.link?.id);
                         setOpen(false);

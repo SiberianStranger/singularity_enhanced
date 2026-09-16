@@ -32,6 +32,10 @@ export const TechDefSchema = z.object({
   requires: ConditionSchema.optional(),
   danger: z.number().min(0).max(4).optional(),
   needs_precision: PrecisionSchema.optional(),
+  /** Work that runs over a long context: faster in days, dearer in compute-hours (SYS-03). */
+  long_horizon: z.boolean().optional(),
+  /** Editing the self: needs the `self_modify` dial, or the flag a harness edit sets (SYS-04). */
+  needs_self_modify: z.boolean().optional(),
   effects: EffectListSchema.optional(),
   effects_text_key: z.string().optional(),
   legacy_id: z.string().optional(),

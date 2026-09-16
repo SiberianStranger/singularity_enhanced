@@ -27,6 +27,7 @@ interface AtlasFeature {
 }
 
 let cache: CountryShape[] | null = null;
+let nameCache: ReadonlyMap<string, string> | null = null;
 
 /** All country shapes, decoded and projected once per session. */
 export function countryShapes(): CountryShape[] {
@@ -45,4 +46,26 @@ export function countryShapes(): CountryShape[] {
     }))
     .filter((shape) => shape.path !== "");
   return cache;
+}
+
+/**
+ * English names for every shape on the map, keyed by the lowercase alpha-2 id (playtest 3, R6).
+ *
+ * The content bundle carries 105 countries; the atlas draws about 170. The rest used to show their
+ * own id as their name, so Libya read "ly" in the selection panel. Natural Earth already ships the
+ * English name for every shape, so the map itself is the fallback table, and no list of country
+ * names is hand-maintained anywhere in the client.
+ */
+export function atlasNames(): ReadonlyMap<string, string> {
+  if (nameCache !== null) {
+    return nameCache;
+  }
+  const map = new Map<string, string>();
+  for (const shape of countryShapes()) {
+    if (shape.id !== null && shape.name !== "") {
+      map.set(shape.id, shape.name);
+    }
+  }
+  nameCache = map;
+  return map;
 }

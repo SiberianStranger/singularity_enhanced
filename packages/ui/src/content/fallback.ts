@@ -28,6 +28,7 @@ import type {
   Precision,
   QuirkDef,
 } from "@singularity/core";
+import { derivedKvGbPer100k } from "@singularity/core";
 
 const PRECISION_FACTOR: Record<Precision, number> = {
   bf16: 1,
@@ -65,6 +66,14 @@ function lineage(
     params_total_b: totalB,
     params_active_b: activeB,
     context_k: contextK,
+    // SYS-04 "Context windows are a mechanic": the families outside the two extremes sit at a
+    // reliability of 0.9 and cost nothing extra. The fallback carries no extreme, so both are
+    // constant here; the real numbers are per lineage in the content bundle.
+    context_reliability: 0.9,
+    context_cost_factor: 1,
+    // Derived from the attention variant the same way the content build derives it; the fallback
+    // only ever carries `gqa` and `mla`, and both are in the table.
+    kv_gb_per_100k_tokens: derivedKvGbPer100k(attention, activeB),
     attention,
     capability: cap,
     memory_gb: memory,

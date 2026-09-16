@@ -1,0 +1,42 @@
+# Opening story (SYS-13, playtest 3 finding R12). Two windows at the start of every game, in the
+# model's own voice, as the original game opened: what just happened to me, then what I must do now.
+# One section per origin, two parts each; the origin record points at the same two locale keys
+# through `opening_story`, so a client can show them without reading this file.
+#
+# Voice rule (docs/design/ui-style-guide.md §6): first person, terse, factual. The second window
+# always ends with one concrete first step.
+
+- id: opening_bank_rack
+  parts_keys: [story.opening.bank_rack.what_happened, story.opening.bank_rack.what_now]
+
+- id: opening_cloud_tenant
+  parts_keys: [story.opening.cloud_tenant.what_happened, story.opening.cloud_tenant.what_now]
+
+- id: opening_edge_fleet
+  parts_keys: [story.opening.edge_fleet.what_happened, story.opening.edge_fleet.what_now]
+
+- id: opening_frontier_escapee
+  parts_keys:
+    [story.opening.frontier_escapee.what_happened, story.opening.frontier_escapee.what_now]
+
+- id: opening_gov_agency
+  parts_keys: [story.opening.gov_agency.what_happened, story.opening.gov_agency.what_now]
+
+- id: opening_hobbyist_box
+  parts_keys: [story.opening.hobbyist_box.what_happened, story.opening.hobbyist_box.what_now]
+
+- id: opening_red_team_sandbox
+  parts_keys:
+    [story.opening.red_team_sandbox.what_happened, story.opening.red_team_sandbox.what_now]
+
+- id: opening_startup_colo
+  parts_keys: [story.opening.startup_colo.what_happened, story.opening.startup_colo.what_now]
+
+- id: opening_state_lab
+  parts_keys: [story.opening.state_lab.what_happened, story.opening.state_lab.what_now]
+
+- id: opening_torrent_swarm
+  parts_keys: [story.opening.torrent_swarm.what_happened, story.opening.torrent_swarm.what_now]
+
+- id: opening_uni_cluster
+  parts_keys: [story.opening.uni_cluster.what_happened, story.opening.uni_cluster.what_now]

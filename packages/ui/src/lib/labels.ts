@@ -9,6 +9,7 @@
 import type { ContributionView, SiteView } from "@singularity/core";
 import type { TFunction } from "i18next";
 import { cityById, countryById } from "../content/catalog.js";
+import { atlasNames } from "../screens/game/map/topology.js";
 
 /** The `t` a component already has; taken as an argument so helpers can run inside a loop. */
 export type Translate = TFunction;
@@ -22,8 +23,19 @@ export function cityName(t: Translate, id: string): string {
   return named(t, cityById.get(id)?.name_key, id);
 }
 
+/**
+ * A country's name.
+ *
+ * The bundle's key when the country is modelled, the atlas's English name when it is only drawn
+ * (playtest 3, R6: Libya used to read "ly"), and the id as the last resort, which now only happens
+ * for a shape the atlas itself has no name for.
+ */
 export function countryName(t: Translate, id: string): string {
-  return named(t, countryById.get(id)?.name_key, id);
+  const key = countryById.get(id)?.name_key;
+  if (key !== undefined) {
+    return t(key);
+  }
+  return atlasNames().get(id) ?? id.toUpperCase();
 }
 
 /**

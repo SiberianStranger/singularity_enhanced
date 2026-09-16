@@ -1,5 +1,6 @@
 import type { Notification, Severity, TextVar } from "@singularity/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { playSound } from "../../audio/index.js";
 import { useGameStore } from "../../store/gameStore.js";
 import {
   modeFor,
@@ -99,6 +100,13 @@ export function useToasts(): ToastApi {
     }
     if (nextPopups.length > 0) {
       setPopups((current) => [...current, ...nextPopups]);
+    }
+    // One sound per batch of arrivals, not one per notification: at speed 5 a tick can raise six
+    // alerts, and six overlapping beeps are noise rather than an alert (style guide rule 10).
+    if (nextPopups.length > 0) {
+      playSound("event");
+    } else if (nextToasts.length > 0) {
+      playSound("alert");
     }
     if (shouldPause) {
       useGameStore.getState().setSpeed(0);

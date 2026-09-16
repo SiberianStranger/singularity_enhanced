@@ -29,5 +29,7 @@ coverage/
 tools/legacy-export/out/
 packages/desktop/src-tauri/target/
 packages/desktop/src-tauri/gen/
+# The official music pack (107 MB) is fetched by packages/ui/scripts/fetch-music.mjs.
+packages/ui/public/music/
 !.nvmrc
 !.github/

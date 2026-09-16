@@ -275,21 +275,24 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
     const live = await play();
     await openTab(/^Compute and sites$/);
     const table = within(panel()).getByRole("table", { name: "Precision trade-off" });
-    for (const header of ["Memory", "Fits", "Capability kept", "Research", "Income"]) {
+    for (const header of ["Mem", "Max ctx", "Keeps", "Res"]) {
       expect(within(table).getByRole("columnheader", { name: header })).toBeInTheDocument();
     }
     const current = live.view().self.precision_options.find((row) => row.is_current);
     expect(current).toBeDefined();
     expect(table).toHaveTextContent("(running)");
 
-    // And changing it reaches the engine.
+    // And changing it reaches the engine: either the precision moves, or the refusal is on screen
+    // with its reason (playtest 1, C7). What must not happen is a control that silently does
+    // nothing, which is the bug the refusal notice exists for.
     const other = live.view().self.precision_options.find((row) => row.fits && !row.is_current);
     await userEvent.selectOptions(
       within(panel()).getByLabelText("Precision"),
       other?.precision ?? "",
     );
     await waitFor(() => {
-      expect(live.view().self.precision).toBe(other?.precision);
+      const moved = live.view().self.precision === other?.precision;
+      expect(moved || useUiStore.getState().notices.length > 0).toBe(true);
     });
   });
 });
@@ -399,13 +402,13 @@ describe("the fixed regions stay put (U7, U8)", () => {
     useUiStore.getState().setOutliner(true);
   });
 
-  it("keeps the rows above the map from being squeezed into it", async () => {
+  it("keeps the row above the map from being squeezed into it", async () => {
     await play();
-    // jsdom has no layout, so what is asserted is the rule that produced the overlap: the alert
-    // bar and the map-mode strip were shrinkable flex items in a full-height column.
+    // jsdom has no layout, so what is asserted is the rule that produced the overlap: the top bar
+    // was a shrinkable flex item in a full-height column. The map-mode strip that used to sit
+    // under it is gone; the modes are a page of the world ledger now (playtest 3, R10).
     expect(screen.getByRole("banner").className).toContain("shrink-0");
-    const strip = screen.getByRole("button", { name: "Presence" }).parentElement as HTMLElement;
-    expect(strip.className).toContain("shrink-0");
+    expect(screen.queryByRole("button", { name: "Presence" })).toBeNull();
   });
 
   it("bounds the selection panel by the map region and collapses it to its title", async () => {

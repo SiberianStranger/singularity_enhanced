@@ -55,7 +55,7 @@ export function SavesList({ onLoad }: SavesListProps): ReactNode {
           {saves.map((record) => (
             <li
               key={record.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-line bg-panel2 px-3 py-2"
+              className="flex flex-wrap items-center justify-between gap-2 border border-line bg-panel2 px-3 py-2"
             >
               <span className="flex flex-col">
                 <span className="text-sm text-fg">

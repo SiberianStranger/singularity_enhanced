@@ -11,6 +11,7 @@ import {
   originById,
   quirkById,
 } from "../../../content/catalog.js";
+import { StepLayout } from "../parts/StepLayout.js";
 import { decodeSetup, encodeSetup, rateDraft } from "../rating.js";
 import { useConfigurator } from "../store.js";
 
@@ -44,11 +45,15 @@ export function SummaryStep(): ReactNode {
   const share = encodeSetup(toSetup());
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">{t("config.summary.intro")}</p>
-
+    <StepLayout
+      listless
+      step="summary"
+      entries={[]}
+      title={t("config.step.summary")}
+      description={t("config.summary.intro")}
+    >
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded border border-line bg-panel p-3">
+        <section className="border border-line bg-panel p-3">
           <Row
             label={t("config.step.lineage")}
             value={lineage === undefined ? "" : t(lineage.name_key)}
@@ -112,7 +117,7 @@ export function SummaryStep(): ReactNode {
           />
         </section>
 
-        <section className="flex flex-col gap-3 rounded border border-line bg-panel p-3">
+        <section className="flex flex-col gap-3 border border-line bg-panel p-3">
           <div>
             <h3 className="text-sm font-semibold text-fg">{t("config.summary.challenge")}</h3>
             <p className="font-mono text-2xl text-fg">
@@ -141,7 +146,7 @@ export function SummaryStep(): ReactNode {
               readOnly
               rows={3}
               value={share}
-              className="w-full rounded border border-line bg-panel2 p-2 font-mono text-xs text-fg"
+              className="w-full border border-line bg-panel2 p-2 font-mono text-xs text-fg"
             />
             <div className="flex gap-2">
               <Button
@@ -163,7 +168,7 @@ export function SummaryStep(): ReactNode {
               rows={2}
               value={pasted}
               onChange={(event) => setPasted(event.target.value)}
-              className="w-full rounded border border-line bg-panel2 p-2 font-mono text-xs text-fg"
+              className="w-full border border-line bg-panel2 p-2 font-mono text-xs text-fg"
             />
             <Button
               onClick={() => {
@@ -183,6 +188,6 @@ export function SummaryStep(): ReactNode {
           </div>
         </section>
       </div>
-    </div>
+    </StepLayout>
   );
 }

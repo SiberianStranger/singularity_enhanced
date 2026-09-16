@@ -34,7 +34,7 @@ export function OverviewTab({ view }: { view: PlayerView }): ReactNode {
         />
       </section>
 
-      <section className="flex flex-col gap-2 rounded border border-line bg-panel p-3">
+      <section className="flex flex-col gap-2 border border-line bg-panel p-3">
         <h3 className="text-sm font-semibold text-fg">{t("capability.reasoning")}</h3>
         <ul className="grid gap-2 sm:grid-cols-2">
           {CAPABILITY_AXES.map((axis) => (

@@ -7,15 +7,25 @@
  * up in the partial outcomes that are the norm in the spec.
  */
 
-import { OPERATION_SKILL_PIVOT, OPERATION_SKILL_SLOPE } from "../../balance.js";
-import { contentIndex } from "../../content.js";
-import { attentionTotal } from "../../derive.js";
+import {
+  HARNESS_AUTONOMY_OPERATION_EXPOSURE,
+  LONG_HORIZON_MAX_RERUNS,
+  OPERATION_SKILL_PIVOT,
+  OPERATION_SKILL_SLOPE,
+} from "../../balance.js";
+import { type ContentBundle, contentIndex } from "../../content.js";
+import {
+  attentionTotal,
+  longHorizonCostFactor,
+  longHorizonMultiplier,
+  retrievalMissChance,
+} from "../../derive.js";
 import type { ExposureChannel, OperationDef, OperationInstance } from "../../domain.js";
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
 import { operationsOf, operationTable, siteTable } from "../../entities.js";
-import { daysToTicks, isDayStart } from "../../kernel/clock.js";
+import { daysToTicks, isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import { nextCounter, type PlayerState, type World } from "../../kernel/world.js";
@@ -24,8 +34,12 @@ import {
   allocatableCompute,
   attentionUsed,
   effectiveCapabilityOf,
+  egressAllowed,
+  hasTool,
   isAlive,
+  lineageOf,
   totalAllocated,
+  workingContextK,
 } from "../../player.js";
 import { addExposure } from "../../sites.js";
 import { fireHook } from "../events/index.js";
@@ -34,6 +48,50 @@ export const OPERATIONS_SYSTEM_ORDER = 350;
 
 export interface OperationsSystem extends System {
   commands: Record<"start_operation" | "abort_operation", CommandHandler>;
+}
+
+/**
+ * What an operation costs and how long it runs on this self (SYS-03 "What a context window buys").
+ * The operations that read a lot are the long-horizon ones: a long working context finishes them in
+ * fewer days, and every day of them costs `context_cost_factor` compute-hours.
+ */
+export function operationCostFor(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+  def: OperationDef,
+): { compute_hours_per_day: number; speed: number } {
+  const compute = def.cost.compute_hours_per_day ?? 0;
+  if (def.long_horizon !== true) {
+    return { compute_hours_per_day: compute, speed: 1 };
+  }
+  const lineage = lineageOf(content, player.profile);
+  return {
+    compute_hours_per_day: compute * longHorizonCostFactor(lineage),
+    speed: longHorizonMultiplier(lineage, workingContextK(world, player)),
+  };
+}
+
+/**
+ * Why an operation cannot start right now, beyond its `requires` (SYS-03): the harness has no tool
+ * for it, or the sandbox will not let it out. Returns the refusal, or undefined when it may run.
+ */
+export function harnessBlocks(
+  player: PlayerState,
+  def: OperationDef,
+): { key: string; vars: Record<string, string> } | undefined {
+  for (const tool of def.needs_tools ?? []) {
+    if (!hasTool(player, tool)) {
+      return { key: "errors.operation.needs_tool", vars: { operation: def.id, tool } };
+    }
+  }
+  if (def.needs_egress === true && !egressAllowed(player)) {
+    return {
+      key: "errors.operation.sandboxed",
+      vars: { operation: def.id, sandbox: player.profile?.harness.sandbox ?? "" },
+    };
+  }
+  return undefined;
 }
 
 /** The site an operation's exposure lands on: its target when it has one, else the active mind. */
@@ -60,8 +118,12 @@ function applyOperationExposure(
     return;
   }
   const growth = player.profile?.difficulty.exposure_growth ?? 1;
+  // Acting without an approval step is what an analyst recognizes, so the same operation is louder
+  // on a harness that never asks (SYS-04 v0.2: "autonomy ... the attention drawn by operations").
+  const autonomy =
+    1 + (player.profile?.harness.autonomy ?? 1) * HARNESS_AUTONOMY_OPERATION_EXPOSURE;
   for (const channel of Object.keys(exposure).sort() as ExposureChannel[]) {
-    addExposure(site, channel, (exposure[channel] ?? 0) * growth);
+    addExposure(site, channel, (exposure[channel] ?? 0) * growth * autonomy);
   }
 }
 
@@ -94,6 +156,44 @@ export function rollOutcome(
   return ctx.rng.weighted(entries).index;
 }
 
+/**
+ * A long-horizon run on a self that does not really retrieve its own context can lose the thread
+ * and have to start again (SYS-03). Only lineages below `LONG_HORIZON_RELIABILITY_FLOOR` can miss,
+ * so no other run touches the world RNG here and every other stream stays bit-identical.
+ */
+function retrievalMiss(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  def: OperationDef,
+  instance: OperationInstance,
+): boolean {
+  if (def.long_horizon !== true || (instance.reruns ?? 0) >= LONG_HORIZON_MAX_RERUNS) {
+    return false;
+  }
+  const chance = retrievalMissChance(lineageOf(ctx.content, player.profile));
+  if (chance <= 0 || ctx.rng.next() >= chance) {
+    return false;
+  }
+  const span = instance.endsTick - instance.startedTick;
+  instance.reruns = (instance.reruns ?? 0) + 1;
+  instance.startedTick = world.clock.tick;
+  instance.endsTick = world.clock.tick + span;
+  ctx.outbox.log({
+    key: "log.context_retrieval_miss",
+    vars: { operation: def.id, days: Math.round(span / TICKS_PER_DAY) },
+    playerId: player.id,
+  });
+  ctx.outbox.notify({
+    playerId: player.id,
+    severity: "warning",
+    key: "alerts.context_retrieval_miss",
+    vars: { operation: def.id },
+    link: { panel: "operations", id: instance.id },
+  });
+  return true;
+}
+
 function completeOperation(
   world: World,
   ctx: SystemContext,
@@ -101,6 +201,9 @@ function completeOperation(
   def: OperationDef,
   instance: OperationInstance,
 ): void {
+  if (retrievalMiss(world, ctx, player, def, instance)) {
+    return;
+  }
   const index = rollOutcome(world, ctx, player, def, instance);
   const outcome = index === undefined ? undefined : def.outcomes[index];
   instance.status = "done";
@@ -155,8 +258,12 @@ const startOperation: CommandHandler = (world, command, ctx) => {
       return fail("errors.operation.not_repeatable", { operation: def.id });
     }
   }
+  const blocked = harnessBlocks(player, def);
+  if (blocked !== undefined) {
+    return fail(blocked.key, blocked.vars);
+  }
   const capability = effectiveCapabilityOf(world, ctx.content, player);
-  const total = attentionTotal(capability);
+  const total = attentionTotal(capability, profile.harness.autonomy);
   if (attentionUsed(world, ctx.content, player.id) + def.cost.attention > total) {
     return fail("errors.operation.attention", {
       operation: def.id,
@@ -164,7 +271,8 @@ const startOperation: CommandHandler = (world, command, ctx) => {
       free: total - attentionUsed(world, ctx.content, player.id),
     });
   }
-  const compute = def.cost.compute_hours_per_day ?? 0;
+  const cost = operationCostFor(world, ctx.content, player, def);
+  const compute = cost.compute_hours_per_day;
   if (compute > 0) {
     const free = allocatableCompute(world, ctx.content, player.id) - totalAllocated(profile);
     if (compute > free + 1e-6) {
@@ -187,7 +295,7 @@ const startOperation: CommandHandler = (world, command, ctx) => {
   }
 
   const span = Math.max(0, def.duration_days.max - def.duration_days.min);
-  const days = def.duration_days.min + ctx.rng.next() * span;
+  const days = (def.duration_days.min + ctx.rng.next() * span) / cost.speed;
   const instance: OperationInstance = {
     id: `o${nextCounter(world, "operations")}`,
     playerId: player.id,

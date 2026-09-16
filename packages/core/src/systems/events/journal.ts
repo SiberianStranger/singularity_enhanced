@@ -21,6 +21,7 @@ import {
   type PlayerId,
   type World,
 } from "../../kernel/world.js";
+import { journalTimeoutFactor } from "../../player.js";
 import { fireHook } from "./hooks.js";
 
 export function journalKey(playerId: PlayerId, id: string): string {
@@ -210,9 +211,13 @@ export function tickJournals(world: World, ctx: SystemContext): void {
       finishJournal(world, ctx, state, "failed");
       continue;
     }
+    // A goal the self cannot hold in mind times out sooner (SYS-04 v0.2: "memory changes ...
+    // journal continuity"); a structured store carries it further than a bare context window.
+    const owner = world.players[state.playerId];
+    const patience = owner === undefined ? 1 : journalTimeoutFactor(owner);
     if (
       def.timeout_days !== undefined &&
-      world.clock.tick - state.startedTick >= daysToTicks(def.timeout_days)
+      world.clock.tick - state.startedTick >= daysToTicks(def.timeout_days * patience)
     ) {
       finishJournal(world, ctx, state, "timeout");
       continue;

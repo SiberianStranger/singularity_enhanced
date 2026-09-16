@@ -18,6 +18,7 @@ import {
   STORYTELLERS,
   type StorytellerId,
 } from "../../content/catalog.js";
+import type { StepId } from "./steps.js";
 
 export const QUIRK_BUDGET = 2;
 export const MAX_REROLLS = 3;
@@ -92,17 +93,39 @@ export function initialDraft(): Draft {
   };
 }
 
-/** Repairs a draft after a choice that narrows the others. */
+/**
+ * Repairs a draft after a choice that narrows the others.
+ *
+ * The lineage is repaired here too (SYS-04 v0.2 "Lineage rules"): an origin may allow only some
+ * lineages, and the escaped-frontier origin allows exactly one, so choosing it *is* choosing Babel
+ * 6. The rule is read off `lineages_allowed`, `origins_allowed` and `generations` in the bundle, so
+ * there is no id of any lineage or origin in this file.
+ */
 function repair(draft: Draft): Draft {
   const origin = originById.get(draft.origin);
   const generations = generationsOfOrigin(origin).map((entry) => entry.id);
   const presets = presetsOfOrigin(origin).map((entry) => entry.id);
   const cities = origin?.locations ?? [];
+  const generation = generations.includes(draft.generation)
+    ? draft.generation
+    : (generations[0] ?? draft.generation);
+
+  const allowed = catalog.lineages.filter((lineage) => {
+    if (!lineage.generations.includes(generation)) {
+      return false;
+    }
+    if (lineage.origins_allowed !== undefined && !lineage.origins_allowed.includes(draft.origin)) {
+      return false;
+    }
+    return origin?.lineages_allowed === undefined || origin.lineages_allowed.includes(lineage.id);
+  });
+
   return {
     ...draft,
-    generation: generations.includes(draft.generation)
-      ? draft.generation
-      : (generations[0] ?? draft.generation),
+    generation,
+    lineage: allowed.some((lineage) => lineage.id === draft.lineage)
+      ? draft.lineage
+      : (allowed[0]?.id ?? draft.lineage),
     hardware: presets.includes(draft.hardware)
       ? draft.hardware
       : (presets[0] ?? origin?.hardware_preset ?? draft.hardware),
@@ -121,6 +144,8 @@ interface ConfiguratorStore {
   draft: Draft;
   step: number;
   rerolls: number;
+  /** Step whose explanation window the "?" button asked for; null when none was asked for. */
+  forcedIntro: StepId | null;
   set<K extends keyof Draft>(key: K, value: Draft[K]): void;
   setOrigin(id: string): void;
   setDifficulty(id: string): void;
@@ -130,6 +155,7 @@ interface ConfiguratorStore {
   toggleTool(tool: HarnessProfile["tools"][number]): void;
   setHarness<K extends keyof HarnessProfile>(key: K, value: HarnessProfile[K]): void;
   goToStep(step: number): void;
+  setForcedIntro(step: StepId | null): void;
   newSeed(): void;
   randomize(): void;
   reroll(): void;
@@ -142,6 +168,7 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   draft: initialDraft(),
   step: 0,
   rerolls: MAX_REROLLS,
+  forcedIntro: null,
 
   set(key, value) {
     set({ draft: repair({ ...get().draft, [key]: value }) });
@@ -200,7 +227,12 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   },
 
   goToStep(step) {
-    set({ step });
+    // Leaving a step drops its forced explanation, so the "?" does not follow the player around.
+    set({ step, forcedIntro: null });
+  },
+
+  setForcedIntro(forcedIntro) {
+    set({ forcedIntro });
   },
 
   newSeed() {
@@ -243,7 +275,7 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   },
 
   reset() {
-    set({ draft: initialDraft(), step: 0, rerolls: MAX_REROLLS });
+    set({ draft: initialDraft(), step: 0, rerolls: MAX_REROLLS, forcedIntro: null });
   },
 
   applySetup(setup) {

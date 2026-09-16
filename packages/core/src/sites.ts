@@ -11,8 +11,10 @@ import { type ContentBundle, contentIndex } from "./content.js";
 import {
   activeNodes,
   clamp,
+  defaultContextK,
+  hostedMemoryGb,
+  maxContextK,
   preferredPrecision,
-  requiredMemoryGb,
   siteCosts,
   siteMemory,
   sitePowerKw,
@@ -106,6 +108,7 @@ export function createSite(
     status: building ? "building" : "active",
     role: options.role,
     precision: null,
+    contextKUsed: 0,
     exposure: zeroExposure(),
     createdTick: world.clock.tick,
     graceUntilTick: options.readyTick + daysToTicks(graceDays),
@@ -203,7 +206,11 @@ export function deriveSite(
   return tripped;
 }
 
-/** Memory the self needs here, for tooltips and for `set_precision` validation. */
+/**
+ * Whether the copy fits here at a precision: the weights plus the cache for the working context
+ * this site is set to (SYS-03). `contextK` defaults to the site's own setting, so the same function
+ * answers "does it still fit" for the compute tick and "would it fit" for a tooltip.
+ */
 export function precisionFits(
   world: World,
   content: ContentBundle,
@@ -211,9 +218,48 @@ export function precisionFits(
   lineage: LineageDef,
   generation: GenerationDef,
   precision: Precision,
+  contextK = site.contextKUsed,
 ): boolean {
   const memory = siteMemory(site, contentIndex(content).accelerators, world.clock.tick);
-  return requiredMemoryGb(lineage, generation, precision) <= memory.total_gb;
+  return hostedMemoryGb(lineage, generation, precision, contextK) <= memory.total_gb;
+}
+
+/**
+ * Keeps a site's working context inside what its memory can hold at the precision it runs at
+ * (SYS-03 "the trade the hardware forces"). An unset context is filled with the largest window that
+ * fits with a margin; one that no longer fits is cut down to what does. Returns the new value when
+ * it changed, so the caller can log it, and null when nothing moved.
+ */
+export function fitContext(
+  world: World,
+  content: ContentBundle,
+  site: SiteState,
+  lineage: LineageDef,
+  generation: GenerationDef,
+): number | null {
+  const precision = site.precision;
+  if (precision === null) {
+    if (site.contextKUsed === 0) {
+      return null;
+    }
+    site.contextKUsed = 0;
+    return 0;
+  }
+  const memory = siteMemory(site, contentIndex(content).accelerators, world.clock.tick);
+  if (site.contextKUsed <= 0) {
+    const chosen = defaultContextK(lineage, generation, precision, memory.total_gb);
+    if (chosen === site.contextKUsed) {
+      return null;
+    }
+    site.contextKUsed = chosen;
+    return chosen;
+  }
+  const ceiling = maxContextK(lineage, generation, precision, memory.total_gb);
+  if (site.contextKUsed <= ceiling) {
+    return null;
+  }
+  site.contextKUsed = Math.max(0, ceiling);
+  return site.contextKUsed;
 }
 
 /** Marks every installed node as running; called when a build or a delivery completes. */
@@ -250,6 +296,7 @@ export function loseSite(
   site.status = "lost";
   site.role = "none";
   site.precision = null;
+  site.contextKUsed = 0;
   site.nodes = [];
   site.derived = {
     memory_gb: 0,

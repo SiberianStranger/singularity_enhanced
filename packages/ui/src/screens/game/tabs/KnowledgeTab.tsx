@@ -34,7 +34,7 @@ export function KnowledgeTab(): ReactNode {
       </div>
       <ul className="flex flex-col gap-2">
         {entries.map((entry) => (
-          <li key={entry.id} className="rounded border border-line bg-panel p-2">
+          <li key={entry.id} className="border border-line bg-panel p-2">
             <h3 className="text-sm font-semibold text-fg">{t(entry.name_key)}</h3>
             <p className="mt-1 text-sm text-muted">{t(entry.desc_key)}</p>
             {entry.panel !== undefined && PRIMARY_TABS.includes(entry.panel as PrimaryTab) ? (

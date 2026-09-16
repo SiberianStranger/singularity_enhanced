@@ -1384,6 +1384,21 @@
   power_headroom: 0.65
   colo_price_index: 0.86
   scrutiny: 0.28
+- id: "ru_novosibirsk"
+  country: "ru"
+  name_key: "world.city.ru_novosibirsk.name"
+  # Not in world-baseline-2026.json: estimate. Population is the Novosibirsk agglomeration
+  # (~1.9M); lat/lon are Akademgorodok, the Siberian Branch of the Academy of Sciences, which is
+  # what makes the city a compute location at all. The derived fields follow the formulas at the
+  # top of this file with Russia's electricity price and enforcement, so the row sits between
+  # ru_moscow and ru_innopolis exactly as the arithmetic says it should.
+  population: 1900000
+  lat: 54.85
+  lon: 83.1
+  tags: ["university", "tech"]
+  power_headroom: 0.7
+  colo_price_index: 0.8
+  scrutiny: 0.29
 - id: "ru_moscow"
   country: "ru"
   name_key: "world.city.ru_moscow.name"
@@ -1634,6 +1649,20 @@
   power_headroom: 0.7
   colo_price_index: 0.7
   scrutiny: 0.36
+- id: "us_san_jose"
+  country: "us"
+  name_key: "world.city.us_san_jose.name"
+  # Not in world-baseline-2026.json: estimate. Population is the San Jose-Sunnyvale-Santa Clara
+  # metro (~2.0M); lat/lon are downtown San Jose. Derived fields follow the formulas at the top of
+  # this file, which put it on the same colo price and headroom as the other US tech metros and on
+  # the tech-only scrutiny of us_seattle rather than the government figure of us_san_francisco.
+  population: 2000000
+  lat: 37.34
+  lon: -121.89
+  tags: ["tech", "industry"]
+  power_headroom: 0.7
+  colo_price_index: 1.45
+  scrutiny: 0.45
 - id: "us_san_francisco"
   country: "us"
   name_key: "world.city.us_san_francisco.name"

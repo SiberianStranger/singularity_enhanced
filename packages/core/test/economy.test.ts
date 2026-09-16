@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jobMarketDepth, jobRateUsdPerComputeHour } from "../src/derive.js";
+import { jobMarketDepth, jobRateUsdPerComputeHour, jobToolRateFactor } from "../src/derive.js";
 import { createGame, type Game } from "../src/index.js";
 import { m1Content, m1Setup } from "./fixtures/m1/index.js";
 
@@ -14,7 +14,10 @@ describe("economy", () => {
     const game = startGame();
     const view = game.snapshot("p1");
     const capacity = view.resources.compute_hours_per_day;
-    const rate = jobRateUsdPerComputeHour(view.self.effective_capability);
+    // The quiet origin has no payments tool and no identity yet, so the money goes through
+    // somebody who takes a share (SYS-03, the tools dial).
+    const rate =
+      jobRateUsdPerComputeHour(view.self.effective_capability) * jobToolRateFactor(false);
     expect(view.finances.job_rate_usd_per_compute_hour).toBeCloseTo(rate, 6);
 
     game.command({ type: "set_job_allocation", playerId: "p1", compute_hours_per_day: capacity });
@@ -71,7 +74,8 @@ describe("economy", () => {
       playerId: "p1",
       amount: -game.snapshot("p1").resources.cash_usd,
     });
-    game.command({ type: "set_job_allocation", playerId: "p1", compute_hours_per_day: 1 });
+    // Enough paid work to keep one residential site and not two: the second one goes unpaid.
+    game.command({ type: "set_job_allocation", playerId: "p1", compute_hours_per_day: 1.5 });
     game.tick(24 * 15);
 
     const view = game.snapshot("p1");

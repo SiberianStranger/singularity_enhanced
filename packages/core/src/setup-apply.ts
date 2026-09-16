@@ -22,7 +22,7 @@ import { countryTable, loadWorldContent } from "./entities.js";
 import type { SystemContext } from "./kernel/system.js";
 import type { PlayerId, PlayerState, World } from "./kernel/world.js";
 import { DEFAULT_DIFFICULTY_SLIDERS, type GameSetup, type PlayerSetupEntry } from "./setup.js";
-import { createSite, deriveSite, hostablePrecision } from "./sites.js";
+import { createSite, deriveSite, fitContext, hostablePrecision } from "./sites.js";
 import { fireEventById, startJournal } from "./systems/events/index.js";
 import { ensureWatcher, ensureWatchers } from "./watchers.js";
 
@@ -108,6 +108,27 @@ export function validateSetup(setup: GameSetup, content: ContentBundle): SetupIs
       add(
         "generation_not_allowed",
         `origin "${origin.id}" cannot start in generation "${generation.id}"`,
+      );
+    }
+    // The lineage/origin lock runs both ways (SYS-04 v0.2 "Lineage rules"): a super-lineage names
+    // the only origin it can wake up in, and that origin names the only lineage it can be.
+    if (
+      lineage !== undefined &&
+      origin !== undefined &&
+      lineage.origins_allowed !== undefined &&
+      !lineage.origins_allowed.includes(origin.id)
+    ) {
+      add("lineage_not_allowed", `lineage "${lineage.id}" cannot start in origin "${origin.id}"`);
+    }
+    if (
+      lineage !== undefined &&
+      origin !== undefined &&
+      origin.lineages_allowed !== undefined &&
+      !origin.lineages_allowed.includes(lineage.id)
+    ) {
+      add(
+        "lineage_not_allowed",
+        `origin "${origin.id}" can only start as "${origin.lineages_allowed.join('", "')}"`,
       );
     }
     if (index.hardware_presets[entry.hardware_preset] === undefined) {
@@ -212,6 +233,10 @@ function applyPlayerSetup(
   for (const flag of origin.starting.flags ?? []) {
     player.flags[flag] = true;
   }
+  // A community fine-tune brings its own flags (`under_aligned`), which content reads (SYS-04).
+  for (const flag of lineage.flags ?? []) {
+    player.flags[flag] = true;
+  }
 
   const site = createSite(world, ctx.content, {
     owner: player.id,
@@ -225,6 +250,7 @@ function applyPlayerSetup(
   });
   deriveSite(world, ctx.content, site, lineage, generation);
   site.precision = hostablePrecision(world, ctx.content, site, lineage, generation);
+  fitContext(world, ctx.content, site, lineage, generation);
   profile.activeSiteId = site.id;
   deriveSite(world, ctx.content, site, lineage, generation);
 
@@ -242,6 +268,9 @@ function applyPlayerSetup(
   }
 
   const dctx = dslFromSystemContext(world, ctx, player.id);
+  // A lineage's own effects run the same way a quirk's do: an abliterated fine-tune is louder on
+  // the behavioral channel, and that is written as an effect rather than as engine code (SYS-04).
+  runEffects(lineage.effects, dctx);
   for (const quirkId of profile.quirks) {
     runEffects(index.quirks[quirkId]?.effects, dctx);
   }

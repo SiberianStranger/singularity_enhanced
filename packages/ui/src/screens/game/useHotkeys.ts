@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useGameStore } from "../../store/gameStore.js";
-import { PANEL_HOTKEYS, useUiStore } from "../../store/uiStore.js";
+import { OVERLAY_HOTKEYS, PANEL_HOTKEYS, useUiStore } from "../../store/uiStore.js";
 
 /**
  * The speed space resumes at when nothing else is remembered. A game starts paused on its opening
@@ -29,7 +29,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Speed keys 0-5 and space, panel hotkeys, F5/F9 and Escape (SYS-11 "Keyboard"). */
+/** Speed keys 0-5 and space, panel and window hotkeys, F5/F9 and Escape (SYS-11 "Keyboard"). */
 export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: HotkeyActions): void {
   // The speed space goes back to: whatever the player last chose, or the default on a fresh game.
   const resumeAt = useRef(DEFAULT_SPEED);
@@ -76,13 +76,26 @@ export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: Hotkey
       }
       if (event.key === "Escape") {
         event.preventDefault();
+        // An open window takes Escape first; only when none is open does it reach the menu.
+        if (useUiStore.getState().overlay !== null) {
+          useUiStore.getState().closeOverlay();
+          return;
+        }
         onMenu();
         return;
       }
-      const tab = PANEL_HOTKEYS[event.key.toLowerCase()];
+      const key = event.key.toLowerCase();
+      const tab = PANEL_HOTKEYS[key];
       if (tab !== undefined) {
         event.preventDefault();
         useUiStore.getState().toggleTab(tab);
+        return;
+      }
+      // L, K and W open the three windows over the map (playtest 3, R8-R10).
+      const overlay = OVERLAY_HOTKEYS[key];
+      if (overlay !== undefined) {
+        event.preventDefault();
+        useUiStore.getState().toggleOverlay(overlay);
       }
     };
     window.addEventListener("keydown", onKeyDown);

@@ -38,17 +38,17 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
   return (
     <div className="flex flex-col gap-4">
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded border border-line bg-panel p-3">
+        <div className="border border-line bg-panel p-3">
           <h3 className="mb-2 text-sm font-semibold text-ok">{t("finances.income")}</h3>
           <ul className="flex flex-col gap-1">{lines(finances.income, "text-ok")}</ul>
         </div>
-        <div className="rounded border border-line bg-panel p-3">
+        <div className="border border-line bg-panel p-3">
           <h3 className="mb-2 text-sm font-semibold text-crit">{t("finances.costs")}</h3>
           <ul className="flex flex-col gap-1">{lines(finances.costs, "text-crit")}</ul>
         </div>
       </section>
 
-      <section className="flex flex-wrap items-baseline justify-between gap-2 rounded border border-line bg-panel p-3">
+      <section className="flex flex-wrap items-baseline justify-between gap-2 border border-line bg-panel p-3">
         <span className="text-sm text-muted">{t("finances.net")}</span>
         <span
           className={`font-mono text-lg ${finances.net_usd_per_day >= 0 ? "text-ok" : "text-crit"}`}
@@ -62,7 +62,7 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
         </span>
       </section>
 
-      <section className="rounded border border-line bg-panel p-3">
+      <section className="border border-line bg-panel p-3">
         <h3 className="mb-2 text-sm font-semibold text-fg">{t("finances.sources")}</h3>
         <Table
           rows={sources}
@@ -102,7 +102,7 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
         />
       </section>
 
-      <section className="rounded border border-line bg-panel p-3">
+      <section className="border border-line bg-panel p-3">
         <h3 className="mb-2 text-sm font-semibold text-fg">{t("finances.jobs")}</h3>
         <Slider
           label={t("finances.jobs")}

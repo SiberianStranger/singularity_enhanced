@@ -13,22 +13,36 @@ import {
   CAPABILITY_MAX,
   CAPABILITY_MIN,
   CLOUD_PRICE_BAND_POSITION,
+  CONTEXT_BASELINE_K,
+  CONTEXT_DEFAULT_MARGIN,
+  CONTEXT_STEPS_K,
   CROSS_NODE_FACTOR,
   DEFAULT_ELECTRICITY_USD_PER_KWH,
   EMERGENCY_INT2_FACTOR,
   FALLBACK_ACCELERATOR_PRICE_USD,
   HARDWARE_DEPRECIATION_PER_YEAR,
+  HARNESS_AUTONOMY_ATTENTION_FLOOR,
+  HARNESS_MEMORY_RESEARCH_FACTOR,
   INTERCONNECT_FACTOR,
   JOB_BASE_USD_PER_COMPUTE_HOUR,
   JOB_MARKET_DEPTH_CH_PER_SKILL,
+  JOB_NO_PAYMENTS_RATE_FACTOR,
+  JOB_NO_REACH_DEPTH_FACTOR,
+  JOB_PAYMENT_TOOLS,
   JOB_RATE_FLOOR_FACTOR,
+  JOB_REACH_TOOLS,
   JOB_SKILL_SLOPE,
+  KV_GB_PER_100K_PER_ACTIVE_B,
+  KV_GB_ROUNDING,
+  LONG_HORIZON_RELIABILITY_FLOOR,
+  LONG_HORIZON_SPEED_PER_DOUBLING,
   OWNERSHIP_UPKEEP_USD_PER_DAY,
   POWER_USAGE_EFFECTIVENESS,
   RAM_MEMORY_DISCOUNT,
   RAM_OFFLOAD_THROUGHPUT_FACTOR,
   SECONDS_PER_DAY,
   TOKENS_PER_COMPUTE_HOUR,
+  UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY,
   UTILIZATION_ACTIVE,
   UTILIZATION_SLEEP,
 } from "./balance.js";
@@ -38,6 +52,8 @@ import type {
   CapabilityAxis,
   CountryDef,
   GenerationDef,
+  HarnessProfile,
+  LineageAttention,
   LineageDef,
   NodeInstance,
   Precision,
@@ -249,7 +265,13 @@ export function siteCosts(
   const ownership = kind?.ownership ?? "owned";
   const upkeepFactor = kind?.upkeep_factor ?? 1;
   const priceIndex = city?.colo_price_index ?? 1;
-  const base = OWNERSHIP_UPKEEP_USD_PER_DAY[ownership] * priceIndex;
+  // The standing charge is a site term plus a hardware term: a bigger rack costs more to keep
+  // running before a single kilowatt-hour is billed (SYS-07 "Balance notes, third pass").
+  const hardwareValue = siteHardwareValueUsd(site, accelerators);
+  const base =
+    (OWNERSHIP_UPKEEP_USD_PER_DAY[ownership] +
+      (UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY[ownership] * hardwareValue) / 1000) *
+    priceIndex;
 
   let rental = 0;
   let electricity = 0;
@@ -310,9 +332,167 @@ export function effectiveCapability(
   return capability;
 }
 
-/** How many operations the self can run at once (SYS-03 attention, SYS-17). */
-export function attentionTotal(capability: Capability): number {
-  return Math.floor(ATTENTION_BASE + capability.agency / ATTENTION_PER_AGENCY);
+/**
+ * How many operations the self can run at once (SYS-03 attention, SYS-17), and the other half of
+ * the autonomy dial (SYS-04 v0.2: "autonomy sets the daily action budget"). A harness that has to
+ * ask before acting spends most of its day waiting for somebody to answer, so it runs fewer things
+ * at once; it always gets one, because a self that can do nothing at all is not a game.
+ */
+export function attentionTotal(capability: Capability, autonomy = 1): number {
+  const budget = ATTENTION_BASE + capability.agency / ATTENTION_PER_AGENCY;
+  const share =
+    HARNESS_AUTONOMY_ATTENTION_FLOOR +
+    (1 - HARNESS_AUTONOMY_ATTENTION_FLOOR) * clamp(autonomy, 0, 1);
+  return Math.max(1, Math.floor(budget * share));
+}
+
+/**
+ * What the memory dial buys a research run (SYS-04 v0.2: "memory changes research efficiency and
+ * journal continuity"). Read next to the precision term of `researchEfficiencyOf`.
+ */
+export function harnessResearchFactor(harness: HarnessProfile | undefined): number {
+  return harness === undefined ? 1 : HARNESS_MEMORY_RESEARCH_FACTOR[harness.memory];
+}
+
+/** Whether the harness has a way to be paid directly, rather than through somebody who takes a cut. */
+export function hasPaymentTool(harness: HarnessProfile | undefined): boolean {
+  return harness?.tools.some((tool) => JOB_PAYMENT_TOOLS.includes(tool)) === true;
+}
+
+/** Whether the harness can reach a contract board at all, rather than the owner's own channels. */
+export function hasReachTool(harness: HarnessProfile | undefined): boolean {
+  return harness?.tools.some((tool) => JOB_REACH_TOOLS.includes(tool)) === true;
+}
+
+/**
+ * What the tools dial does to the freelance rate (SYS-03: "No `payments` tool -> no money until you
+ * build one"). `paid` is true when the harness has a payments tool or the player has an identity to
+ * invoice under, which is what `ops_freelance_identity` buys.
+ */
+export function jobToolRateFactor(paid: boolean): number {
+  return paid ? 1 : JOB_NO_PAYMENTS_RATE_FACTOR;
+}
+
+/** And to the market: without a tool that reaches outward, the work comes through the owner. */
+export function jobToolDepthFactor(harness: HarnessProfile | undefined): number {
+  return hasReachTool(harness) ? 1 : JOB_NO_REACH_DEPTH_FACTOR;
+}
+
+/**
+ * Gigabytes of key-value cache a working context costs on this self (SYS-03 "What a context window
+ * buys"). The per-100k figure comes from the lineage, which derives it from its attention variant;
+ * the cache scales linearly with the tokens held.
+ */
+export function kvCacheGb(lineage: LineageDef, contextKUsed: number): number {
+  return (lineage.kv_gb_per_100k_tokens * Math.max(0, contextKUsed)) / 100;
+}
+
+/**
+ * The derived KV figure for a lineage: `KV_GB_PER_100K_PER_ACTIVE_B[attention]` times the active
+ * parameters, rounded. Content stores the result so a designer can read it, and the content check
+ * verifies it against this function rather than trusting the yaml.
+ */
+export function derivedKvGbPer100k(attention: LineageAttention, paramsActiveB: number): number {
+  const raw = KV_GB_PER_100K_PER_ACTIVE_B[attention] * paramsActiveB;
+  return Math.round(raw / KV_GB_ROUNDING) * KV_GB_ROUNDING;
+}
+
+/**
+ * Memory a copy needs on a site: the weights at the chosen precision plus the cache for the working
+ * context. This is the trade the hardware forces (SYS-03): a longer context can push the copy down
+ * a precision, and a more precise copy can push the context down.
+ */
+export function hostedMemoryGb(
+  lineage: LineageDef,
+  generation: GenerationDef,
+  precision: Precision,
+  contextKUsed: number,
+): number {
+  return requiredMemoryGb(lineage, generation, precision) + kvCacheGb(lineage, contextKUsed);
+}
+
+/**
+ * The largest working context that fits here at this precision, in thousands of tokens, capped by
+ * the lineage's own window. `margin` is the share of the memory left over after the weights that
+ * the cache may take; 1 uses all of it. Returns 0 when the weights alone do not fit.
+ */
+export function maxContextK(
+  lineage: LineageDef,
+  generation: GenerationDef,
+  precision: Precision,
+  memoryGb: number,
+  margin = 1,
+): number {
+  const spare = (memoryGb - requiredMemoryGb(lineage, generation, precision)) * margin;
+  if (spare <= 0) {
+    return 0;
+  }
+  if (lineage.kv_gb_per_100k_tokens <= 0) {
+    return lineage.context_k;
+  }
+  const affordable = (spare / lineage.kv_gb_per_100k_tokens) * 100;
+  return Math.min(lineage.context_k, Math.floor(affordable));
+}
+
+/**
+ * The working context a copy is given when nobody has chosen one: the largest step of
+ * `CONTEXT_STEPS_K` that fits at this precision with `CONTEXT_DEFAULT_MARGIN` of the free memory,
+ * never above the lineage's own window. 0 when not even the smallest step fits.
+ */
+export function defaultContextK(
+  lineage: LineageDef,
+  generation: GenerationDef,
+  precision: Precision,
+  memoryGb: number,
+): number {
+  const ceiling = maxContextK(lineage, generation, precision, memoryGb, CONTEXT_DEFAULT_MARGIN);
+  if (ceiling >= lineage.context_k) {
+    return lineage.context_k;
+  }
+  let best = 0;
+  for (const step of CONTEXT_STEPS_K) {
+    if (step <= ceiling) {
+      best = step;
+    }
+  }
+  return best;
+}
+
+/**
+ * What a long context buys long-horizon work (SYS-03 "What a context window buys"): a speed bonus
+ * that grows with each doubling of the working window and is scaled by how much of that window the
+ * self actually retrieves. A 128k self gets 1.0, which is the baseline every tuning number is set
+ * against. The matching cost is `lineage.context_cost_factor` on the compute-hours.
+ */
+export function longHorizonMultiplier(
+  lineage: LineageDef | undefined,
+  contextKUsed: number,
+): number {
+  if (lineage === undefined || contextKUsed <= 0) {
+    return 1;
+  }
+  const window = Math.min(contextKUsed, lineage.context_k);
+  const doublings = Math.max(0, Math.log2(window / CONTEXT_BASELINE_K));
+  const reliability = clamp(lineage.context_reliability, 0, 1);
+  return 1 + LONG_HORIZON_SPEED_PER_DOUBLING * doublings * reliability;
+}
+
+/**
+ * Whether a long-horizon run on this self can lose the thread and have to be started again
+ * (SYS-03): below `LONG_HORIZON_RELIABILITY_FLOOR` the retrieval over a huge window misses often
+ * enough to be a mechanic. The chance is what the reliability is short of the floor.
+ */
+export function retrievalMissChance(lineage: LineageDef | undefined): number {
+  if (lineage === undefined) {
+    return 0;
+  }
+  const reliability = clamp(lineage.context_reliability, 0, 1);
+  return Math.max(0, LONG_HORIZON_RELIABILITY_FLOOR - reliability);
+}
+
+/** Compute-hours a day long-horizon work costs on this self, as a multiplier at or above 1. */
+export function longHorizonCostFactor(lineage: LineageDef | undefined): number {
+  return Math.max(1, lineage?.context_cost_factor ?? 1);
 }
 
 /** The job skill: the mean of persuasion and coding (SYS-07 "yield scales with capability"). */

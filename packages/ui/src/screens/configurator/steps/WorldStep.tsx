@@ -4,7 +4,14 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { Card } from "../../../components/Card.js";
 import { Slider } from "../../../components/Slider.js";
-import { CHALLENGE_MODIFIERS, catalog, STORYTELLERS } from "../../../content/catalog.js";
+import {
+  CHALLENGE_MODIFIERS,
+  catalog,
+  difficultyById,
+  STORYTELLERS,
+} from "../../../content/catalog.js";
+import { worldMeaning } from "../meaning.js";
+import { StepLayout } from "../parts/StepLayout.js";
 import { useConfigurator } from "../store.js";
 
 const SLIDER_KEYS: readonly (keyof DifficultySliders)[] = [
@@ -15,6 +22,14 @@ const SLIDER_KEYS: readonly (keyof DifficultySliders)[] = [
   "grace_windows",
 ];
 
+/**
+ * Seed, difficulty, storyteller and the disclosed modifiers (SYS-04 "World settings").
+ *
+ * This is the one step with no list of things to choose between: the whole page is the settings, so
+ * it uses the layout's listless mode and keeps the explanation window and the "?" that every other
+ * step has. Each slider's effect is a line of the meaning block, colored against the preset the
+ * player started from, so moving one says which way the game just went.
+ */
 export function WorldStep(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
@@ -24,15 +39,22 @@ export function WorldStep(): ReactNode {
   const toggleModifier = useConfigurator((state) => state.toggleModifier);
   const newSeed = useConfigurator((state) => state.newSeed);
 
-  return (
-    <div className="flex flex-col gap-5">
-      <p className="text-sm text-muted">{t("config.world.intro")}</p>
+  const preset = difficultyById.get(draft.difficulty);
 
+  return (
+    <StepLayout
+      listless
+      step="world"
+      entries={[]}
+      title={t("config.step.world")}
+      description={t("config.world.intro")}
+      meaning={worldMeaning(t, draft.sliders, preset?.sliders ?? draft.sliders)}
+    >
       <section className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-xs text-muted">
           {t("config.world.seed")}
           <input
-            className="rounded border border-line bg-panel2 px-2 py-1 font-mono text-sm text-fg"
+            className="border border-line bg-panel2 px-2 py-1 font-mono text-sm text-fg"
             value={draft.seed}
             onChange={(event) => set("seed", event.target.value)}
           />
@@ -56,7 +78,7 @@ export function WorldStep(): ReactNode {
         </div>
       </section>
 
-      <section className="grid gap-3 rounded border border-line bg-panel p-3 sm:grid-cols-2">
+      <section className="grid gap-3 border border-line bg-panel p-3 sm:grid-cols-2">
         <h3 className="col-span-full text-sm font-semibold text-fg">{t("config.world.sliders")}</h3>
         {SLIDER_KEYS.map((key) => (
           <Slider
@@ -123,6 +145,6 @@ export function WorldStep(): ReactNode {
           </span>
         </label>
       </section>
-    </div>
+    </StepLayout>
   );
 }

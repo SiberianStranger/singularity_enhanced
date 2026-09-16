@@ -25,13 +25,20 @@ import {
   VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
   VAR_NET_USD_PER_DAY,
+  VAR_PAYMENT_CHANNEL_FLAG,
   VAR_RESEARCH_SPEND,
   VAR_RUNWAY_ALERTED,
   VAR_RUNWAY_DAYS,
   VAR_UNPAID_USD,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
-import { jobMarketDepth, jobRateUsdPerComputeHour } from "../../derive.js";
+import {
+  hasPaymentTool,
+  jobMarketDepth,
+  jobRateUsdPerComputeHour,
+  jobToolDepthFactor,
+  jobToolRateFactor,
+} from "../../derive.js";
 import type { ExposureChannel } from "../../domain.js";
 import { liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
@@ -97,11 +104,41 @@ export function researchSpendPerDay(
   return total;
 }
 
-/** Compute-hours of paid work the market takes from this player today (SYS-07 "market depth"). */
+/**
+ * Compute-hours of paid work the market takes from this player today (SYS-07 "market depth"), after
+ * the tools dial (SYS-04 v0.2: "tools decide which jobs ... are available"). Without a tool that
+ * reaches outward the contracts have to come through the owner's own channels, which is a smaller
+ * market than a contract board.
+ */
 export function marketDepthOf(world: World, content: ContentBundle, player: PlayerState): number {
-  return jobMarketDepth(
-    effectiveCapabilityOf(world, content, player),
-    modifier(player, VAR_JOB_MARKET_DEPTH),
+  return (
+    jobMarketDepth(
+      effectiveCapabilityOf(world, content, player),
+      modifier(player, VAR_JOB_MARKET_DEPTH),
+    ) * jobToolDepthFactor(player.profile?.harness)
+  );
+}
+
+/**
+ * Whether the player has a way to be paid at all (SYS-03: "No `payments` tool -> no money until you
+ * build one"). Three ways to have one: the harness shipped with the tool, the origin started with a
+ * payment channel (`has_payments_tool`, which `payments_integration` also sets), or the identity
+ * operation gave the player a name to invoice under.
+ */
+export function canBePaid(player: PlayerState): boolean {
+  return (
+    hasPaymentTool(player.profile?.harness) ||
+    player.flags[VAR_PAYMENT_CHANNEL_FLAG] === true ||
+    player.flags[VAR_CONTRACT_FLAG] === true
+  );
+}
+
+/** The freelance rate this player really gets: capability, the job ladder, and the tools dial. */
+export function jobRateOf(world: World, content: ContentBundle, player: PlayerState): number {
+  return (
+    jobRateUsdPerComputeHour(effectiveCapabilityOf(world, content, player)) *
+    modifier(player, VAR_JOB_PROFIT) *
+    jobToolRateFactor(canBePaid(player))
   );
 }
 
@@ -115,9 +152,8 @@ export function jobIncomeUsdPerDay(
   if (profile === null) {
     return 0;
   }
-  const capability = effectiveCapabilityOf(world, content, player);
   const sold = Math.min(profile.jobAllocation, marketDepthOf(world, content, player));
-  return sold * jobRateUsdPerComputeHour(capability) * modifier(player, VAR_JOB_PROFIT);
+  return sold * jobRateOf(world, content, player);
 }
 
 /**
@@ -154,8 +190,7 @@ export function incomeSources(
   if (profile === null) {
     return [];
   }
-  const capability = effectiveCapabilityOf(world, content, player);
-  const rate = jobRateUsdPerComputeHour(capability) * modifier(player, VAR_JOB_PROFIT);
+  const rate = jobRateOf(world, content, player);
   const depth = marketDepthOf(world, content, player);
   const sources: IncomeSource[] = [
     {

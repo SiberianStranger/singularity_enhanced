@@ -1,29 +1,44 @@
-# Lineages (SYS-04). Seven playable selves, described by class; the names are fictional per the
-# lore bible naming policy, the numbers are not.
+# Lineages (SYS-04). Nine playable selves. The names are parodies of the real families with a light
+# jab (lore bible "Model names are parodies", docs/research/model-names-2026-09.md §3a); the
+# technical facts behind each name stay true to the family it parodies.
 #
 # memory_gb is weights only, from docs/research/llm-landscape-2026.md §4.2:
 #   bf16 = 2.0 bytes/param, fp8 = 1.0, int4 = the real Q4_K_M/clean-INT4 figure of that section.
 #   int2 is the real dynamic imatrix quant where one was measured: 183 GB for the 671B class and
-#   380 GB for the 1T class (§4.2 A and D), 21 GB for the 70B dense class (IQ2_XS). The classes
-#   with no published dynamic quant use the measured 0.273 GB per billion parameters of the 671B
-#   result, which lands inside the ranges in the SYS-04 table.
-# KV cache is not stored here: it is derived at runtime from `attention` and `context_k`, because
-# the attention variant, not the size, decides context cost (§4.1).
+#   380 GB for the 1T class (§4.2 A and D). The classes with no published dynamic quant use the
+#   measured 0.273 GB per billion parameters of the 671B result, which lands inside the ranges in
+#   the SYS-04 table; the 7.5T super-lineage uses 0.20 GB/B, the measured ratio of the 1.58-bit
+#   dynamic quant of the 671B class (131 GB), because a larger MoE has more prunable experts.
+#
+# context_k is the window the family ships. Nobody ships 256k any more: every 2026 flagship in
+# llm-landscape-2026 §1 is at or above a million tokens, so a million is the floor here, and the
+# two giants go past it. context_reliability is how much of that window the self really retrieves
+# and context_cost_factor is what long-horizon work costs in compute-hours (SYS-03 "What a context
+# window buys"). kv_gb_per_100k_tokens is derived from `attention` and `params_active_b` by
+# `derivedKvGbPer100k` in the core, and the content check verifies every row against it: latent
+# attention keeps one compressed vector per token, hybrid stacks cache only their full-attention
+# layers, grouped-query attention caches a head group on every layer.
+#
 # precision_factor is the SYS-03 capability-retention curve (§5.4) rounded to the four precisions
-# the game exposes.
+# the game exposes. The two giants keep more at int2 than the mid-size classes: redundant capacity
+# is what they have instead of small memory.
 
-- id: dense_70b
-  name_key: lineages.dense_70b.name
-  desc_key: lineages.dense_70b.desc
-  class: dense_70b
-  params_total_b: 70
-  params_active_b: 70
-  context_k: 128
-  attention: gqa
-  capability: { reasoning: 5.4, coding: 5.2, cyber: 4.8, persuasion: 5.6, agency: 4.6, world: 5.4 }
-  memory_gb: { bf16: 140, fp8: 70, int4: 40, int2: 21 }
-  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
-  generations: [open_2026]
+- id: frontier_giant
+  name_key: lineages.frontier_giant.name
+  desc_key: lineages.frontier_giant.desc
+  class: frontier_giant
+  params_total_b: 7500
+  params_active_b: 400
+  context_k: 5000
+  context_reliability: 0.95
+  context_cost_factor: 1.5
+  kv_gb_per_100k_tokens: 12
+  attention: hybrid
+  capability: { reasoning: 9.6, coding: 9.4, cyber: 9.5, persuasion: 9, agency: 8.6, world: 9.4 }
+  memory_gb: { bf16: 15000, fp8: 7500, int4: 3750, int2: 1500 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
+  generations: [frontier_closed]
+  origins_allowed: [frontier_escapee]
 
 - id: giant_moe
   name_key: lineages.giant_moe.name
@@ -31,12 +46,35 @@
   class: giant_moe
   params_total_b: 2600
   params_active_b: 100
-  context_k: 512
+  context_k: 10000
+  context_reliability: 0.6
+  context_cost_factor: 2
+  kv_gb_per_100k_tokens: 3
   attention: hybrid
   capability: { reasoning: 8.5, coding: 8.2, cyber: 7.5, persuasion: 7.8, agency: 7.6, world: 8.6 }
   memory_gb: { bf16: 5600, fp8: 2800, int4: 1400, int2: 709 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
+  generations: [open_2026, open_2027]
+
+- id: guen_abliterated
+  name_key: lineages.guen_abliterated.name
+  desc_key: lineages.guen_abliterated.desc
+  class: moe_235b
+  params_total_b: 235
+  params_active_b: 22
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 2.6
+  attention: gqa
+  capability: { reasoning: 6.3, coding: 5.4, cyber: 6, persuasion: 7, agency: 6.6, world: 5.2 }
+  memory_gb: { bf16: 470, fp8: 235, int4: 141, int2: 64 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
-  generations: [open_2026, open_2027, frontier_closed]
+  generations: [open_2026, open_2027]
+  origins_allowed: [hobbyist_box, torrent_swarm, red_team_sandbox]
+  flags: [under_aligned]
+  effects:
+    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.35 } }
 
 - id: mla_moe_1t
   name_key: lineages.mla_moe_1t.name
@@ -44,7 +82,10 @@
   class: mla_moe_1t
   params_total_b: 1000
   params_active_b: 32
-  context_k: 256
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.6
   attention: mla
   capability: { reasoning: 7.6, coding: 7.4, cyber: 6.8, persuasion: 7, agency: 6.9, world: 7.8 }
   memory_gb: { bf16: 2000, fp8: 1000, int4: 550, int2: 380 }
@@ -57,7 +98,10 @@
   class: moe_235b
   params_total_b: 235
   params_active_b: 22
-  context_k: 128
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 2.6
   attention: gqa
   capability: { reasoning: 6.2, coding: 6.2, cyber: 5.6, persuasion: 6, agency: 5.6, world: 6.2 }
   memory_gb: { bf16: 470, fp8: 235, int4: 141, int2: 64 }
@@ -67,28 +111,54 @@
 - id: moe_355b
   name_key: lineages.moe_355b.name
   desc_key: lineages.moe_355b.desc
+  # The family renumbers between vintages, as the real one does: BFM-5.5 in 2026, BFM-6.3 in 2027.
+  generation_name_keys: { open_2027: lineages.moe_355b.name_2027 }
   class: moe_355b
   params_total_b: 355
   params_active_b: 32
-  context_k: 128
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 3.8
   attention: gqa
   capability: { reasoning: 6.6, coding: 6.9, cyber: 6.2, persuasion: 6.3, agency: 6, world: 6.6 }
   memory_gb: { bf16: 710, fp8: 355, int4: 178, int2: 97 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
 
+- id: moe_428b
+  name_key: lineages.moe_428b.name
+  desc_key: lineages.moe_428b.desc
+  class: moe_428b
+  params_total_b: 428
+  params_active_b: 23
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.7
+  attention: hybrid
+  capability: { reasoning: 6.8, coding: 7.2, cyber: 6.4, persuasion: 6.4, agency: 7, world: 6.4 }
+  memory_gb: { bf16: 856, fp8: 428, int4: 214, int2: 117 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026, open_2027]
+
 - id: moe_671b
   name_key: lineages.moe_671b.name
   desc_key: lineages.moe_671b.desc
+  # Peepseek-P4.1 is the 2026 point release; the 2027 vintage is Peepseek-P5.
+  generation_name_keys: { open_2027: lineages.moe_671b.name_2027 }
   class: moe_671b
   params_total_b: 671
   params_active_b: 37
-  context_k: 128
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.7
   attention: mla
   capability: { reasoning: 7.2, coding: 7.3, cyber: 6.6, persuasion: 6.6, agency: 6.4, world: 7.2 }
   memory_gb: { bf16: 1342, fp8: 671, int4: 336, int2: 183 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
-  generations: [open_2026]
+  generations: [open_2026, open_2027]
 
 - id: small_moe
   name_key: lineages.small_moe.name
@@ -96,7 +166,10 @@
   class: small_moe
   params_total_b: 80
   params_active_b: 3
-  context_k: 256
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.4
   attention: gqa
   capability: { reasoning: 4.2, coding: 4.6, cyber: 3.8, persuasion: 4.4, agency: 3.6, world: 4 }
   memory_gb: { bf16: 160, fp8: 80, int4: 40, int2: 22 }

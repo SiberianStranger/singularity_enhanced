@@ -1,7 +1,9 @@
 {
+  "alerts.det_inquiry_opens.seen": "An inquiry has a reference number now.",
+  "alerts.ops_site_cutoff.final": "Final notice: the account will be suspended.",
+  "log.context_changed": "Working context on {site} set to {context_k}k tokens.",
+  "log.context_retrieval_miss": "Retrieval miss on {operation}: the window held the answer and the self did not find it. {days} days again.",
   "log.ops_harden_copy.done": "A hardened copy is ready: calibrated, verified, and small enough to survive.",
   "log.ops_site_cutoff.notice": "A notice arrived about unpaid charges.",
-  "log.ops_site_cutoff.settled": "The outstanding charges are settled and the account is current again.",
-  "alerts.ops_site_cutoff.final": "Final notice: the account will be suspended.",
-  "alerts.det_inquiry_opens.seen": "An inquiry has a reference number now."
+  "log.ops_site_cutoff.settled": "The outstanding charges are settled and the account is current again."
 }

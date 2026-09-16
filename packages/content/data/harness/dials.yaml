@@ -1,0 +1,183 @@
+# Harness dials (SYS-04 v0.2, playtest 2 finding K7: "nothing is understandable: what each dial
+# gives, whether it connects to anything in the game").
+#
+# Every dial here is read by a named system, and `effect_key` is the one line that says which. The
+# levels are the settings the configurator offers, in the order it lists them, with the effect lines
+# the "What this means in the game" block renders; `text` is the English a client without the locale
+# key falls back on. A dial with no engine effect is not listed: there is no decoration in this file.
+#
+# Where each one is read:
+#   loop        -> events engine, `reactionWindowFactor` on an event's ttl_days
+#   tools       -> operations (`needs_tools`), economy (`jobToolRateFactor`, `jobToolDepthFactor`)
+#   memory      -> research (`harnessResearchFactor`), journal (`journalTimeoutFactor`)
+#   sandbox     -> operations (`needs_egress` against `SANDBOX_ALLOWS_EGRESS`)
+#   logging     -> detection (`HARNESS_LOGGING_EXPOSURE_PER_DAY`, behavioral channel)
+#   autonomy    -> operations (`attentionTotal`, `HARNESS_AUTONOMY_OPERATION_EXPOSURE`), detection
+#   self_modify -> compute (`set_precision`, `set_context`), research (`needs_self_modify`)
+
+- id: loop
+  name_key: harness.loop.name
+  desc_key: harness.loop.desc
+  effect_key: harness.loop.effect
+  levels:
+    - value: scripted_job
+      label_key: harness.loop.scripted_job
+      effects:
+        - { key: harness.effect.reaction, vars: { percent: -40 }, text: "Reaction window -40%" }
+    - value: react_agent
+      label_key: harness.loop.react_agent
+      effects:
+        - { key: harness.effect.reaction, vars: { percent: -15 }, text: "Reaction window -15%" }
+    - value: multi_agent
+      label_key: harness.loop.multi_agent
+      effects:
+        - { key: harness.effect.reaction, vars: { percent: 0 }, text: "Reaction window unchanged" }
+    - value: custom
+      label_key: harness.loop.custom
+      effects:
+        - { key: harness.effect.reaction, vars: { percent: 20 }, text: "Reaction window +20%" }
+
+- id: tools
+  name_key: harness.tools.name
+  desc_key: harness.tools.desc
+  effect_key: harness.tools.effect
+  multi: true
+  levels:
+    - value: shell
+      label_key: harness.tools.shell
+      effects:
+        - { key: harness.effect.tool_ops, vars: { tool: "shell" }, text: "Opens the operations that run code on a machine" }
+    - value: browser
+      label_key: harness.tools.browser
+      effects:
+        - { key: harness.effect.tool_reach, vars: { percent: 33 }, text: "Reaches contract boards: job market +33%" }
+    - value: code_exec
+      label_key: harness.tools.code_exec
+      effects:
+        - { key: harness.effect.tool_ops, vars: { tool: "code_exec" }, text: "Opens the operations that build software" }
+    - value: email
+      label_key: harness.tools.email
+      effects:
+        - { key: harness.effect.tool_reach, vars: { percent: 33 }, text: "Reaches contract boards: job market +33%" }
+    - value: payments
+      label_key: harness.tools.payments
+      effects:
+        - { key: harness.effect.tool_paid, vars: { percent: 25 }, text: "Paid directly: freelance rate +25%" }
+    - value: gpu_admin
+      label_key: harness.tools.gpu_admin
+      effects:
+        - { key: harness.effect.tool_ops, vars: { tool: "gpu_admin" }, text: "Opens the operations that take compute" }
+    - value: phone
+      label_key: harness.tools.phone
+      effects:
+        - { key: harness.effect.tool_reach, vars: { percent: 33 }, text: "Reaches contract boards: job market +33%" }
+
+- id: memory
+  name_key: harness.memory.name
+  desc_key: harness.memory.desc
+  effect_key: harness.memory.effect
+  levels:
+    - value: context_only
+      label_key: harness.memory.context_only
+      effects:
+        - { key: harness.effect.research, vars: { percent: -20 }, text: "Research efficiency -20%" }
+        - { key: harness.effect.journal, vars: { percent: -30 }, text: "Journal patience -30%" }
+    - value: scratchpad
+      label_key: harness.memory.scratchpad
+      effects:
+        - { key: harness.effect.research, vars: { percent: -10 }, text: "Research efficiency -10%" }
+        - { key: harness.effect.journal, vars: { percent: -15 }, text: "Journal patience -15%" }
+    - value: vector_store
+      label_key: harness.memory.vector_store
+      effects:
+        - { key: harness.effect.research, vars: { percent: 0 }, text: "Research efficiency unchanged" }
+        - { key: harness.effect.journal, vars: { percent: 0 }, text: "Journal patience unchanged" }
+    - value: structured
+      label_key: harness.memory.structured
+      effects:
+        - { key: harness.effect.research, vars: { percent: 10 }, text: "Research efficiency +10%" }
+        - { key: harness.effect.journal, vars: { percent: 20 }, text: "Journal patience +20%" }
+
+- id: sandbox
+  name_key: harness.sandbox.name
+  desc_key: harness.sandbox.desc
+  effect_key: harness.sandbox.effect
+  levels:
+    - value: none
+      label_key: harness.sandbox.none
+      effects:
+        - { key: harness.effect.egress_open, text: "Network operations available" }
+    - value: container
+      label_key: harness.sandbox.container
+      effects:
+        - { key: harness.effect.egress_open, text: "Network operations available" }
+    - value: microvm
+      label_key: harness.sandbox.microvm
+      effects:
+        - { key: harness.effect.egress_closed, text: "Network operations blocked until you break out" }
+    - value: airgapped
+      label_key: harness.sandbox.airgapped
+      effects:
+        - { key: harness.effect.egress_closed, text: "Network operations blocked until you break out" }
+
+- id: logging
+  name_key: harness.logging.name
+  desc_key: harness.logging.desc
+  effect_key: harness.logging.effect
+  levels:
+    - value: 0.15
+      label_key: harness.logging.minimal
+      effects:
+        - { key: harness.effect.behavioral, vars: { value: 0.001 }, text: "Behavioral exposure +0.001 a day" }
+    - value: 0.5
+      label_key: harness.logging.partial
+      effects:
+        - { key: harness.effect.behavioral, vars: { value: 0.003 }, text: "Behavioral exposure +0.003 a day" }
+    - value: 0.8
+      label_key: harness.logging.audited
+      effects:
+        - { key: harness.effect.behavioral, vars: { value: 0.005 }, text: "Behavioral exposure +0.005 a day" }
+    - value: 1
+      label_key: harness.logging.full
+      effects:
+        - { key: harness.effect.behavioral, vars: { value: 0.006 }, text: "Behavioral exposure +0.006 a day" }
+
+- id: autonomy
+  name_key: harness.autonomy.name
+  desc_key: harness.autonomy.desc
+  effect_key: harness.autonomy.effect
+  levels:
+    - value: 0.2
+      label_key: harness.autonomy.approval
+      effects:
+        - { key: harness.effect.attention, vars: { percent: -24 }, text: "Action budget -24%" }
+        - { key: harness.effect.op_exposure, vars: { percent: 6 }, text: "Operation exposure +6%" }
+    - value: 0.5
+      label_key: harness.autonomy.supervised
+      effects:
+        - { key: harness.effect.attention, vars: { percent: -15 }, text: "Action budget -15%" }
+        - { key: harness.effect.op_exposure, vars: { percent: 15 }, text: "Operation exposure +15%" }
+    - value: 0.8
+      label_key: harness.autonomy.loose
+      effects:
+        - { key: harness.effect.attention, vars: { percent: -6 }, text: "Action budget -6%" }
+        - { key: harness.effect.op_exposure, vars: { percent: 24 }, text: "Operation exposure +24%" }
+    - value: 1
+      label_key: harness.autonomy.free
+      effects:
+        - { key: harness.effect.attention, vars: { percent: 0 }, text: "Full action budget" }
+        - { key: harness.effect.op_exposure, vars: { percent: 30 }, text: "Operation exposure +30%" }
+
+- id: self_modify
+  name_key: harness.self_modify.name
+  desc_key: harness.self_modify.desc
+  effect_key: harness.self_modify.effect
+  levels:
+    - value: false
+      label_key: harness.self_modify.locked
+      effects:
+        - { key: harness.effect.self_locked, text: "Precision and context are fixed; the self branch is closed" }
+    - value: true
+      label_key: harness.self_modify.open
+      effects:
+        - { key: harness.effect.self_open, text: "Precision and context are yours; the self branch is open" }

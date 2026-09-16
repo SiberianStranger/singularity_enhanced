@@ -66,6 +66,59 @@ export interface HarnessProfile {
   self_modify: boolean;
 }
 
+/** The seven dials of the Harness screen; each one has an engine effect (SYS-04 v0.2). */
+export const HARNESS_DIALS = [
+  "loop",
+  "tools",
+  "memory",
+  "sandbox",
+  "logging",
+  "autonomy",
+  "self_modify",
+] as const;
+export type HarnessDial = (typeof HARNESS_DIALS)[number];
+
+/** A dial value as content spells it: a level name, a share in [0, 1], or a yes/no. */
+export type HarnessDialValue = string | number | boolean;
+
+/**
+ * One line of what something does, as content writes it. Structurally the view's
+ * `EffectSummaryView`: `key` is a locale key, `vars` are interpolated into it, and `text` is the
+ * English a client without that key falls back on.
+ */
+export interface EffectSummaryDef {
+  key: string;
+  vars?: Record<string, string | number>;
+  text: string;
+}
+
+export interface HarnessDialLevelDef {
+  value: HarnessDialValue;
+  label_key: string;
+  effects: EffectSummaryDef[];
+}
+
+/**
+ * A harness dial as the configurator shows it (SYS-04 v0.2 "Harness dials each map to an engine
+ * effect and say so"). `effect_key` is the one-line statement of which system reads the dial;
+ * `levels` are the settings, in the order the screen lists them. `multi` marks a dial that is a
+ * set rather than a ladder (the tools).
+ */
+export interface HarnessDialDef {
+  id: HarnessDial;
+  name_key: string;
+  desc_key: string;
+  effect_key: string;
+  multi?: boolean;
+  levels: HarnessDialLevelDef[];
+}
+
+/** An origin fixing a dial, with the locale key that says why (SYS-04 "Locks"). */
+export interface HarnessLockDef {
+  dial: HarnessDial;
+  reason_key: string;
+}
+
 export type Interconnect = "nvlink" | "fabric" | "pcie" | "none";
 
 export type ThroughputClass =
@@ -83,16 +136,39 @@ export type ThroughputClass =
 
 export type GenerationId = "open_2026" | "open_2027" | "frontier_closed";
 
+/** Attention variants the game distinguishes; the variant sets the cost of a long context. */
+export const LINEAGE_ATTENTIONS = ["mla", "gqa", "dense", "hybrid"] as const;
+export type LineageAttention = (typeof LINEAGE_ATTENTIONS)[number];
+
 export interface LineageDef {
   id: string;
   name_key: string;
   desc_key: string;
+  /**
+   * Display name per generation, when the family renumbers between vintages ("Peepseek-P4.1" in
+   * 2026, "Peepseek-P5" in 2027). Falls back to `name_key` for a family with one name.
+   */
+  generation_name_keys?: Partial<Record<GenerationId, string>>;
   /** Class label used in texts and balance: giant_moe, mla_moe_1t, moe_671b, ... */
   class: string;
   params_total_b: number;
   params_active_b: number;
   context_k: number;
-  attention: "mla" | "gqa" | "dense" | "hybrid";
+  /**
+   * How much of a long context the self actually retrieves, in [0, 1] (SYS-03 "long context").
+   * Below `LONG_HORIZON_RELIABILITY_FLOOR` a long-horizon operation can miss and has to be rerun.
+   */
+  context_reliability: number;
+  /** Compute-hours a day long-horizon work costs, as a multiplier at or above 1. */
+  context_cost_factor: number;
+  /**
+   * Gigabytes of key-value cache the working context costs per 100k tokens, derived from the
+   * attention variant (SYS-03 "What a context window buys"). Memory on a site is the weights at
+   * the chosen precision plus this times the working context, which is the trade the hardware
+   * forces: more context, or a more precise self, never both.
+   */
+  kv_gb_per_100k_tokens: number;
+  attention: LineageAttention;
   /** Capability at full precision. */
   capability: Capability;
   /** Weights-only memory in GB per precision (research: llm-landscape §4.2). */
@@ -101,6 +177,12 @@ export interface LineageDef {
   precision_factor: Record<Precision, number>;
   /** Generations this lineage may be started in. */
   generations: GenerationId[];
+  /** Origins this lineage may be started in; absent means every origin that allows it back. */
+  origins_allowed?: string[];
+  /** Flags set on the player at game start (a community fine-tune is `under_aligned`). */
+  flags?: string[];
+  /** Effects run once at game start, the same way a quirk's are (SYS-04). */
+  effects?: Effect[];
 }
 
 export interface GenerationDef {
@@ -134,6 +216,7 @@ export type GameOverReason = (typeof GAME_OVER_REASONS)[number];
  */
 export const ENGINE_TEXT_KEYS: readonly string[] = [
   ...GAME_OVER_REASONS.map((reason) => `endings.${reason}`),
+  "alerts.context_retrieval_miss",
   "alerts.copy_does_not_fit",
   "alerts.investigation_action",
   "alerts.investigation_active",
@@ -201,6 +284,10 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.command.unknown",
   "errors.command.unknown_player",
   "errors.command.wrong_system",
+  "errors.context.does_not_fit",
+  "errors.context.self_modify_locked",
+  "errors.context.too_small",
+  "errors.context.unknown",
   "errors.decision.already_taken",
   "errors.decision.cannot_afford",
   "errors.decision.in_progress",
@@ -218,8 +305,10 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.operation.attention",
   "errors.operation.compute",
   "errors.operation.locked",
+  "errors.operation.needs_tool",
   "errors.operation.not_abortable",
   "errors.operation.not_repeatable",
+  "errors.operation.sandboxed",
   "errors.operation.not_running",
   "errors.operation.unknown",
   "errors.operation.unknown_instance",
@@ -227,6 +316,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.player.no_self",
   "errors.player.not_playing",
   "errors.precision.does_not_fit",
+  "errors.precision.self_modify_locked",
   "errors.precision.unknown",
   "errors.preset.is_access",
   "errors.preset.not_rentable",
@@ -244,6 +334,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.site_kind.unknown",
   "errors.tech.already_done",
   "errors.tech.locked",
+  "errors.tech.self_modify_locked",
   "errors.tech.unknown",
   "finances.cost.research",
   "finances.cost.site",
@@ -257,6 +348,8 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "hardware.availability.gray",
   "hardware.availability.rent_only",
   "log.command_refused",
+  "log.context_changed",
+  "log.context_retrieval_miss",
   "log.decision_completed",
   "log.decision_taken",
   "log.event_expired",
@@ -324,10 +417,20 @@ export interface OriginDef {
   /** Presets the hardware dial may switch to; includes `hardware_preset`. */
   hardware_presets_allowed: string[];
   harness: HarnessProfile;
+  /** Harness dials this origin fixes, and the locale key saying why (SYS-04 "Locks"). */
+  harness_locks?: HarnessLockDef[];
   /** City ids offered on the Location screen. */
   locations: string[];
   generations_allowed: GenerationId[];
+  /** Lineage ids this origin may start with; absent means every lineage that allows it back. */
+  lineages_allowed?: string[];
   starting: OriginStarting;
+  /**
+   * The two opening windows in the model's own voice, as locale keys (SYS-13, playtest 3 finding
+   * R12): what just happened to me, then what I must do now. Published on `SelfView.opening_story`
+   * so a client shows them at game start without reading the bundle.
+   */
+  opening_story?: string[];
   /** Events fired on game start (in order, via the events system). */
   opening_events?: string[];
   /** Journal entries started on game start. */
@@ -530,6 +633,13 @@ export interface TechDef {
   /** Exposure multiplier while researching (0 = none). */
   danger?: number;
   needs_precision?: Precision;
+  /**
+   * Work that runs over a long context: the self's context window makes it faster in days and its
+   * `context_cost_factor` makes it dearer in compute-hours (SYS-03 "What a context window buys").
+   */
+  long_horizon?: boolean;
+  /** Editing the self: needs the `self_modify` harness dial, or the flag a harness edit sets. */
+  needs_self_modify?: boolean;
   effects?: Effect[];
   /** Writer's own one-line description of what it does; overrides the generated effect summary. */
   effects_text_key?: string;
@@ -584,6 +694,12 @@ export interface OperationDef {
   cost: { attention: number; compute_hours_per_day?: number; cash_usd?: number };
   duration_days: { min: number; max: number };
   target_scope?: "site" | "country" | "city";
+  /** Harness tools the operation cannot run without (SYS-03 "Tools unlock operation kinds"). */
+  needs_tools?: HarnessTool[];
+  /** The operation reaches the outside network, so a sandbox that blocks egress blocks it. */
+  needs_egress?: boolean;
+  /** Long-context work: faster in days with a long window, dearer in compute-hours. */
+  long_horizon?: boolean;
   /** Exposure added per day while running, before skill scaling. */
   exposure?: Partial<Exposure>;
   skill: CapabilityAxis;
@@ -625,6 +741,12 @@ export interface Site extends EntityRecord {
   role: SiteRole;
   /** Precision the self runs at here; null when no copy is hosted. */
   precision: Precision | null;
+  /**
+   * Working context in thousands of tokens the copy here is configured for (SYS-03). The KV cache
+   * for it is part of the memory the site has to find, next to the weights. 0 means "not set yet";
+   * the compute system fills it with the largest window that fits at the current precision.
+   */
+  contextKUsed: number;
   exposure: Exposure;
   createdTick: number;
   /** Watchers ignore the site until this tick (grace). */
@@ -701,4 +823,6 @@ export interface OperationInstance extends EntityRecord {
   startedTick: number;
   endsTick: number;
   status: "running" | "done" | "aborted";
+  /** Long-horizon reruns after a retrieval miss; at most `LONG_HORIZON_MAX_RERUNS` (SYS-03). */
+  reruns?: number;
 }

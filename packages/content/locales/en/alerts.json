@@ -1,4 +1,5 @@
 {
+  "alerts.context_retrieval_miss": "{operation} lost the thread in its own context and is starting over.",
   "alerts.copy_does_not_fit": "{site} no longer has the memory to hold a copy of you.",
   "alerts.investigation_action": "{watcher} has stopped asking questions and started preparing.",
   "alerts.investigation_active": "{watcher} has opened an active investigation: subpoenas, traffic captures, visits.",

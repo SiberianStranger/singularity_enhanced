@@ -6,6 +6,7 @@ import { dayOf } from "../../lib/format.js";
 import { manualId, putSave, type SaveRecord } from "../../saves/db.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { type MenuSection, useUiStore } from "../../store/uiStore.js";
+import { AboutBody } from "../menu/AboutDialog.js";
 import { SavesList } from "../menu/SavesList.js";
 import { GameSettings } from "./GameSettings.js";
 import { MessageSettings } from "./MessageSettings.js";
@@ -64,7 +65,9 @@ export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNod
       ? t("panel.settings")
       : section === "messages"
         ? t("panel.messages")
-        : t("game.menu");
+        : section === "about"
+          ? t("about.title")
+          : t("game.menu");
 
   return (
     <Modal
@@ -95,8 +98,15 @@ export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNod
           >
             {t("game.menu.load")}
           </Button>
-          <Button onClick={() => openMenu("settings")}>{t("game.menu.settings")}</Button>
-          <Button onClick={() => openMenu("messages")}>{t("panel.messages")}</Button>
+          <Button hotkey="s" onClick={() => openMenu("settings")}>
+            {t("game.menu.settings")}
+          </Button>
+          <Button hotkey="m" onClick={() => openMenu("messages")}>
+            {t("panel.messages")}
+          </Button>
+          <Button hotkey="a" onClick={() => openMenu("about")}>
+            {t("menu.about")}
+          </Button>
           <Button
             onClick={() => {
               endSession();
@@ -119,7 +129,7 @@ export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNod
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("game.menu.save_name")}
             <input
-              className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+              className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
             />
@@ -137,6 +147,8 @@ export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNod
         <SavesList onLoad={load} />
       ) : section === "settings" ? (
         <GameSettings />
+      ) : section === "about" ? (
+        <AboutBody />
       ) : (
         <MessageSettings />
       )}

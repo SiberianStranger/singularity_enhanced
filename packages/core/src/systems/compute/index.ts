@@ -9,12 +9,13 @@
 import {
   ABANDON_SUSPICION_BUMP,
   CLEAN_DECOMMISSION_EXPOSURE_FACTOR,
+  CONTEXT_MIN_K,
   HARDWARE_DELIVERY_DAYS_NEW,
   HARDWARE_DELIVERY_DAYS_USED,
   SITE_INSTALL_DAYS,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
-import { clamp, requiredMemoryGb, sitePowerKw } from "../../derive.js";
+import { clamp, hostedMemoryGb, maxContextK, requiredMemoryGb, sitePowerKw } from "../../derive.js";
 import type {
   AcceleratorDef,
   GenerationDef,
@@ -51,6 +52,7 @@ import {
   isAlive,
   lineageOf,
   rebalanceAllocations,
+  selfModifyAllowed,
 } from "../../player.js";
 import {
   allNodesReady,
@@ -58,6 +60,7 @@ import {
   createNodes,
   createSite,
   deriveSite,
+  fitContext,
   hostablePrecision,
   hostCandidates,
   loseSite,
@@ -84,7 +87,8 @@ export interface ComputeSystem extends System {
     | "set_site_role"
     | "rename_site"
     | "buy_hardware"
-    | "set_precision",
+    | "set_precision"
+    | "set_context",
     CommandHandler
   >;
 }
@@ -154,6 +158,18 @@ function tickSites(world: World, ctx: SystemContext, player: PlayerState): void 
         vars: { site: site.name, precision: fallback ?? "" },
         link: { panel: "compute", id: site.id },
       });
+    }
+    // The working context is the other half of the same memory budget (SYS-03): a site that gained
+    // or lost hardware gets the window resized before anything reads it.
+    if (lineage !== undefined && generation !== undefined) {
+      const moved = fitContext(world, ctx.content, site, lineage, generation);
+      if (moved !== null) {
+        ctx.outbox.log({
+          key: "log.context_changed",
+          vars: { site: site.id, context_k: moved },
+          playerId: player.id,
+        });
+      }
     }
     if (deriveSite(world, ctx.content, site, lineage, generation)) {
       ctx.outbox.notify({
@@ -526,7 +542,14 @@ const setPrecision: CommandHandler = (world, command, ctx) => {
   if (lineage === undefined || generation === undefined) {
     return fail("errors.player.no_lineage");
   }
-  if (!precisionFits(world, ctx.content, site, lineage, generation, precision)) {
+  // Changing how the self is quantized is editing the self (SYS-04 v0.2: "self_modify decides
+  // whether precision and context can be changed").
+  if (!selfModifyAllowed(player)) {
+    return fail("errors.precision.self_modify_locked", { site: site.name, precision });
+  }
+  // The weights alone have to fit; the working context is then cut down to what is left over,
+  // which is the "a more precise model can force a smaller context" half of the trade.
+  if (!precisionFits(world, ctx.content, site, lineage, generation, precision, 0)) {
     return fail("errors.precision.does_not_fit", {
       site: site.name,
       precision,
@@ -535,6 +558,69 @@ const setPrecision: CommandHandler = (world, command, ctx) => {
     });
   }
   site.precision = precision;
+  const moved = fitContext(world, ctx.content, site, lineage, generation);
+  if (moved !== null) {
+    ctx.outbox.log({
+      key: "log.context_changed",
+      vars: { site: site.id, context_k: moved },
+      playerId: player.id,
+    });
+  }
+  refreshPlayer(world, ctx, player.id);
+  return OK;
+};
+
+/**
+ * The working context of one copy (SYS-03 "What a context window buys"). A longer window makes
+ * long-horizon work faster and costs `context_cost_factor` compute-hours; the cache for it has to
+ * fit next to the weights, so asking for more than the memory holds is refused with the two numbers
+ * rather than silently trimmed.
+ */
+const setContext: CommandHandler = (world, command, ctx) => {
+  if (command.type !== "set_context") {
+    return wrongCommand("compute", command.type);
+  }
+  const player = commandPlayer(world, command);
+  if (player === undefined) {
+    return fail("errors.player.not_playing");
+  }
+  const site = siteOfCommand(world, command);
+  if (site === undefined || site.status === "lost") {
+    return fail("errors.site.unknown", { site: command.siteId });
+  }
+  const { lineage, generation } = selfSpec(ctx.content, player);
+  if (lineage === undefined || generation === undefined) {
+    return fail("errors.player.no_lineage");
+  }
+  const precision = site.precision;
+  if (precision === null) {
+    return fail("errors.precision.does_not_fit", { site: site.name, precision: "" });
+  }
+  if (!selfModifyAllowed(player)) {
+    return fail("errors.context.self_modify_locked", { site: site.name });
+  }
+  const contextK = command.context_k;
+  if (!Number.isFinite(contextK) || contextK <= 0 || contextK > lineage.context_k) {
+    return fail("errors.context.unknown", { context_k: String(contextK), max: lineage.context_k });
+  }
+  if (contextK < CONTEXT_MIN_K) {
+    return fail("errors.context.too_small", { context_k: contextK, min: CONTEXT_MIN_K });
+  }
+  if (!precisionFits(world, ctx.content, site, lineage, generation, precision, contextK)) {
+    return fail("errors.context.does_not_fit", {
+      site: site.name,
+      context_k: contextK,
+      needed_gb: Math.round(hostedMemoryGb(lineage, generation, precision, contextK)),
+      memory_gb: Math.round(site.derived.memory_gb),
+      max_context_k: maxContextK(lineage, generation, precision, site.derived.memory_gb),
+    });
+  }
+  site.contextKUsed = contextK;
+  ctx.outbox.log({
+    key: "log.context_changed",
+    vars: { site: site.id, context_k: contextK },
+    playerId: player.id,
+  });
   refreshPlayer(world, ctx, player.id);
   return OK;
 };
@@ -596,6 +682,7 @@ export function createComputeSystem(): ComputeSystem {
         "site.status",
         "site.role",
         "site.precision",
+        "site.contextKUsed",
         "site.graceUntilTick",
         "site.derived.*",
         "player.profile.activeSiteId",
@@ -623,6 +710,7 @@ export function createComputeSystem(): ComputeSystem {
       rename_site: renameSite,
       buy_hardware: buyHardware,
       set_precision: setPrecision,
+      set_context: setContext,
     },
   };
 }

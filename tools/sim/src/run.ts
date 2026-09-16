@@ -75,6 +75,8 @@ export interface SamplePoint {
 
 export interface SimReport {
   origin: string;
+  /** The lineage the run was played on, because the balance table moves when the default does. */
+  lineage: string;
   seeds: number;
   days: number;
   /** Share of runs still alive at each of `SURVIVAL_DAYS` inside the run length. */
@@ -189,7 +191,13 @@ export function runSimulation(options: RunOptions): SimReport {
       ),
     );
   }
-  return summarize(options.setup.players[0]?.origin ?? "?", runs, options.seeds, options.days);
+  return summarize(
+    options.setup.players[0]?.origin ?? "?",
+    runs,
+    options.seeds,
+    options.days,
+    options.setup.players[0]?.lineage ?? "?",
+  );
 }
 
 export function summarize(
@@ -197,6 +205,7 @@ export function summarize(
   runs: readonly SingleRun[],
   seeds: number,
   days: number,
+  lineage = "?",
 ): SimReport {
   const causes: Record<string, number> = {};
   const huntLevels: Record<number, number> = {};
@@ -230,6 +239,7 @@ export function summarize(
 
   return {
     origin,
+    lineage,
     seeds,
     days,
     survival: SURVIVAL_DAYS.filter((day) => day <= days).map((day) => ({

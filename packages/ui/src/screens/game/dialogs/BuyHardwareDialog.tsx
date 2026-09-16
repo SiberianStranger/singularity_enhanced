@@ -109,7 +109,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
             {t("compute.site")}
             <select
               aria-label={t("compute.site")}
-              className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+              className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={site}
               onChange={(event) => setSite(event.target.value)}
             >
@@ -124,7 +124,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
             {t("compute.vendor")}
             <select
               aria-label={t("compute.vendor")}
-              className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+              className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={vendor}
               onChange={(event) => setVendor(event.target.value)}
             >
@@ -140,7 +140,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
             {t("compute.availability")}
             <select
               aria-label={t("compute.availability")}
-              className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+              className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={availability}
               onChange={(event) => setAvailability(event.target.value as Availability | "")}
             >
@@ -167,13 +167,13 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
               min={1}
               max={64}
               value={count}
-              className="w-20 rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+              className="w-20 border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               onChange={(event) => setCount(Math.max(1, Number(event.target.value)))}
             />
           </label>
         </div>
 
-        <div className="max-h-72 overflow-auto rounded border border-line">
+        <div className="max-h-72 overflow-auto border border-line">
           <Table
             rows={rows}
             rowKey={(row) => row.id}
@@ -250,7 +250,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
 
         <dl
           data-testid="buy-summary"
-          className="grid grid-cols-2 gap-x-4 gap-y-1 rounded border border-line bg-panel2 p-2 text-xs sm:grid-cols-4"
+          className="grid grid-cols-2 gap-x-4 gap-y-1 border border-line bg-panel2 p-2 text-xs sm:grid-cols-4"
         >
           <div>
             <dt className="text-muted">{t("compute.buy.total")}</dt>

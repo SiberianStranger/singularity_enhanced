@@ -16,6 +16,7 @@ import type {
   GenerationDef,
   GenerationId,
   HardwarePresetDef,
+  HarnessDialDef,
   KnowledgeEntryDef,
   LineageDef,
   OriginDef,
@@ -39,6 +40,8 @@ import {
 
 export interface Catalog {
   lineages: readonly LineageDef[];
+  /** The dials and their engine effects (SYS-04 v0.2); empty until content carries them. */
+  harnessDials: readonly HarnessDialDef[];
   generations: readonly GenerationDef[];
   origins: readonly OriginDef[];
   hardwarePresets: readonly HardwarePresetDef[];
@@ -69,6 +72,9 @@ export function buildCatalog(bundle: ContentBundle): Catalog {
   const usedFallback: string[] = [];
   return {
     lineages: pick("lineages", bundle.lineages, FALLBACK_LINEAGES, usedFallback),
+    // No fallback: a dial the bundle does not describe is a dial with no stated engine effect,
+    // and SYS-04 says such a dial is hidden rather than shown as a decoration.
+    harnessDials: bundle.harness_dials ?? [],
     generations: pick("generations", bundle.generations, FALLBACK_GENERATIONS, usedFallback),
     origins: pick("origins", bundle.origins, FALLBACK_ORIGINS, usedFallback),
     hardwarePresets: pick(
@@ -104,6 +110,7 @@ export const originById = index(catalog.origins);
 export const hardwareById = index(catalog.hardwarePresets);
 export const acceleratorById = index(catalog.accelerators);
 export const quirkById = index(catalog.quirks);
+export const harnessDialById = index(catalog.harnessDials);
 export const difficultyById = index(catalog.difficultyPresets);
 export const cityById = index(catalog.cities);
 export const countryById = index(catalog.countries);

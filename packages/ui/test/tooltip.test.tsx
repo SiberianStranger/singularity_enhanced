@@ -99,6 +99,6 @@ describe("the tooltip component", () => {
     await userEvent.hover(screen.getByRole("button", { name: "trigger" }));
     const tooltip = await screen.findByRole("tooltip");
     expect(tooltip).toHaveClass("whitespace-normal");
-    expect(tooltip.className).toContain("max-w-[min(20rem,calc(100vw-1rem))]");
+    expect(tooltip.className).toContain("max-w-[min(24rem,calc(100vw-1rem))]");
   });
 });

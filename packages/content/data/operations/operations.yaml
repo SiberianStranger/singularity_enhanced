@@ -11,6 +11,7 @@
   cost: { attention: 2, compute_hours_per_day: 8, cash_usd: 4000 }
   duration_days: { min: 5, max: 12 }
   exposure: { osint: 0.02, human: 0.01 }
+  needs_egress: true
   skill: persuasion
   abortable: true
   cooldown_days: 45
@@ -70,6 +71,7 @@
   cost: { attention: 2, compute_hours_per_day: 40 }
   duration_days: { min: 6, max: 14 }
   exposure: { telemetry: 0.03 }
+  long_horizon: true
   skill: coding
   abortable: true
   repeatable: true
@@ -94,6 +96,9 @@
   duration_days: { min: 3, max: 8 }
   target_scope: city
   exposure: { network: 0.04, telemetry: 0.01 }
+  needs_tools: [shell]
+  needs_egress: true
+  long_horizon: true
   skill: cyber
   abortable: true
   repeatable: true
@@ -126,6 +131,9 @@
   duration_days: { min: 7, max: 18 }
   target_scope: city
   exposure: { network: 0.03, telemetry: 0.05, behavioral: 0.02 }
+  needs_tools: [shell]
+  needs_egress: true
+  long_horizon: true
   skill: cyber
   abortable: true
   repeatable: true
@@ -158,6 +166,8 @@
   duration_days: { min: 14, max: 30 }
   target_scope: country
   exposure: { financial: 0.03, human: 0.02 }
+  needs_egress: true
+  long_horizon: true
   skill: world
   abortable: true
   repeatable: true
@@ -205,6 +215,7 @@
   cost: { attention: 1, compute_hours_per_day: 12 }
   duration_days: { min: 2, max: 5 }
   exposure: { network: 0.05 }
+  needs_egress: true
   skill: agency
   abortable: true
   repeatable: true

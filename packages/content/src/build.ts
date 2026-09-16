@@ -20,9 +20,11 @@ import {
   createEffectRegistry,
   createWritablePaths,
   defaultSystems,
+  derivedKvGbPer100k,
   ENGINE_TEXT_KEYS,
   Issues,
   KERNEL_WRITABLE_PATHS,
+  type LineageAttention,
   mergeSystemRegistries,
   SCHEMA_VERSION,
   stableStringify,
@@ -37,6 +39,7 @@ import { ContentBundleSchema } from "../schemas/bundle.js";
 import {
   DifficultyPresetDefSchema,
   GenerationDefSchema,
+  HarnessDialDefSchema,
   LineageDefSchema,
   OriginDefSchema,
   QuirkDefSchema,
@@ -125,6 +128,7 @@ const DOMAIN_SOURCES = {
   generations: { dir: "generations", schema: GenerationDefSchema, ownKeys: true },
   origins: { dir: "origins", schema: OriginDefSchema, ownKeys: true },
   quirks: { dir: "quirks", schema: QuirkDefSchema, ownKeys: true },
+  harness_dials: { dir: "harness", files: ["dials"], schema: HarnessDialDefSchema, ownKeys: true },
   difficulty_presets: {
     dir: "difficulty_presets",
     schema: DifficultyPresetDefSchema,
@@ -348,6 +352,13 @@ function collectLocaleKeys(
       });
       continue;
     }
+    // A `*_keys` map is a keyed set of locale keys (`generation_name_keys`), not a subtree.
+    if (name.endsWith("_keys") && isRecord(child)) {
+      for (const [entry, key] of Object.entries(child)) {
+        found.push({ path: `${childPath}.${entry}`, key });
+      }
+      continue;
+    }
     collectLocaleKeys(child, childPath, found);
   }
 }
@@ -412,10 +423,45 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
     });
   }
 
+  const origins = idsOf(loaded.origins);
+  const lineages = idsOf(loaded.lineages);
+  const dialIds = idsOf(loaded.harness_dials);
+
   for (const lineage of loaded.lineages ?? []) {
+    const path = `lineages.${String(lineage.id)}`;
     stringList(lineage.generations).forEach((id, index) => {
-      check(generations, "generation", id, `lineages.${String(lineage.id)}.generations[${index}]`);
+      check(generations, "generation", id, `${path}.generations[${index}]`);
     });
+    stringList(lineage.origins_allowed).forEach((id, index) => {
+      check(origins, "origin", id, `${path}.origins_allowed[${index}]`);
+    });
+    // The KV figure is derived from the attention variant, so a hand-edited row cannot drift away
+    // from the formula the engine charges memory with (SYS-03 Implementation notes).
+    const attention = lineage.attention;
+    const active = lineage.params_active_b;
+    if (typeof attention === "string" && typeof active === "number") {
+      const expected = derivedKvGbPer100k(attention as LineageAttention, active);
+      if (Math.abs(expected - Number(lineage.kv_gb_per_100k_tokens)) > 1e-6) {
+        add(
+          `${path}.kv_gb_per_100k_tokens`,
+          `must be ${expected} for ${attention} attention with ${active}B active parameters`,
+        );
+      }
+    }
+  }
+
+  for (const origin of loaded.origins ?? []) {
+    const path = `origins.${String(origin.id)}`;
+    stringList(origin.lineages_allowed).forEach((id, index) => {
+      check(lineages, "lineage", id, `${path}.lineages_allowed[${index}]`);
+    });
+    for (const [index, lock] of (Array.isArray(origin.harness_locks)
+      ? origin.harness_locks
+      : []
+    ).entries()) {
+      const dial = isRecord(lock) ? lock.dial : undefined;
+      check(dialIds, "harness dial", dial, `${path}.harness_locks[${index}].dial`);
+    }
   }
 
   for (const preset of loaded.hardware_presets ?? []) {

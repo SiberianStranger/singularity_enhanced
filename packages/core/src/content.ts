@@ -13,6 +13,7 @@ import type {
   DifficultyPresetDef,
   GenerationDef,
   HardwarePresetDef,
+  HarnessDialDef,
   KnowledgeEntryDef,
   LineageDef,
   MacroRegionDef,
@@ -228,6 +229,7 @@ export interface ContentBundle extends Partial<ScriptLibrary> {
   generations?: readonly GenerationDef[];
   origins?: readonly OriginDef[];
   quirks?: readonly QuirkDef[];
+  harness_dials?: readonly HarnessDialDef[];
   difficulty_presets?: readonly DifficultyPresetDef[];
   accelerators?: readonly AcceleratorDef[];
   hardware_presets?: readonly HardwarePresetDef[];
@@ -278,6 +280,7 @@ export interface ContentIndex {
   generations: Record<string, GenerationDef>;
   origins: Record<string, OriginDef>;
   quirks: Record<string, QuirkDef>;
+  harness_dials: Record<string, HarnessDialDef>;
   difficulty_presets: Record<string, DifficultyPresetDef>;
   accelerators: Record<string, AcceleratorDef>;
   hardware_presets: Record<string, HardwarePresetDef>;
@@ -327,6 +330,7 @@ export function contentIndex(content: ContentBundle): ContentIndex {
     generations: indexById(content.generations ?? []),
     origins: indexById(content.origins ?? []),
     quirks: indexById(content.quirks ?? []),
+    harness_dials: indexById(content.harness_dials ?? []),
     difficulty_presets: indexById(content.difficulty_presets ?? []),
     accelerators: indexById(content.accelerators ?? []),
     hardware_presets: indexById(content.hardware_presets ?? []),

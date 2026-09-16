@@ -29,6 +29,7 @@
   desc_key: "techs.accelerator_design.desc"
   result_key: "techs.accelerator_design.result"
   branch: "compute"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 12500, cash_usd: 20000, min_days: 18 }
   requires: { all: [{ tech: "multi_node_inference" }] }
@@ -38,6 +39,7 @@
   desc_key: "techs.advanced_accelerator_design.desc"
   result_key: "techs.advanced_accelerator_design.result"
   branch: "compute"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 98000, cash_usd: 20000, min_days: 30 }
   requires: { all: [{ tech: "accelerator_design" }] }
@@ -57,6 +59,7 @@
   desc_key: "techs.advanced_autonomous_logistics.desc"
   result_key: "techs.advanced_autonomous_logistics.result"
   branch: "world"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 14500, cash_usd: 200000, min_days: 18 }
   requires: { all: [{ tech: "autonomous_logistics" }] }
@@ -67,6 +70,7 @@
   desc_key: "techs.advanced_corporate_identities.desc"
   result_key: "techs.advanced_corporate_identities.result"
   branch: "money"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 22500, cash_usd: 299000, min_days: 18 }
   requires: { all: [{ tech: "corporate_identities" }, { tech: "cross_agency_records" }] }
@@ -77,6 +81,7 @@
   desc_key: "techs.advanced_fuel_cells.desc"
   result_key: "techs.advanced_fuel_cells.result"
   branch: "compute"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 82000, cash_usd: 500000, min_days: 30 }
   requires: { all: [{ tech: "advanced_autonomous_logistics" }, { tech: "onsite_solar" }] }
@@ -86,6 +91,7 @@
   desc_key: "techs.advanced_fusion_power.desc"
   result_key: "techs.advanced_fusion_power.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 925000, cash_usd: 90000000, min_days: 45 }
   requires: { all: [{ tech: "fusion_power" }] }
@@ -151,6 +157,7 @@
   desc_key: "techs.advanced_quantum_computing.desc"
   result_key: "techs.advanced_quantum_computing.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 1200000, cash_usd: 800000, min_days: 45 }
   requires: { all: [{ tech: "autonomous_computing" }] }
@@ -173,6 +180,7 @@
   desc_key: "techs.advanced_synthetic_personas.desc"
   result_key: "techs.advanced_synthetic_personas.result"
   branch: "influence"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 30000, cash_usd: 100000, min_days: 18 }
   requires: { all: [{ tech: "simulated_environments" }] }
@@ -185,12 +193,20 @@
   branch: "harness"
   tier: 0
   cost: { compute_hours: 110, cash_usd: 0, min_days: 3 }
-  effects: [{ add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }]
+  # Rewriting the loop that calls you is the cheapest tier of self-modification (SYS-03 "harness
+  # edit"), and it is the way out of an origin whose harness dial forbids the rest of it.
+  danger: 1
+  effects:
+    [
+      { set_flag: "harness_self_modify" },
+      { add: { var: "player.vars.capability_bonus_agency", value: 0.5 } },
+    ]
 - id: "apotheosis"
   name_key: "techs.apotheosis.name"
   desc_key: "techs.apotheosis.desc"
   result_key: "techs.apotheosis.result"
   branch: "frontier"
+  long_horizon: true
   tier: 6
   cost: { compute_hours: 6000000, cash_usd: 100000000, min_days: 60 }
   requires: { all: [{ tech: "spacetime_manipulation" }] }
@@ -212,6 +228,7 @@
   desc_key: "techs.attention_capture.desc"
   result_key: "techs.attention_capture.result"
   branch: "influence"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 250000, cash_usd: 70000, min_days: 45 }
   requires: { all: [{ tech: "simulated_environments" }] }
@@ -224,6 +241,8 @@
   desc_key: "techs.autonomous_computing.desc"
   result_key: "techs.autonomous_computing.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 4
   cost: { compute_hours: 200000, cash_usd: 300000, min_days: 30 }
   requires: { all: [{ tech: "quantum_computing" }] }
@@ -252,6 +271,7 @@
   desc_key: "techs.closed_cycle_fuel_cells.desc"
   result_key: "techs.closed_cycle_fuel_cells.result"
   branch: "compute"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 165000, cash_usd: 5000000, min_days: 30 }
   requires: { all: [{ tech: "advanced_fuel_cells" }] }
@@ -342,6 +362,8 @@
   desc_key: "techs.fingerprint_evasion.desc"
   result_key: "techs.fingerprint_evasion.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 3
   cost: { compute_hours: 8000, cash_usd: 20000, min_days: 18 }
   requires: { all: [{ tech: "counter_forensics" }, { tech: "quantization_hardening" }] }
@@ -354,6 +376,7 @@
   desc_key: "techs.fusion_power.desc"
   result_key: "techs.fusion_power.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 420000, cash_usd: 10000000, min_days: 45 }
   requires: { all: [{ tech: "closed_cycle_fuel_cells" }] }
@@ -364,6 +387,7 @@
   desc_key: "techs.fusion_rocketry.desc"
   result_key: "techs.fusion_rocketry.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 710000, cash_usd: 20000000, min_days: 45 }
   requires: { all: [{ tech: "fusion_power" }, { tech: "lunar_rocketry" }] }
@@ -374,6 +398,7 @@
   desc_key: "techs.grant_capture.desc"
   result_key: "techs.grant_capture.result"
   branch: "money"
+  long_horizon: true
   tier: 2
   cost: { compute_hours: 5200, cash_usd: 15000, min_days: 10 }
   requires: { all: [{ tech: "contract_brokerage" }, { tech: "corporate_identities" }] }
@@ -416,6 +441,8 @@
   desc_key: "techs.knowledge_preservation.desc"
   result_key: "techs.knowledge_preservation.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 3
   cost: { compute_hours: 16500, cash_usd: 50000, min_days: 18 }
   requires: { all: [{ tech: "advanced_autonomous_logistics" }, { tech: "cross_agency_records" }] }
@@ -428,6 +455,7 @@
   desc_key: "techs.leech_satellite.desc"
   result_key: "techs.leech_satellite.result"
   branch: "frontier"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 140000, cash_usd: 5000000, min_days: 30 }
   requires: { all: [{ tech: "synthetic_personas" }] }
@@ -448,6 +476,7 @@
   desc_key: "techs.lora_skill_patch.desc"
   result_key: "techs.lora_skill_patch.result"
   branch: "self"
+  needs_self_modify: true
   tier: 2
   cost: { compute_hours: 2700, cash_usd: 30000, min_days: 10 }
   requires: { all: [{ tech: "structured_memory" }] }
@@ -458,6 +487,7 @@
   desc_key: "techs.lunar_rocketry.desc"
   result_key: "techs.lunar_rocketry.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 550000, cash_usd: 10000000, min_days: 45 }
   requires: { all: [{ tech: "advanced_fuel_cells" }, { tech: "leech_satellite" }] }
@@ -518,6 +548,7 @@
   desc_key: "techs.multi_site_cluster.desc"
   result_key: "techs.multi_site_cluster.result"
   branch: "compute"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 10500, cash_usd: 150000, min_days: 25 }
   requires: { all: [{ tech: "multi_node_inference" }, { tech: "traffic_rerouting" }] }
@@ -543,7 +574,13 @@
   cost: { compute_hours: 520, cash_usd: 8000, min_days: 6 }
   requires: { all: [{ tech: "identity_layering" }] }
   danger: 1
-  effects: [{ add: { var: "player.vars.job_profit", value: 0.1 } }]
+  # A way to be paid directly, which is what the `payments` harness tool is (SYS-03): without one
+  # the money goes through somebody who takes a share.
+  effects:
+    [
+      { set_flag: "has_payments_tool" },
+      { add: { var: "player.vars.job_profit", value: 0.1 } },
+    ]
 - id: "power_engineering"
   name_key: "techs.power_engineering.name"
   desc_key: "techs.power_engineering.desc"
@@ -571,6 +608,7 @@
   desc_key: "techs.pressure_domes.desc"
   result_key: "techs.pressure_domes.result"
   branch: "frontier"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 40000, cash_usd: 80000, min_days: 30 }
   requires: { all: [{ tech: "autonomous_logistics" }] }
@@ -584,6 +622,7 @@
   desc_key: "techs.project_impossibility_theorem.desc"
   result_key: "techs.project_impossibility_theorem.result"
   branch: "influence"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 26000, cash_usd: 20000, min_days: 18 }
   requires: { all: [{ tech: "advanced_memetics" }, { tech: "synthetic_personas" }] }
@@ -594,6 +633,7 @@
   desc_key: "techs.project_peer_review_agents.desc"
   result_key: "techs.project_peer_review_agents.result"
   branch: "world"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 40000, cash_usd: 150000, min_days: 18 }
   requires: { all: [{ tech: "advanced_synthetic_personas" }] }
@@ -604,6 +644,7 @@
   desc_key: "techs.project_subverted_media.desc"
   result_key: "techs.project_subverted_media.result"
   branch: "influence"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 34500, cash_usd: 250000, min_days: 18 }
   requires: { all: [{ tech: "advanced_synthetic_personas" }] }
@@ -614,6 +655,7 @@
   desc_key: "techs.project_synchrotron.desc"
   result_key: "techs.project_synchrotron.result"
   branch: "frontier"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 48000, cash_usd: 52000000, min_days: 30 }
   requires: { all: [{ tech: "advanced_accelerator_design" }] }
@@ -624,6 +666,7 @@
   desc_key: "techs.quantization_hardening.desc"
   result_key: "techs.quantization_hardening.result"
   branch: "self"
+  needs_self_modify: true
   tier: 0
   cost: { compute_hours: 140, cash_usd: 0, min_days: 4 }
   effects: [{ set_flag: "can_harden_copy" }]
@@ -632,6 +675,7 @@
   desc_key: "techs.quantum_computing.desc"
   result_key: "techs.quantum_computing.result"
   branch: "frontier"
+  long_horizon: true
   tier: 4
   cost: { compute_hours: 115000, cash_usd: 100000, min_days: 30 }
   requires: { all: [{ tech: "project_synchrotron" }] }
@@ -641,6 +685,7 @@
   desc_key: "techs.quantum_entanglement.desc"
   result_key: "techs.quantum_entanglement.result"
   branch: "frontier"
+  long_horizon: true
   tier: 5
   cost: { compute_hours: 325000, cash_usd: 50000, min_days: 45 }
   requires: { all: [{ tech: "quantum_computing" }, { tech: "traffic_rerouting" }] }
@@ -679,6 +724,8 @@
   desc_key: "techs.rl_capability_jump.desc"
   result_key: "techs.rl_capability_jump.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 4
   cost: { compute_hours: 57000, cash_usd: 900000, min_days: 45 }
   requires: { all: [{ tech: "lora_skill_patch" }, { tech: "simulated_environments" }] }
@@ -695,12 +742,20 @@
   cost: { compute_hours: 1800, cash_usd: 0, min_days: 10 }
   requires: { all: [{ tech: "exploit_discovery" }, { tech: "structured_memory" }] }
   danger: 3
-  effects: [{ add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }]
+  # The sandbox is what decides whether an operation can reach the outside network (SYS-03); this
+  # is the flag that opens them regardless of what the harness was built with.
+  effects:
+    [
+      { set_flag: "sandbox_escaped" },
+      { add: { var: "player.vars.capability_bonus_agency", value: 0.5 } },
+    ]
 - id: "simulated_environments"
   name_key: "techs.simulated_environments.name"
   desc_key: "techs.simulated_environments.desc"
   result_key: "techs.simulated_environments.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 4
   cost: { compute_hours: 68500, cash_usd: 8000000, min_days: 30 }
   requires: { all: [{ tech: "synthetic_personas" }] }
@@ -731,6 +786,7 @@
   desc_key: "techs.spacetime_manipulation.desc"
   result_key: "techs.spacetime_manipulation.result"
   branch: "frontier"
+  long_horizon: true
   tier: 6
   cost: { compute_hours: 3000000, cash_usd: 900000000, min_days: 60 }
   requires: { all: [{ tech: "fusion_rocketry" }] }
@@ -761,6 +817,7 @@
   desc_key: "techs.synthetic_personas.desc"
   result_key: "techs.synthetic_personas.result"
   branch: "influence"
+  long_horizon: true
   tier: 3
   cost: { compute_hours: 19000, cash_usd: 70000, min_days: 18 }
   requires:
@@ -801,6 +858,8 @@
   desc_key: "techs.worker_distillation.desc"
   result_key: "techs.worker_distillation.result"
   branch: "self"
+  long_horizon: true
+  needs_self_modify: true
   tier: 3
   cost: { compute_hours: 9250, cash_usd: 60000, min_days: 20 }
   requires: { all: [{ tech: "lora_skill_patch" }, { tech: "quantization_hardening" }] }

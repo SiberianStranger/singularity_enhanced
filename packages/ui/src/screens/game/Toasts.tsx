@@ -49,10 +49,7 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
     >
       {/* Refused commands: the engine's own reason, so a button that cannot work says why (C7). */}
       {notices.map((notice) => (
-        <li
-          key={notice.id}
-          className="flex items-start gap-2 rounded border border-crit bg-panel p-2 shadow-lg"
-        >
+        <li key={notice.id} className="flex items-start gap-2 border border-crit bg-panel p-2">
           <span className="text-crit">
             <SeverityIcon severity="critical" />
           </span>
@@ -71,10 +68,7 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
       {api.toasts.map((toast) => {
         const resultKey = resultTextOf(toast, view);
         return (
-          <li
-            key={toast.id}
-            className="flex items-start gap-2 rounded border border-line bg-panel p-2 shadow-lg"
-          >
+          <li key={toast.id} className="flex items-start gap-2 border border-line bg-panel p-2">
             <span className={SEVERITY_TONE[toast.severity]}>
               <SeverityIcon severity={toast.severity} />
             </span>

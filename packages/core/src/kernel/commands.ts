@@ -44,6 +44,7 @@ export type PlayerCommand =
       siteId: string;
       precision: "bf16" | "fp8" | "int4" | "int2";
     })
+  | (CommandBase & { type: "set_context"; siteId: string; context_k: number })
   | (CommandBase & {
       type: "set_research_allocation";
       techId: string;
@@ -214,6 +215,7 @@ function dispatch(world: World, command: PlayerCommand, ctx: CommandContext): Co
     case "rename_site":
     case "buy_hardware":
     case "set_precision":
+    case "set_context":
     case "set_research_allocation":
     case "set_job_allocation":
     case "start_operation":

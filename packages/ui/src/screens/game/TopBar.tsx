@@ -59,6 +59,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
   const { t } = useTranslation();
   const setSpeed = useGameStore((state) => state.setSpeed);
   const openTab = useUiStore((state) => state.openTab);
+  const toggleOverlay = useUiStore((state) => state.toggleOverlay);
   const runway = view.resources.runway_days;
 
   const cashLines: BreakdownLine[] = [
@@ -89,7 +90,8 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
   }));
 
   return (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-panel px-2 py-1">
+    // One flat row that scrolls sideways rather than wrapping onto a second line (R11).
+    <header className="flex shrink-0 items-center gap-x-2 overflow-x-auto border-b border-line bg-panel px-2 py-1">
       <GameClock />
 
       <fieldset className="m-0 flex items-center gap-0.5 border-0 p-0" aria-label={t("game.speed")}>
@@ -172,7 +174,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         }
         meter={view.detection.awareness_global}
         tone="warn"
-        onClick={() => openTab("world")}
+        onClick={() => toggleOverlay("world")}
       />
       <Indicator
         label={t("game.hunt")}
@@ -190,7 +192,16 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
 
       <span className="flex-1" />
       <AlertIcons view={view} />
-      <Button variant="ghost" onClick={onMenu}>
+      {/* Knowledge opens from the top-right corner as a window (playtest 3, R9). */}
+      <Button
+        variant="ghost"
+        hotkey="k"
+        registerKey={false}
+        onClick={() => toggleOverlay("knowledge")}
+      >
+        {t("panel.knowledge")}
+      </Button>
+      <Button variant="ghost" hotkey="m" registerKey={false} onClick={onMenu}>
         {t("game.menu")}
       </Button>
     </header>

@@ -1,8 +1,9 @@
-import { type ReactNode, useEffect } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { catalog } from "../../content/catalog.js";
 import { useGameStore } from "../../store/gameStore.js";
+import { StepRail } from "./parts/StepRail.js";
 import { GenerationStep } from "./steps/GenerationStep.js";
 import { HardwareStep } from "./steps/HardwareStep.js";
 import { HarnessStep } from "./steps/HarnessStep.js";
@@ -12,20 +13,33 @@ import { OriginStep } from "./steps/OriginStep.js";
 import { QuirksStep } from "./steps/QuirksStep.js";
 import { SummaryStep } from "./steps/SummaryStep.js";
 import { WorldStep } from "./steps/WorldStep.js";
+import { STEP_IDS, type StepId } from "./steps.js";
 import { useConfigurator } from "./store.js";
 
-const STEPS = [
-  { id: "lineage", element: <LineageStep /> },
-  { id: "generation", element: <GenerationStep /> },
-  { id: "origin", element: <OriginStep /> },
-  { id: "hardware", element: <HardwareStep /> },
-  { id: "harness", element: <HarnessStep /> },
-  { id: "location", element: <LocationStep /> },
-  { id: "quirks", element: <QuirksStep /> },
-  { id: "world", element: <WorldStep /> },
-  { id: "summary", element: <SummaryStep /> },
-] as const;
+const CONTENT: Readonly<Record<StepId, ReactNode>> = {
+  lineage: <LineageStep />,
+  generation: <GenerationStep />,
+  origin: <OriginStep />,
+  hardware: <HardwareStep />,
+  harness: <HarnessStep />,
+  location: <LocationStep />,
+  quirks: <QuirksStep />,
+  world: <WorldStep />,
+  summary: <SummaryStep />,
+};
 
+/**
+ * The start configurator (SYS-04 v0.2; playtest 2, K1 and K4).
+ *
+ * A fixed frame that fits 1366 by 768 and never scrolls the page: three rows that do not shrink
+ * (the title bar, the content, the footer) with the step rail down the left of the content and the
+ * step's own master-detail to the right of it. Everything that can be longer than the screen
+ * scrolls inside its own frame, which is rule 11 of the style guide.
+ *
+ * The footer keeps Random build, Reroll and Back/Next; the accelerators are chosen so that none of
+ * them collides with a step's letter on the rail (`steps.ts` lists them, and a test asserts the
+ * uniqueness on the rendered screen rather than on that table).
+ */
 export function ConfiguratorScreen(): ReactNode {
   const { t } = useTranslation();
   const step = useConfigurator((state) => state.step);
@@ -37,54 +51,53 @@ export function ConfiguratorScreen(): ReactNode {
   const startGame = useGameStore((state) => state.startGame);
   const goTo = useGameStore((state) => state.goTo);
   const busy = useGameStore((state) => state.busy);
-  const current = STEPS[step] ?? STEPS[0];
-  const last = step === STEPS.length - 1;
-
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, []);
+  const index = Math.min(Math.max(0, step), STEP_IDS.length - 1);
+  const id = STEP_IDS[index] ?? "lineage";
+  const last = index === STEP_IDS.length - 1;
 
   return (
-    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-4 px-4 py-6">
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-semibold text-fg">{t("config.title")}</h1>
-        <p className="text-xs text-muted">
-          {t("config.step_of", { index: step + 1, total: STEPS.length })}
-        </p>
+    <main
+      id="main"
+      data-testid="configurator"
+      className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-bg"
+    >
+      <header className="flex shrink-0 items-baseline gap-3 border-b border-line bg-panel px-3 py-1">
+        <h1 className="text-base uppercase tracking-wide text-fg">{t("config.title")}</h1>
+        <span className="font-mono text-xs text-muted">
+          {t("config.step_of", { index: index + 1, total: STEP_IDS.length })}
+        </span>
+        {catalog.usedFallback.length > 0 ? (
+          <span className="border border-warn px-2 text-xs text-warn">
+            {t("config.fallback_notice")}
+          </span>
+        ) : null}
       </header>
 
-      <nav aria-label={t("config.title")} className="flex flex-wrap gap-1">
-        {STEPS.map((entry, index) => (
-          <Button
-            key={entry.id}
-            variant={index === step ? "primary" : "ghost"}
-            onClick={() => goToStep(index)}
-          >
-            {t(`config.step.${entry.id}`)}
-          </Button>
-        ))}
-      </nav>
+      <div className="grid min-h-0 grid-cols-[minmax(9rem,13rem)_minmax(0,1fr)]">
+        <StepRail />
+        {CONTENT[id]}
+      </div>
 
-      {catalog.usedFallback.length > 0 ? (
-        <p className="rounded border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-warn">
-          {t("config.fallback_notice")}
-        </p>
-      ) : null}
-
-      <section className="flex-1">{current.element}</section>
-
-      <footer className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-line bg-bg/95 py-3">
-        <Button onClick={() => (step === 0 ? goTo("menu") : goToStep(step - 1))}>
-          {step === 0 ? t("config.abandon") : t("common.back")}
+      <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-panel px-3 py-2">
+        <Button hotkey="b" onClick={() => (index === 0 ? goTo("menu") : goToStep(index - 1))}>
+          {index === 0 ? t("config.abandon") : t("common.back")}
         </Button>
-        <Button onClick={randomize}>{t("config.random_build")}</Button>
-        <Button disabled={rerolls <= 0} onClick={reroll}>
+        <Button hotkey="m" onClick={randomize}>
+          {t("config.random_build")}
+        </Button>
+        <Button
+          hotkey="r"
+          disabled={rerolls <= 0}
+          tooltip={rerolls <= 0 ? t("config.no_rerolls") : undefined}
+          onClick={reroll}
+        >
           {t("config.reroll", { left: rerolls })}
         </Button>
         <span className="flex-1" />
         {last ? (
           <Button
             variant="primary"
+            hotkey="n"
             disabled={busy}
             onClick={() => {
               void startGame(toSetup());
@@ -93,7 +106,7 @@ export function ConfiguratorScreen(): ReactNode {
             {t("config.begin")}
           </Button>
         ) : (
-          <Button variant="primary" onClick={() => goToStep(step + 1)}>
+          <Button variant="primary" hotkey="n" onClick={() => goToStep(index + 1)}>
             {t("common.next")}
           </Button>
         )}

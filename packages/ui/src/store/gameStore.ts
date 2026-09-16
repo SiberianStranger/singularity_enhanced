@@ -31,6 +31,13 @@ interface GameStore {
   error: string | null;
   /** Game day the last autosave was taken on, so the autosave rule can compare. */
   lastAutosaveDay: number;
+  /**
+   * Whether the two opening story windows are waiting to be shown (playtest 3, R12).
+   *
+   * A new game raises it; loading a save does not, because the player who saved has already been
+   * told what happened to them. The journal can raise it again to replay the opening.
+   */
+  openingPending: boolean;
   goTo(screen: Screen): void;
   startGame(setup: GameSetup): Promise<void>;
   resumeGame(setup: GameSetup, save: string): Promise<void>;
@@ -41,6 +48,7 @@ interface GameStore {
   endSession(): void;
   setError(error: string | null): void;
   noteAutosave(day: number): void;
+  setOpeningPending(pending: boolean): void;
 }
 
 async function attach(
@@ -65,6 +73,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   busy: false,
   error: null,
   lastAutosaveDay: 0,
+  openingPending: false,
 
   goTo(screen) {
     set({ screen });
@@ -75,7 +84,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const host = await attach(setup, set, get);
       await host.init(setup, contentBundle);
-      set({ screen: "game", busy: false });
+      set({ screen: "game", busy: false, openingPending: true });
     } catch (error) {
       set({ busy: false, error: error instanceof Error ? error.message : String(error) });
     }
@@ -87,7 +96,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const host = await attach(setup, set, get);
       await host.init(setup, contentBundle);
       await host.load(save);
-      set({ screen: "game", busy: false });
+      set({ screen: "game", busy: false, openingPending: false });
     } catch (error) {
       set({ busy: false, error: error instanceof Error ? error.message : String(error) });
     }
@@ -144,6 +153,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setError(error) {
     set({ error });
+  },
+
+  setOpeningPending(openingPending) {
+    set({ openingPending });
   },
 
   noteAutosave(day) {

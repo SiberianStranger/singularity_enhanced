@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   DifficultyPresetDefSchema,
   GenerationDefSchema,
+  HarnessDialDefSchema,
   LineageDefSchema,
   OriginDefSchema,
   QuirkDefSchema,
@@ -29,6 +30,7 @@ export const ContentBundleSchema = z.object({
   generations: z.array(GenerationDefSchema).optional(),
   origins: z.array(OriginDefSchema).optional(),
   quirks: z.array(QuirkDefSchema).optional(),
+  harness_dials: z.array(HarnessDialDefSchema).optional(),
   difficulty_presets: z.array(DifficultyPresetDefSchema).optional(),
   accelerators: z.array(AcceleratorDefSchema).optional(),
   hardware_presets: z.array(HardwarePresetDefSchema).optional(),

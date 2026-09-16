@@ -40,7 +40,7 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
                 operation.ends_tick - operation.started_tick,
               );
               return (
-                <li key={operation.instance_id} className="rounded border border-line bg-panel p-2">
+                <li key={operation.instance_id} className="border border-line bg-panel p-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="text-sm text-fg">
                       {t(`operations.${operation.operation_id}.name`)}
@@ -86,7 +86,7 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
                   <li
                     key={offer.id}
                     data-testid={`offer-${offer.id}`}
-                    className="rounded border border-line bg-panel p-2"
+                    className="border border-line bg-panel p-2"
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <Tooltip content={t(offer.desc_key)}>

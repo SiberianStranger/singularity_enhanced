@@ -37,6 +37,10 @@ export function defaultLineage(
   const generationDef = index.generations[generation];
   const candidates = (content.lineages ?? [])
     .filter((lineage) => lineage.generations.includes(generation as never))
+    // The lineage/origin lock runs both ways (SYS-04 v0.2): a super-lineage names the only origin
+    // it can wake up in, and an origin can name the only lineage it is allowed to be.
+    .filter((lineage) => lineage.origins_allowed?.includes(origin.id) !== false)
+    .filter((lineage) => origin.lineages_allowed?.includes(lineage.id) !== false)
     .sort((a, b) => a.id.localeCompare(b.id));
   if (preset === undefined || generationDef === undefined) {
     return candidates[0]?.id ?? "";

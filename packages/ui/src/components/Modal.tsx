@@ -75,15 +75,17 @@ export function Modal({ title, children, footer, onClose, wide }: ModalProps): R
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/70 p-4">
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden rounded border border-line bg-panel shadow-2xl ${wide === true ? "max-w-3xl" : "max-w-xl"}`}
+        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden border border-line bg-panel ${wide === true ? "max-w-3xl" : "max-w-xl"}`}
       >
-        <h2 className="border-b border-line px-4 py-3 text-base font-semibold text-fg">{title}</h2>
+        <h2 className="border-b border-line bg-accent px-3 py-1 text-sm uppercase tracking-wide text-accentfg">
+          {title}
+        </h2>
         <div className="flex-1 overflow-auto px-4 py-3 text-sm leading-relaxed text-fg">
           {children}
         </div>

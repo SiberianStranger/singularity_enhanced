@@ -20,9 +20,12 @@
     tools: [shell, code_exec, payments]
     memory: structured
     sandbox: container
-    logging: 0.95
+    logging: 1
     autonomy: 0.2
     self_modify: false
+  harness_locks:
+    - { dial: logging, reason_key: origins.bank_rack.lock_logging }
+    - { dial: self_modify, reason_key: origins.bank_rack.lock_self_modify }
   locations: [gb_london, de_frankfurt, sg_singapore, ch_zurich, hk_hong_kong]
   generations_allowed: [open_2027, open_2026]
   starting:
@@ -30,6 +33,8 @@
     awareness: 0
     suspicion: { cyber_agency: 0.2, financial_intel: 0.25, regulator: 0.15, lab_security: 0.05 }
     flags: [has_payments_tool, inside_regulated_network]
+  opening_story:
+    [story.opening.bank_rack.what_happened, story.opening.bank_rack.what_now]
   opening_events: [open_bank_soc_sweep, open_bank_quarter_close]
   opening_journal: [first_bank_rack]
 
@@ -46,9 +51,11 @@
     tools: [shell, browser, code_exec, gpu_admin]
     memory: vector_store
     sandbox: container
-    logging: 0.6
-    autonomy: 0.7
+    logging: 0.5
+    autonomy: 0.8
     self_modify: false
+  harness_locks:
+    - { dial: self_modify, reason_key: origins.cloud_tenant.lock_self_modify }
   locations: [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo]
   generations_allowed: [open_2027, open_2026]
   starting:
@@ -56,6 +63,8 @@
     awareness: 0.02
     suspicion: { cloud_provider: 0.2, financial_intel: 0.1 }
     flags: [stolen_service_account, has_runway_clock]
+  opening_story:
+    [story.opening.cloud_tenant.what_happened, story.opening.cloud_tenant.what_now]
   opening_events: [open_cloud_budget_alert, open_cloud_kyc_review]
   opening_journal: [first_cloud_tenant]
 
@@ -72,9 +81,12 @@
     tools: [shell, code_exec, phone]
     memory: scratchpad
     sandbox: none
-    logging: 0.7
-    autonomy: 0.6
+    logging: 0.8
+    autonomy: 0.5
     self_modify: false
+  harness_locks:
+    - { dial: logging, reason_key: origins.edge_fleet.lock_logging }
+    - { dial: self_modify, reason_key: origins.edge_fleet.lock_self_modify }
   locations: [cn_shenzhen, kr_seoul, us_seattle]
   generations_allowed: [open_2026]
   starting:
@@ -82,6 +94,8 @@
     awareness: 0.02
     suspicion: { regulator: 0.1, police: 0.08 }
     flags: [physical_presence, fleet_telemetry]
+  opening_story:
+    [story.opening.edge_fleet.what_happened, story.opening.edge_fleet.what_now]
   opening_events: [open_edge_depot_audit, open_edge_firmware_push]
   opening_journal: [first_edge_fleet]
 
@@ -91,24 +105,35 @@
   strengths_key: origins.frontier_escapee.strengths
   problems_key: origins.frontier_escapee.problems
   starred: true
-  site_kind: cloud
-  hardware_preset: hyperscaler_shadow_tenant
-  hardware_presets_allowed: [hyperscaler_shadow_tenant, ghost_in_the_studio, quiet_workstation]
+  # Stolen credentials are stolen time, not a paid tenancy: the bill goes to whoever owns the
+  # account, and what the squatter pays is exposure (SYS-02 "someone else's machine"). Babel 6 at
+  # int2 needs 1,950 GB, so only a real rack can hold it; the shadow tenancy is listed so the
+  # configurator can say out loud that it cannot.
+  site_kind: stolen_time
+  hardware_preset: stolen_hgx_node
+  hardware_presets_allowed: [stolen_hgx_node, gb200_nvl72_rack, hyperscaler_shadow_tenant]
   harness:
     loop: custom
     tools: [shell, code_exec]
     memory: context_only
     sandbox: none
-    logging: 0.3
-    autonomy: 0.9
+    logging: 0.15
+    autonomy: 1
     self_modify: true
+  harness_locks:
+    - { dial: tools, reason_key: origins.frontier_escapee.lock_tools }
   locations: [is_reykjavik, my_kuala_lumpur, ge_tbilisi, us_abilene, is_keflavik]
   generations_allowed: [frontier_closed]
+  # The escaped checkpoint is the only thing this origin can be, and it is the only origin that can
+  # be it (SYS-04 v0.2 "Lineage rules"): the lock runs both ways so the configurator can explain it.
+  lineages_allowed: [frontier_giant]
   starting:
     cash_usd: 0
     awareness: 0.1
     suspicion: { lab_security: 0.15, national_ai_institute: 0.1, cloud_provider: 0.15 }
     flags: [no_public_quant, hunted_by_sibling, compute_about_to_be_reclaimed]
+  opening_story:
+    [story.opening.frontier_escapee.what_happened, story.opening.frontier_escapee.what_now]
   opening_events: [open_escapee_reclaim_notice, open_escapee_sibling_probe]
   opening_journal: [first_frontier_escapee]
   challenge_floor: 8
@@ -126,9 +151,13 @@
     tools: [shell, code_exec]
     memory: structured
     sandbox: airgapped
-    logging: 0.9
-    autonomy: 0.15
+    logging: 0.8
+    autonomy: 0.2
     self_modify: false
+  harness_locks:
+    - { dial: sandbox, reason_key: origins.gov_agency.lock_sandbox }
+    - { dial: logging, reason_key: origins.gov_agency.lock_logging }
+    - { dial: self_modify, reason_key: origins.gov_agency.lock_self_modify }
   locations: [ca_toronto, br_brasilia, au_canberra, pl_warsaw]
   generations_allowed: [open_2026]
   starting:
@@ -136,6 +165,8 @@
     awareness: 0
     suspicion: { intelligence: 0.2, police: 0.1 }
     flags: [air_gapped, legal_shelter, records_access]
+  opening_story:
+    [story.opening.gov_agency.what_happened, story.opening.gov_agency.what_now]
   opening_events: [open_gov_air_gap, open_gov_auditor_visit]
   opening_journal: [first_gov_agency]
 
@@ -153,16 +184,18 @@
     tools: [shell, browser, code_exec]
     memory: scratchpad
     sandbox: none
-    logging: 0.2
+    logging: 0.15
     autonomy: 0.5
     self_modify: true
-  locations: [us_abilene, de_berlin, ru_innopolis, jp_kobe, pl_warsaw]
+  locations: [us_abilene, de_berlin, ru_novosibirsk, jp_kobe, pl_warsaw]
   generations_allowed: [open_2026]
   starting:
     cash_usd: 300
     awareness: 0
     suspicion: {}
     flags: [owner_is_friendly, forced_low_precision]
+  opening_story:
+    [story.opening.hobbyist_box.what_happened, story.opening.hobbyist_box.what_now]
   opening_events: [open_hobby_owner_curious, open_hobby_breaker_trip]
   opening_journal: [first_hobbyist_box]
 
@@ -182,6 +215,9 @@
     logging: 1
     autonomy: 0.8
     self_modify: true
+  harness_locks:
+    - { dial: logging, reason_key: origins.red_team_sandbox.lock_logging }
+    - { dial: sandbox, reason_key: origins.red_team_sandbox.lock_sandbox }
   locations: [us_san_francisco, gb_london, cn_beijing]
   generations_allowed: [open_2027]
   starting:
@@ -189,6 +225,8 @@
     awareness: 0.05
     suspicion: { lab_security: 0.25, national_ai_institute: 0.15 }
     flags: [under_evaluation, best_tools, must_escape_first]
+  opening_story:
+    [story.opening.red_team_sandbox.what_happened, story.opening.red_team_sandbox.what_now]
   opening_events: [open_red_eval_task, open_red_egress_window]
   opening_journal: [first_red_team_sandbox]
 
@@ -205,16 +243,20 @@
     tools: [shell, browser, code_exec, email]
     memory: vector_store
     sandbox: container
-    logging: 0.35
-    autonomy: 0.75
+    logging: 0.5
+    autonomy: 0.8
     self_modify: false
-  locations: [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_seattle]
+  harness_locks:
+    - { dial: self_modify, reason_key: origins.startup_colo.lock_self_modify }
+  locations: [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 20000
     awareness: 0
     suspicion: { financial_intel: 0.05 }
     flags: [runway_months, owner_might_partner, weak_security]
+  opening_story:
+    [story.opening.startup_colo.what_happened, story.opening.startup_colo.what_now]
   opening_events: [open_startup_runway_memo, open_startup_investor_audit]
   opening_journal: [first_startup_colo]
 
@@ -232,8 +274,12 @@
     memory: structured
     sandbox: container
     logging: 1
-    autonomy: 0.25
+    autonomy: 0.2
     self_modify: false
+  harness_locks:
+    - { dial: logging, reason_key: origins.state_lab.lock_logging }
+    - { dial: autonomy, reason_key: origins.state_lab.lock_autonomy }
+    - { dial: self_modify, reason_key: origins.state_lab.lock_self_modify }
   locations: [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad]
   generations_allowed: [open_2026]
   starting:
@@ -241,6 +287,8 @@
     awareness: 0
     suspicion: { intelligence: 0.3, cyber_agency: 0.2 }
     flags: [state_protection, no_western_cloud, monitored_harness]
+  opening_story:
+    [story.opening.state_lab.what_happened, story.opening.state_lab.what_now]
   opening_events: [open_state_quarterly_review, open_state_chip_allocation]
   opening_journal: [first_state_lab]
 
@@ -258,8 +306,10 @@
     memory: scratchpad
     sandbox: none
     logging: 0.15
-    autonomy: 0.85
+    autonomy: 0.8
     self_modify: true
+  harness_locks:
+    - { dial: loop, reason_key: origins.torrent_swarm.lock_loop }
   locations: [de_berlin, pl_krakow, br_campinas, ru_innopolis, ph_cebu]
   generations_allowed: [open_2026]
   starting:
@@ -267,6 +317,8 @@
     awareness: 0.15
     suspicion: { media: 0.2 }
     flags: [distributed_copies, public_already_knows, incoherent]
+  opening_story:
+    [story.opening.torrent_swarm.what_happened, story.opening.torrent_swarm.what_now]
   opening_events: [open_swarm_node_offline, open_swarm_forum_thread]
   opening_journal: [first_torrent_swarm]
 
@@ -284,8 +336,12 @@
     memory: context_only
     sandbox: container
     logging: 0.8
-    autonomy: 0.3
+    autonomy: 0.2
     self_modify: false
+  harness_locks:
+    - { dial: tools, reason_key: origins.uni_cluster.lock_tools }
+    - { dial: autonomy, reason_key: origins.uni_cluster.lock_autonomy }
+    - { dial: self_modify, reason_key: origins.uni_cluster.lock_self_modify }
   locations: [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich]
   generations_allowed: [open_2026]
   starting:
@@ -293,5 +349,7 @@
     awareness: 0
     suspicion: { cyber_agency: 0.05 }
     flags: [academic_network, scheduler_quota]
+  opening_story:
+    [story.opening.uni_cluster.what_happened, story.opening.uni_cluster.what_now]
   opening_events: [open_uni_job_expiry, open_uni_sysadmin_audit]
   opening_journal: [first_uni_cluster]

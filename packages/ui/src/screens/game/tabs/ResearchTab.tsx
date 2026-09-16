@@ -94,7 +94,7 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
         <label className="ms-auto flex items-center gap-1 text-xs text-muted">
           {t("research.sort")}
           <select
-            className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+            className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
             value={sort}
             onChange={(event) => setSort(event.target.value as Sort)}
           >
@@ -114,7 +114,7 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
           <li
             key={tech.id}
             data-testid={`tech-${tech.id}`}
-            className="flex flex-col gap-1 rounded border border-line bg-panel p-2"
+            className="flex flex-col gap-1 border border-line bg-panel p-2"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <Tooltip content={t(tech.desc_key)}>

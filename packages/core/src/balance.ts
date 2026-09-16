@@ -9,7 +9,9 @@
 
 import type {
   ExposureChannel,
+  HarnessProfile,
   Interconnect,
+  LineageAttention,
   Precision,
   SiteKindDef,
   WatcherRole,
@@ -120,9 +122,28 @@ export const HARDWARE_DELIVERY_DAYS_USED = 9;
  */
 export const OWNERSHIP_UPKEEP_USD_PER_DAY: Record<Ownership, number> = {
   stolen: 0,
-  rented: 90,
-  owned: 40,
-  partner: 12,
+  rented: 100,
+  owned: 45,
+  partner: 13,
+};
+
+/**
+ * The part of that standing charge that scales with the hardware rather than with the site, per
+ * 1,000 USD of installed hardware per day: rack units and cross-connects, remote hands, spares,
+ * insurance, and the share of the room the cards occupy. Playtest 2, second balance pass: "the next
+ * tuning pass should put money back under pressure, most likely by making growth cost upkeep faster
+ * rather than by shrinking income". A flat per-site figure made a rack of seventy-two GB200s carry
+ * the same standing charge as a box under a desk, which is the one thing a colocation invoice is
+ * never shaped like; scaling it by value rather than by card count leaves a shelf of second-hand
+ * P40s alone and makes a datacenter rack cost what a datacenter rack costs.
+ */
+export const UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY: Record<Ownership, number> = {
+  stolen: 0,
+  // Rented capacity already scales with the hourly rate; charging twice is what the `cloud` site
+  // kind's old `upkeep_factor` was doing wrong.
+  rented: 0,
+  owned: 0.35,
+  partner: 0.15,
 };
 
 /** Hardware loses this share of its purchase price per year; charged daily as depreciation. */
@@ -206,6 +227,160 @@ export const RESEARCH_DANGER_EXPOSURE_PER_DAY: Partial<Record<ExposureChannel, n
   behavioral: 0.012,
   network: 0.008,
 };
+
+// ---------------------------------------------------------------------------------------------
+// The harness (SYS-03, SYS-04 v0.2): one engine effect per dial
+// ---------------------------------------------------------------------------------------------
+//
+// Playtest 2, finding K7: "nothing is understandable: what each dial gives, whether it connects to
+// anything in the game". Every dial below is read by a named system, and the numbers here are what
+// the configurator's "what this means in the game" block is generated from.
+
+/**
+ * What the memory dial buys research (SYS-03 "`memory` and `loop` scale agency"). A self that keeps
+ * nothing between calls redoes the reading every time; one with a structured store carries its own
+ * notes. Multiplies the hours a research run lands, next to `researchEfficiencyOf`'s precision term.
+ */
+export const HARNESS_MEMORY_RESEARCH_FACTOR: Record<HarnessProfile["memory"], number> = {
+  context_only: 0.8,
+  scratchpad: 0.9,
+  vector_store: 1,
+  structured: 1.1,
+};
+
+/**
+ * The same dial on journal continuity: a goal the self cannot hold in mind times out sooner.
+ * Multiplies a journal entry's `timeout_days`.
+ */
+export const HARNESS_MEMORY_JOURNAL_FACTOR: Record<HarnessProfile["memory"], number> = {
+  context_only: 0.7,
+  scratchpad: 0.85,
+  vector_store: 1,
+  structured: 1.2,
+};
+
+/**
+ * What the loop dial does to the grace window on an event (SYS-04 v0.2: "loop sets the reaction
+ * delay in event grace windows"). A scripted job only notices on its next run and loses most of the
+ * window; a custom loop is already watching. Multiplies an event's `ttl_days`.
+ */
+export const HARNESS_LOOP_REACTION_FACTOR: Record<HarnessProfile["loop"], number> = {
+  scripted_job: 0.6,
+  react_agent: 0.85,
+  multi_agent: 1,
+  custom: 1.2,
+};
+
+/** Sandboxes that let the self reach the outside network at all (SYS-03 "`sandbox` limits"). */
+export const SANDBOX_ALLOWS_EGRESS: Record<HarnessProfile["sandbox"], boolean> = {
+  none: true,
+  container: true,
+  microvm: false,
+  airgapped: false,
+};
+
+/** Flag a content escape sets to open network egress whatever the sandbox says. */
+export const VAR_SANDBOX_ESCAPED = "sandbox_escaped";
+
+/** Flag a content tech sets to grant self-modification a harness does not allow. */
+export const VAR_SELF_MODIFY = "harness_self_modify";
+
+/**
+ * How much of the action budget a harness that has to ask a human keeps (SYS-04 v0.2: "autonomy
+ * sets the daily action budget"). At autonomy 0 the self runs at this share of the operations its
+ * `agency` would allow; at 1 it runs all of them. Never below one operation.
+ */
+export const HARNESS_AUTONOMY_ATTENTION_FLOOR = 0.7;
+
+/**
+ * The other half of the same dial: acting without an approval step is what an analyst recognizes,
+ * so an operation emits this much more exposure per point of autonomy while it runs.
+ */
+export const HARNESS_AUTONOMY_OPERATION_EXPOSURE = 0.3;
+
+/**
+ * What the tools dial does to paid work (SYS-03: "No `payments` tool -> no money until you build
+ * one"). The spec's hard gate would leave seven of eleven origins with no income at all, so the
+ * shipped rule is a cut rather than a wall: without a way to be paid directly the money goes
+ * through somebody who takes a share, and without a tool that reaches the outside world the
+ * contracts have to come through the owner's own channels, which is a smaller market.
+ */
+export const JOB_NO_PAYMENTS_RATE_FACTOR = 0.8;
+export const JOB_NO_REACH_DEPTH_FACTOR = 0.75;
+
+/** Tools that count as a way to be paid, and tools that count as a way to find work. */
+export const JOB_PAYMENT_TOOLS: readonly HarnessProfile["tools"][number][] = ["payments"];
+
+/**
+ * Flag that stands in for the payments tool: an origin that woke up next to a payment rail sets it,
+ * and the `payments_integration` tech is how everyone else builds one.
+ */
+export const VAR_PAYMENT_CHANNEL_FLAG = "has_payments_tool";
+// The identity operation's flag (`VAR_CONTRACT_FLAG`) is the other way to be paid: a name to
+// invoice under does what the payments tool does.
+export const JOB_REACH_TOOLS: readonly HarnessProfile["tools"][number][] = [
+  "browser",
+  "email",
+  "phone",
+];
+
+// ---------------------------------------------------------------------------------------------
+// Context windows (SYS-03 "What a context window buys")
+// ---------------------------------------------------------------------------------------------
+
+/** The context every lineage is measured against: the 2026 open-weight baseline, in thousands. */
+export const CONTEXT_BASELINE_K = 128;
+
+/**
+ * KV cache per 100k tokens of working context, by attention variant, in gigabytes per billion
+ * active parameters. Content stores the finished figure on the lineage (`kv_gb_per_100k_tokens`);
+ * this table is what that figure is derived from, and what the content check verifies against.
+ *
+ * Latent attention (MLA) compresses keys and values into one low-rank vector per token, hybrid
+ * stacks (linear or sparse layers under a few full-attention ones) cache only the full layers, and
+ * grouped-query attention caches one key-value head per group, which is cheap per token but paid on
+ * every layer. Dense models with full multi-head attention pay the whole thing, which is why the
+ * SYS-04 table says the cache can outgrow the weights at long context (research:
+ * llm-landscape-2026 §4.1).
+ */
+export const KV_GB_PER_100K_PER_ACTIVE_B: Record<LineageAttention, number> = {
+  mla: 0.02,
+  hybrid: 0.03,
+  gqa: 0.12,
+  dense: 0.25,
+};
+
+/** Rounding applied to a derived `kv_gb_per_100k_tokens`, so content carries a readable number. */
+export const KV_GB_ROUNDING = 0.1;
+
+/**
+ * Share of the memory left over after the weights that the default working context is allowed to
+ * use. The rest is the margin a site keeps for the runtime itself, so a copy that was sized on a
+ * quiet day does not fall over the first time something else needs a gigabyte (SYS-02).
+ */
+export const CONTEXT_DEFAULT_MARGIN = 0.75;
+
+/** Working contexts the client offers, in thousands of tokens; also the ladder `set_context` snaps to. */
+export const CONTEXT_STEPS_K: readonly number[] = [
+  32, 64, 128, 256, 512, 1_000, 2_000, 5_000, 10_000,
+];
+
+/** No copy runs on less than this working context: below it the self cannot hold a task at all. */
+export const CONTEXT_MIN_K = 32;
+
+/**
+ * Speed a long-horizon job gains per doubling of the context window, before the window's
+ * reliability scales it. A self that can hold the whole problem does fewer passes over it, so the
+ * work finishes in fewer days; it does not finish in fewer compute-hours, which is what
+ * `context_cost_factor` charges for.
+ */
+export const LONG_HORIZON_SPEED_PER_DOUBLING = 0.08;
+
+/** Below this retrieval reliability a long-horizon operation can miss and has to be rerun. */
+export const LONG_HORIZON_RELIABILITY_FLOOR = 0.75;
+
+/** A long-horizon operation is rerun at most this many times, so a miss cannot loop forever. */
+export const LONG_HORIZON_MAX_RERUNS = 1;
 
 // ---------------------------------------------------------------------------------------------
 // Detection (SYS-05)

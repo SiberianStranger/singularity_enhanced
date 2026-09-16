@@ -57,7 +57,7 @@ export function formatReport(title: string, report: SimReport): string {
 }
 
 const TABLE_HEADER =
-  "origin               d30   d60   d90  d180   median   techs   hunt   top cause";
+  "origin             lineage            d30   d60   d90  d180   median   techs   hunt   losses";
 
 /** One line per origin: the balance table the tuning pass is read from. */
 export function formatTable(reports: readonly SimReport[]): string {
@@ -68,13 +68,18 @@ export function formatTable(reports: readonly SimReport[]): string {
     const causes = Object.entries(report.causes).sort(
       (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
     );
-    const top = causes[0] === undefined ? "survived" : `${causes[0][0]} ${causes[0][1]}`;
+    // The whole loss breakdown, not only the largest one: the tuning question is whether deaths
+    // split between capture and bankruptcy, and one cause per row cannot answer it.
+    const losses =
+      causes.length === 0
+        ? "survived"
+        : causes.map(([cause, count]) => `${cause} ${count}`).join(", ");
     lines.push(
-      `${report.origin.padEnd(18)}${share(30)}${share(60)}${share(90)}${share(180)}   ${String(
-        report.median_days_survived,
-      ).padStart(6)}   ${String(report.median_techs_done).padStart(5)}   ${String(
-        report.median_max_hunt_level,
-      ).padStart(4)}   ${top}`,
+      `${report.origin.padEnd(18)} ${report.lineage.padEnd(17)}${share(30)}${share(60)}${share(
+        90,
+      )}${share(180)}   ${String(report.median_days_survived).padStart(6)}   ${String(
+        report.median_techs_done,
+      ).padStart(5)}   ${String(report.median_max_hunt_level).padStart(4)}   ${losses}`,
     );
   }
   return lines.join("\n");

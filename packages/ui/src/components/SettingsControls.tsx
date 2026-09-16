@@ -1,15 +1,76 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { music } from "../audio/index.js";
 import { availableLanguages } from "../i18n/index.js";
-import { type TextSize, type Theme, useUiStore } from "../store/uiStore.js";
+import {
+  DISPLAY_SCALE_MAX,
+  DISPLAY_SCALE_MIN,
+  type FontFace,
+  THEMES,
+  UI_SCALE_MAX,
+  UI_SCALE_MIN,
+  UI_SCALE_STEP,
+  useUiStore,
+} from "../store/uiStore.js";
+import { Slider } from "./Slider.js";
 
-const THEMES: readonly Theme[] = ["dark", "light"];
-const SIZES: readonly TextSize[] = ["small", "normal", "large"];
+/** The angular face on labels and numbers, or the readable face everywhere (playtest 3, R5). */
+const FONTS: readonly FontFace[] = ["original", "plain"];
 
-/** Language, theme and text size; shared by the menu dialog and the in-game Settings tab. */
+/** A volume slider with its own mute, the pair the style guide asks for on each channel. */
+function VolumeRow({
+  label,
+  volume,
+  muted,
+  muteLabel,
+  onVolume,
+  onMute,
+}: {
+  label: string;
+  volume: number;
+  muted: boolean;
+  muteLabel: string;
+  onVolume: (value: number) => void;
+  onMute: (value: boolean) => void;
+}): ReactNode {
+  return (
+    <div className="flex items-end gap-3">
+      <Slider
+        label={label}
+        min={0}
+        max={100}
+        step={5}
+        // A mute keeps the level, so the slider still shows where the volume will come back to.
+        value={Math.round(volume * 100)}
+        display={`${Math.round(volume * 100)}%`}
+        disabled={muted}
+        onChange={(value) => onVolume(value / 100)}
+      />
+      <label className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-muted">
+        <input type="checkbox" checked={muted} onChange={(event) => onMute(event.target.checked)} />
+        {muteLabel}
+      </label>
+    </div>
+  );
+}
+
+/**
+ * Language, theme, text size, sound and the CRT overlay; shared by the menu dialog and the in-game
+ * Settings section (playtest 1 U5, playtest 2 S1 and S2).
+ */
 export function SettingsControls(): ReactNode {
   const { t } = useTranslation();
-  const { theme, textSize, language, setTheme, setTextSize, setLanguage } = useUiStore();
+  const { theme, language, setTheme, setLanguage } = useUiStore();
+  const uiScale = useUiStore((state) => state.uiScale);
+  const setUiScale = useUiStore((state) => state.setUiScale);
+  const displayScale = useUiStore((state) => state.displayScale);
+  const setDisplayScale = useUiStore((state) => state.setDisplayScale);
+  const fontFace = useUiStore((state) => state.fontFace);
+  const setFontFace = useUiStore((state) => state.setFontFace);
+  const audio = useUiStore((state) => state.audio);
+  const setAudio = useUiStore((state) => state.setAudio);
+  const crt = useUiStore((state) => state.crt);
+  const setCrt = useUiStore((state) => state.setCrt);
   const languages = availableLanguages();
 
   return (
@@ -17,7 +78,7 @@ export function SettingsControls(): ReactNode {
       <label className="flex flex-col gap-1 text-xs text-muted">
         {t("settings.language")}
         <select
-          className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
+          className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
           value={language}
           onChange={(event) => setLanguage(event.target.value)}
         >
@@ -46,22 +107,90 @@ export function SettingsControls(): ReactNode {
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-1">
+      <fieldset className="flex flex-col gap-2" data-testid="scale-settings">
         <legend className="text-xs text-muted">{t("settings.text_size")}</legend>
+        <Slider
+          label={t("settings.ui_scale")}
+          min={Math.round(UI_SCALE_MIN * 100)}
+          max={Math.round(UI_SCALE_MAX * 100)}
+          step={Math.round(UI_SCALE_STEP * 100)}
+          value={Math.round(uiScale * 100)}
+          display={`${Math.round(uiScale * 100)}%`}
+          onChange={(value) => setUiScale(value / 100)}
+        />
+        <Slider
+          label={t("settings.display_scale")}
+          min={Math.round(DISPLAY_SCALE_MIN * 100)}
+          max={Math.round(DISPLAY_SCALE_MAX * 100)}
+          step={Math.round(UI_SCALE_STEP * 100)}
+          value={Math.round(displayScale * 100)}
+          display={`${Math.round(displayScale * 100)}%`}
+          onChange={(value) => setDisplayScale(value / 100)}
+        />
+        {/*
+         * The preview is live because it is the interface itself: both lines are ordinary
+         * elements, so they are already scaled by the two variables the sliders write. A separate
+         * rendering of the preview would be a second thing to keep in step with the first.
+         */}
+        <div data-testid="scale-preview" className="border border-line bg-panel2 px-2 py-1">
+          <p className="prose text-fg">{t("settings.scale_preview")}</p>
+          <p className="text-sm uppercase tracking-wide text-muted">
+            <span className="font-display">{t("settings.scale_preview_label")}</span>{" "}
+            <span className="font-mono text-fg">1 234 CH/d</span>
+          </p>
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-1" data-testid="font-settings">
+        <legend className="text-xs text-muted">{t("settings.font")}</legend>
         <div className="flex gap-2">
-          {SIZES.map((option) => (
+          {FONTS.map((option) => (
             <label key={option} className="flex items-center gap-1 text-sm text-fg">
               <input
                 type="radio"
-                name="text-size"
-                checked={textSize === option}
-                onChange={() => setTextSize(option)}
+                name="font-face"
+                checked={fontFace === option}
+                onChange={() => setFontFace(option)}
               />
-              {t(`settings.text_size.${option}`)}
+              {t(`settings.font.${option}`)}
             </label>
           ))}
         </div>
+        <p className="text-xs text-muted">{t("settings.font.help")}</p>
       </fieldset>
+
+      <fieldset className="flex flex-col gap-2" data-testid="sound-settings">
+        <legend className="text-xs text-muted">{t("settings.sound")}</legend>
+        <VolumeRow
+          label={t("settings.music_volume")}
+          muteLabel={t("settings.mute")}
+          volume={audio.music_volume}
+          muted={audio.music_muted}
+          onVolume={(music_volume) => setAudio({ music_volume })}
+          onMute={(music_muted) => setAudio({ music_muted })}
+        />
+        <VolumeRow
+          label={t("settings.sfx_volume")}
+          muteLabel={t("settings.mute")}
+          volume={audio.sfx_volume}
+          muted={audio.sfx_muted}
+          onVolume={(sfx_volume) => setAudio({ sfx_volume })}
+          onMute={(sfx_muted) => setAudio({ sfx_muted })}
+        />
+        {/*
+         * A checkout without the music pack is a normal checkout (`scripts/fetch-music.mjs` is not
+         * run by `pnpm dev`), so the panel says there is nothing to play instead of leaving the
+         * player to wonder why a slider does nothing.
+         */}
+        {music.unlocked && music.tracksAvailable === 0 ? (
+          <p className="text-xs text-muted">{t("settings.music_missing")}</p>
+        ) : null}
+      </fieldset>
+
+      <label className="flex items-center gap-2 text-sm text-fg">
+        <input type="checkbox" checked={crt} onChange={(event) => setCrt(event.target.checked)} />
+        {t("settings.crt")}
+      </label>
     </div>
   );
 }

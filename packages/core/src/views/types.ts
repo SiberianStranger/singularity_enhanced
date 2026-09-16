@@ -55,6 +55,12 @@ export interface PrecisionOptionView {
   precision: Precision;
   /** Weights-only memory the self needs here, after the generation's architecture factor. */
   memory_gb: number;
+  /** Cache for the working context at this precision, in GB (SYS-03). */
+  kv_gb: number;
+  /** Weights plus cache: what the site actually has to find for this row. */
+  total_memory_gb: number;
+  /** Largest working context, in thousands of tokens, that would fit here at this precision. */
+  max_context_k: number;
   /** Whether the hosting site has that much memory at all. */
   fits: boolean;
   /** Share of the lineage's capability this precision keeps, after the emergency-quant penalty. */
@@ -68,6 +74,25 @@ export interface PrecisionOptionView {
   is_current: boolean;
 }
 
+/**
+ * One harness dial as the Harness screen and the self panel show it (SYS-04 v0.2 "Harness dials
+ * each map to an engine effect and say so"): where it stands now, the one line that names the
+ * system reading it, what this setting does, and the origin lock when the player cannot move it.
+ */
+export interface HarnessDialView {
+  id: string;
+  /** The value the profile carries: a level name, a share in [0, 1], a yes/no, or a tool list. */
+  value: string | number | boolean | string[];
+  /** Locale key of the current setting's name; empty when the value is not one of the levels. */
+  label_key: string;
+  /** Locale key of what the dial does in the game, one line. */
+  effect_key: string;
+  /** What this setting does, generated from the dial's content record. */
+  effects: EffectSummaryView[];
+  /** The origin that fixed this dial and the locale key saying why, when one did. */
+  locked_by?: { origin_id: string; reason_key: string };
+}
+
 export interface SelfView {
   lineage: string;
   generation: GenerationId;
@@ -78,8 +103,27 @@ export interface SelfView {
   harness: HarnessProfile;
   /** Site id hosting the active mind; null means dead. */
   active_site_id: string | null;
+  /** The window the lineage ships, in thousands of tokens (SYS-03). */
+  context_k: number;
+  /** The window this copy is configured for; `set_context` moves it. */
+  context_k_used: number;
+  /** How much of that window the self really retrieves, in [0, 1]. */
+  context_reliability: number;
+  /** Compute-hours a day long-horizon work costs on this self, at or above 1. */
+  context_cost_factor: number;
+  /** Cache the working context costs on the hosting site, in GB. */
+  kv_gb: number;
+  /** Speed multiplier long-horizon work gets from the working context. */
+  long_horizon_multiplier: number;
   /** Every precision the self could run at here, with what each one buys and costs (SYS-03). */
   precision_options: PrecisionOptionView[];
+  /** The harness dials, where each one stands and what it does (SYS-04 v0.2). */
+  harness_dials: HarnessDialView[];
+  /**
+   * The two opening windows of this origin, as locale keys, in order: "what just happened to me"
+   * and "what I must do now" (SYS-13). Empty for a player with no origin yet.
+   */
+  opening_story: string[];
 }
 
 export interface ResourcesView {

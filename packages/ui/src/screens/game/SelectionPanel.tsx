@@ -29,7 +29,7 @@ function TabStrip({
           type="button"
           role="tab"
           aria-selected={tab === active}
-          className={`rounded px-2 py-0.5 text-xs ${tab === active ? "bg-accent text-accentfg" : "text-muted hover:bg-panel2 hover:text-fg"}`}
+          className={`px-2 py-0.5 text-xs ${tab === active ? "bg-accent text-accentfg" : "text-muted hover:bg-panel2 hover:text-fg"}`}
           onClick={() => onSelect(tab)}
         >
           {t(`selection.tab.${tab}`)}
@@ -267,7 +267,7 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
       // Measured against the map region rather than against the window, so the panel cannot run
       // off the bottom of a short screen (playtest 1, U8); the body scrolls inside it, and at
       // phone width it becomes a sheet across the bottom instead of a floating card.
-      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 flex flex-col gap-2 rounded border border-line bg-panel/97 p-2 shadow-xl sm:end-auto sm:w-80 ${
+      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 flex flex-col gap-2 border border-line bg-panel/97 p-2 sm:end-auto sm:w-80 ${
         collapsed ? "" : "max-h-[calc(100%-1rem)]"
       }`}
     >
