@@ -1,0 +1,4241 @@
+[
+  {
+    "id": "nvidia-tesla-p40",
+    "vendor": "NVIDIA",
+    "name": "Tesla P40",
+    "arch": "Pascal",
+    "launch_year": 2016,
+    "category": "datacenter-legacy",
+    "memory_gb": 24,
+    "memory_type": "GDDR5",
+    "memory_bandwidth_gbs": 346,
+    "tflops": {
+      "fp32_dense": 12.0,
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 47.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 250,
+    "form_factor": "PCIe dual-slot (no display out)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 3,
+    "price_usd_2026": {
+      "new": null,
+      "used": 130,
+      "note": "Long EOL; only available used/pulled from decommissioned servers. ~$100-200 typical eBay range widely reported but not independently confirmed by a primary listing this session -- treat as approximate."
+    },
+    "export_control_to_china": "unrestricted (predates modern AI export-control thresholds; no tensor cores, low FP16 throughput)",
+    "availability": [
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "No FP16 tensor cores; FP16 vector rate is very low (~183 GFLOPS, roughly 1/64 of FP32) which is why P40 rigs run inference in INT8 or old-style FP32/quantized GGUF rather than FP16. Popular for cheap 24GB-per-card home LLM rigs because it is the cheapest 24GB Nvidia card on the used market.",
+    "unverified": [
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://getdeploying.com/gpus/nvidia-p100-vs-nvidia-p40",
+      "https://cputronic.com/en/gpu/nvidia-tesla-p40",
+      "https://flopper.io/compare/nvidia-p100-pcie-16gb-vs-nvidia-tesla-p40-24gb"
+    ]
+  },
+  {
+    "id": "nvidia-tesla-p100",
+    "vendor": "NVIDIA",
+    "name": "Tesla P100 (16GB)",
+    "arch": "Pascal",
+    "launch_year": 2016,
+    "category": "datacenter-legacy",
+    "memory_gb": 16,
+    "memory_type": "HBM2",
+    "memory_bandwidth_gbs": 732,
+    "tflops": {
+      "fp32_dense": 9.3,
+      "fp16_dense": 18.7,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 250,
+    "form_factor": "PCIe (SXM2 variant: 300W)",
+    "interconnect": {
+      "type": "NVLink 1 (SXM2 only)",
+      "gbs": 160
+    },
+    "pcie_gen": 3,
+    "price_usd_2026": {
+      "new": null,
+      "used": 200,
+      "note": "EOL, used/pulled market only; figure approximate, not independently confirmed."
+    },
+    "export_control_to_china": "unrestricted (legacy)",
+    "availability": [
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "First HBM2 Tesla card; strong FP64 (4.7 TFLOPS) made it popular for HPC before AI-specific accelerators existed. No FP8/INT8 tensor support.",
+    "unverified": [
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://getdeploying.com/gpus/nvidia-p100-vs-nvidia-p40",
+      "https://images.nvidia.com/content/technologies/volta/pdf/tesla-volta-v100-datasheet-letter-fnl-web.pdf"
+    ]
+  },
+  {
+    "id": "nvidia-tesla-v100",
+    "vendor": "NVIDIA",
+    "name": "Tesla V100 (16GB/32GB)",
+    "arch": "Volta",
+    "launch_year": 2017,
+    "category": "datacenter-legacy",
+    "memory_gb": 32,
+    "memory_type": "HBM2",
+    "memory_bandwidth_gbs": 900,
+    "tflops": {
+      "fp32_dense": 14.0,
+      "fp16_dense": 112.0,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 300,
+    "form_factor": "PCIe (250W) / SXM2 (300W) / SXM3 32GB (350W)",
+    "interconnect": {
+      "type": "NVLink 2 (SXM)",
+      "gbs": 300
+    },
+    "pcie_gen": 3,
+    "price_usd_2026": {
+      "new": null,
+      "used": 900,
+      "note": "Approximate used-market figure for 32GB SXM2 pulls; not independently confirmed via a specific 2026 listing this session."
+    },
+    "export_control_to_china": "unrestricted (legacy)",
+    "availability": [
+      "used-market",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.3,
+      "high": 0.9
+    },
+    "notes": "First GPU with Tensor Cores (FP16 matrix multiply-accumulate). Also sold in a 16GB variant. Still lingers in some university/cloud fleets in 2026 but considered obsolete for modern LLM inference due to lack of BF16/FP8 and small memory.",
+    "unverified": [
+      "price_usd_2026.used",
+      "cloud_usd_per_hour_2026"
+    ],
+    "sources": [
+      "https://images.nvidia.com/content/technologies/volta/pdf/tesla-volta-v100-datasheet-letter-fnl-web.pdf",
+      "https://www.runcrate.ai/gpu-models/v100",
+      "https://inferencebench.io/gpus/nvidia-v100-32gb/"
+    ]
+  },
+  {
+    "id": "nvidia-t4",
+    "vendor": "NVIDIA",
+    "name": "Tesla T4",
+    "arch": "Turing",
+    "launch_year": 2018,
+    "category": "datacenter-inference",
+    "memory_gb": 16,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 320,
+    "tflops": {
+      "fp32_dense": 8.1,
+      "fp16_dense": 65.0,
+      "fp8_dense": null,
+      "int8_dense": 130.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 70,
+    "form_factor": "PCIe low-profile single-slot",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 3,
+    "price_usd_2026": {
+      "new": null,
+      "used": 500,
+      "note": "Approximate; still sold new by some system integrators in small quantities but effectively an EOL part."
+    },
+    "export_control_to_china": "unrestricted (legacy inference card; widely sold in China historically)",
+    "availability": [
+      "used-market",
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.12,
+      "high": 0.35
+    },
+    "notes": "Extremely power-efficient (70W) low-profile card, still common in video-transcode and light-inference fleets. INT8 TOPS figure is a typical-ratio estimate (2x FP16), not independently confirmed this session.",
+    "unverified": [
+      "tflops.int8_dense",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://gpuadvisor.com/gpu/t4",
+      "https://getdeploying.com/gpus/nvidia-a10-vs-nvidia-t4",
+      "https://en.wikipedia.org/wiki/Nvidia_Tesla"
+    ]
+  },
+  {
+    "id": "nvidia-a10",
+    "vendor": "NVIDIA",
+    "name": "A10",
+    "arch": "Ampere",
+    "launch_year": 2021,
+    "category": "datacenter-inference",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 600,
+    "tflops": {
+      "fp32_dense": 31.2,
+      "fp16_dense": 125.0,
+      "fp8_dense": null,
+      "int8_dense": 250.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 150,
+    "form_factor": "PCIe single-slot FHFL",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 2800,
+      "used": 1500,
+      "note": "Approximate; card is still sold new by OEMs (Dell/HPE/Lenovo) for VDI+inference workstations."
+    },
+    "export_control_to_china": "unrestricted (below current compute-density thresholds)",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.2,
+      "high": 0.55
+    },
+    "notes": "Official NVIDIA datasheet figures used (150W TDP, 125 TFLOPS FP16 dense / 250 sparse). Frequently confused in aggregator sites with the AWS-specific A10G, which some sources list at up to 300W -- likely a mislabeling since the two share the same GA102 silicon and NVIDIA's A10 spec sheet is 150W.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "tflops.int8_dense"
+    ],
+    "sources": [
+      "https://www.nvidia.com/en-us/data-center/products/a10-gpu/",
+      "https://getdeploying.com/gpus/nvidia-a10-vs-nvidia-t4"
+    ]
+  },
+  {
+    "id": "nvidia-a10g",
+    "vendor": "NVIDIA",
+    "name": "A10G (AWS variant)",
+    "arch": "Ampere",
+    "launch_year": 2021,
+    "category": "datacenter-inference",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 600,
+    "tflops": {
+      "fp32_dense": 35.0,
+      "fp16_dense": 125.0,
+      "fp8_dense": null,
+      "int8_dense": 250.0,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe (AWS custom board, not sold standalone)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as retail hardware; only accessible via AWS EC2 G5 instances."
+    },
+    "export_control_to_china": "n/a (cloud-only instance, not exported as discrete hardware)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 5.7
+    },
+    "notes": "AWS-exclusive variant of the A10 silicon used in G5 instances; specs are similar to A10 but board TDP is reported inconsistently across sources (150-300W) -- flagged as unverified/conflicting.",
+    "unverified": [
+      "tdp_w",
+      "tflops.fp32_dense"
+    ],
+    "sources": [
+      "https://getdeploying.com/gpus/nvidia-a10g-vs-nvidia-l4",
+      "https://getdeploying.com/gpus/nvidia-a10g-vs-nvidia-t4",
+      "https://www.spheron.network/blog/nvidia-a10g-vs-t4-cheapest-gpu-for-small-model-inference-2026/"
+    ]
+  },
+  {
+    "id": "nvidia-a30",
+    "vendor": "NVIDIA",
+    "name": "A30",
+    "arch": "Ampere",
+    "launch_year": 2021,
+    "category": "datacenter-inference",
+    "memory_gb": 24,
+    "memory_type": "HBM2",
+    "memory_bandwidth_gbs": 933,
+    "tflops": {
+      "fp32_dense": 10.3,
+      "fp16_dense": 165.0,
+      "fp8_dense": null,
+      "int8_dense": 330.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 165,
+    "form_factor": "PCIe dual-slot FHFL",
+    "interconnect": {
+      "type": "NVLink 3",
+      "gbs": 200
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 4500,
+      "used": 2200,
+      "note": "Approximate, not independently confirmed this session."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.4,
+      "high": 1.0
+    },
+    "notes": "Mainstream-segment Ampere data-center card with HBM2 (unusual for its tier); MIG-capable.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "tflops.int8_dense"
+    ],
+    "sources": [
+      "https://cloudgputracker.com/compare/nvidia-t4-vs-nvidia-a30/",
+      "https://en.wikipedia.org/wiki/Nvidia_Tesla"
+    ]
+  },
+  {
+    "id": "nvidia-a100-40-pcie",
+    "vendor": "NVIDIA",
+    "name": "A100 40GB PCIe",
+    "arch": "Ampere",
+    "launch_year": 2020,
+    "category": "datacenter-training",
+    "memory_gb": 40,
+    "memory_type": "HBM2",
+    "memory_bandwidth_gbs": 1555,
+    "tflops": {
+      "fp32_dense": 19.5,
+      "fp16_dense": 312.0,
+      "fp8_dense": null,
+      "int8_dense": 624.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 250,
+    "form_factor": "PCIe dual-slot",
+    "interconnect": {
+      "type": "NVLink 3 (bridge, 2-GPU)",
+      "gbs": 600
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 9000,
+      "used": 5000,
+      "note": "Wide reported range $8,000-10,000 new; used market $4,000-6,000. Card is past its production peak but still widely deployed."
+    },
+    "export_control_to_china": "banned (subject to Oct 2022 and later US export-control thresholds; A800 successor also later restricted)",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 2.5
+    },
+    "notes": "FP64 Tensor 19.5 TFLOPS. Ampere generation has no native FP8 tensor support; INT8 figure shown for the dense tensor-core rate.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://jarvislabs.ai/blog/a100-price",
+      "https://akash.network/the-bid/nvidia-a100-gpu-guide-2026-specs-benchmarks-pricing/",
+      "https://www.thundercompute.com/blog/nvidia-a100-specs-full-guide"
+    ]
+  },
+  {
+    "id": "nvidia-a100-80-pcie",
+    "vendor": "NVIDIA",
+    "name": "A100 80GB PCIe",
+    "arch": "Ampere",
+    "launch_year": 2021,
+    "category": "datacenter-training",
+    "memory_gb": 80,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 2039,
+    "tflops": {
+      "fp32_dense": 19.5,
+      "fp16_dense": 312.0,
+      "fp8_dense": null,
+      "int8_dense": 624.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 300,
+    "form_factor": "PCIe dual-slot",
+    "interconnect": {
+      "type": "NVLink 3 (bridge, 2-GPU)",
+      "gbs": 600
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 11000,
+      "used": 6500,
+      "note": "Reported range new $7,000-15,000, used $4,000-9,000; wide variance by source/condition/region."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.07,
+      "high": 3.43
+    },
+    "notes": "Same compute die as 40GB; only memory capacity/bandwidth differ. Still one of the most widely deployed training/inference cards in 2026 due to used-market abundance.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://jarvislabs.ai/blog/a100-price",
+      "https://www.runpod.io/articles/guides/nvidia-a100-gpu",
+      "https://gpucost.org/gpu/a100-40gb-pcie"
+    ]
+  },
+  {
+    "id": "nvidia-a100-40-sxm4",
+    "vendor": "NVIDIA",
+    "name": "A100 40GB SXM4",
+    "arch": "Ampere",
+    "launch_year": 2020,
+    "category": "datacenter-training",
+    "memory_gb": 40,
+    "memory_type": "HBM2",
+    "memory_bandwidth_gbs": 1555,
+    "tflops": {
+      "fp32_dense": 19.5,
+      "fp16_dense": 312.0,
+      "fp8_dense": null,
+      "int8_dense": 624.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 400,
+    "form_factor": "SXM4 (HGX baseboard only)",
+    "interconnect": {
+      "type": "NVLink 3 + NVSwitch",
+      "gbs": 600
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as a standalone card; only available soldered onto 4-GPU or 8-GPU HGX baseboards (DGX A100 etc). Pricing is at the system level."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.2,
+      "high": 2.8
+    },
+    "notes": "Full NVSwitch fabric (not just point-to-point bridges) gives all-to-all 600GB/s GPU-GPU bandwidth within a node, unlike the PCIe variant's 2-GPU bridge.",
+    "unverified": [],
+    "sources": [
+      "https://www.itcreations.com/nvidia-gpu/nvidia-a100-sxm-gpu"
+    ]
+  },
+  {
+    "id": "nvidia-a100-80-sxm4",
+    "vendor": "NVIDIA",
+    "name": "A100 80GB SXM4",
+    "arch": "Ampere",
+    "launch_year": 2021,
+    "category": "datacenter-training",
+    "memory_gb": 80,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 2039,
+    "tflops": {
+      "fp32_dense": 19.5,
+      "fp16_dense": 312.0,
+      "fp8_dense": null,
+      "int8_dense": 624.0,
+      "fp4_dense": null
+    },
+    "tdp_w": 400,
+    "form_factor": "SXM4 (HGX baseboard only)",
+    "interconnect": {
+      "type": "NVLink 3 + NVSwitch",
+      "gbs": 600
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 19000,
+      "used": 11000,
+      "note": "Reported ~$18,000-20,000 new per GPU-equivalent share of an 8-GPU HGX system; used market for pulled SXM modules is a niche/rare market since they require the matching baseboard."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.2,
+      "high": 3.0
+    },
+    "notes": "The 8x SXM4 80GB configuration is the classic DGX A100 / HGX A100 node (320GB VRAM/node, ~6.5kW).",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://www.itcreations.com/nvidia-gpu/nvidia-a100-sxm-gpu",
+      "https://jarvislabs.ai/blog/a100-price"
+    ]
+  },
+  {
+    "id": "nvidia-h100-pcie",
+    "vendor": "NVIDIA",
+    "name": "H100 PCIe",
+    "arch": "Hopper",
+    "launch_year": 2022,
+    "category": "datacenter-training",
+    "memory_gb": 80,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 2000,
+    "tflops": {
+      "fp16_dense": 756,
+      "fp8_dense": 1513,
+      "int8_dense": 1513,
+      "fp4_dense": null
+    },
+    "tdp_w": 350,
+    "form_factor": "PCIe dual-slot",
+    "interconnect": {
+      "type": "NVLink 4 (bridge, 2-GPU)",
+      "gbs": 600
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 27000,
+      "used": 18000,
+      "note": "Reported range $25,000-40,000 for H100 generally (PCIe usually at the lower end of that band); used/gray-market units also circulate."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.99,
+      "high": 6.98
+    },
+    "notes": "PCIe variant is capped lower than SXM5 both in TDP and clocked lower; commonly used in air-cooled 4-GPU or 8-GPU PCIe servers where full NVSwitch fabric isn't available.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-h100-specs/",
+      "https://www.thundercompute.com/blog/nvidia-h100-specs-full-guide",
+      "https://jarvislabs.ai/blog/h100-price",
+      "https://intuitionlabs.ai/articles/h100-rental-prices-cloud-comparison"
+    ]
+  },
+  {
+    "id": "nvidia-h100-sxm5",
+    "vendor": "NVIDIA",
+    "name": "H100 SXM5",
+    "arch": "Hopper",
+    "launch_year": 2022,
+    "category": "datacenter-training",
+    "memory_gb": 80,
+    "memory_type": "HBM3",
+    "memory_bandwidth_gbs": 3350,
+    "tflops": {
+      "fp16_dense": 989,
+      "fp8_dense": 1979,
+      "int8_dense": 1979,
+      "fp4_dense": null
+    },
+    "tdp_w": 700,
+    "form_factor": "SXM5 (HGX baseboard only)",
+    "interconnect": {
+      "type": "NVLink 4 + NVSwitch",
+      "gbs": 900
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 32000,
+      "used": 22000,
+      "note": "Reported $25,000-40,000 range across sources for H100 generally; SXM5 typically commands the higher end due to HGX-node integration costs."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.87,
+      "high": 13.0,
+      "note": "Vast.ai marketplace floor ~$1.49-1.87/hr; specialist neoclouds $2-4/hr; CoreWeave ~$4.25-6.16/hr; AWS/Azure on-demand list rates $6.88-13/hr -- hyperscalers charge a reported 3-6x premium over neoclouds for identical hardware."
+    },
+    "notes": "The 8x SXM5 DGX H100 / HGX H100 node is the standard modern AI training building block (640GB VRAM/node, ~10kW, ~900GB/s NVLink all-to-all).",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-h100-specs/",
+      "https://en.wikipedia.org/wiki/Nvidia_DGX",
+      "https://intuitionlabs.ai/articles/h100-rental-prices-cloud-comparison",
+      "https://www.thundercompute.com/blog/coreweave-gpu-pricing-review"
+    ]
+  },
+  {
+    "id": "nvidia-h100-nvl",
+    "vendor": "NVIDIA",
+    "name": "H100 NVL",
+    "arch": "Hopper",
+    "launch_year": 2023,
+    "category": "datacenter-inference",
+    "memory_gb": 188,
+    "memory_type": "HBM3",
+    "memory_bandwidth_gbs": 3900,
+    "tflops": {
+      "fp16_dense": 835,
+      "fp8_dense": 1671,
+      "int8_dense": 1671,
+      "fp4_dense": null
+    },
+    "tdp_w": 400,
+    "form_factor": "PCIe dual-card NVLink-bridged pair (sold/counted as one 2-GPU unit)",
+    "interconnect": {
+      "type": "NVLink 4 bridge (2-GPU only)",
+      "gbs": 600
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 55000,
+      "used": null,
+      "note": "Sold as a matched pair; total pair price estimated, not independently confirmed this session."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.0,
+      "high": 5.0
+    },
+    "notes": "Purpose-built for LLM inference in air-cooled PCIe servers lacking full HGX/NVSwitch infrastructure; 94GB HBM3 per die (188GB per 2-GPU unit), figures above given per-GPU (half of pair totals except memory which is listed as the pair total per common convention).",
+    "unverified": [
+      "price_usd_2026.new",
+      "tdp_w",
+      "tflops"
+    ],
+    "sources": [
+      "https://www.thundercompute.com/blog/nvidia-h100-specs-full-guide",
+      "https://www.spheron.network/blog/nvidia-h100-specs/"
+    ]
+  },
+  {
+    "id": "nvidia-h200-sxm",
+    "vendor": "NVIDIA",
+    "name": "H200 SXM",
+    "arch": "Hopper",
+    "launch_year": 2024,
+    "category": "datacenter-training",
+    "memory_gb": 141,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 4800,
+    "tflops": {
+      "fp16_dense": 989,
+      "fp8_dense": 1979,
+      "int8_dense": 1979,
+      "fp4_dense": null
+    },
+    "tdp_w": 700,
+    "form_factor": "SXM5 (HGX baseboard only)",
+    "interconnect": {
+      "type": "NVLink 4 + NVSwitch",
+      "gbs": 900
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 35000,
+      "used": null,
+      "note": "Reported $30,000-40,000/GPU."
+    },
+    "export_control_to_china": "banned (case-by-case licensing floated for up to 75,000 units/firm to ~10 Chinese firms, but as of May 2026 reportedly zero units actually delivered due to PRC customs blocks and Beijing training-only restriction)",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.43,
+      "high": 10.6,
+      "note": "Runpod community ~$3.59/hr; Lambda ~$4.49/hr; CoreWeave ~$3.89/hr; hyperscaler on-demand list rates run far higher (AWS raised H200 prices 15% on Jan 4, 2026); hyperscaler premium over median reportedly reached 132%."
+    },
+    "notes": "Same Hopper compute die as H100; only memory capacity/bandwidth increased (76% more capacity, 43% more bandwidth). This is the schema's worked example accelerator.",
+    "unverified": [
+      "price_usd_2026.new"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-h200-specs/",
+      "https://www.hyperbolic.ai/blog/h200-price",
+      "https://jarvislabs.ai/blog/h200-price",
+      "https://gpusmith.com/articles/en/nvidia-gpu-export-restrictions",
+      "https://www.thundercompute.com/blog/nvidia-h200-pricing"
+    ]
+  },
+  {
+    "id": "nvidia-h20",
+    "vendor": "NVIDIA",
+    "name": "H20",
+    "arch": "Hopper (China-compliant cut-down)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": 96,
+    "memory_type": "HBM3",
+    "memory_bandwidth_gbs": 4000,
+    "tflops": {
+      "fp16_dense": 148,
+      "fp8_dense": 296,
+      "int8_dense": 296,
+      "fp4_dense": null
+    },
+    "tdp_w": 400,
+    "form_factor": "SXM (HGX baseboard)",
+    "interconnect": {
+      "type": "NVLink 4 + NVSwitch",
+      "gbs": 900
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 12300,
+      "used": null,
+      "note": "Derived from a reported deal: ~1.3 million H20 chips valued at >$16 billion pending export in 2025 implies ~$12,300/chip average -- this is a back-of-envelope derivation from a press-reported aggregate, not a vendor list price."
+    },
+    "export_control_to_china": "restricted (licensed): required indefinite export license from April 9, 2025; license applications resumed July 15, 2025 (tied to a US-China rare-earths trade deal); further approvals reported May 17, 2026",
+    "availability": [
+      "enterprise",
+      "China-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "NVIDIA does not publish an official public datasheet for H20; compute/memory figures circulating in trade press vary and are NOT independently confirmed this session -- treat all tflops figures as commonly-reported approximations only. Memory bandwidth kept high (near H100-class) while compute was cut sharply to satisfy the density-based export threshold in force through 2024. Widely blamed/credited in US policy debate for helping enable DeepSeek's low-cost training. Nvidia's china datacenter revenue was $19.67B in FY2026 but is reportedly now modeled at effectively zero going forward given the on-off licensing.",
+    "unverified": [
+      "memory_gb",
+      "memory_bandwidth_gbs",
+      "tflops.fp16_dense",
+      "tflops.fp8_dense",
+      "tdp_w",
+      "price_usd_2026.new"
+    ],
+    "sources": [
+      "https://ifp.org/the-h20-problem/",
+      "https://www.tomshardware.com/pc-components/gpus/nvidia-h20-ai-gpu-inventory-is-limited-but-nvidia-is-making-a-new-b30-model-for-china-to-comply-with-export-restrictions",
+      "https://www.networkworld.com/article/4022357/nvidia-to-restart-h20-exports-to-china-unveils-new-export-compliant-gpu.html",
+      "https://gpusmith.com/articles/en/nvidia-gpu-export-restrictions",
+      "https://www.cnbc.com/2026/03/17/nvidia-ceo-jensen-huang-says-chipmaker-has-received-orders-from-china.html"
+    ]
+  },
+  {
+    "id": "nvidia-h20e",
+    "vendor": "NVIDIA",
+    "name": "H20E",
+    "arch": "Hopper (China-compliant, rumored enhanced variant)",
+    "launch_year": null,
+    "category": "datacenter-training-china",
+    "memory_gb": null,
+    "memory_type": null,
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": null,
+    "interconnect": {
+      "type": null,
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No confirmed pricing found."
+    },
+    "export_control_to_china": "restricted (licensed) -- same regime presumed to apply as H20",
+    "availability": [
+      "China-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "UNCONFIRMED: \"H20E\" is referenced in industry chatter as a possible enhanced-memory or higher-bandwidth H20 derivative for the China market, but this research pass found no NVIDIA announcement or credible technical breakdown of a distinct H20E SKU as of September 2026. Included as a placeholder per the brief; treat as rumored/unverified until better sourced. Do not treat any spec here as real.",
+    "unverified": [
+      "ALL FIELDS -- entire record is unconfirmed/rumored"
+    ],
+    "sources": [
+      "https://www.tomshardware.com/pc-components/gpus/nvidia-h20-ai-gpu-inventory-is-limited-but-nvidia-is-making-a-new-b30-model-for-china-to-comply-with-export-restrictions"
+    ]
+  },
+  {
+    "id": "nvidia-b30a",
+    "vendor": "NVIDIA",
+    "name": "B30A",
+    "arch": "Blackwell (China-compliant, single-die)",
+    "launch_year": 2026,
+    "category": "datacenter-training-china",
+    "memory_gb": 144,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 1398,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 700,
+    "form_factor": "SXM/OAM (HGX-style baseboard, retains NVLink)",
+    "interconnect": {
+      "type": "NVLink (Blackwell gen)",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 25000,
+      "used": null,
+      "note": "Reported as roughly double the implied H20 price for ~6x the performance; derived estimate, not a vendor list price."
+    },
+    "export_control_to_china": "restricted (China-specific compliant SKU): engineered to sit just under reported ~1.4TB/s bandwidth export threshold; sample shipments targeted for September 2025, broader availability 2026",
+    "availability": [
+      "enterprise",
+      "China-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Single-die Blackwell design at roughly half the raw compute/memory of the dual-die B300, but keeps NVLink (unlike the GDDR-based RTX 6000D). Reported to deliver ~2x-6x H20 performance (range varies by source) for roughly double the price. TDP and TFLOPS are estimated/derived (e.g., TDP assumed ~half of B300's 1400W) and are NOT independently confirmed -- flag prominently in any UI.",
+    "unverified": [
+      "tdp_w",
+      "price_usd_2026.new",
+      "tflops (all)",
+      "memory_bandwidth_gbs precision"
+    ],
+    "sources": [
+      "https://www.jonpeddie.com/news/nvidias-new-b30a-chip/",
+      "https://www.astutegroup.com/news/industrial/nvidias-b30a-accelerator-targets-chinese-market-under-tight-u-s-controls/",
+      "https://www.smbom.com/news/45583",
+      "https://www.notebookcheck.net/Nvidia-readies-new-Blackwell-based-accelerators-tailored-for-China-under-US-export-limits.1091993.0.html",
+      "https://www.tomshardware.com/pc-components/gpus/nvidia-h20-ai-gpu-inventory-is-limited-but-nvidia-is-making-a-new-b30-model-for-china-to-comply-with-export-restrictions"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-6000d",
+    "vendor": "NVIDIA",
+    "name": "RTX 6000D",
+    "arch": "Blackwell (China-compliant workstation)",
+    "launch_year": 2025,
+    "category": "workstation-china",
+    "memory_gb": 84,
+    "memory_type": "GDDR7",
+    "memory_bandwidth_gbs": 1398,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe workstation card",
+    "interconnect": {
+      "type": "none (no NVLink)",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No standalone list price found; reportedly selling very poorly."
+    },
+    "export_control_to_china": "restricted (China-specific compliant SKU): GDDR7 bandwidth capped at 1,398 GB/s, just under the ~1.4TB/s export threshold; 156 SMs / 19,968 CUDA cores (17% fewer than global RTX PRO 6000's 24,064); TSMC N4",
+    "availability": [
+      "China-only",
+      "workstation-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Built on GDDR7 (not HBM) specifically to dodge HBM-based export thresholds; targets inference/pro-graphics rather than training. Reported by Tom's Hardware to be selling very poorly in China as of 2026 because grey-market smuggled real RTX PRO 6000 / H100 units are viewed as more attractive despite legal risk and price premium -- full article body was paywalled during this research pass, so treat the \"why nobody buys it\" narrative as reported-but-not-independently-verified in detail.",
+    "unverified": [
+      "tdp_w",
+      "price_usd_2026",
+      "commercial-reception narrative detail"
+    ],
+    "sources": [
+      "https://www.tomshardware.com/pc-components/gpus/nvidia-reportedly-preparing-rtx-6000d-for-chinese-market-to-comply-with-u-s-export-controls-fabricated-on-tsmc-n4-featuring-gddr7-memory-capable-of-delivering-1-100-gb-s-of-bidirectional-bandwidth",
+      "https://www.tomshardware.com/tech-industry/semiconductors/why-nobody-is-buying-nvidia-6000d-in-china",
+      "https://www.tweaktown.com/news/109049/nvidia-rtx-6000d-made-for-china-gpu-84gb-gddr7-lower-clocks-slower-than-rtx-pro-6000/index.html",
+      "https://wccftech.com/nvidia-rtx-6000d-blackwell-pro-for-china-tested-lower-cores-vram-clocks/"
+    ]
+  },
+  {
+    "id": "nvidia-b200",
+    "vendor": "NVIDIA",
+    "name": "B200",
+    "arch": "Blackwell",
+    "launch_year": 2025,
+    "category": "datacenter-training",
+    "memory_gb": 192,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": 2250,
+      "fp8_dense": 4500,
+      "int8_dense": 4500,
+      "fp4_dense": 4500
+    },
+    "tdp_w": 1000,
+    "form_factor": "SXM/OAM (HGX-style baseboard)",
+    "interconnect": {
+      "type": "NVLink 5 + NVSwitch",
+      "gbs": 1800
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 45000,
+      "used": null,
+      "note": "No firm standalone list price found; figure is a rough estimate based on cloud pricing back-out, not a vendor quote."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.12,
+      "high": 14.24,
+      "note": "Specialist providers: spot $2.12/hr, on-demand $4.99-6.04/hr, 36-month reserved as low as $2.25/hr, market median ~$6.29/hr; AWS Capacity Blocks ~$9.36/hr, list rate up to $14.24/hr; GCP spot ~$6.69/hr; Lambda ~$5.50/hr."
+    },
+    "notes": "The commonly cited \"9,000 TFLOPS FP4\" marketing figure is the SPARSE rate; dense figures above (fp16/fp8/fp4 ~2250/4500/4500) are derived by halving/quartering per NVIDIA's usual dense:sparse ratios and are NOT independently confirmed -- flagged. NVLink 5 bandwidth (1,800GB/s/GPU) is a well-publicized Blackwell architecture spec.",
+    "unverified": [
+      "tflops (all, derived)",
+      "price_usd_2026.new"
+    ],
+    "sources": [
+      "https://jarvislabs.ai/ai-faqs/nvidia-b200-specs",
+      "https://www.runpod.io/articles/guides/nvidia-b200",
+      "https://gpus.io/en/gpus/b200",
+      "https://cast.ai/blog/gpu-cloud-pricing/",
+      "https://intuitionlabs.ai/articles/data-center-gpu-pricing-2026"
+    ]
+  },
+  {
+    "id": "nvidia-b300",
+    "vendor": "NVIDIA",
+    "name": "B300 (Blackwell Ultra)",
+    "arch": "Blackwell Ultra",
+    "launch_year": 2025,
+    "category": "datacenter-training",
+    "memory_gb": 288,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": 3500,
+      "fp8_dense": 7000,
+      "int8_dense": 7000,
+      "fp4_dense": 15000
+    },
+    "tdp_w": 1400,
+    "form_factor": "SXM/OAM, liquid cooling mandatory",
+    "interconnect": {
+      "type": "NVLink 5 + NVSwitch",
+      "gbs": 1800
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 55000,
+      "used": null,
+      "note": "Rough estimate backed out from cloud pricing; not a vendor quote."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 5.85,
+      "high": 9.16,
+      "note": "Spheron: $9.16/hr on-demand, $5.85/hr spot (Sept 2026)."
+    },
+    "notes": "15 PFLOPS dense FP4 and 7,000 TFLOPS dense FP8 explicitly reported as dense by source; FP16 dense is a derived estimate (half of FP8) and unverified. 1,400W TDP makes air cooling impractical -- liquid cooling required.",
+    "unverified": [
+      "tflops.fp16_dense (derived)",
+      "price_usd_2026.new"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-b300-blackwell-ultra-guide/",
+      "https://www.moduledge.com/blog/gb300-nvl72"
+    ]
+  },
+  {
+    "id": "nvidia-gb200-nvl72",
+    "vendor": "NVIDIA",
+    "name": "GB200 NVL72 (rack system)",
+    "arch": "Blackwell + Grace",
+    "launch_year": 2025,
+    "category": "rack-system",
+    "memory_gb": 186,
+    "memory_type": "HBM3e (per GPU; 13.4TB per 72-GPU rack)",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": 19444
+    },
+    "tdp_w": null,
+    "form_factor": "Full liquid-cooled rack: 72x Blackwell GPU + 36x Grace CPU",
+    "interconnect": {
+      "type": "NVLink 5 (rack-wide, all-to-all via NVSwitch)",
+      "gbs": 1800
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 3000000,
+      "used": null,
+      "note": "GB300 (successor) rack quoted at $3.7-4M; GB200 rack widely reported in the $2-3M range through 2025 -- used here as an approximate midpoint; NOT independently re-confirmed for 2026 pricing this session."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "System-level record: 72 GPUs + 36 CPUs in one liquid-cooled rack, ~120kW per rack (widely cited but not an official vendor figure), up to 30TB total fast memory including Grace LPDDR5x. Delivers up to 1.4 exaFLOPS FP4 (sparse, rack aggregate) per vendor claims. fp4_dense per-GPU figure above (19,444) is 1.4 EFLOPS / 72, a derived approximation, not a per-chip vendor spec. Rack-to-rack tensor-parallel scaling is NVLink-fast (not PCIe-bottlenecked) -- this is the reference point for \"fast interconnect\" in this catalog.",
+    "unverified": [
+      "price_usd_2026.new",
+      "tflops.fp4_dense (derived)",
+      "system power (~120kW, widely cited but not vendor-confirmed)"
+    ],
+    "sources": [
+      "https://www.together.ai/gpu/nvidia-gb200-nvl72",
+      "https://www.moduledge.com/blog/gb300-nvl72",
+      "https://www.aitooldiscovery.com/ai-infra/nvidia-gb300-explained"
+    ]
+  },
+  {
+    "id": "nvidia-gb300-nvl72",
+    "vendor": "NVIDIA",
+    "name": "GB300 NVL72 (rack system)",
+    "arch": "Blackwell Ultra + Grace",
+    "launch_year": 2026,
+    "category": "rack-system",
+    "memory_gb": 288,
+    "memory_type": "HBM3e (per GPU; ~20TB per 72-GPU rack)",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": 29166
+    },
+    "tdp_w": null,
+    "form_factor": "Full liquid-cooled rack: 72x Blackwell Ultra GPU + 36x Grace CPU",
+    "interconnect": {
+      "type": "NVLink 5 (rack-wide, all-to-all via NVSwitch)",
+      "gbs": 1800
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 3850000,
+      "used": null,
+      "note": "Reported estimate $3.7M-$4M per rack."
+    },
+    "average_system_power_kw": 140,
+    "price_usd_2026_note": "132-142kW nominal per rack, peaking near 155kW",
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "~1.5x GB200's FP4 compute per vendor claims (derived per-GPU figure above is illustrative, not a vendor per-chip spec). Positioned for reasoning/test-time-scaling inference workloads specifically. Represents the top of the 2026 rack-scale tier alongside CloudMatrix 384.",
+    "unverified": [
+      "tflops.fp4_dense (derived)",
+      "price_usd_2026.new"
+    ],
+    "sources": [
+      "https://www.together.ai/gpu/nvidia-gb300-nvl72",
+      "https://www.spheron.network/blog/gb300-nvl72-vs-gb200-nvl72-pricing-availability-2026/",
+      "https://www.moduledge.com/blog/gb300-nvl72",
+      "https://www.aitooldiscovery.com/ai-infra/nvidia-gb300-explained"
+    ]
+  },
+  {
+    "id": "nvidia-rubin",
+    "vendor": "NVIDIA",
+    "name": "Rubin (Vera Rubin platform)",
+    "arch": "Rubin",
+    "launch_year": 2026,
+    "category": "datacenter-training-nextgen",
+    "memory_gb": null,
+    "memory_type": "HBM4 (expected)",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "SXM/OAM (Vera Rubin Superchip: Vera CPU + Rubin GPU)",
+    "interconnect": {
+      "type": "NVLink 6 (expected)",
+      "gbs": null
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not yet commercially priced as of Sept 2026."
+    },
+    "export_control_to_china": "banned (presumed, pending formal listing)",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "STATUS AS OF GAME START (Jan 2027): early ramp / not yet broadly available. NVIDIA announced full production entry at GTC Taipei (June 1, 2026) with partner availability targeted for H2 2026; first cloud partners (AWS, GCP, Azure, OCI, CoreWeave, Lambda, Nebius, Nscale) begin deployment in 2026. Marketing claims: up to 50 PFLOPS inference per Rubin GPU-pair (vs ~20 PFLOPS for Blackwell) and a claimed 10x reduction in inference token cost. Detailed memory/bandwidth/TDP specs were not independently found this session -- essentially all quantitative fields are null/unconfirmed. In-game, Rubin hardware should be framed as extremely scarce/frontier-only at the Jan 2027 start date, available only to the very largest labs/hyperscalers if at all.",
+    "unverified": [
+      "ALL quantitative specs -- pre-launch platform"
+    ],
+    "sources": [
+      "https://www.datacenterdynamics.com/en/news/nvidia-announces-vera-rubin-superchip-for-late-2026/",
+      "https://investor.nvidia.com/news/press-release-details/2026/NVIDIA-Kicks-Off-the-Next-Generation-of-AI-With-Rubin--Six-New-Chips-One-Incredible-AI-Supercomputer/default.aspx",
+      "https://en.wikipedia.org/wiki/Rubin_(microarchitecture)",
+      "https://nvidianews.nvidia.com/news/nvidia-unveils-rubin-cpx-a-new-class-of-gpu-designed-for-massive-context-inference"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-3090",
+    "vendor": "NVIDIA",
+    "name": "GeForce RTX 3090",
+    "arch": "Ampere",
+    "launch_year": 2020,
+    "category": "consumer",
+    "memory_gb": 24,
+    "memory_type": "GDDR6X",
+    "memory_bandwidth_gbs": 936,
+    "tflops": {
+      "fp16_dense": 71,
+      "fp8_dense": null,
+      "int8_dense": 285,
+      "fp4_dense": null,
+      "fp32_dense": 35.6
+    },
+    "tdp_w": 350,
+    "form_factor": "Consumer PCIe, 3-slot typical AIB card",
+    "interconnect": {
+      "type": "NVLink (2-GPU bridge, consumer)",
+      "gbs": 112
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": 650,
+      "note": "Approximate 2026 used-market price; not independently confirmed via a specific listing this session (card has been discontinued since RTX 40-series launch)."
+    },
+    "export_control_to_china": "unrestricted (consumer card, below thresholds)",
+    "availability": [
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.15,
+      "high": 0.35
+    },
+    "notes": "The classic budget local-LLM card: 24GB for a fraction of a data-center card's price, still has NVLink (removed in the 40-series) so pairs of 3090s can pool memory/bandwidth better than 4090s can. FP16 tensor figure is a typical derived rate (2x FP32), not independently confirmed.",
+    "unverified": [
+      "price_usd_2026.used",
+      "tflops.fp16_dense",
+      "tflops.int8_dense"
+    ],
+    "sources": [
+      "https://gpus.io/en/gpus/rtx3090",
+      "https://www.bestgpusforai.com/gpu-comparison/3090-vs-4090",
+      "https://en.wikipedia.org/wiki/GeForce_RTX_30_series"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-4090",
+    "vendor": "NVIDIA",
+    "name": "GeForce RTX 4090",
+    "arch": "Ada Lovelace",
+    "launch_year": 2022,
+    "category": "consumer",
+    "memory_gb": 24,
+    "memory_type": "GDDR6X",
+    "memory_bandwidth_gbs": 1008,
+    "tflops": {
+      "fp16_dense": 165,
+      "fp8_dense": 330,
+      "int8_dense": 660,
+      "fp4_dense": null,
+      "fp32_dense": 82.6
+    },
+    "tdp_w": 450,
+    "form_factor": "Consumer PCIe, 3-4 slot AIB card",
+    "interconnect": {
+      "type": "none (NVLink removed from consumer Ada)",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 2600,
+      "used": 1900,
+      "note": "Reported 2026 street price range $1,800-3,500 (new-old-stock, since discontinued at 5090 launch), typical $2,400-2,800."
+    },
+    "export_control_to_china": "banned for direct export as of the 2023-2024 tightened thresholds (motivated the RTX 4090D and the grey-market 48GB mod trade)",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.25,
+      "high": 0.55
+    },
+    "notes": "No NVLink on consumer Ada -- multi-GPU 4090 rigs are PCIe-bottlenecked for tensor-parallel workloads. This is the base card for the Chinese 48GB clamshell mod trade.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "tflops.fp16_dense (derived)"
+    ],
+    "sources": [
+      "https://www.runpod.io/articles/guides/nvidia-rtx-4090",
+      "https://en.wikipedia.org/wiki/GeForce_RTX_40_series",
+      "https://millionminer.com/news/nvidia-rtx-4090-specs-price-guide"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-4090d",
+    "vendor": "NVIDIA",
+    "name": "GeForce RTX 4090 D",
+    "arch": "Ada Lovelace (China-compliant)",
+    "launch_year": 2024,
+    "category": "consumer-china",
+    "memory_gb": 24,
+    "memory_type": "GDDR6X",
+    "memory_bandwidth_gbs": 1008,
+    "tflops": {
+      "fp16_dense": 150,
+      "fp8_dense": 300,
+      "int8_dense": 600,
+      "fp4_dense": null,
+      "fp32_dense": 75
+    },
+    "tdp_w": 425,
+    "form_factor": "Consumer PCIe (China retail only)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "China-market retail pricing not captured this session; historically priced close to standard 4090."
+    },
+    "export_control_to_china": "n/a (this IS the China-compliant domestic-market SKU, cut down specifically to clear export thresholds for sale within China)",
+    "availability": [
+      "China-only",
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Slightly cut-down 4090 (lower TDP/clocks) sold only in mainland China to stay under compute-density export thresholds while still being domestically legal to sell. Compute figures are typical-ratio estimates versus the standard 4090, not independently confirmed.",
+    "unverified": [
+      "tflops (all, estimated)",
+      "price_usd_2026"
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/GeForce_RTX_40_series"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-5090",
+    "vendor": "NVIDIA",
+    "name": "GeForce RTX 5090",
+    "arch": "Blackwell (consumer)",
+    "launch_year": 2025,
+    "category": "consumer",
+    "memory_gb": 32,
+    "memory_type": "GDDR7",
+    "memory_bandwidth_gbs": 1792,
+    "tflops": {
+      "fp16_dense": 210,
+      "fp8_dense": 420,
+      "int8_dense": 840,
+      "fp4_dense": 1680,
+      "fp32_dense": 104.8
+    },
+    "tdp_w": 575,
+    "form_factor": "Consumer PCIe, 3-4 slot AIB card",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 3900,
+      "used": null,
+      "note": "MSRP was $1,999 at Jan 2025 launch; reported 2026 street prices $3,700-4,300 due to sustained demand/scalping."
+    },
+    "export_control_to_china": "banned for direct export at full spec (a cut-down China variant is plausible by analogy to the 4090D but was not confirmed this session)",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.5,
+      "high": 1.1
+    },
+    "notes": "Currently the highest-VRAM single consumer GPU (32GB) with the fastest consumer memory bus (1.79TB/s). No NVLink -- multi-5090 setups are PCIe-only for tensor parallelism.",
+    "unverified": [
+      "price_usd_2026.new",
+      "tflops (all, derived)"
+    ],
+    "sources": [
+      "https://www.runpod.io/articles/guides/nvidia-rtx-5090",
+      "https://tech-insider.org/rtx-5090-vs-4090-2026/",
+      "https://insiderllm.com/guides/rtx-5090-local-ai-benchmarks/"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-4090-48gb-modded",
+    "vendor": "NVIDIA (grey-market mod)",
+    "name": "RTX 4090 48GB (Chinese clamshell mod)",
+    "arch": "Ada Lovelace (modified)",
+    "launch_year": 2024,
+    "category": "consumer-modded",
+    "memory_gb": 48,
+    "memory_type": "GDDR6X (clamshell, double-sided)",
+    "memory_bandwidth_gbs": 1008,
+    "tflops": {
+      "fp16_dense": 165,
+      "fp8_dense": 330,
+      "int8_dense": 660,
+      "fp4_dense": null,
+      "fp32_dense": 82.6
+    },
+    "tdp_w": 450,
+    "form_factor": "Blower-style 2-slot (rack/multi-GPU oriented), custom PCB",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": 3750,
+      "note": "Reported $3,300-4,100; MillionMiner lists $3,750-4,100."
+    },
+    "export_control_to_china": "grey-market circumvention product: takes an export-restricted-adjacent consumer die and modifies it outside official channels; not a sanctioned NVIDIA product",
+    "availability": [
+      "grey-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Same AD102-300 die and compute as the stock 4090; VRAM is doubled to 48GB via a clamshell PCB (memory chips on both sides) and modified/leaked VBIOS. Blower cooler (~70dB) is designed for dense rack mounting rather than a quiet desktop. Voids all official warranty; professional modding shops report ~2% failure rate. This is the archetypal 'home server of modded cards' option alongside used P40s.",
+    "unverified": [
+      "price_usd_2026.used",
+      "failure rate (2%, single-source)"
+    ],
+    "sources": [
+      "https://www.tomshardware.com/pc-components/gpus/blower-style-rtx-4090-48gb-teardown-reveals-dual-sided-memory-configuration-pcb-design-echoes-the-rtx-3090",
+      "https://www.tomshardware.com/pc-components/gpus/usd142-upgrade-kit-and-spare-modules-turn-nvidia-rtx-4090-24gb-to-48gb-ai-card-technician-explains-how-chinese-factories-turn-gaming-flagships-into-highly-desirable-ai-gpus",
+      "https://videocardz.com/newz/custom-geforce-rtx-4090-48gb-now-comes-with-water-cooling-sales-of-modded-48gb-cards-booming-in-china"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-a6000",
+    "vendor": "NVIDIA",
+    "name": "RTX A6000",
+    "arch": "Ampere",
+    "launch_year": 2020,
+    "category": "workstation",
+    "memory_gb": 48,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 768,
+    "tflops": {
+      "fp16_dense": 155,
+      "fp8_dense": null,
+      "int8_dense": 310,
+      "fp4_dense": null,
+      "fp32_dense": 38.7
+    },
+    "tdp_w": 300,
+    "form_factor": "Workstation PCIe dual-slot blower",
+    "interconnect": {
+      "type": "NVLink 3 (2-GPU bridge)",
+      "gbs": 112
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 4200,
+      "used": 2600,
+      "note": "Approximate; not independently confirmed this session."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "workstation-retail",
+      "cloud",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.35,
+      "high": 0.61
+    },
+    "notes": "Popular used-market 48GB workstation card for local LLM inference given ECC memory and blower cooling suited to multi-GPU chassis.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "tflops.fp16_dense"
+    ],
+    "sources": [
+      "https://www.thundercompute.com/blog/nvidia-rtx-a6000-specs",
+      "https://gpus.io/en/gpus/rtxa6000",
+      "https://getdeploying.com/gpus/nvidia-a6000-vs-nvidia-rtx-6000-ada"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-6000-ada",
+    "vendor": "NVIDIA",
+    "name": "RTX 6000 Ada Generation",
+    "arch": "Ada Lovelace",
+    "launch_year": 2022,
+    "category": "workstation",
+    "memory_gb": 48,
+    "memory_type": "GDDR6 (ECC)",
+    "memory_bandwidth_gbs": 960,
+    "tflops": {
+      "fp16_dense": 364,
+      "fp8_dense": 728,
+      "int8_dense": 728,
+      "fp4_dense": null,
+      "fp32_dense": 91.1
+    },
+    "tdp_w": 300,
+    "form_factor": "Workstation PCIe dual-slot blower",
+    "interconnect": {
+      "type": "none (no NVLink on Ada workstation cards)",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 6800,
+      "used": 4200,
+      "note": "Approximate; not independently confirmed this session."
+    },
+    "export_control_to_china": "restricted for the highest-end configs under some thresholds; widely sold in China historically as an under-the-line alternative to data-center cards",
+    "availability": [
+      "workstation-retail",
+      "cloud",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.39,
+      "high": 1.04
+    },
+    "notes": "Adds FP8 Transformer Engine support versus the A6000. No NVLink -- Ada workstation cards dropped multi-GPU bridging entirely.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "tflops (derived)"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-rtx-6000-ada-generation-guide/",
+      "https://gpus.io/en/gpus/6000ada",
+      "https://getdeploying.com/gpus/nvidia-a6000-vs-nvidia-rtx-6000-ada"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-pro-6000-blackwell-workstation",
+    "vendor": "NVIDIA",
+    "name": "RTX PRO 6000 Blackwell Workstation Edition",
+    "arch": "Blackwell",
+    "launch_year": 2025,
+    "category": "workstation",
+    "memory_gb": 96,
+    "memory_type": "GDDR7 (ECC)",
+    "memory_bandwidth_gbs": 1792,
+    "tflops": {
+      "fp16_dense": 500,
+      "fp8_dense": 1000,
+      "int8_dense": 2000,
+      "fp4_dense": 4000,
+      "fp32_dense": 125
+    },
+    "tdp_w": 600,
+    "form_factor": "Workstation PCIe dual-slot, dual-fan",
+    "interconnect": {
+      "type": "none (no NVLink)",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 8300,
+      "used": null,
+      "note": "PNY list price $8,299.99 (as of Sept 2025); 2026 street price likely similar or higher given demand."
+    },
+    "export_control_to_china": "restricted at full spec (RTX 6000D is the China-compliant cousin)",
+    "availability": [
+      "workstation-retail",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 2.5
+    },
+    "notes": "GB202 die, 24,064 CUDA cores, 752 5th-gen Tensor Cores. Official NVIDIA figures used for VRAM/bandwidth/TDP/FP32; FP16/FP8/INT8 dense figures are derived from the official '4,000 TOPS FP4 with sparsity' figure using standard halving ratios and are NOT officially published by NVIDIA for this SKU -- flagged.",
+    "unverified": [
+      "tflops.fp16_dense, fp8_dense, int8_dense (all derived)",
+      "price_usd_2026.new (2026 estimate)"
+    ],
+    "sources": [
+      "https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000/",
+      "https://www.thundercompute.com/blog/nvidia-rtx-pro-6000-pricing",
+      "https://www.centralcomputer.com/blog/post/understanding-the-nvidia-rtx-6000-pro-blackwell-lineup-workstation-max-q-and-server-editions"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-pro-6000-blackwell-maxq",
+    "vendor": "NVIDIA",
+    "name": "RTX PRO 6000 Blackwell Max-Q Edition",
+    "arch": "Blackwell",
+    "launch_year": 2025,
+    "category": "workstation",
+    "memory_gb": 96,
+    "memory_type": "GDDR7 (ECC)",
+    "memory_bandwidth_gbs": 1792,
+    "tflops": {
+      "fp16_dense": 500,
+      "fp8_dense": 1000,
+      "int8_dense": 2000,
+      "fp4_dense": 4000,
+      "fp32_dense": 125
+    },
+    "tdp_w": 300,
+    "form_factor": "Workstation PCIe dual-slot blower (rear-exhaust)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 8300,
+      "used": null,
+      "note": "Reported similar to Workstation Edition list price; exact delta not confirmed this session."
+    },
+    "export_control_to_china": "restricted at full spec",
+    "availability": [
+      "workstation-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Identical silicon/memory to the 600W Workstation Edition but power-capped to 300W with a blower that exhausts out the rear of the chassis -- purpose-built so 4 cards can be packed into one workstation (384GB VRAM in a single tower) without thermal throttling each other. NVIDIA/reviewers describe AI throughput as 'effectively identical' to the full-power card despite the lower TDP.",
+    "unverified": [
+      "price_usd_2026 (assumed same as WS edition)"
+    ],
+    "sources": [
+      "https://www.nvidia.com/en-us/products/workstations/professional-desktop-gpus/rtx-pro-6000-max-q/",
+      "https://www.microcenter.com/product/697038/pny-nvidia-rtx-pro-6000-blackwell-max-q-workstation-edition-dual-fan-ai-workstation-graphics-card-96gb-gddr7-memory-pcie-50-graphics-card",
+      "https://www.centralcomputer.com/blog/post/understanding-the-nvidia-rtx-6000-pro-blackwell-lineup-workstation-max-q-and-server-editions"
+    ]
+  },
+  {
+    "id": "nvidia-rtx-pro-6000-blackwell-server",
+    "vendor": "NVIDIA",
+    "name": "RTX PRO 6000 Blackwell Server Edition",
+    "arch": "Blackwell",
+    "launch_year": 2025,
+    "category": "datacenter-inference",
+    "memory_gb": 96,
+    "memory_type": "GDDR7 (ECC)",
+    "memory_bandwidth_gbs": 1792,
+    "tflops": {
+      "fp16_dense": 500,
+      "fp8_dense": 1000,
+      "int8_dense": 2000,
+      "fp4_dense": 4000,
+      "fp32_dense": 125
+    },
+    "tdp_w": 600,
+    "form_factor": "Passive dual-slot (relies on server chassis airflow, HGX-style tray)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 8500,
+      "used": null,
+      "note": "Estimate; not independently confirmed."
+    },
+    "export_control_to_china": "restricted at full spec",
+    "availability": [
+      "enterprise",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 2.5
+    },
+    "notes": "Same core silicon as the other two editions but with passive heatsink for high-airflow rackmount server chassis (typically 4-8 per 4U server), aimed at cloud inference providers wanting GDDR7 economics instead of HBM.",
+    "unverified": [
+      "tdp_w (assumed same as WS)",
+      "price_usd_2026"
+    ],
+    "sources": [
+      "https://www.centralcomputer.com/blog/post/understanding-the-nvidia-rtx-6000-pro-blackwell-lineup-workstation-max-q-and-server-editions",
+      "https://vrlatech.com/rtx-pro-6000-blackwell-workstation-vs-server-edition/"
+    ]
+  },
+  {
+    "id": "nvidia-l4",
+    "vendor": "NVIDIA",
+    "name": "L4",
+    "arch": "Ada Lovelace",
+    "launch_year": 2023,
+    "category": "datacenter-inference",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 300,
+    "tflops": {
+      "fp16_dense": 121,
+      "fp8_dense": 242,
+      "int8_dense": 242,
+      "fp4_dense": null,
+      "fp32_dense": 30.3
+    },
+    "tdp_w": 72,
+    "form_factor": "PCIe single-slot low-profile",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 2500,
+      "used": 1600,
+      "note": "Reported $2,000-3,000 new."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.44,
+      "high": 0.8
+    },
+    "notes": "Extremely power-efficient (72W) inference/video card, single-slot, popular for dense low-power inference fleets and edge servers.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://jarvislabs.ai/blog/l4-gpu-price",
+      "https://getdeploying.com/gpus/nvidia-l4-vs-nvidia-l40",
+      "https://acecloud.ai/blog/nvidia-l4-vs-l40s-gpu/"
+    ]
+  },
+  {
+    "id": "nvidia-l40s",
+    "vendor": "NVIDIA",
+    "name": "L40S",
+    "arch": "Ada Lovelace",
+    "launch_year": 2023,
+    "category": "datacenter-inference",
+    "memory_gb": 48,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 864,
+    "tflops": {
+      "fp16_dense": 366,
+      "fp8_dense": 733,
+      "int8_dense": 733,
+      "fp4_dense": null,
+      "fp32_dense": 91.6
+    },
+    "tdp_w": 300,
+    "form_factor": "PCIe dual-slot",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 9000,
+      "used": 5500,
+      "note": "Approximate; not independently confirmed this session."
+    },
+    "export_control_to_china": "restricted for some configurations",
+    "availability": [
+      "cloud",
+      "enterprise",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.38,
+      "high": 1.13
+    },
+    "notes": "733 TFLOPS FP8 is the dense hardware-floor figure without sparsity; with Transformer Engine/sparsity many deployments effectively see closer to ~1,466 TFLOPS on compute-bound layers. Popular general-purpose inference + graphics/rendering hybrid card.",
+    "unverified": [
+      "price_usd_2026.new",
+      "price_usd_2026.used",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-l40s-for-ai-inference/",
+      "https://gpus.io/en/gpus/l40s",
+      "https://fluence.ai/blog/nvidia-l40s/"
+    ]
+  },
+  {
+    "id": "nvidia-dgx-spark",
+    "vendor": "NVIDIA",
+    "name": "DGX Spark (GB10)",
+    "arch": "Blackwell + Grace (superchip)",
+    "launch_year": 2025,
+    "category": "desktop-system",
+    "memory_gb": 128,
+    "memory_type": "LPDDR5X (unified CPU+GPU)",
+    "memory_bandwidth_gbs": 273,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": 500
+    },
+    "tdp_w": 240,
+    "form_factor": "Mini-desktop appliance",
+    "interconnect": {
+      "type": "ConnectX (for linking 2 units)",
+      "gbs": 200
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 4699,
+      "used": null,
+      "note": "Founders Edition launched $3,999 (Oct 2025), raised to $4,699 by Aug 2026 citing memory supply constraints."
+    },
+    "export_control_to_china": "restricted (high-end AI PC, subject to some export scrutiny; not confirmed banned outright)",
+    "availability": [
+      "consumer-retail",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "GB10 superchip: 20-core Arm CPU + Blackwell GPU, 128GB unified memory shared between CPU/GPU. Rated '1 PetaFLOP FP4' (sparse marketing figure -- shown above divided by ~2 as a rough dense estimate, unverified) is a SPARSE marketing number; real sustained throughput is well below datacenter Blackwell. Handles ~200B-parameter models standalone (quantized), or ~405B across two linked units. Memory bandwidth (~273GB/s LPDDR5x) is the binding constraint, not compute -- this is a capacity/prototyping box, not a training box. TDP is a typical estimate for this appliance class, not independently confirmed.",
+    "unverified": [
+      "tdp_w",
+      "memory_bandwidth_gbs",
+      "tflops.fp4_dense (derived from sparse marketing figure)"
+    ],
+    "sources": [
+      "https://rottenwifi.com/nvidia-dgx-spark-launch-delay-current-price-specs-and-buying-guide/",
+      "https://intuitionlabs.ai/articles/nvidia-dgx-spark-review",
+      "https://gpusmith.com/articles/en/nvidia-dgx-spark-review-specs-performance",
+      "https://wccftech.com/amd-tackles-nvidia-4679-usd-dgx-spark-ai-pc-with-its-3999-ryzen-ai-halo-now-available/"
+    ]
+  },
+  {
+    "id": "nvidia-dgx-station-gb300",
+    "vendor": "NVIDIA",
+    "name": "DGX Station (GB300)",
+    "arch": "Blackwell Ultra + Grace (superchip)",
+    "launch_year": 2026,
+    "category": "desktop-system",
+    "memory_gb": 748,
+    "memory_type": "HBM3e (252GB GPU) + LPDDR5x (496GB CPU), unified via NVLink-C2C",
+    "memory_bandwidth_gbs": 900,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": 20000
+    },
+    "tdp_w": null,
+    "form_factor": "Desktop tower workstation",
+    "interconnect": {
+      "type": "NVLink-C2C (CPU-GPU) + dual QSFP112 (tower-to-tower)",
+      "gbs": 800
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": 95000,
+      "used": null,
+      "note": "Reported range $80,000-125,000 depending on OEM/config; MSI XpertStation WS300 listed at $84,999.99."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise",
+      "workstation-retail (high-end)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Single-GPU Blackwell Ultra desktop superchip with the largest unified-memory pool of any single-user workstation covered here (748GB combined). ~20 PFLOPS FP4 is a system-level rating of uncertain dense/sparse basis. Two towers can link via 800Gb/s QSFP112 ports. Lead time reported at 6-13 weeks as of Aug 2026.",
+    "unverified": [
+      "tdp_w",
+      "tflops.fp4_dense (basis unclear)",
+      "memory_bandwidth_gbs (NVLink-C2C figure used as proxy)"
+    ],
+    "sources": [
+      "https://pi3g.com/nvidia-gb300-specifications-including-memory-bandwidth-and-llm-benchmarks-based-on-2026-systems/",
+      "https://www.tomshardware.com/desktops/nvidias-gb300-powered-dgx-station-desktop-tower-listed-for-nearly-usd100-000-online-enterprise-ai-powerhouse-now-available-to-buy-for-mere-mortals-with-lots-of-cash",
+      "https://www.techradar.com/pro/msi-re-launches-usd85-000-nvidia-dgx-station-workstation-with-the-nvidia-gb300-ultra-a-pair-of-400gbe-lan-ports-and-768gb-of-ram",
+      "https://aihola.com/article/dgx-station-gb300-preorders-open"
+    ]
+  },
+  {
+    "id": "amd-mi210",
+    "vendor": "AMD",
+    "name": "Instinct MI210",
+    "arch": "CDNA 2",
+    "launch_year": 2021,
+    "category": "datacenter-training",
+    "memory_gb": 64,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 1600,
+    "tflops": {
+      "fp16_dense": 181,
+      "fp8_dense": null,
+      "int8_dense": 362,
+      "fp4_dense": null,
+      "fp32_dense": 22.6,
+      "fp64_dense": 22.6
+    },
+    "tdp_w": 300,
+    "form_factor": "PCIe dual-slot",
+    "interconnect": {
+      "type": "Infinity Fabric (bridge, up to 4-GPU)",
+      "gbs": 300
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": 3500,
+      "note": "Approximate; not independently confirmed this session."
+    },
+    "export_control_to_china": "restricted (data-center accelerator thresholds)",
+    "availability": [
+      "enterprise",
+      "used-market",
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.5,
+      "high": 1.2
+    },
+    "notes": "One search source gave 47.9 TFLOPS for 'FP16' which appears to be a vector (non-matrix) rate; the 181 TFLOPS figure used here is the commonly cited Matrix-Core (tensor-equivalent) peak from AMD's own MI200-series datasheet family -- flagged as a source discrepancy.",
+    "unverified": [
+      "tflops.fp16_dense (source conflict: 47.9 vector vs ~181 matrix)",
+      "price_usd_2026.used"
+    ],
+    "sources": [
+      "https://www.runcrate.ai/gpu-models/mi210",
+      "https://wccftech.com/amd-instinct-mi210-with-single-aldebaran-cdna-2-gpu-die-features-104-compute-units-64-gb-hbm2e-memory-40-faster-than-mi100/",
+      "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/instinct-mi200-datasheet.pdf"
+    ]
+  },
+  {
+    "id": "amd-mi250x",
+    "vendor": "AMD",
+    "name": "Instinct MI250X",
+    "arch": "CDNA 2 (2-die MCM)",
+    "launch_year": 2021,
+    "category": "datacenter-training",
+    "memory_gb": 128,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 3200,
+    "tflops": {
+      "fp16_dense": 383,
+      "fp8_dense": null,
+      "int8_dense": 383,
+      "fp4_dense": null,
+      "fp32_dense": 47.9,
+      "fp64_dense": 47.9
+    },
+    "tdp_w": 500,
+    "form_factor": "OAM (2-die multi-chip module, 110 total CUs)",
+    "interconnect": {
+      "type": "Infinity Fabric (rack-scale, used in Frontier supercomputer)",
+      "gbs": 800
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as standalone retail; system/HPC procurement only."
+    },
+    "export_control_to_china": "restricted",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Powers the Frontier exascale supercomputer at Oak Ridge National Lab. Being superseded by CDNA3/4 in new deployments as of 2026.",
+    "unverified": [
+      "interconnect.gbs"
+    ],
+    "sources": [
+      "https://videocardz.com/newz/amd-instinct-mi250x-with-mcm-gpu-to-feature-110-compute-units-128gb-hbm2e-memory-and-500w-tdp",
+      "https://www.fluence.network/blog/amd-instinct-mi250x/"
+    ]
+  },
+  {
+    "id": "amd-mi300x",
+    "vendor": "AMD",
+    "name": "Instinct MI300X",
+    "arch": "CDNA 3",
+    "launch_year": 2023,
+    "category": "datacenter-training",
+    "memory_gb": 192,
+    "memory_type": "HBM3",
+    "memory_bandwidth_gbs": 5300,
+    "tflops": {
+      "fp16_dense": 1307.4,
+      "fp8_dense": 2614.9,
+      "int8_dense": 2614.9,
+      "fp4_dense": null,
+      "fp32_dense": 163.4,
+      "fp64_dense": 81.7
+    },
+    "tdp_w": 750,
+    "form_factor": "OAM (8-GPU UBB baseboard standard)",
+    "interconnect": {
+      "type": "Infinity Fabric + Infinity Fanout (all-to-all within node)",
+      "gbs": 896
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 15000,
+      "used": null,
+      "note": "Estimated; not an official AMD list price."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.45,
+      "high": 4.0,
+      "note": "~$4.00/hr on-demand, $3.00/hr 1-yr reserved, $2.45/hr 3-yr reserved."
+    },
+    "notes": "Largest per-GPU memory of any shipping 2023-2024-era accelerator at launch (192GB); the 8x MI300X UBB node totals 1.5TB VRAM. Primary H100/H200 competitor for large-model inference where memory capacity matters more than raw FLOPS.",
+    "unverified": [
+      "price_usd_2026.new",
+      "memory_bandwidth_gbs (5.3TB/s vs a 5.2TB/s figure also seen)"
+    ],
+    "sources": [
+      "https://www.amd.com/en/products/accelerators/instinct/mi300/mi300x.html",
+      "https://gpuadvisor.com/gpu/mi300x",
+      "https://gpucost.org/gpu/mi300"
+    ]
+  },
+  {
+    "id": "amd-mi300a",
+    "vendor": "AMD",
+    "name": "Instinct MI300A",
+    "arch": "CDNA 3 (APU)",
+    "launch_year": 2023,
+    "category": "datacenter-training",
+    "memory_gb": 128,
+    "memory_type": "HBM3 (unified CPU+GPU)",
+    "memory_bandwidth_gbs": 5300,
+    "tflops": {
+      "fp16_dense": 980.0,
+      "fp8_dense": 1961,
+      "int8_dense": 1961,
+      "fp4_dense": null,
+      "fp32_dense": 122.6
+    },
+    "tdp_w": 760,
+    "form_factor": "OAM (APU module)",
+    "interconnect": {
+      "type": "Infinity Fabric",
+      "gbs": 896
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 12000,
+      "used": null,
+      "note": "Estimated MSRP-class figure, not an official published list price."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Unified-memory APU (3x Zen4 CPU chiplets [24 cores] + CDNA3 GPU chiplets sharing one HBM3 pool) -- powers the El Capitan exascale supercomputer. Compute is roughly 75% of MI300X's, consistent with having 6 GPU compute dies (XCDs) instead of MI300X's 8.",
+    "unverified": [
+      "price_usd_2026.new",
+      "tflops (derived from MI300X ratio)"
+    ],
+    "sources": [
+      "https://gpucost.org/gpu/mi300a"
+    ]
+  },
+  {
+    "id": "amd-mi325x",
+    "vendor": "AMD",
+    "name": "Instinct MI325X",
+    "arch": "CDNA 3+",
+    "launch_year": 2024,
+    "category": "datacenter-training",
+    "memory_gb": 256,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 6000,
+    "tflops": {
+      "fp16_dense": 1307.4,
+      "fp8_dense": 2614.9,
+      "int8_dense": 2614.9,
+      "fp4_dense": null,
+      "fp32_dense": 163.4
+    },
+    "tdp_w": 750,
+    "form_factor": "OAM (8-GPU UBB baseboard)",
+    "interconnect": {
+      "type": "Infinity Fabric",
+      "gbs": 896
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "8-GPU platforms quoted per-configuration on request; no public per-card list price."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.69,
+      "high": 2.25,
+      "note": "DigitalOcean contract rate $1.69/hr; general on-demand from $2.25/hr."
+    },
+    "notes": "Same CDNA3 compute die as MI300X with more/faster memory. SOURCE CONFLICT: some aggregators list 288GB HBM3e for MI325X (likely confusing it with the MI350-series); AMD's original October 2024 launch specs (used here) list 256GB HBM3e at 6TB/s -- flagged.",
+    "unverified": [
+      "memory_gb (conflicting reports of 256GB vs 288GB)",
+      "price_usd_2026"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/amd-mi325x-pricing-2026-availability-and-cost/",
+      "https://pantheon.run/learn/amd-instinct-mi325x-specs",
+      "https://gpus.io/en/gpus/mi325"
+    ]
+  },
+  {
+    "id": "amd-mi350x",
+    "vendor": "AMD",
+    "name": "Instinct MI350X",
+    "arch": "CDNA 4",
+    "launch_year": 2025,
+    "category": "datacenter-training",
+    "memory_gb": 288,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": 2307,
+      "fp8_dense": 4614,
+      "int8_dense": 4614,
+      "fp4_dense": 9228,
+      "fp32_dense": null
+    },
+    "tdp_w": 1000,
+    "form_factor": "OAM (8-GPU UBB, air-cooled variant)",
+    "interconnect": {
+      "type": "Infinity Fabric",
+      "gbs": 1075
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Quote-only enterprise pricing."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.0,
+      "high": 4.5
+    },
+    "notes": "4,614 FP8 TFLOPS figure's dense/sparse basis is unclear in sourcing; fp16/fp4 figures above are derived proportionally and unverified. Adds MXFP6/MXFP4 microscaling format support (CDNA4).",
+    "unverified": [
+      "tflops (dense/sparse basis unclear)",
+      "interconnect.gbs"
+    ],
+    "sources": [
+      "https://gpuadvisor.com/gpu/mi350x"
+    ]
+  },
+  {
+    "id": "amd-mi355x",
+    "vendor": "AMD",
+    "name": "Instinct MI355X",
+    "arch": "CDNA 4",
+    "launch_year": 2025,
+    "category": "datacenter-training",
+    "memory_gb": 288,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 8000,
+    "tflops": {
+      "fp16_dense": 2312,
+      "fp8_dense": 4625,
+      "int8_dense": 4625,
+      "fp4_dense": 9250,
+      "fp32_dense": null
+    },
+    "tdp_w": 1400,
+    "form_factor": "OAM, liquid cooling required",
+    "interconnect": {
+      "type": "Infinity Fabric",
+      "gbs": 1075
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Quote-only enterprise pricing."
+    },
+    "export_control_to_china": "banned",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 2.2,
+      "high": 5.0
+    },
+    "notes": "Higher-clocked, liquid-cooled top bin of the MI350 family. MXFP6/MXFP4 support. Dense/sparse basis for the 4,625 FP8 TFLOPS figure is unclear -- flagged.",
+    "unverified": [
+      "tflops (dense/sparse basis unclear)",
+      "interconnect.gbs"
+    ],
+    "sources": [
+      "https://gpuadvisor.com/gpu/mi355x",
+      "https://www.amd.com/en/products/accelerators/instinct/mi350/mi355x.html",
+      "https://gpucost.org/gpu/mi355x"
+    ]
+  },
+  {
+    "id": "amd-mi400-mi455x",
+    "vendor": "AMD",
+    "name": "Instinct MI400 series (MI455X / MI430X)",
+    "arch": "CDNA \"Next\"",
+    "launch_year": 2026,
+    "category": "datacenter-training-nextgen",
+    "memory_gb": 432,
+    "memory_type": "HBM4",
+    "memory_bandwidth_gbs": 19600,
+    "tflops": {
+      "fp16_dense": 10000,
+      "fp8_dense": 20000,
+      "int8_dense": 20000,
+      "fp4_dense": 40000,
+      "fp32_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "OAM, part of AMD \"Helios\" rack system (GB200 NVL72 competitor)",
+    "interconnect": {
+      "type": "Infinity Fabric (rack-scale)",
+      "gbs": null
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not yet listed; shipping just beginning."
+    },
+    "export_control_to_china": "banned (presumed)",
+    "availability": [
+      "enterprise",
+      "cloud (limited)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "STATUS AS OF SEPT 2026: early shipment/ramp -- AMD says shipments began Q3 2026 with demand 'above expectations'. Two variants: MI455X (large-scale training/inference) and MI430X (HPC/sovereign AI). Roughly 2x MI350 compute per AMD claims (fp16/fp8/fp4 figures above are derived 2x-of-MI350 estimates, NOT vendor-confirmed per-chip numbers). MI500 slated for 2027. At the game's Jan 2027 start date this would be a very new, scarce, hyperscaler-only part.",
+    "unverified": [
+      "ALL tflops figures (derived estimates)",
+      "tdp_w",
+      "price"
+    ],
+    "sources": [
+      "https://www.techpowerup.com/342826/amd-positions-instinct-mi400-against-nvidia-vera-rubin-mi500-coming-in-2027",
+      "https://hothardware.com/news/instinct-mi400-challenge-vera-rubin",
+      "https://www.fierce-network.com/cloud/amd-launches-full-stack-ai-compute-agentic-era",
+      "https://ir.amd.com/news-events/press-releases/detail/1201/amd-accelerates-pace-of-data-center-ai-innovation-and-leadership-with-expanded-amd-instinct-gpu-roadmap"
+    ]
+  },
+  {
+    "id": "amd-rx-7900-xtx",
+    "vendor": "AMD",
+    "name": "Radeon RX 7900 XTX",
+    "arch": "RDNA 3",
+    "launch_year": 2022,
+    "category": "consumer",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 960,
+    "tflops": {
+      "fp16_dense": 123,
+      "fp8_dense": null,
+      "int8_dense": 246,
+      "fp4_dense": null,
+      "fp32_dense": 61.4
+    },
+    "tdp_w": 355,
+    "form_factor": "Consumer PCIe AIB card",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 900,
+      "used": 650,
+      "note": "Launched Dec 13, 2022 at $999; 2026 pricing estimated, not independently confirmed this session."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "24GB at a consumer price point makes it a budget local-inference option, but ROCm software support/compatibility has historically lagged CUDA for LLM tooling -- a real practical drawback versus equivalent Nvidia cards.",
+    "unverified": [
+      "price_usd_2026 (2026 estimate)",
+      "tflops.fp16_dense (derived)"
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Radeon_RX_7000_series",
+      "https://wccftech.com/roundup/amd-radeon-rx-9070-xt/"
+    ]
+  },
+  {
+    "id": "amd-rx-9070-xt",
+    "vendor": "AMD",
+    "name": "Radeon RX 9070 XT",
+    "arch": "RDNA 4",
+    "launch_year": 2025,
+    "category": "consumer",
+    "memory_gb": 16,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 640,
+    "tflops": {
+      "fp16_dense": 97,
+      "fp8_dense": null,
+      "int8_dense": 195,
+      "fp4_dense": null,
+      "fp32_dense": 48.7
+    },
+    "tdp_w": 304,
+    "form_factor": "Consumer PCIe AIB card",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 650,
+      "used": null,
+      "note": "Launched March 6, 2025 at $599 MSRP; 2026 street price estimated."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Rated TDP 304W but reviewers measured ~351W actual draw during gaming loads -- a useful reminder that rated TDP can understate real power draw. Improved RDNA4 AI accelerators over RDNA3 but still behind Nvidia/CUDA ecosystem maturity for LLM tooling.",
+    "unverified": [
+      "price_usd_2026",
+      "tflops (derived)"
+    ],
+    "sources": [
+      "https://www.tomshardware.com/pc-components/gpus/amd-radeon-rx-9070-xt-review",
+      "https://videocardz.com/amd/radeon-9000/radeon-rx-9070-xt"
+    ]
+  },
+  {
+    "id": "amd-radeon-ai-pro-r9700",
+    "vendor": "AMD",
+    "name": "Radeon AI PRO R9700",
+    "arch": "RDNA 4",
+    "launch_year": 2025,
+    "category": "workstation",
+    "memory_gb": 32,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 640,
+    "tflops": {
+      "fp16_dense": 195,
+      "fp8_dense": null,
+      "int8_dense": 390,
+      "fp4_dense": null,
+      "fp32_dense": 97.5
+    },
+    "tdp_w": 300,
+    "form_factor": "Workstation PCIe dual-slot",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 1299,
+      "used": null,
+      "note": "MSRP $1,299; board-partner listings $1,244-1,277."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "workstation-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Full Navi 48 die (same as RX 9070 XT) with double the VRAM (32GB) for workstation/AI use. One of the best VRAM-per-dollar consumer-adjacent cards in 2025-2026 if ROCm software compatibility fits the workload.",
+    "unverified": [
+      "tflops.fp16_dense (derived)"
+    ],
+    "sources": [
+      "https://videocardz.com/newz/amd-radeon-pro-ai-r9700-is-now-available-32gb-memory-and-full-navi-48-gpu",
+      "https://overclock3d.net/news/gpu-displays/amd-unveils-its-1299-radeon-ai-pro-r9700-32gb-workstation-gpu/"
+    ]
+  },
+  {
+    "id": "amd-ryzen-ai-max-395",
+    "vendor": "AMD",
+    "name": "Ryzen AI Max+ 395 (\"Strix Halo\")",
+    "arch": "Zen 5 + RDNA 3.5 (APU)",
+    "launch_year": 2025,
+    "category": "consumer-apu",
+    "memory_gb": 128,
+    "memory_type": "LPDDR5X-8000 (unified CPU+GPU)",
+    "memory_bandwidth_gbs": 256,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 50,
+      "fp4_dense": null,
+      "fp32_dense": null
+    },
+    "tdp_w": 120,
+    "form_factor": "Mobile/mini-PC SoC (16 Zen5 CPU cores + Radeon 8060S iGPU, 40 RDNA3.5 CUs + XDNA2 NPU)",
+    "interconnect": {
+      "type": "none (single SoC)",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 1999,
+      "used": null,
+      "note": "Mini-PC prices span $1,499 (GMKtec EVO-X2) to $3,999 (AMD reference kit); Beelink GTR9 Pro $1,999."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "128GB unified LPDDR5X shared between CPU and GPU -- BIOS-configurable memory split typically leaves well under the full 128GB available as GPU-addressable VRAM (some reserved for system RAM), an important gameplay nuance versus a card with 128GB of dedicated VRAM. 50 TOPS figure is for the separate XDNA2 NPU (INT8), not the RDNA3.5 iGPU compute -- iGPU FP16/tensor throughput not independently found this session. Positioned by AMD as a cheaper, quieter DGX Spark alternative.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tflops (iGPU compute not found; only NPU TOPS confirmed)",
+      "usable VRAM ceiling in practice"
+    ],
+    "sources": [
+      "https://wccftech.com/amd-tackles-nvidia-4679-usd-dgx-spark-ai-pc-with-its-3999-ryzen-ai-halo-now-available/",
+      "https://localaimaster.com/blog/strix-halo-ai-max-395-guide",
+      "https://datahardware.ai/blog/amd-ai-max-395-explained"
+    ]
+  },
+  {
+    "id": "huawei-ascend-910b",
+    "vendor": "Huawei",
+    "name": "Ascend 910B",
+    "arch": "Da Vinci v3 (Ascend)",
+    "launch_year": 2023,
+    "category": "datacenter-training-china",
+    "memory_gb": 64,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 1600,
+    "tflops": {
+      "fp16_dense": 320,
+      "fp8_dense": null,
+      "int8_dense": 640,
+      "fp4_dense": null
+    },
+    "tdp_w": 350,
+    "form_factor": "OAM-style module (Atlas 800T A2 server, 8-GPU)",
+    "interconnect": {
+      "type": "HCCS (Huawei Cache Coherent System)",
+      "gbs": 392
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold outside China; domestic pricing not captured this session."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip, built specifically because H100/A100 are banned)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "China's primary Nvidia-alternative training/inference chip through 2023-2025. SOURCE CONFLICT: memory type reported as both HBM2e and HBM3 across sources, and TDP reported as both ~310W and ~400W -- used middle-ground figures here, flagged.",
+    "unverified": [
+      "memory_type",
+      "tdp_w",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://blog.heim.xyz/huawei-ascend-910c/",
+      "https://www.waredb.com/processor/ascend-910b",
+      "https://aiwiki.ai/wiki/huawei_ascend_910b"
+    ]
+  },
+  {
+    "id": "huawei-ascend-910c",
+    "vendor": "Huawei",
+    "name": "Ascend 910C",
+    "arch": "Da Vinci v3 (2x 910B dies co-packaged)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": 128,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 3200,
+    "tflops": {
+      "fp16_dense": 800,
+      "fp8_dense": null,
+      "int8_dense": 1600,
+      "fp4_dense": null
+    },
+    "tdp_w": 550,
+    "form_factor": "OAM-style module (CloudMatrix 384 building block)",
+    "interconnect": {
+      "type": "HCCS + optical scale-up (CloudMatrix)",
+      "gbs": 392
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Domestic-only pricing not captured this session."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Two co-packaged 910B dies; manufactured at SMIC N7 (China has no EUV, so this is a mature-node, larger/hotter-per-FLOP design versus TSMC 4/5nm Western chips). Reported to be in large-scale shipment as of 2025-2026 with estimated annual volume of 700,000-800,000 units. Building block of the CloudMatrix 384 rack system (see rack-system record).",
+    "unverified": [
+      "tflops (all)",
+      "annual volume estimate"
+    ],
+    "sources": [
+      "https://blog.heim.xyz/huawei-ascend-910c/",
+      "https://benchgecko.ai/hardware/ascend-910c",
+      "https://newsletter.semianalysis.com/p/huawei-ai-cloudmatrix-384-chinas-answer-to-nvidia-gb200-nvl72"
+    ]
+  },
+  {
+    "id": "huawei-ascend-950pr",
+    "vendor": "Huawei",
+    "name": "Ascend 950PR",
+    "arch": "Da Vinci next-gen",
+    "launch_year": 2026,
+    "category": "datacenter-training-china",
+    "memory_gb": 128,
+    "memory_type": "HBM (Huawei in-house, first self-made HBM)",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 1000,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "OAM-style module",
+    "interconnect": {
+      "type": "scale-up fabric",
+      "gbs": 2000
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not yet priced publicly."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Optimized for prefill/recommendation workloads. Launching Q1 2026 -- first Ascend chip using Huawei's own in-house HBM rather than externally-sourced (previously a China bottleneck since SK Hynix/Samsung/Micron HBM sales to China AI chips are export-controlled). As of the game's Jan 2027 start date this would be a fairly new, still-scaling part.",
+    "unverified": [
+      "memory_bandwidth_gbs (2TB/s figure found is interconnect, not raw HBM bandwidth)",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://x.com/ruima/status/1968592824380878931",
+      "https://www.trendforce.com/news/2025/09/18/news-huawei-unveils-ascend-950-with-in-house-hbm-in-2026-touts-superpod-to-rival-nvidia/",
+      "https://wccftech.com/huawei-showcases-its-highly-competitive-ai-chip-roadmap/",
+      "https://tech-insider.org/huawei-ascend-950pr-ai-chip-nvidia-china-2026/"
+    ]
+  },
+  {
+    "id": "huawei-ascend-950dt",
+    "vendor": "Huawei",
+    "name": "Ascend 950DT",
+    "arch": "Da Vinci next-gen",
+    "launch_year": 2026,
+    "category": "datacenter-training-china",
+    "memory_gb": 144,
+    "memory_type": "HBM (Huawei in-house)",
+    "memory_bandwidth_gbs": 4000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "OAM-style module",
+    "interconnect": {
+      "type": "scale-up fabric",
+      "gbs": 2000
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not yet priced publicly."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Optimized for training/decode workloads (the training-focused sibling of 950PR). Launching Q4 2026 -- right around the game's Jan 2027 start date, i.e., brand-new and barely deployed at scale when the game begins.",
+    "unverified": [
+      "tflops (not found)",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://x.com/ruima/status/1968592824380878931",
+      "https://www.trendforce.com/news/2025/09/18/news-huawei-unveils-ascend-950-with-in-house-hbm-in-2026-touts-superpod-to-rival-nvidia/"
+    ]
+  },
+  {
+    "id": "huawei-ascend-960",
+    "vendor": "Huawei",
+    "name": "Ascend 960 (roadmap)",
+    "arch": "Da Vinci next-gen",
+    "launch_year": 2027,
+    "category": "datacenter-training-china-future",
+    "memory_gb": 288,
+    "memory_type": "HBM (Huawei in-house, \"HiZQ 2.0\")",
+    "memory_bandwidth_gbs": 9600,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 2000,
+      "int8_dense": null,
+      "fp4_dense": 4000
+    },
+    "tdp_w": null,
+    "form_factor": "OAM-style module",
+    "interconnect": {
+      "type": "scale-up fabric",
+      "gbs": 2200
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Pre-launch; no pricing exists."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only (not yet launched)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "IMPORTANT FOR GAME TIMELINE: roadmapped for Q4 2027 -- this chip does NOT exist yet at the game's January 2027 start date. Should not be selectable/available at game start; could appear as a late-game/end-game unlock or rumor.",
+    "unverified": [
+      "ALL specs (roadmap/pre-announcement figures)"
+    ],
+    "sources": [
+      "https://x.com/ruima/status/1968592824380878931",
+      "https://www.trendforce.com/news/2025/09/18/news-huawei-unveils-ascend-950-with-in-house-hbm-in-2026-touts-superpod-to-rival-nvidia/",
+      "https://wccftech.com/huawei-showcases-its-highly-competitive-ai-chip-roadmap/"
+    ]
+  },
+  {
+    "id": "huawei-atlas-300i-duo",
+    "vendor": "Huawei",
+    "name": "Atlas 300I Duo",
+    "arch": "Ascend 310P (2x dies)",
+    "launch_year": 2023,
+    "category": "datacenter-inference-china",
+    "memory_gb": 96,
+    "memory_type": "LPDDR4X",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 140,
+      "fp8_dense": null,
+      "int8_dense": 280,
+      "fp4_dense": null
+    },
+    "tdp_w": 150,
+    "form_factor": "PCIe dual-slot (2-die inference card)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 1500,
+      "used": null,
+      "note": "Reported under $1,500 for the 96GB variant via export/grey channels -- unusual pricing context (not a normal Western retail channel), flagged."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip; also shows up on some export/resale channels outside China)",
+    "availability": [
+      "China-only",
+      "grey-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Budget high-VRAM inference card (96GB for under $1,500 reported) that has drawn attention from Western hobbyists as a cheap way to get large VRAM pools, though software support (CANN vs CUDA/ROCm) is a significant practical barrier outside China.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "price_usd_2026.new",
+      "tflops (48GB single-die variant figure applied to 96GB dual-die card)"
+    ],
+    "sources": [
+      "https://www.hardware-corner.net/huawei-atlas-300i-duo-96gb-llm-20250830/",
+      "https://flopper.io/gpu/huawei-atlas-300i-duo-96gb",
+      "https://flopper.io/gpu/huawei-atlas-300i-duo-48gb"
+    ]
+  },
+  {
+    "id": "huawei-cloudmatrix-384",
+    "vendor": "Huawei",
+    "name": "CloudMatrix 384 (Atlas 900 SuperPoD successor, rack-scale system)",
+    "arch": "Ascend 910C x384",
+    "launch_year": 2025,
+    "category": "rack-system-china",
+    "memory_gb": 128,
+    "memory_type": "HBM2e (per chip; ~49TB aggregate across 384 chips)",
+    "memory_bandwidth_gbs": 3200,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "bf16_dense_system_pflops": 300
+    },
+    "tdp_w": null,
+    "form_factor": "16-rack pod (12 compute racks x32 accelerators + 4 optical scale-up switch racks)",
+    "interconnect": {
+      "type": "all-optical all-to-all mesh (6,912x 400G LPO transceivers, 100% optics/0% copper)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No public list price; sovereign/hyperscale deployment only (state-backed Chinese cloud providers)."
+    },
+    "average_system_power_kw": 450,
+    "export_control_to_china": "n/a (domestic Chinese system, built explicitly to route around the GPU export ban via massive parallelism)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "System-level record. Delivers 300 PFLOPS dense BF16 (~2x a GB200 NVL72 rack) using 5x as many (weaker) chips -- each Ascend 910C is roughly 1/3 the performance of one Nvidia Blackwell die. Costs ~4.1x the power of a GB200 NVL72 for that 2x performance (roughly 2x worse performance-per-watt); total system power estimates range 350-559kW across sources (used 450kW as a rough midpoint, flagged). This is the reference point for a system that is fast in aggregate but power-hungry and NOT tensor-parallel-fast per-FLOP -- good 'brute force, terrible efficiency, huge heat signature' game-design analogue.",
+    "unverified": [
+      "average_system_power_kw (range 350-559kW across sources)",
+      "price"
+    ],
+    "sources": [
+      "https://newsletter.semianalysis.com/p/huawei-ai-cloudmatrix-384-chinas-answer-to-nvidia-gb200-nvl72",
+      "https://chinaresearchcollective.substack.com/p/huawei-ascend-cloudmatrix-384-supernode",
+      "https://www.tomshardware.com/tech-industry/artificial-intelligence/huaweis-new-ai-cloudmatrix-cluster-beats-nvidias-gb200-by-brute-force-uses-4x-the-power"
+    ]
+  },
+  {
+    "id": "cambricon-mlu370-x8",
+    "vendor": "Cambricon",
+    "name": "MLU370-X8",
+    "arch": "MLUarch03",
+    "launch_year": 2021,
+    "category": "datacenter-inference-china",
+    "memory_gb": 48,
+    "memory_type": "LPDDR5",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 256,
+      "fp4_dense": null,
+      "fp32_dense": 24
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe (dual-die MLU370-X8)",
+    "interconnect": {
+      "type": "MLU-Link",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 6500,
+      "used": null,
+      "note": "Siyuan 370-X8 branded card priced at $6,500/card per one source."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "TSMC 7nm. Cambricon posted its first-ever profit in 2025/2026 amid a reported ~43x YoY revenue surge as Chinese buyers pivoted to domestic chips.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://wccftech.com/chinese-ai-firm-earns-43-times-more-revenue-in-h1-2025-as-beijing-turns-to-domestic-ai-chips/",
+      "https://www.tomshardware.com/tech-industry/artificial-intelligence/chinas-cambricon-posts-first-profit-as-demand-for-this-nvidia-rivals-ai-processors-explodes",
+      "https://www.sourceitstore.com/product/03gy187/"
+    ]
+  },
+  {
+    "id": "cambricon-mlu590",
+    "vendor": "Cambricon",
+    "name": "MLU590",
+    "arch": "MLUarch04",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": null,
+    "memory_type": null,
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 350,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": null,
+    "interconnect": {
+      "type": "MLU-Link",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "TSMC 7nm; positioned by Cambricon for 2026-era LLM workloads at 1.2-2.0x the throughput of the prior generation. Most quantitative fields not found this session -- treat as sparse/placeholder.",
+    "unverified": [
+      "memory_gb",
+      "memory_bandwidth_gbs",
+      "tdp_w",
+      "tflops"
+    ],
+    "sources": [
+      "https://wccftech.com/chinese-ai-firm-earns-43-times-more-revenue-in-h1-2025-as-beijing-turns-to-domestic-ai-chips/"
+    ]
+  },
+  {
+    "id": "moore-threads-mtt-s4000",
+    "vendor": "Moore Threads",
+    "name": "MTT S4000",
+    "arch": "MUSA (3rd gen)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": 48,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 768,
+    "tflops": {
+      "fp16_dense": 100,
+      "fp8_dense": null,
+      "int8_dense": 200,
+      "fp4_dense": null,
+      "fp32_dense": 25
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe dual-slot passive, 12VHPWR",
+    "interconnect": {
+      "type": "MTLink (scales to thousands of cards)",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "8,192 vector/tensor cores. Ships with 'MUSIFY' CUDA-to-MUSA source translation for easier porting of CUDA codebases. Used in a reported 3-billion-parameter LLM training demonstration.",
+    "unverified": [
+      "tdp_w",
+      "price"
+    ],
+    "sources": [
+      "https://en.mthreads.com/product/S4000",
+      "https://wccftech.com/moore-threads-mtt-s4000-gpu-48-gb-memory-200-tops-ai-gen5-ready/",
+      "https://www.tomshardware.com/pc-components/gpus/china-made-moore-threads-ai-gpus-used-for-three-billion-parameter-llm-training-mtt-s4000-appears-competitive-against-unspecified-nvidia-solutions"
+    ]
+  },
+  {
+    "id": "biren-br100",
+    "vendor": "Biren Technology",
+    "name": "BR100",
+    "arch": "Biren chiplet arch (7nm)",
+    "launch_year": 2022,
+    "category": "datacenter-training-china",
+    "memory_gb": 64,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 256,
+      "fp8_dense": null,
+      "int8_dense": 512,
+      "fp4_dense": null
+    },
+    "tdp_w": 550,
+    "form_factor": "OAM",
+    "interconnect": {
+      "type": "proprietary chip-to-chip",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found; commercial availability at scale unclear."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise (limited/unclear)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "77 billion transistors, 1,074mm2 die, TSMC 7nm + CoWoS 2.5D packaging. The '256 FP32 TFLOPS' figure widely repeated in press is almost certainly a mislabeled marketing/AI-compute figure -- true IEEE FP32 at that level would exceed even 2024-era Nvidia flagship parts, which is implausible for this chip's class; shown here under fp16_dense instead as a more plausible bucket, but flagged as UNVERIFIED/likely-mislabeled either way. Most 2026-status information (commercial traction, shipping volume) was not found this session -- Biren faced US Entity List sanctions in Dec 2022 that reportedly hampered TSMC fabrication access.",
+    "unverified": [
+      "tflops (likely mislabeled precision in original source)",
+      "memory_bandwidth_gbs",
+      "2026 commercial status"
+    ],
+    "sources": [
+      "https://www.techpowerup.com/297619/biren-technology-unveils-br100-7-nm-hpc-gpu-with-77-billion-transistors",
+      "https://www.servethehome.com/biren-br100-gpu-for-datacenter-compute-and-ai-workloads/",
+      "https://videocardz.com/newz/chinas-biren-br100-is-7nm-hpc-gpu-with-77b-transistors-and-64gb-hbm2e-memory"
+    ]
+  },
+  {
+    "id": "biren-br104",
+    "vendor": "Biren Technology",
+    "name": "BR104",
+    "arch": "Biren chiplet arch (monolithic)",
+    "launch_year": 2022,
+    "category": "datacenter-inference-china",
+    "memory_gb": 32,
+    "memory_type": "HBM2e (reported; some sources say GDDR)",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 128,
+      "fp8_dense": null,
+      "int8_dense": 256,
+      "fp4_dense": null
+    },
+    "tdp_w": 300,
+    "form_factor": "Standard PCIe card",
+    "interconnect": {
+      "type": "proprietary",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise (limited/unclear)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Monolithic half-sized sibling of BR100, roughly half its performance. 2026 commercial status/availability unclear -- most public information dates to the original 2022 announcement.",
+    "unverified": [
+      "memory_type",
+      "tflops (derived as half of BR100's already-uncertain figure)",
+      "2026 commercial status"
+    ],
+    "sources": [
+      "https://www.techpowerup.com/298098/biren-br100-detailed-chinas-ai-hpc-processor-storms-into-the-hpc-gpu-big-leagues"
+    ]
+  },
+  {
+    "id": "hygon-dcu-k100-ai",
+    "vendor": "Hygon",
+    "name": "DCU K100 (AI version)",
+    "arch": "Hygon DCU (x86-ISA-compatible GPGPU)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": 40,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 192,
+      "fp8_dense": null,
+      "int8_dense": 392,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe/OAM",
+    "interconnect": {
+      "type": "proprietary",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip; Hygon itself is majority state-linked and was added to the US Entity List)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Unusual among AI accelerators for x86-ISA compatibility on the CPU side (Hygon's roots are in a licensed/joint-venture AMD x86 design). DTK software stack aims for CUDA-like ease of porting.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tdp_w",
+      "price"
+    ],
+    "sources": [
+      "https://mirrorfrog.com/en/docs/cards/others/hygon-dcu-k100/",
+      "https://leonliao.substack.com/p/inside-hygons-cpu-dcu-compute-stack"
+    ]
+  },
+  {
+    "id": "kunlunxin-p800",
+    "vendor": "Baidu Kunlunxin",
+    "name": "Kunlun P800",
+    "arch": "XPU-P (3rd gen)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": null,
+    "memory_type": null,
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 345,
+      "fp8_dense": null,
+      "int8_dense": 690,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "OAM (SuperNode deployment)",
+    "interconnect": {
+      "type": "proprietary (SuperNode fabric)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Roughly comparable to A100/Ascend 910B compute class per third-party comparisons; launched March 2024. Memory specs not found this session.",
+    "unverified": [
+      "memory_gb",
+      "memory_bandwidth_gbs",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://www.techinsights.com/blog/baidu-kunlunxin-p800-ai-accelerator-processor-floorplan-analysis",
+      "https://mirrorfrog.com/en/blog/kunlun-p800-performance/"
+    ]
+  },
+  {
+    "id": "enflame-s60",
+    "vendor": "Enflame",
+    "name": "S60",
+    "arch": "GCU (3rd gen)",
+    "launch_year": 2024,
+    "category": "datacenter-inference-china",
+    "memory_gb": null,
+    "memory_type": null,
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": null,
+    "interconnect": {
+      "type": null,
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 16000,
+      "used": null,
+      "note": "Estimated ~100,000-130,000 RMB/card converted at ~7.1 RMB/USD; derived estimate, not a confirmed USD list price."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "70,000 units shipped as of the S60 product line reaching full production capacity by Sept 2026. Enflame IPO'd on the Shanghai STAR Market in Sept 2026, stock +188% on debut. Detailed technical specs (memory, bandwidth, TFLOPS) were not found in English-language sources this session -- almost entirely placeholder/unverified.",
+    "unverified": [
+      "ALL technical specs",
+      "price_usd_2026.new (RMB-to-USD estimate)"
+    ],
+    "sources": [
+      "https://www.trendforce.com/news/2025/07/29/news-chinese-ai-chip-unicorns-enflame-metax-unveil-next-gen-chips-shortly-after-nvidias-h20-return/",
+      "https://www.caixinglobal.com/2026-09-11/enflame-surges-188-in-shanghai-debut-as-ai-chip-boom-continues-102483996.html",
+      "https://originalpricing.com/enflame-technology/"
+    ]
+  },
+  {
+    "id": "metax-c500",
+    "vendor": "MetaX",
+    "name": "C500",
+    "arch": "MXN (7nm)",
+    "launch_year": 2024,
+    "category": "datacenter-training-china",
+    "memory_gb": null,
+    "memory_type": "HBM (generation unconfirmed)",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": 234,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": null,
+    "interconnect": {
+      "type": null,
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing found."
+    },
+    "export_control_to_china": "n/a (domestic Chinese chip)",
+    "availability": [
+      "China-only",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Reported at roughly 75% of NVIDIA A100 performance; fp16_dense figure here is a derived estimate (312 TFLOPS x 0.75) and unverified. MetaX IPO'd Dec 2025 with shares +693% on debut (~$42B valuation). A successor, C600, is reported to add 144GB HBM3e but is not yet characterized enough for its own record.",
+    "unverified": [
+      "tflops.fp16_dense (derived from A100 comparison)",
+      "memory_gb",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://www.marketscreener.com/news/metax-soars-700-in-debut-as-china-ai-chips-push-lures-investors-ce7d50ded08bf024",
+      "https://finance.yahoo.com/news/chinese-ai-chipmaker-metax-shares-021911316.html",
+      "https://evergreenllc2020.medium.com/chinas-gpu-insurgents-the-four-little-dragons-challenging-nvidia-s-dominance-a00bfea221d7"
+    ]
+  },
+  {
+    "id": "intel-gaudi-2",
+    "vendor": "Intel",
+    "name": "Gaudi 2",
+    "arch": "Gaudi 2",
+    "launch_year": 2022,
+    "category": "datacenter-training",
+    "memory_gb": 96,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 2450,
+    "tflops": {
+      "fp16_dense": 432,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 600,
+    "form_factor": "OAM",
+    "interconnect": {
+      "type": "24x 100GbE RoCE (on-die)",
+      "gbs": 2400
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 8125,
+      "used": null,
+      "note": "Reported bulk price with baseboard."
+    },
+    "export_control_to_china": "restricted",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.8,
+      "high": 2.0
+    },
+    "notes": "Networking (RoCE Ethernet) is built directly onto the die rather than a separate NVLink-style fabric -- a distinctive Gaudi design choice.",
+    "unverified": [
+      "cloud_usd_per_hour_2026"
+    ],
+    "sources": [
+      "https://gpus.io/en/gpus/gaudi2",
+      "https://computecomparison.com/gpu/gaudi-2"
+    ]
+  },
+  {
+    "id": "intel-gaudi-3",
+    "vendor": "Intel",
+    "name": "Gaudi 3",
+    "arch": "Gaudi 3",
+    "launch_year": 2024,
+    "category": "datacenter-training",
+    "memory_gb": 128,
+    "memory_type": "HBM2e",
+    "memory_bandwidth_gbs": 3700,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 1835,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 900,
+    "form_factor": "OAM (900W) / PCIe card (600W)",
+    "interconnect": {
+      "type": "24x 200GbE RoCE (on-die)",
+      "gbs": 4800
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 15650,
+      "used": null,
+      "note": "Reported bulk price with baseboard, ~$15,000-15,650."
+    },
+    "export_control_to_china": "restricted",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 2.5
+    },
+    "notes": "TDP reported inconsistently (600W vs 900W) across sources -- most likely explained by 600W PCIe card vs 900W OAM/mezzanine module, similar to the H100 PCIe/SXM TDP split, but this reconciliation is our inference, not independently confirmed. Marketed as a cheaper-per-dollar H100 alternative at launch. Intel has reportedly signaled winding down the Gaudi line for 2026-2027 in favor of a next-generation Intel AI GPU architecture -- flagged as reported-but-not-independently-confirmed this session.",
+    "unverified": [
+      "tdp_w (600 vs 900W conflict)",
+      "tflops.fp16_dense (not found)",
+      "Gaudi discontinuation timeline"
+    ],
+    "sources": [
+      "https://www.tomshardware.com/tech-industry/artificial-intelligence/intel-launches-gaudi-3-accelerator-for-ai-slower-than-h100-but-also-cheaper",
+      "https://introl.com/blog/intel-gaudi-3-deployment-guide-h100-alternative",
+      "https://flopper.io/gpu/intel-gaudi-3-128gb/spec-sheet"
+    ]
+  },
+  {
+    "id": "intel-arc-b580",
+    "vendor": "Intel",
+    "name": "Arc B580",
+    "arch": "Xe2 (Battlemage)",
+    "launch_year": 2024,
+    "category": "consumer",
+    "memory_gb": 12,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 456,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "fp32_dense": 13
+    },
+    "tdp_w": 190,
+    "form_factor": "Consumer PCIe AIB card",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 4,
+    "price_usd_2026": {
+      "new": 249,
+      "used": null,
+      "note": "Launch price Dec 13, 2024."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Budget gaming/light-AI card. A widely-scraped Wikipedia infobox figure of '272-427 TFLOPS FP32' for this card is almost certainly a data error (implausible for this GPU class, which typically delivers low-teens TFLOPS FP32) -- NOT used; fp32_dense shown here is a conservative estimate based on the card's known shader count/clocks and is itself only approximate.",
+    "unverified": [
+      "tflops.fp32_dense (approximate; conflicting/implausible figures seen in aggregator sources)"
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Intel_Arc"
+    ]
+  },
+  {
+    "id": "intel-arc-pro-b60",
+    "vendor": "Intel",
+    "name": "Arc Pro B60",
+    "arch": "Xe2 (Battlemage)",
+    "launch_year": 2025,
+    "category": "workstation",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 456,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 197,
+      "fp4_dense": null,
+      "fp32_dense": 12.28
+    },
+    "tdp_w": 200,
+    "form_factor": "Workstation PCIe (dual-GPU 48GB board also sold)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 599,
+      "used": null,
+      "note": "~$599-600 single GPU; dual-GPU 48GB board (Maxsun) $1,200."
+    },
+    "export_control_to_china": "unrestricted",
+    "availability": [
+      "workstation-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "272mm2 die, 19.6B transistors, 20 Xe2 cores, 160 XMX (matrix) engines. The 'Battlematrix' workstation reference design packs up to 4 dual-GPU boards for 192GB total VRAM at a fraction of equivalent Nvidia/AMD cost -- an attractive budget high-VRAM option for local inference.",
+    "unverified": [],
+    "sources": [
+      "https://www.techpowerup.com/341191/intel-arc-pro-b60-workstation-gpu-spotted-at-usd-599-suggests-non-oem-availability",
+      "https://www.storagereview.com/review/intel-arc-pro-b60-battlematrix-preview-192gb-of-vram-for-on-premise-ai",
+      "https://www.techpowerup.com/336966/maxsun-arc-pro-b60-dual-48gb-graphics-card-hands-on"
+    ]
+  },
+  {
+    "id": "apple-m2-ultra",
+    "vendor": "Apple",
+    "name": "M2 Ultra (Mac Studio)",
+    "arch": "Apple Silicon",
+    "launch_year": 2023,
+    "category": "consumer-apu",
+    "memory_gb": 192,
+    "memory_type": "LPDDR5 (unified)",
+    "memory_bandwidth_gbs": 819.2,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 215,
+    "form_factor": "Mac Studio desktop",
+    "interconnect": {
+      "type": "none (single machine)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 3999,
+      "used": 2800,
+      "note": "Base Mac Studio M2 Ultra launched ~$3,999; max 192GB config was substantially higher (~$6,600-8,800 range from general Apple configurator pricing knowledge, not independently re-verified this session). Superseded by M3 Ultra in March 2025 but remained purchasable/used through 2026."
+    },
+    "export_control_to_china": "unrestricted (consumer product)",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "16P+8E CPU, 60- or 76-core GPU (built from two M2 Max dies joined). No discrete VRAM concept -- full unified memory pool is GPU-addressable, letting it run large quantized models entirely in memory despite modest raw compute versus a discrete GPU.",
+    "unverified": [
+      "price_usd_2026 (general Apple pricing knowledge, not freshly verified)",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://en.wikipedia.org/wiki/Apple_M2",
+      "https://www.apple.com/newsroom/2025/03/apple-unveils-new-mac-studio-the-most-powerful-mac-ever/"
+    ]
+  },
+  {
+    "id": "apple-m3-ultra",
+    "vendor": "Apple",
+    "name": "M3 Ultra (Mac Studio)",
+    "arch": "Apple Silicon",
+    "launch_year": 2025,
+    "category": "consumer-apu",
+    "memory_gb": 512,
+    "memory_type": "LPDDR5 (unified)",
+    "memory_bandwidth_gbs": 819,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 240,
+    "form_factor": "Mac Studio desktop",
+    "interconnect": {
+      "type": "none (single machine)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 4000,
+      "used": null,
+      "note": "Base price ~$3,999-4,000; the 512GB maxed configuration commonly reported around $9,499. Superseded by M5 Ultra in Aug 2026 but was the highest-unified-memory Mac available through mid-2026."
+    },
+    "export_control_to_china": "unrestricted (consumer product)",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "32-core CPU, up to 80-core GPU. 512GB unified memory was, until the M5 Ultra, the largest memory pool available in a single consumer desktop -- widely adopted by local-LLM hobbyists for running huge quantized MoE models (e.g., full-size DeepSeek/Llama-class models) despite GPU compute far below a discrete data-center accelerator.",
+    "unverified": [
+      "price_usd_2026 (512GB config price)"
+    ],
+    "sources": [
+      "https://creativestrategies.com/mac-studio-m3-ultra-ai-workstation-review/",
+      "https://www.apple.com/newsroom/2025/03/apple-unveils-new-mac-studio-the-most-powerful-mac-ever/",
+      "https://www.macrumors.com/guide/2025-vs-2026-mac-studio/"
+    ]
+  },
+  {
+    "id": "apple-m4-max",
+    "vendor": "Apple",
+    "name": "M4 Max (Mac Studio)",
+    "arch": "Apple Silicon",
+    "launch_year": 2025,
+    "category": "consumer-apu",
+    "memory_gb": 128,
+    "memory_type": "LPDDR5 (unified)",
+    "memory_bandwidth_gbs": 546,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 140,
+    "form_factor": "Mac Studio desktop (also MacBook Pro)",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 1999,
+      "used": null,
+      "note": "Mac Studio base price; superseded by M5 Max in Aug 2026."
+    },
+    "average_memory_bandwidth_note": "546 GB/s",
+    "export_control_to_china": "unrestricted (consumer product)",
+    "availability": [
+      "consumer-retail",
+      "used-market"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Up to 16-core CPU, 40-core GPU, 16-core Neural Engine. The smaller/cheaper Mac Studio tier versus Ultra chips.",
+    "unverified": [
+      "price_usd_2026"
+    ],
+    "sources": [
+      "https://www.macrumors.com/guide/2025-vs-2026-mac-studio/",
+      "https://www.apple.com/me/mac-studio/specs/"
+    ]
+  },
+  {
+    "id": "apple-m5-max",
+    "vendor": "Apple",
+    "name": "M5 Max (Mac Studio)",
+    "arch": "Apple Silicon",
+    "launch_year": 2026,
+    "category": "consumer-apu",
+    "memory_gb": 128,
+    "memory_type": "LPDDR5 (unified)",
+    "memory_bandwidth_gbs": 614,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 150,
+    "form_factor": "Mac Studio desktop",
+    "interconnect": {
+      "type": "none",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 2499,
+      "used": null,
+      "note": "Official Apple starting price, announced Aug 25, 2026, shipped Sept 22, 2026."
+    },
+    "export_control_to_china": "unrestricted (consumer product)",
+    "availability": [
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "CURRENT AS OF GAME START (Jan 2027). 18-core CPU (6 super + 12 performance), up to 40-core GPU, up to 8TB storage, PCIe Gen6 SSD, Thunderbolt 5 (120Gb/s), Wi-Fi 7, first-gen N1 wireless chip.",
+    "unverified": [],
+    "sources": [
+      "https://www.macrumors.com/2026/08/25/apple-announces-new-mac-studio-with-m5-ultra-chip/",
+      "https://www.apple.com/newsroom/2026/08/apple-introduces-new-mac-studio-with-m5-max-and-m5-ultra/"
+    ]
+  },
+  {
+    "id": "apple-m5-ultra",
+    "vendor": "Apple",
+    "name": "M5 Ultra (Mac Studio)",
+    "arch": "Apple Silicon",
+    "launch_year": 2026,
+    "category": "consumer-apu",
+    "memory_gb": 512,
+    "memory_type": "LPDDR5 (unified)",
+    "memory_bandwidth_gbs": 1200,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 280,
+    "form_factor": "Mac Studio desktop",
+    "interconnect": {
+      "type": "none (single machine)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 5499,
+      "used": null,
+      "note": "Official Apple starting price for the M5 Ultra tier, announced Aug 25 2026; 512GB configuration ships late October 2026. Fully configured 512GB units command a substantial premium over the $5,499 base."
+    },
+    "export_control_to_china": "unrestricted (consumer product)",
+    "availability": [
+      "consumer-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "CURRENT AS OF GAME START (Jan 2027), the newest and largest-memory Mac Studio. Up to 36-core CPU (12 super + 24 performance), up to 80-core GPU with Neural Accelerators per core for the first time on an Ultra chip (Apple claims 4.3x peak AI compute vs M3 Ultra), 512GB unified memory at 1.2TB/s bandwidth. An unconfirmed rumor floated a possible 768GB configuration prior to launch, but Apple's official announced maximum is 512GB -- the 768GB figure should be treated as an unconfirmed rumor, not a real SKU.",
+    "unverified": [
+      "768GB rumored config (explicitly NOT the official spec; official max is 512GB)"
+    ],
+    "sources": [
+      "https://www.macrumors.com/2026/08/25/apple-announces-new-mac-studio-with-m5-ultra-chip/",
+      "https://www.apple.com/newsroom/2026/08/apple-introduces-new-mac-studio-with-m5-max-and-m5-ultra/",
+      "https://www.macrumors.com/2026/06/25/m5-ultra-mac-studio-2026/",
+      "https://felloai.com/m5-ultra-mac-studio/"
+    ]
+  },
+  {
+    "id": "google-tpu-v5e",
+    "vendor": "Google",
+    "name": "TPU v5e",
+    "arch": "TPU v5e",
+    "launch_year": 2023,
+    "category": "cloud-only-tpu",
+    "memory_gb": 16,
+    "memory_type": "HBM",
+    "memory_bandwidth_gbs": 819,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 393,
+      "fp4_dense": null,
+      "bf16_dense": 197
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (Google Cloud TPU pod slice)",
+    "interconnect": {
+      "type": "ICI (Inter-Chip Interconnect)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware; Google Cloud rental only."
+    },
+    "export_control_to_china": "n/a (cloud-only, no discrete export)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 0.6,
+      "high": 1.2
+    },
+    "notes": "Cost-optimized TPU generation, positioned for inference and mid-size training rather than frontier model training.",
+    "unverified": [
+      "tflops (bf16/int8 figures approximate)",
+      "cloud_usd_per_hour_2026"
+    ],
+    "sources": [
+      "https://huggingface.co/docs/optimum-tpu/en/conceptual_guides/tpu_hardware_support",
+      "https://newsletter.semianalysis.com/p/tpuv5e-the-new-benchmark-in-cost"
+    ]
+  },
+  {
+    "id": "google-tpu-v5p",
+    "vendor": "Google",
+    "name": "TPU v5p",
+    "arch": "TPU v5p",
+    "launch_year": 2023,
+    "category": "cloud-only-tpu",
+    "memory_gb": 95,
+    "memory_type": "HBM",
+    "memory_bandwidth_gbs": 2765,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": 918,
+      "fp4_dense": null,
+      "bf16_dense": 459
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (Google Cloud TPU pod slice, up to 8,960-chip pods)",
+    "interconnect": {
+      "type": "ICI (3D torus)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware."
+    },
+    "export_control_to_china": "n/a (cloud-only)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.2,
+      "high": 2.5
+    },
+    "notes": "Performance-focused generation for large-scale training, predecessor to Trillium/Ironwood.",
+    "unverified": [
+      "tflops (approximate)",
+      "cloud_usd_per_hour_2026"
+    ],
+    "sources": [
+      "https://cloud.google.com/blog/products/ai-machine-learning/introducing-cloud-tpu-v5p-and-ai-hypercomputer",
+      "https://blog.easecloud.io/ai-cloud/llm-throughput-with-google-tpu-v5p/"
+    ]
+  },
+  {
+    "id": "google-tpu-v6e-trillium",
+    "vendor": "Google",
+    "name": "TPU v6e (Trillium)",
+    "arch": "TPU v6e",
+    "launch_year": 2024,
+    "category": "cloud-only-tpu",
+    "memory_gb": 32,
+    "memory_type": "HBM",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 918,
+      "int8_dense": 918,
+      "fp4_dense": null,
+      "bf16_dense": 459
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (Google Cloud TPU pod slice, up to 256-chip pods)",
+    "interconnect": {
+      "type": "ICI",
+      "gbs": 3200
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware."
+    },
+    "export_control_to_china": "n/a (cloud-only)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.22,
+      "high": 2.7,
+      "note": "$2.70/chip-hr on-demand, $1.22/chip-hr with 3-year commitment."
+    },
+    "notes": "Interconnect (ICI) bandwidth of 3,200 Gbps/chip confirmed; raw per-chip HBM bandwidth was not independently found this session (commonly estimated ~1,640GB/s by analogy to comparable-generation parts, but unverified). BF16/FP8 TFLOPS figures are estimated by scaling from v5p, not vendor-confirmed for v6e specifically.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tflops (estimated by scaling)"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/google-tpu-v7-ironwood-vs-nvidia-b200-inference-cost/",
+      "https://introl.com/blog/google-tpu-architecture-complete-guide-7-generations"
+    ]
+  },
+  {
+    "id": "google-tpu-v7-ironwood",
+    "vendor": "Google",
+    "name": "TPU v7 (Ironwood)",
+    "arch": "TPU v7",
+    "launch_year": 2026,
+    "category": "cloud-only-tpu",
+    "memory_gb": 192,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 7370,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 4614,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "bf16_dense": 2307
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (Google Cloud TPU pod slice, up to 9,216-chip pods)",
+    "interconnect": {
+      "type": "ICI (3D torus, rack-scale)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware."
+    },
+    "export_control_to_china": "n/a (cloud-only)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 3.0,
+      "high": 6.0
+    },
+    "notes": "CURRENT AS OF GAME START (Jan 2027). Announced Google Cloud Next 2026, GA April 22, 2026. First TPU generation with native FP8 hardware. Full pod: 9,216 chips = 42.5 FP8 ExaFLOPS. Google claims 10x the peak performance of v5p and 2x the perf/watt of Trillium.",
+    "unverified": [
+      "cloud_usd_per_hour_2026 (estimated, not confirmed by a public list price)"
+    ],
+    "sources": [
+      "https://www.siliconreport.com/google-tpu-ironwood-v7-explained-0b063bf9",
+      "https://docs.cloud.google.com/tpu/docs/tpu7x",
+      "https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/ironwood-tpu-age-of-inference/"
+    ]
+  },
+  {
+    "id": "groq-lpu",
+    "vendor": "Groq",
+    "name": "LPU (3rd gen)",
+    "arch": "LPU (Language Processing Unit)",
+    "launch_year": 2026,
+    "category": "cloud-only-inference-asic",
+    "memory_gb": 0.5,
+    "memory_type": "on-chip SRAM (no HBM/DRAM)",
+    "memory_bandwidth_gbs": 150000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (GroqCloud), large racked clusters of chips required per model",
+    "interconnect": {
+      "type": "proprietary chip-to-chip fabric",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as standalone hardware to end users; accessed only via GroqCloud API/tokens."
+    },
+    "export_control_to_china": "n/a (cloud-only, US-based)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Architecturally unlike every other accelerator in this catalog: replaces HBM/GDDR with a large on-die SRAM pool (500MB) for extremely low-latency autoregressive token generation, at the cost of (a) tiny per-chip capacity, meaning many chips are needed per model, and (b) an inference-only design that cannot train models or run vision/video workloads. Reported throughput 280-1,000 tokens/sec depending on model (e.g., ~956 tok/s for GPT-OSS 20B, ~569 tok/s Llama 3.1 8B), often several times faster than the same model on an H100. A reported '$20 billion Nvidia licensing deal' and 'Groq 3' naming come from a single secondary aggregator source and are NOT independently confirmed this session -- treat with real caution.",
+    "unverified": [
+      "the entire 'Groq 3' / '$20B Nvidia deal' framing (single-source, unconfirmed)",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/nvidia-groq-3-lpu-explained/",
+      "https://neuraplus-ai.github.io/blog/groq-lpu-performance-benchmarks.html",
+      "https://www.voiceflow.com/blog/groq"
+    ]
+  },
+  {
+    "id": "cerebras-wse-3",
+    "vendor": "Cerebras",
+    "name": "WSE-3 (CS-3 system)",
+    "arch": "Wafer-Scale Engine 3",
+    "launch_year": 2024,
+    "category": "cloud-only-wafer-scale",
+    "memory_gb": 44,
+    "memory_type": "on-die SRAM (no HBM/DRAM on the compute wafer)",
+    "memory_bandwidth_gbs": 21000000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "peak_ai_pflops": 125
+    },
+    "tdp_w": 23000,
+    "form_factor": "Full wafer (46,225 mm^2) in a CS-3 system chassis",
+    "interconnect": {
+      "type": "on-wafer fabric (all cores) + system-level SwarmX",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "CS-3 systems sold to enterprises/labs on a quote basis; not consumer-priced. Also accessible via Cerebras Cloud."
+    },
+    "export_control_to_china": "banned (export-controlled US technology)",
+    "availability": [
+      "cloud",
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.0,
+      "high": 3.0,
+      "note": "Estimated per-model-hour equivalent via Cerebras Cloud inference API; not a direct per-chip rental market like GPU clouds."
+    },
+    "notes": "One physical silicon wafer = one chip: 4 trillion transistors, 900,000 AI-optimized cores, 21 PB/s of on-wafer memory bandwidth (memory_bandwidth_gbs value here is genuinely ~21,000,000 GB/s -- i.e., 21 PB/s -- not a typo). 125 PFLOPS peak AI performance (dense/sparse basis unclear). Cerebras positions itself as a fast-inference specialist: Q2 2026 cloud/inference revenue reportedly hit $127.7M (+287% YoY), and Cerebras was reportedly a launch inference partner for at least one frontier model in 2026 at high tokens/sec -- specific model-name claims from secondary sources are NOT independently verified this session. System TDP (~23kW) is an approximation for the full CS-3 chassis including cooling, not an official spec.",
+    "unverified": [
+      "tdp_w (system-level estimate)",
+      "cloud_usd_per_hour_2026 (no direct per-chip market)",
+      "specific frontier-model-partner claims"
+    ],
+    "sources": [
+      "https://spectrum.ieee.org/cerebras-chip-cs3",
+      "https://www.cerebras.ai/press-release/cerebras-announces-third-generation-wafer-scale-engine",
+      "https://www.livetradingnews.com/cerebras-systems-wse-3-deep-dive-the-wafer-scale-engine-redefining-fast-ai-infer"
+    ]
+  },
+  {
+    "id": "tenstorrent-blackhole-p150",
+    "vendor": "Tenstorrent",
+    "name": "Blackhole p150 (dev card)",
+    "arch": "Tensix (RISC-V based)",
+    "launch_year": 2025,
+    "category": "workstation",
+    "memory_gb": 32,
+    "memory_type": "GDDR6",
+    "memory_bandwidth_gbs": 512,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 774,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "PCIe card (140 Tensix cores, 210MB SRAM)",
+    "interconnect": {
+      "type": "proprietary (scales into Galaxy systems)",
+      "gbs": null
+    },
+    "pcie_gen": 5,
+    "price_usd_2026": {
+      "new": 1399,
+      "used": null,
+      "note": "Confirmed developer-card price."
+    },
+    "export_control_to_china": "restricted (US-origin AI accelerator)",
+    "availability": [
+      "workstation-retail"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Open-architecture (RISC-V control cores, open software stack) alternative aimed at developers who want to avoid CUDA lock-in. Individual card is a niche/enthusiast product; the real product is the rack-scale Galaxy Blackhole system (see below).",
+    "unverified": [
+      "tdp_w"
+    ],
+    "sources": [
+      "https://www.spheron.network/blog/tenstorrent-vs-nvidia-open-source-ai-hardware/",
+      "https://tenstorrent.com/en/newsroom/tenstorrent-launches-blackhole-developer-products-at-tenstorrent-dev-day"
+    ]
+  },
+  {
+    "id": "tenstorrent-galaxy-blackhole",
+    "vendor": "Tenstorrent",
+    "name": "Galaxy Blackhole (rack system)",
+    "arch": "Tensix (RISC-V based) x32",
+    "launch_year": 2026,
+    "category": "rack-system",
+    "memory_gb": 1024,
+    "memory_type": "DRAM (16TB/s aggregate) + on-chip SRAM (6.2GB aggregate at 2.9PB/s)",
+    "memory_bandwidth_gbs": 16000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 23000,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Full rack, 32 Blackhole chips",
+    "interconnect": {
+      "type": "up to 56x 800G Ethernet scale-out",
+      "gbs": 5600
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": 110000,
+      "used": null,
+      "note": "Confirmed starting price at general availability, April 28, 2026. A 4-Galaxy supercluster starts at $440,000."
+    },
+    "export_control_to_china": "restricted (US-origin AI accelerator)",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "23 PFLOPS Block-FP8 from 32 chips. Positioned as an open, lower-cost-per-FLOP alternative to Nvidia/AMD rack systems, trading some raw performance for openness and price.",
+    "unverified": [
+      "memory_bandwidth_gbs (DRAM figure used as primary; true blended figure unclear)",
+      "fp8_dense dense/sparse basis"
+    ],
+    "sources": [
+      "https://www.hpcwire.com/aiwire/2026/05/01/tenstorrent-announces-general-availability-of-galaxy-blackhole-ai-system/",
+      "https://www.theregister.com/software/2026/04/28/tenstorrents-galaxy-blackhole-ai-servers-are-finally-out/5229759"
+    ]
+  },
+  {
+    "id": "sambanova-sn40l",
+    "vendor": "SambaNova",
+    "name": "SN40L",
+    "arch": "Reconfigurable Dataflow Unit (RDU)",
+    "launch_year": 2024,
+    "category": "datacenter-training",
+    "memory_gb": 64,
+    "memory_type": "HBM + on-chip SRAM (520MB) + DDR capacity tier",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "bf16_dense": 640
+    },
+    "tdp_w": null,
+    "form_factor": "2-die module via CoWoS-S interposer",
+    "interconnect": {
+      "type": "peer-to-peer (16-chip node)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Enterprise/contract pricing only; no public unit price found."
+    },
+    "export_control_to_china": "restricted (US-origin AI accelerator)",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "TSMC 5nm, 102 billion transistors/socket. Three-tier memory hierarchy (SRAM + HBM + DDR) targets very large MoE models (up to ~5 trillion parameters) and >256k context length on a single node. 16-chip node compute roofline: 10.2 BF16 PFLOPS.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tdp_w"
+    ],
+    "sources": [
+      "https://www.servethehome.com/sambanova-sn40l-rdu-for-trillion-parameter-ai-models/",
+      "https://ieeexplore.ieee.org/document/10904578/",
+      "https://sambanova.ai/blog/sn40l-chip-best-inference-solution"
+    ]
+  },
+  {
+    "id": "qualcomm-ai200",
+    "vendor": "Qualcomm",
+    "name": "AI200",
+    "arch": "Qualcomm AI accelerator (rack-scale)",
+    "launch_year": 2026,
+    "category": "datacenter-inference-nextgen",
+    "memory_gb": 768,
+    "memory_type": "LPDDR",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Rack-scale card/system, direct liquid cooling",
+    "interconnect": {
+      "type": "PCIe (scale-up) + Ethernet (scale-out)",
+      "gbs": null
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No unit pricing found; announced Oct 27, 2025, commercial target 2026."
+    },
+    "average_system_power_kw": 160,
+    "export_control_to_china": "restricted (presumed; US-origin)",
+    "availability": [
+      "enterprise"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Inference-only design (not for training foundation models), emphasizing memory density (768GB LPDDR per card) and power efficiency over raw FLOPS. Rack-level power draw ~160kW. Qualcomm's first serious data-center AI inference play.",
+    "unverified": [
+      "memory_bandwidth_gbs",
+      "tflops (not disclosed)",
+      "price"
+    ],
+    "sources": [
+      "https://www.datacenterdynamics.com/en/news/qualcomm-launches-ai200-and-ai250-chip-offering-targeting-inferencing-workloads-at-rack-scale/",
+      "https://dcpulse.com/news/qualcomm-ai200-ai250-rack-scale-inference-systems-for-data-centres",
+      "https://nand-research.com/research-note-qualcomm-introduces-ai200-ai250-for-data-center-inference/"
+    ]
+  },
+  {
+    "id": "qualcomm-ai250",
+    "vendor": "Qualcomm",
+    "name": "AI250",
+    "arch": "Qualcomm AI accelerator (rack-scale, HBC memory)",
+    "launch_year": 2027,
+    "category": "datacenter-inference-nextgen",
+    "memory_gb": 768,
+    "memory_type": "Qualcomm Hybrid Compute (HBC) memory architecture",
+    "memory_bandwidth_gbs": 133000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Rack-scale card/system, direct liquid cooling",
+    "interconnect": {
+      "type": "PCIe (scale-up) + Ethernet (scale-out)",
+      "gbs": null
+    },
+    "pcie_gen": 6,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "No pricing exists pre-launch."
+    },
+    "average_system_power_kw": 160,
+    "export_control_to_china": "restricted (presumed; US-origin)",
+    "availability": [
+      "enterprise (not yet commercially available)"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "IMPORTANT FOR GAME TIMELINE: commercial availability expected 2027 -- this chip is NOT yet on the market at the game's January 2027 start date (right at the edge; treat as 'just announced/sampling' rather than generally available). Same 768GB memory footprint and rack/cooling design as AI200, but replaces standard LPDDR5X with a Hybrid Compute Memory architecture claimed to deliver 133 TB/s of read/write bandwidth -- 18x the effective bandwidth of AI200's LPDDR5X.",
+    "unverified": [
+      "tflops (not disclosed)",
+      "exact 2027 launch timing",
+      "price"
+    ],
+    "sources": [
+      "https://www.datacenterdynamics.com/en/news/qualcomm-launches-ai200-and-ai250-chip-offering-targeting-inferencing-workloads-at-rack-scale/",
+      "https://dcpulse.com/news/qualcomm-ai200-ai250-rack-scale-inference-systems-for-data-centres"
+    ]
+  },
+  {
+    "id": "aws-trainium2",
+    "vendor": "Amazon (AWS)",
+    "name": "Trainium2",
+    "arch": "NeuronCore-v3",
+    "launch_year": 2024,
+    "category": "cloud-only-custom-silicon",
+    "memory_gb": 96,
+    "memory_type": "HBM3",
+    "memory_bandwidth_gbs": 2900,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (EC2 Trn2 instance: 16 chips; Trn2 UltraServer: 64 chips)",
+    "interconnect": {
+      "type": "NeuronLink",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware; AWS EC2 rental only."
+    },
+    "export_control_to_china": "n/a (cloud-only, US-based)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.3,
+      "high": 2.2,
+      "note": "Approximate per-chip-hour equivalent backed out of Trn2 instance pricing; not an official per-chip rate."
+    },
+    "notes": "Trn2 instance: 16 chips, 20.8 PFLOPS peak. Trn2 UltraServer: 64 chips, 83.2 PFLOPS peak. AWS's primary in-house alternative to renting Nvidia GPUs, offered at a cost discount versus equivalent Nvidia instances.",
+    "unverified": [
+      "cloud_usd_per_hour_2026 (derived, not an official per-chip rate)",
+      "tflops (per-chip breakdown not found; only aggregate instance PFLOPS)"
+    ],
+    "sources": [
+      "https://awsdocs-neuron.readthedocs-hosted.com/en/latest/about-neuron/arch/neuron-hardware/trainium2.html",
+      "https://medium.com/@paulgoll/aws-ec2-trn2-instances-and-ultraserver-for-ai-and-machine-learning-73c181bf7d6c",
+      "https://newsletter.semianalysis.com/p/amazons-ai-self-sufficiency-trainium2-architecture-networking"
+    ]
+  },
+  {
+    "id": "aws-trainium3",
+    "vendor": "Amazon (AWS)",
+    "name": "Trainium3",
+    "arch": "NeuronCore-v4 (8 cores, 4 specialized engines each)",
+    "launch_year": 2026,
+    "category": "cloud-only-custom-silicon",
+    "memory_gb": 144,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 4900,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null,
+      "mxfp8_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "Cloud-only (EC2 Trn3 UltraServer: up to 144 chips)",
+    "interconnect": {
+      "type": "NeuronSwitch (all-to-all, 2x Trainium2 bandwidth)",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not sold as hardware."
+    },
+    "export_control_to_china": "n/a (cloud-only, US-based)",
+    "availability": [
+      "cloud"
+    ],
+    "cloud_usd_per_hour_2026": {
+      "low": 1.8,
+      "high": 3.0,
+      "note": "Estimated per-chip-hour equivalent; not an official rate."
+    },
+    "notes": "CURRENT AS OF GAME START (Jan 2027). Trn3 UltraServer: up to 144 chips, 362 MXFP8 PFLOPS, 20.7TB HBM3e, 706 TB/s aggregate bandwidth -- reported as 4.4x compute, 4x energy efficiency, ~4x memory bandwidth versus Trainium2 UltraServers.",
+    "unverified": [
+      "cloud_usd_per_hour_2026 (derived estimate)",
+      "tflops (per-chip breakdown not found)"
+    ],
+    "sources": [
+      "https://newsletter.semianalysis.com/p/aws-trainium3-deep-dive-a-potential",
+      "https://www.aboutamazon.com/news/aws/trainium-3-ultraserver-faster-ai-training-lower-cost",
+      "https://www.neuralstack.network/article/2026-07-16-aws-trainium3-chip-launch"
+    ]
+  },
+  {
+    "id": "microsoft-maia-100",
+    "vendor": "Microsoft",
+    "name": "Maia 100",
+    "arch": "Maia (1st gen)",
+    "launch_year": 2023,
+    "category": "internal-only-custom-silicon",
+    "memory_gb": null,
+    "memory_type": null,
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": null,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": null,
+    "form_factor": "OAM (internal Azure infrastructure only)",
+    "interconnect": {
+      "type": null,
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Never sold or rented; not commercially available."
+    },
+    "export_control_to_china": "n/a (never externally available)",
+    "availability": [
+      "internal-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "First-generation Microsoft AI chip, announced 2023, effectively a false start: designed more for image-processing-era workloads than modern generative AI, was never offered for external Azure customer rental, and ended up used mainly for internal staff-training purposes rather than production AI. Good illustrative example of a hyperscaler in-house chip that did NOT pan out.",
+    "unverified": [
+      "most technical specs never disclosed"
+    ],
+    "sources": [
+      "https://www.datacenterdynamics.com/en/news/microsoft-delays-production-of-maia-100-ai-chip-to-2026-report/",
+      "https://jimmyresearch.com/entities/microsoft-maia/"
+    ]
+  },
+  {
+    "id": "microsoft-maia-200",
+    "vendor": "Microsoft",
+    "name": "Maia 200 (\"Braga\")",
+    "arch": "Maia (2nd gen)",
+    "launch_year": 2026,
+    "category": "internal-only-custom-silicon",
+    "memory_gb": 216,
+    "memory_type": "HBM3e",
+    "memory_bandwidth_gbs": 7000,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 5000,
+      "int8_dense": null,
+      "fp4_dense": 10000
+    },
+    "tdp_w": 750,
+    "form_factor": "SoC/OAM (Azure internal infrastructure)",
+    "interconnect": {
+      "type": "proprietary",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Not commercially sold or rented as of mid-2026."
+    },
+    "export_control_to_china": "n/a (internal Microsoft infrastructure only)",
+    "availability": [
+      "internal-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Announced Jan 26, 2026. TSMC 3nm. Deploying first to Microsoft's US Central Azure region, then US West 3. Used initially by internal Microsoft AI teams and Microsoft 365 Copilot; as of mid-2026 there is NO public Azure instance type exposing Maia 200 to outside customers -- it is infrastructure-internal only, unlike Nvidia/AMD parts which Azure resells directly.",
+    "unverified": [
+      "tflops (fp8/fp4 figures reported as '>5 PFLOPS' / '>10 PFLOPS'; shown here as lower-bound floors)"
+    ],
+    "sources": [
+      "https://www.cnbc.com/2026/01/26/microsoft-reveals-maia-200-ai-chip-will-use-it-in-house.html",
+      "https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/",
+      "https://www.servethehome.com/microsofts-maia-200-accelerator-at-hot-chips-2026/",
+      "https://www.nextplatform.com/ai/2026/01/28/microsoft-takes-on-other-clouds-with-braga-maia-200-ai-compute-engines/4092134"
+    ]
+  },
+  {
+    "id": "meta-mtia-500",
+    "vendor": "Meta",
+    "name": "MTIA 500",
+    "arch": "MTIA (4th gen)",
+    "launch_year": 2027,
+    "category": "internal-only-custom-silicon",
+    "memory_gb": 448,
+    "memory_type": "HBM",
+    "memory_bandwidth_gbs": null,
+    "tflops": {
+      "fp16_dense": null,
+      "fp8_dense": 10000,
+      "int8_dense": null,
+      "fp4_dense": null
+    },
+    "tdp_w": 1700,
+    "form_factor": "OAM (Meta internal infrastructure only)",
+    "interconnect": {
+      "type": "proprietary",
+      "gbs": null
+    },
+    "pcie_gen": null,
+    "price_usd_2026": {
+      "new": null,
+      "used": null,
+      "note": "Never sold or rented; internal Meta infrastructure only."
+    },
+    "export_control_to_china": "n/a (never externally available)",
+    "availability": [
+      "internal-only"
+    ],
+    "cloud_usd_per_hour_2026": null,
+    "notes": "Part of a 4-chip MTIA roadmap (300/400/450/500) unveiled together, staged roughly every 6 months from 2026 through 2027; MTIA 300 is already shipping for ranking/recommendation training as of 2026, while 400/450/500 target generative AI (including image/video) inference. MTIA 500 (~10 PFLOPS FP8, 1,700W, 384-512GB HBM -- midpoint 448GB used here) is the most capable of the four but reportedly not expected until late in the roadmap (2027). None of the MTIA family is for sale or cloud rental -- it exists purely to reduce Meta's own dependence on Nvidia/AMD purchases.",
+    "unverified": [
+      "exact launch date (2027 vs late 2026)",
+      "memory_gb (range 384-512GB reported, midpoint used)",
+      "memory_bandwidth_gbs"
+    ],
+    "sources": [
+      "https://ai.meta.com/blog/meta-mtia-scale-ai-chips-for-billions/",
+      "https://www.datacenterdynamics.com/en/news/meta-unveils-next-four-generations-of-its-mtia-chip/",
+      "https://www.cnbc.com/2026/03/11/meta-ai-mtia-chip-data-center.html",
+      "https://www.techbuzz.ai/articles/meta-unveils-4-chip-mtia-roadmap-in-24-months-defies-industry"
+    ]
+  }
+]
