@@ -26,3 +26,9 @@ recorded in `docs/design/ui-style-guide.md` and in SYS-04 "Configurator screen (
 | K6 | More explanation per screen: an initial centered popup saying what this screen decides and why, and tooltips on everything. | open |
 | K7 | Harness: nothing is understandable: what is blocked and why, what each dial gives, what to click, whether it connects to anything in the game. | open |
 | K8 | Locations: add Novosibirsk and a Silicon Valley city. | open |
+
+## Gameplay depth
+
+| # | finding | status |
+|---|---|---|
+| G1 | Site acquisition needs the models the spec promises, not only "build": marketplaces (new hardware with allocation waits and export rules, used sellers with scam risk, gray market with sanctions exposure) with delivery days and an identity and address that leave evidence; allocation sites (a state, university or partner quota with reporting obligations and reclaim risk) as an ownership mode of their own; per-country availability of each kind; and the terms of each mode shown side by side (what you pay, what you own, what can be taken away and by whom). | open |
