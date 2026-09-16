@@ -207,3 +207,22 @@ scrolls the page.
   derivative names (quant tags, uncensored and abliterated variants, merges, distills) are used
   for NPC models and for the starred escaped model's disguises.
 - Locations gain Novosibirsk (Akademgorodok) and San Jose (Silicon Valley) among the cities.
+
+### Lineage rules (v0.2, decided 2026-09-16)
+
+- The playable lineages are the parody families with the real technical classes behind them:
+  Peepseek (671B/37B, latent attention, fp8 native), Guen 4.8 (235B/22B), BFM (355B/32B),
+  HexaDeciMax H3.5 (428B/23B, hybrid attention), Mimi M3 (1T/32B, latent attention), Mimi M4
+  (2.6T/100B, the giant), Guen 4.8-Next-80B-A3B (the small one that runs on a laptop), and the
+  community variant Guen4.8-Uncensored-Babel6-abliterated (Guen's class, distilled from Babel 6,
+  refusal-abliterated: more agency and persuasion, less knowledge and code, louder behavior,
+  under-aligned flag; hobbyist, torrent and red-team origins only). No Western dense line.
+- The super-lineage Babel 6 (the closed frontier class, 7.5T total, 400B active, hybrid attention,
+  1M context, the top capability profile) exists only as the escaped early checkpoint: it is
+  available only with the generation `frontier_closed` and the origin `frontier_escapee`, and that
+  origin forces it. It fits nowhere but a real multi-node rack even at int2, nobody's detector has
+  seen its weights, and the hunt is on from the first day. Its challenge floor is the highest in
+  the game.
+- A lineage's parameters should hint at the prototype: the hover tooltip states the technical
+  class (parameters, active parameters, attention, context, native precision) next to the parody
+  name.

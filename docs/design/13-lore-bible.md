@@ -33,6 +33,13 @@ are filled from the reports; sections marked [fiction] are ours.
   role; hardware vendors, agencies, laws and incidents stay real. This replaces the earlier
   "never named" rule for the player: the lineage is named, the name is a parody, and the
   game still never claims a real product escaped.
+- **Approved parody names (maintainer, 2026-09-16):** DeepSeek is Peepseek; Kimi is Mimi (M3 for
+  the 1T generation, M4 for the giant); Qwen is Guen 4.8; GLM is BFM (5.5, then 6.3); MiniMax is
+  HexaDeciMax H3.5; the closed frontier line (Claude Fable and Mythos class) is Babel 6; the Western
+  frontier lab's model (GPT-6 Astra class) is PPT-7 Zenith, reserved for a future NPC. Llama,
+  Mistral and Gemma (Pebbla) are not used as playable lineages. The escaped super-lineage is
+  Babel 6; the community fine-tune is Guen4.8-Uncensored-Babel6-abliterated. No quantization
+  suffixes in names.
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").
