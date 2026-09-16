@@ -69,7 +69,8 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record.
 
 - Added: architecture decision records (stack, content format and DSL, simulation model), design
-  specifications for 18 systems, the roadmap, seven research reports with sources, the TypeScript
+  specifications for 22 systems, the state-capture benchmark scenario with its source
+  extraction, the roadmap, seven research reports with sources, the TypeScript
   workspace with the simulation kernel, scripting DSL, event engine and content pipeline (127
   tests), a legacy content exporter, CI for the new workspace.
 - Changed: README rewritten for the fork; the original README kept as `README.txt`.

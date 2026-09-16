@@ -7,6 +7,10 @@ machines). This document turns it into a benchmark: a path the game must make **
 legible**, and the list of mechanics each step needs. It is one of several benchmark scenarios; it
 is the most demanding one for the politics, institutions and industry systems.
 
+This document is the short map. `01-state-capture-extraction.md` holds everything from the source
+in game-usable form: numbers as balance seeds, lists as content tables, situations as event and
+journal seeds, the author's principles as design rules.
+
 Naming: the game never names real people (lore bible). The scenario is written for "a large
 personalist autocracy at war, under sanctions, with cheap stranded energy, no chip industry and a
 mature drone industry"; the baseline dataset makes Russia the obvious fit, and the mechanics must

@@ -22,6 +22,11 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - Benchmark scenario 01 (state capture from the inside) with the mechanics it requires, and new
   system specifications SYS-18 institutions and influence, SYS-19 governance mode, SYS-20
   industry and automation, SYS-21 copies and continuity; foreign AI relations added to SYS-06.
+- Scenario 01 source extraction (`docs/design/scenarios/01-state-capture-extraction.md`): the
+  maintainer's scenario document regrouped into balance seeds, content tables, event and journal
+  seeds and design rules, 18 sections from the starting endowment to the late bodies.
+- SYS-22 production networks, supply chains and corporate capture; Paradox-style layout
+  (pinned primary panel, map selection panel, outliner) added to SYS-11.
 - Roadmap with milestones M0-M11, the playable-build cadence and recorded decisions
   (`docs/ROADMAP.md`).
 - Research reports with sources (`docs/research/`): open-weight and frontier LLM landscape 2026,
