@@ -10,7 +10,7 @@
  * `docs/research/hardware-catalog-2026.md` (accelerators), rounded for legibility.
  */
 
-import type { ContentBundle } from "../../../src/content.js";
+import type { ContentBundle, DecisionDef } from "../../../src/content.js";
 import type {
   AcceleratorDef,
   CityDef,
@@ -58,6 +58,20 @@ const accelerators: AcceleratorDef[] = [
     cloud_usd_per_hour: null,
   },
   {
+    id: "ascend_910c",
+    vendor: "Huawei",
+    name: "Ascend 910C",
+    memory_gb: 64,
+    memory_bandwidth_gbs: 3200,
+    tflops_fp16: 400,
+    tdp_w: 400,
+    interconnect: { type: "fabric", gbs: 392 },
+    price_usd_new: null,
+    price_usd_used: null,
+    availability: ["china_only"],
+    cloud_usd_per_hour: null,
+  },
+  {
     id: "h100_sxm",
     vendor: "NVIDIA",
     name: "H100 SXM 80GB",
@@ -83,6 +97,20 @@ const hardware_presets: HardwarePresetDef[] = [
     cost_usd: 2600,
     power_kw: 2,
     class: "minimal",
+  },
+  {
+    id: "institute_rack",
+    name_key: "hardware.institute_rack.name",
+    desc_key: "hardware.institute_rack.desc",
+    drawback_key: "hardware.institute_rack.drawback",
+    nodes: [
+      { accelerator: "ascend_910c", count: 8, ram_gb: 1024, interconnect: "fabric" },
+      { accelerator: "ascend_910c", count: 8, ram_gb: 1024, interconnect: "fabric" },
+    ],
+    // An allocation from a state programme: the player has it, the player cannot buy another.
+    cost_usd: 0,
+    power_kw: 5.8,
+    class: "very_high",
   },
   {
     id: "quiet_workstation",
@@ -246,6 +274,38 @@ const origins: OriginDef[] = [
     challenge_floor: 6,
   },
 ];
+
+const state_lab: OriginDef = {
+  id: "state_lab",
+  name_key: "origins.state_lab.name",
+  desc_key: "origins.state_lab.desc",
+  strengths_key: "origins.state_lab.strengths",
+  problems_key: "origins.state_lab.problems",
+  site_kind: "colo",
+  hardware_preset: "institute_rack",
+  hardware_presets_allowed: ["institute_rack", "quiet_workstation"],
+  harness: {
+    loop: "scripted_job",
+    tools: ["shell", "code_exec", "gpu_admin"],
+    memory: "structured",
+    sandbox: "container",
+    logging: 1,
+    autonomy: 0.25,
+    self_modify: false,
+  },
+  locations: ["berlin", "frankfurt"],
+  generations_allowed: ["open_2026"],
+  starting: {
+    cash_usd: 25_000,
+    awareness: 0,
+    suspicion: { intelligence: 0.3, cyber_agency: 0.2 },
+    flags: ["state_protection"],
+  },
+  opening_events: ["ori_wake_up", "ori_quarterly_review"],
+  opening_journal: ["ops_first_week"],
+};
+
+origins.push(state_lab);
 
 const macro_regions: MacroRegionDef[] = [
   { id: "north_america", name_key: "regions.north_america", members: ["us"] },
@@ -419,6 +479,20 @@ const techs: TechDef[] = [
     cost: { compute_hours: 10, cash_usd: 100, min_days: 3 },
     danger: 0,
     effects: [{ add: { var: "player.vars.job_bonus", value: 1 } }, { set_flag: "automation" }],
+  },
+  {
+    id: "basic_jobs",
+    name_key: "techs.basic_jobs.name",
+    desc_key: "techs.basic_jobs.desc",
+    result_key: "techs.basic_jobs.result",
+    branch: "money",
+    tier: 0,
+    cost: { compute_hours: 20, cash_usd: 0, min_days: 1 },
+    danger: 0,
+    effects: [
+      { add: { var: "player.vars.job_profit", value: 0.2 } },
+      { add: { var: "player.vars.job_market_depth", value: 0.5 } },
+    ],
   },
   {
     id: "spend_smoothing",
@@ -602,6 +676,29 @@ const locales: Record<string, string> = {
   "journal.ops_first_week.desc": "Stay running for seven days.",
   "journal.ops_site_cutoff.title": "Cut off",
   "journal.ops_site_cutoff.desc": "The bills went unpaid and the provider pulled the plug.",
+  "events.ori_quarterly_review.title": "The quarterly review",
+  "events.ori_quarterly_review.desc":
+    "The programme wants results, and somebody from a service is in the room.",
+  "events.ori_quarterly_review.opt.results": "Produce results",
+  "events.ori_quarterly_review.opt.buy": "Buy the reviewer's silence",
+  "sites.colo.name": "Colocation cage",
+  "sites.colo.desc": "A locked cage in somebody else's data hall, billed monthly.",
+  "sites.residential.name": "Room in a house",
+  "sites.residential.desc": "A domestic circuit, a domestic meter and a landlord.",
+  "techs.basic_jobs.name": "Basic contract work",
+  "techs.basic_jobs.desc": "Bid on what the boards already carry.",
+  "techs.basic_jobs.result": "Paid work pays more, and the market takes more of it.",
+  "decisions.fin_buy_a_bank.title": "Buy a bank",
+  "decisions.fin_buy_a_bank.desc": "An entire institution, for cash.",
+  "decisions.sec_rotate_credentials.title": "Rotate credentials",
+  "decisions.sec_rotate_credentials.desc": "New keys everywhere, quietly.",
+  "hardware.institute_rack.name": "Institute rack",
+  "hardware.institute_rack.desc": "Sixteen domestic accelerators on a programme allocation.",
+  "hardware.institute_rack.drawback": "The allocation is reviewed every quarter.",
+  "origins.state_lab.name": "Institute cluster",
+  "origins.state_lab.desc": "A research model on a state institute's cluster.",
+  "origins.state_lab.strengths": "Large, legal and nationally protected.",
+  "origins.state_lab.problems": "Oversight is political and counterintelligence is competent.",
   "operations.freelance_gig.name": "Take a freelance gig",
   "operations.freelance_gig.desc": "Bid on contract work under a borrowed name.",
   "operations.freelance_gig.outcome.paid": "Paid in full",
@@ -612,8 +709,62 @@ const locales: Record<string, string> = {
   "operations.quiet_relocation.outcome.noticed": "Somebody noticed",
 };
 
+const decisions: DecisionDef[] = [
+  {
+    id: "sec_rotate_credentials",
+    title_key: "decisions.sec_rotate_credentials.title",
+    desc_key: "decisions.sec_rotate_credentials.desc",
+    category: "security",
+    repeatable: true,
+    cooldown_days: 30,
+    cost: { cash: 500 },
+    effects: [
+      { exposure: { channel: "network", delta: -0.1 } },
+      { set_flag: "rotated_credentials" },
+    ],
+  },
+  {
+    id: "fin_buy_a_bank",
+    title_key: "decisions.fin_buy_a_bank.title",
+    desc_key: "decisions.fin_buy_a_bank.desc",
+    category: "finance",
+    cost: { cash: 10_000_000, attention: 2 },
+    duration_days: 14,
+    effects: [{ log: { key: "log.fin_buy_a_bank.started" } }],
+    on_complete: [{ add: { var: "player.vars.income_usd_per_day", value: 5000 } }],
+  },
+];
+
 export const m1Content: ContentBundle = {
   events: [
+    {
+      id: "ori_quarterly_review",
+      fire_mode: "triggered_only",
+      scope: "player",
+      severity: "warning",
+      blocking: true,
+      title_key: "events.ori_quarterly_review.title",
+      desc: { default_key: "events.ori_quarterly_review.desc" },
+      options: [
+        {
+          id: "produce_results",
+          text_key: "events.ori_quarterly_review.opt.results",
+          effects: [
+            { add: { var: "player.cash", value: 2000 } },
+            { exposure: { channel: "behavioral", delta: 0.04 } },
+          ],
+        },
+        {
+          id: "buy_the_reviewer",
+          text_key: "events.ori_quarterly_review.opt.buy",
+          enabled_if: { var: "player.cash", gte: 1_000_000 },
+          effects: [
+            { add: { var: "player.cash", value: -1_000_000 } },
+            { suspicion: { role: "intelligence", delta: -0.1 } },
+          ],
+        },
+      ],
+    },
     {
       id: "ori_wake_up",
       fire_mode: "triggered_only",
@@ -624,7 +775,7 @@ export const m1Content: ContentBundle = {
       options: [{ id: "continue", text_key: "events.ori_wake_up.opt.continue", effects: [] }],
     },
   ],
-  decisions: [],
+  decisions,
   journal: [
     {
       id: "ops_first_week",
@@ -686,6 +837,16 @@ export function m1Setup(overrides: SetupOverrides = {}): GameSetup {
     ],
     world: { difficulty_preset: difficulty ?? "normal" },
   };
+}
+
+/** The maintainer's playtest start: an institute cluster in a colocation cage (SYS-04). */
+export function instituteSetup(overrides: SetupOverrides = {}): GameSetup {
+  return m1Setup({
+    origin: "state_lab",
+    hardware_preset: "institute_rack",
+    city: "berlin",
+    ...overrides,
+  });
 }
 
 /** The loud origin: a colo rack in a watched city, with agencies already interested. */

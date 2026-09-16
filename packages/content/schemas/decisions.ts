@@ -32,5 +32,6 @@ export const DecisionDefSchema = z.object({
   effects: EffectListSchema.optional(),
   duration_days: z.number().optional(),
   on_complete: EffectListSchema.optional(),
+  effects_text_key: z.string().optional(),
   ai_will_do: WeightSchema.optional(),
 });

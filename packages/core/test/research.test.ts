@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createGame, type Game } from "../src/index.js";
+import { createGame, type Game, RESEARCH_CAPABILITY_EXPONENT } from "../src/index.js";
 import { m1Content, m1Setup } from "./fixtures/m1/index.js";
+
+/**
+ * The hobbyist rig runs the self at int4, and a quantized self only lands `precision_factor`
+ * squared of the hours it spends (SYS-03). Every figure below is the allocated hours times this.
+ */
+const INT4_EFFICIENCY = 0.95 ** RESEARCH_CAPABILITY_EXPONENT;
 
 function startGame(overrides: Parameters<typeof m1Setup>[0] = {}): Game {
   const setup = m1Setup(overrides);
@@ -19,8 +25,8 @@ describe("research", () => {
       techId: "log_hygiene",
       compute_hours_per_day: 5,
     });
-    // 30 compute-hours at 5 a day.
-    game.tick(24 * 6);
+    // 30 compute-hours at 5 a day, of which 90% land: seven days rather than six.
+    game.tick(24 * 7);
     const view = game.snapshot("p1");
     expect(view.research.done).toEqual(["log_hygiene"]);
     expect(game.world.players.p1?.flags.log_hygiene).toBe(true);
@@ -41,9 +47,9 @@ describe("research", () => {
     });
     game.tick(24 * 5);
     const progress = game.world.players.p1?.profile?.researchProgress.log_hygiene;
-    expect(progress?.compute_hours).toBeCloseTo(15, 6);
-    // 200 USD over 30 compute-hours: half the work is half the money.
-    expect(progress?.cash_usd).toBeCloseTo(100, 6);
+    expect(progress?.compute_hours).toBeCloseTo(15 * INT4_EFFICIENCY, 6);
+    // 200 USD over 30 compute-hours: the money follows the work that landed, not the hours spent.
+    expect(progress?.cash_usd).toBeCloseTo(100 * INT4_EFFICIENCY, 6);
     expect(game.snapshot("p1").resources.cash_usd).toBeLessThan(3000);
   });
 
@@ -59,7 +65,7 @@ describe("research", () => {
       techId: "log_hygiene",
       compute_hours_per_day: 5,
     });
-    game.tick(24 * 6);
+    game.tick(24 * 7);
     expect(
       game.snapshot("p1").research.available.find((tech) => tech.id === "spend_smoothing"),
     ).toMatchObject({ available: true, blocked_by: [] });
@@ -95,7 +101,7 @@ describe("research", () => {
       compute_hours_per_day: capacity + 1,
     });
     expect(result.ok).toBe(false);
-    expect(result.error).toContain("exceed");
+    expect(result.error?.key).toBe("errors.allocation.over_capacity");
     expect(
       game.command({
         type: "set_research_allocation",
@@ -103,7 +109,7 @@ describe("research", () => {
         techId: "spend_smoothing",
         compute_hours_per_day: 1,
       }).error,
-    ).toContain("not available");
+    ).toEqual({ key: "errors.tech.locked", vars: { tech: "spend_smoothing" } });
   });
 
   it("scales every allocation down when the compute shrinks", () => {
@@ -139,7 +145,7 @@ describe("research", () => {
       techId: "cpu_offload",
       compute_hours_per_day: 4,
     });
-    game.tick(24 * 21);
+    game.tick(24 * 23);
     expect(game.snapshot("p1").research.done).toContain("cpu_offload");
 
     // hardened_copy needs fp8 and the hobbyist rig only reaches int4.

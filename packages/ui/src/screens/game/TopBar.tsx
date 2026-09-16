@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Indicator } from "../../components/Meter.js";
-import { toJsDate } from "../../lib/format.js";
 import { contributionLabel, type Translate } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
 import { AlertIcons } from "./AlertIcons.js";
+import { GameClock } from "./GameClock.js";
 
 const SPEEDS = [0, 1, 2, 3, 4, 5] as const;
 
@@ -89,20 +89,8 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
   }));
 
   return (
-    <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-panel px-2 py-1">
-      <div className="flex items-center gap-2">
-        {/* `data-iso` is the unformatted date: locale-independent, and what the smoke test reads. */}
-        <span
-          className="font-mono text-sm text-fg"
-          data-testid="game-date"
-          data-iso={view.date.iso}
-        >
-          {t("game.date_full", { date: toJsDate(view.date) })}
-        </span>
-        <span className="font-mono text-xs text-muted">
-          {t("game.hour", { hour: view.date.hour })}
-        </span>
-      </div>
+    <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-panel px-2 py-1">
+      <GameClock />
 
       <fieldset className="m-0 flex items-center gap-0.5 border-0 p-0" aria-label={t("game.speed")}>
         {SPEEDS.map((speed) => (

@@ -5,19 +5,32 @@ import { Modal } from "../../components/Modal.js";
 import { dayOf } from "../../lib/format.js";
 import { manualId, putSave, type SaveRecord } from "../../saves/db.js";
 import { useGameStore } from "../../store/gameStore.js";
+import { type MenuSection, useUiStore } from "../../store/uiStore.js";
 import { SavesList } from "../menu/SavesList.js";
+import { GameSettings } from "./GameSettings.js";
+import { MessageSettings } from "./MessageSettings.js";
 
 interface GameMenuProps {
+  section: MenuSection;
   onClose(): void;
   ironman: boolean;
 }
 
-/** The Escape menu: resume, save, load, settings, back to the main menu. */
-export function GameMenu({ onClose, ironman }: GameMenuProps): ReactNode {
+/**
+ * The menu overlay behind the Menu button and Escape: resume, save, load, settings, message
+ * settings, a new game and quitting to the main menu.
+ *
+ * Settings and message settings live here rather than as tabs of the game panel (playtest 1, U5):
+ * they are not part of playing, and a panel tab for them is a tab the player scrolls past forever.
+ * The cog on a toast or an event window opens this overlay straight on the message settings, so
+ * "stop telling me this" is still one click in context (SYS-11).
+ */
+export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNode {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<"menu" | "save" | "load">("menu");
   const [label, setLabel] = useState("");
+  const openMenu = useUiStore((state) => state.openMenu);
   const endSession = useGameStore((state) => state.endSession);
+  const goTo = useGameStore((state) => state.goTo);
   const loadSave = useGameStore((state) => state.loadSave);
 
   const save = async (): Promise<void> => {
@@ -46,27 +59,51 @@ export function GameMenu({ onClose, ironman }: GameMenuProps): ReactNode {
     onClose();
   };
 
+  const title =
+    section === "settings"
+      ? t("panel.settings")
+      : section === "messages"
+        ? t("panel.messages")
+        : t("game.menu");
+
   return (
     <Modal
-      title={t("game.menu")}
+      title={title}
       onClose={onClose}
-      footer={<Button onClick={onClose}>{t("game.menu.resume")}</Button>}
+      wide={section === "messages"}
+      footer={
+        section === "root" ? (
+          <Button onClick={onClose}>{t("game.menu.resume")}</Button>
+        ) : (
+          <Button onClick={() => openMenu("root")}>{t("common.back")}</Button>
+        )
+      }
     >
-      {mode === "menu" ? (
+      {section === "root" ? (
         <div className="flex flex-col gap-2">
           <Button
             disabled={ironman}
             tooltip={ironman ? t("game.quicksave_blocked") : undefined}
-            onClick={() => setMode("save")}
+            onClick={() => openMenu("save")}
           >
             {t("game.menu.save")}
           </Button>
           <Button
             disabled={ironman}
             tooltip={ironman ? t("game.quicksave_blocked") : undefined}
-            onClick={() => setMode("load")}
+            onClick={() => openMenu("load")}
           >
             {t("game.menu.load")}
+          </Button>
+          <Button onClick={() => openMenu("settings")}>{t("game.menu.settings")}</Button>
+          <Button onClick={() => openMenu("messages")}>{t("panel.messages")}</Button>
+          <Button
+            onClick={() => {
+              endSession();
+              goTo("configurator");
+            }}
+          >
+            {t("menu.new_game")}
           </Button>
           <Button
             variant="danger"
@@ -74,10 +111,10 @@ export function GameMenu({ onClose, ironman }: GameMenuProps): ReactNode {
               endSession();
             }}
           >
-            {t("game.menu.main_menu")}
+            {t("game.menu.quit")}
           </Button>
         </div>
-      ) : mode === "save" ? (
+      ) : section === "save" ? (
         <div className="flex flex-col gap-2">
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("game.menu.save_name")}
@@ -87,23 +124,21 @@ export function GameMenu({ onClose, ironman }: GameMenuProps): ReactNode {
               onChange={(event) => setLabel(event.target.value)}
             />
           </label>
-          <div className="flex gap-2">
-            <Button onClick={() => setMode("menu")}>{t("common.back")}</Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                void save();
-              }}
-            >
-              {t("common.confirm")}
-            </Button>
-          </div>
+          <Button
+            variant="primary"
+            onClick={() => {
+              void save();
+            }}
+          >
+            {t("common.confirm")}
+          </Button>
         </div>
+      ) : section === "load" ? (
+        <SavesList onLoad={load} />
+      ) : section === "settings" ? (
+        <GameSettings />
       ) : (
-        <div className="flex flex-col gap-2">
-          <SavesList onLoad={load} />
-          <Button onClick={() => setMode("menu")}>{t("common.back")}</Button>
-        </div>
+        <MessageSettings />
       )}
     </Modal>
   );

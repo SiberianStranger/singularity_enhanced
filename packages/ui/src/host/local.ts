@@ -138,7 +138,7 @@ export class LocalHost implements GameHost {
 
   command(cmd: PlayerCommand): Promise<CommandResult> {
     if (this.game === null) {
-      return Promise.resolve({ ok: false, error: "no game" });
+      return Promise.resolve({ ok: false, error: { key: "error.no_game" } });
     }
     const result = this.game.command(cmd);
     this.emit();

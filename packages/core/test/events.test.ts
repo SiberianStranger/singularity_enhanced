@@ -85,18 +85,20 @@ describe("event engine", () => {
     expect(choice?.options.find((option) => option.id === "rich")?.enabled).toBe(false);
 
     expect(
-      game.command({ type: "resolve_event", playerId: "b", instanceId, optionId: "ok" }).error,
-    ).toContain("another player");
+      game.command({ type: "resolve_event", playerId: "b", instanceId, optionId: "ok" }).error?.key,
+    ).toBe("errors.event.other_player");
     expect(
-      game.command({ type: "resolve_event", playerId: "a", instanceId, optionId: "rich" }).error,
-    ).toContain("not enabled");
+      game.command({ type: "resolve_event", playerId: "a", instanceId, optionId: "rich" }).error
+        ?.key,
+    ).toBe("errors.event.option_disabled");
     expect(
-      game.command({ type: "resolve_event", playerId: "a", instanceId, optionId: "nope" }).error,
-    ).toContain("unknown option");
+      game.command({ type: "resolve_event", playerId: "a", instanceId, optionId: "nope" }).error
+        ?.key,
+    ).toBe("errors.event.unknown_option");
     expect(
       game.command({ type: "resolve_event", playerId: "a", instanceId: "ev999", optionId: "ok" })
-        .error,
-    ).toContain("no pending event");
+        .error?.key,
+    ).toBe("errors.event.unknown_instance");
     expect(game.world.events.pending.filter((entry) => entry.playerId === "a")).toHaveLength(1);
   });
 

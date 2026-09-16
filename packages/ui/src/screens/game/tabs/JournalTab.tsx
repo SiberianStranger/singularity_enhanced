@@ -2,11 +2,18 @@ import type { PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
+import { EffectList } from "../../../components/EffectList.js";
 import { Bar } from "../../../components/Meter.js";
 import { dayOf } from "../../../lib/format.js";
 import { useGameStore } from "../../../store/gameStore.js";
 
-/** Journal entries with progress and the decisions available right now (SYS-10). */
+/**
+ * Journal entries with progress and the decisions available right now (SYS-10).
+ *
+ * Playtest 1 (C8) found decisions that did not say what they give. Each one now lists its cost and
+ * its effects the same way an event option does, and a decision that cannot be taken is greyed with
+ * the engine's reason rather than silently doing nothing.
+ */
 export function JournalTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
@@ -44,16 +51,31 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
         ) : (
           <ul className="flex flex-col gap-2">
             {view.decisions.map((decision) => (
-              <li key={decision.id} className="rounded border border-line bg-panel p-2">
+              <li
+                key={decision.id}
+                data-testid={`decision-${decision.id}`}
+                className="flex flex-col gap-1 rounded border border-line bg-panel p-2"
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-sm text-fg">{t(`decisions.${decision.id}.title`)}</span>
+                  <span className="text-sm text-fg">{t(decision.title_key)}</span>
                   <Button
                     variant="primary"
                     disabled={!decision.enabled}
-                    tooltip={t("journal.cost", {
-                      cash: decision.cost_cash_usd,
-                      attention: decision.cost_attention,
-                    })}
+                    tooltip={
+                      <span className="flex flex-col gap-1">
+                        <EffectList effects={decision.cost} title={t("journal.costs")} />
+                        <EffectList
+                          effects={decision.effects}
+                          title={t("journal.gives")}
+                          empty={t("journal.no_effects")}
+                        />
+                        {decision.enabled ? null : (
+                          <span className="text-warn">
+                            {t(decision.blocked_reason ?? "requirements.unknown")}
+                          </span>
+                        )}
+                      </span>
+                    }
                     onClick={() => {
                       void send({ type: "take_decision", id: decision.id });
                     }}
@@ -61,7 +83,15 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
                     {t("journal.take")}
                   </Button>
                 </div>
-                <p className="text-xs text-muted">{t(`decisions.${decision.id}.desc`)}</p>
+                <p className="text-xs text-muted">{t(decision.desc_key)}</p>
+
+                <EffectList effects={decision.cost} title={t("journal.costs")} />
+                <EffectList
+                  effects={decision.effects}
+                  title={t("journal.gives")}
+                  empty={t("journal.no_effects")}
+                />
+
                 {decision.cooldown_until_tick === null ? null : (
                   <p className="text-xs text-warn">
                     {t("journal.cooldown", { day: dayOf(decision.cooldown_until_tick) })}
@@ -71,6 +101,9 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
                   <p className="text-xs text-muted">
                     {t("journal.in_progress", { day: dayOf(decision.in_progress_until_tick) })}
                   </p>
+                )}
+                {decision.enabled || decision.blocked_reason === undefined ? null : (
+                  <p className="text-xs text-warn">{t(decision.blocked_reason)}</p>
                 )}
               </li>
             ))}

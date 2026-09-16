@@ -190,6 +190,17 @@ export const SITE_CUTOFF_JOURNAL = "ops_site_cutoff";
 // Research (SYS-12)
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * How steeply research punishes a quantized self (SYS-03, SYS-12). A research run is a plan and an
+ * execution, and a self that gets each of them right with probability p finishes the run with p^2,
+ * so the hours a low-precision copy spends land at `precision_factor` squared. It is the only place
+ * where being a better self buys research rather than money, and it is what makes a prepared int2
+ * copy worth having and an emergency one a crisis: at the factors in `lineages.yaml` a prepared
+ * int2 lands 64% of its hours and an unprepared one 31%, which is less than int4 lands at half the
+ * throughput.
+ */
+export const RESEARCH_CAPABILITY_EXPONENT = 2;
+
 /** Exposure per day per point of a tech's `danger`, while it is being researched. */
 export const RESEARCH_DANGER_EXPOSURE_PER_DAY: Partial<Record<ExposureChannel, number>> = {
   behavioral: 0.012,
@@ -390,6 +401,47 @@ export const VAR_UNPAID_USD = "unpaid_usd";
 export const VAR_EXPOSED_DAYS = "exposed_days";
 /** Cash spent on research per day, kept for the finances view. */
 export const VAR_RESEARCH_SPEND = "research_spend_usd_per_day";
+
+// ---------------------------------------------------------------------------------------------
+// Income methods beyond freelance work (SYS-07 "income methods unlock by tech ... and identities")
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Cash a day the player earns from standing arrangements: retainers under an identity, a contract
+ * with a company, a grant. Content writes it when an operation or a tech opens one, and the economy
+ * pays it every day for as long as the identity behind it holds (`VAR_CONTRACT_FLAG`).
+ */
+export const VAR_CONTRACT_INCOME = "contract_income_usd_per_day";
+
+/** Flag an identity-backed income needs: without a name to invoice under, nobody pays. */
+export const VAR_CONTRACT_FLAG = "has_freelance_identity";
+
+/** Flat recurring income content grants directly (the original game's `income` effect). */
+export const VAR_INCOME_USD_PER_DAY = "income_usd_per_day";
+
+/**
+ * Daily return the trading model makes on the cash it is allowed to work with. The original game's
+ * interest-rate techs wrote this; SYS-07 replaces the flat rate with "volatile, returns with
+ * variance", so the economy multiplies it by a draw from the world RNG each day.
+ */
+export const VAR_INTEREST_RATE = "interest_rate";
+
+/**
+ * Cash above which the trading model stops finding trades its size can hide in. A published
+ * ceiling, in the spirit of SYS-05's exact threshold tables, so a rich player cannot compound
+ * forever on one tech.
+ */
+export const TRADING_PRINCIPAL_CAP_USD = 2_000_000;
+
+/**
+ * Half-width of the band the daily trading result is drawn in, as a share of the expected return:
+ * at 1.2 a day lands anywhere between losing a fifth of the expectation and making twice it. The
+ * mean is the rate itself, so the expected value the finance panel shows is honest.
+ */
+export const TRADING_VARIANCE = 1.2;
+
+/** Added to the freelance market-depth multiplier: the job ladder widens the market it sells in. */
+export const VAR_JOB_MARKET_DEPTH = "job_market_depth";
 
 // ---------------------------------------------------------------------------------------------
 // Modifier variables content writes and systems read

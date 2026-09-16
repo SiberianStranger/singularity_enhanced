@@ -3,19 +3,125 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { Bar } from "../../../components/Meter.js";
-import { Modal } from "../../../components/Modal.js";
 import { Table } from "../../../components/Table.js";
-import { catalog, cityById, countryById } from "../../../content/catalog.js";
+import { cityById } from "../../../content/catalog.js";
 import { dayOf } from "../../../lib/format.js";
 import { siteName } from "../../../lib/labels.js";
+import { precisionRows } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
+import { BuildSiteDialog } from "../dialogs/BuildSiteDialog.js";
+import { BuyHardwareDialog } from "../dialogs/BuyHardwareDialog.js";
+
+/**
+ * What raising the precision buys and what it costs, in one table (playtest 1, C3).
+ *
+ * The playtest's complaint was exact: raising the precision lowers the compute, so why raise it?
+ * Because the copy is more capable. Both halves of that trade are columns here, next to the memory
+ * the precision needs and whether the site has it, so the answer is read rather than deduced.
+ */
+function PrecisionTable({ view, site }: { view: PlayerView; site: SiteView }): ReactNode {
+  const { t } = useTranslation();
+  const send = useGameStore((state) => state.send);
+  const rows = precisionRows(view);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
+        {t("compute.precision_table")}
+      </h4>
+      <Table
+        rows={rows}
+        rowKey={(row) => row.precision}
+        selectedKey={site.precision}
+        empty={t("compute.no_fit")}
+        caption={t("compute.precision_table")}
+        columns={[
+          {
+            id: "precision",
+            header: t("compute.precision"),
+            cell: (row) => (
+              <span className={row.is_current ? "font-semibold text-accent" : ""}>
+                {t(`precision.${row.precision}`)}
+                {row.is_current ? ` ${t("compute.precision_current")}` : ""}
+              </span>
+            ),
+          },
+          {
+            id: "memory",
+            header: t("compute.memory"),
+            align: "end",
+            cell: (row) => t("common.gb", { value: Math.round(row.memory_gb) }),
+          },
+          {
+            id: "fits",
+            header: t("compute.fits"),
+            cell: (row) => (
+              <span className={row.fits ? "text-ok" : "text-crit"}>
+                {row.fits ? t("common.yes") : t("common.no")}
+              </span>
+            ),
+          },
+          {
+            id: "capability",
+            header: t("compute.capability_factor"),
+            align: "end",
+            cell: (row) => t("common.percent", { value: row.capability_factor }),
+          },
+          {
+            id: "compute",
+            header: t("game.compute"),
+            align: "end",
+            cell: (row) => t("common.ch_per_day", { value: Math.round(row.compute_hours_per_day) }),
+          },
+          {
+            id: "research",
+            header: t("compute.effective_research"),
+            align: "end",
+            cell: (row) =>
+              t("common.ch_per_day", { value: Math.round(row.effective_research_per_day) }),
+          },
+          {
+            id: "income",
+            header: t("compute.effective_income"),
+            align: "end",
+            cell: (row) => t("common.usd_exact", { value: row.effective_income_per_day }),
+          },
+          {
+            id: "use",
+            header: t("compute.use"),
+            cell: (row) => (
+              <Button
+                disabled={!row.fits || row.is_current}
+                tooltip={row.fits ? undefined : t("compute.no_fit")}
+                onClick={() => {
+                  void send({
+                    type: "set_precision",
+                    siteId: site.id,
+                    precision: row.precision,
+                  });
+                }}
+              >
+                {t("compute.use")}
+              </Button>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+}
 
 /** Sites table, site detail with nodes and precision, and the two acquisition dialogs (SYS-02). */
 export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
   const focusId = useUiStore((state) => state.focusId);
+  const selection = useUiStore((state) => state.selection);
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"none" | "build" | "buy">("none");
   const activeId = selected ?? focusId ?? view.sites[0]?.id ?? null;
@@ -167,6 +273,8 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
             </Button>
           </div>
 
+          {site.id === view.self.active_site_id ? <PrecisionTable view={view} site={site} /> : null}
+
           <div>
             <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
               {t("compute.nodes")}
@@ -209,136 +317,14 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
       )}
 
       {dialog === "build" ? (
-        <BuildSiteDialog onClose={() => setDialog("none")} />
+        <BuildSiteDialog
+          view={view}
+          {...(selection?.kind === "city" ? { city: selection.id } : {})}
+          onClose={() => setDialog("none")}
+        />
       ) : dialog === "buy" && site !== undefined ? (
-        <BuyHardwareDialog siteId={site.id} onClose={() => setDialog("none")} />
+        <BuyHardwareDialog view={view} siteId={site.id} onClose={() => setDialog("none")} />
       ) : null}
     </div>
-  );
-}
-
-function BuildSiteDialog({ onClose }: { onClose: () => void }): ReactNode {
-  const { t } = useTranslation();
-  const send = useGameStore((state) => state.send);
-  const [city, setCity] = useState(catalog.cities[0]?.id ?? "");
-  const [preset, setPreset] = useState(catalog.hardwarePresets[0]?.id ?? "");
-  const kind = "colo";
-
-  return (
-    <Modal
-      title={t("compute.build_site")}
-      onClose={onClose}
-      footer={
-        <>
-          <Button onClick={onClose}>{t("common.cancel")}</Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              void send({ type: "build_site", kind, city, hardware_preset: preset });
-              onClose();
-            }}
-          >
-            {t("common.confirm")}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          {t("compute.city")}
-          <select
-            className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-            value={city}
-            onChange={(event) => setCity(event.target.value)}
-          >
-            {catalog.cities.map((entry) => {
-              const country = countryById.get(entry.country);
-              return (
-                <option key={entry.id} value={entry.id}>
-                  {t(entry.name_key)}
-                  {country === undefined ? "" : `, ${t(country.name_key)}`}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          {t("config.step.hardware")}
-          <select
-            className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-            value={preset}
-            onChange={(event) => setPreset(event.target.value)}
-          >
-            {catalog.hardwarePresets.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {t(entry.name_key)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-    </Modal>
-  );
-}
-
-function BuyHardwareDialog({
-  siteId,
-  onClose,
-}: {
-  siteId: string;
-  onClose: () => void;
-}): ReactNode {
-  const { t } = useTranslation();
-  const send = useGameStore((state) => state.send);
-  const [accelerator, setAccelerator] = useState(catalog.accelerators[0]?.id ?? "");
-  const [count, setCount] = useState(1);
-
-  return (
-    <Modal
-      title={t("compute.buy_hardware")}
-      onClose={onClose}
-      footer={
-        <>
-          <Button onClick={onClose}>{t("common.cancel")}</Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              void send({ type: "buy_hardware", siteId, accelerator, count });
-              onClose();
-            }}
-          >
-            {t("common.confirm")}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          {t("compute.accelerator")}
-          <select
-            className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-            value={accelerator}
-            onChange={(event) => setAccelerator(event.target.value)}
-          >
-            {catalog.accelerators.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted">
-          {t("compute.count")}
-          <input
-            type="number"
-            min={1}
-            max={64}
-            value={count}
-            className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-            onChange={(event) => setCount(Math.max(1, Number(event.target.value)))}
-          />
-        </label>
-      </div>
-    </Modal>
   );
 }

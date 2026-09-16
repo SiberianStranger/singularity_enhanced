@@ -116,13 +116,14 @@ describe("compute: commands", () => {
     const base = { type: "build_site" as const, playerId: "p1", kind: "residential" };
     expect(
       game.command({ ...base, city: "atlantis", hardware_preset: "scrapyard_oracle" }).error,
-    ).toContain("atlantis");
-    expect(game.command({ ...base, city: "akureyri", hardware_preset: "nope" }).error).toContain(
-      "nope",
-    );
+    ).toEqual({ key: "errors.city.unknown", vars: { city: "atlantis" } });
+    expect(game.command({ ...base, city: "akureyri", hardware_preset: "nope" }).error).toEqual({
+      key: "errors.preset.unknown",
+      vars: { preset: "nope" },
+    });
     expect(
-      game.command({ ...base, city: "akureyri", hardware_preset: "quiet_workstation" }).error,
-    ).toContain("costs");
+      game.command({ ...base, city: "akureyri", hardware_preset: "quiet_workstation" }).error?.key,
+    ).toBe("errors.cash.insufficient");
   });
 
   it("buys hardware with a delivery delay and keeps the node cap", () => {
@@ -162,7 +163,10 @@ describe("compute: commands", () => {
       count: 1,
     });
     expect(third.ok).toBe(false);
-    expect(third.error).toContain("at most 3 nodes");
+    expect(third.error).toEqual({
+      key: "errors.site.node_limit",
+      vars: { kind: "residential", max: 3 },
+    });
   });
 
   it("sends a site to sleep when it draws more than its power cap", () => {
@@ -192,8 +196,9 @@ describe("compute: commands", () => {
       game.snapshot("p1").notifications.some((entry) => entry.key === "alerts.power_cap_tripped"),
     ).toBe(true);
     expect(
-      game.command({ type: "set_site_status", playerId: "p1", siteId, status: "active" }).error,
-    ).toContain("cap");
+      game.command({ type: "set_site_status", playerId: "p1", siteId, status: "active" }).error
+        ?.key,
+    ).toBe("errors.site.power_cap");
   });
 
   it("only moves the mind to a standby that already holds a copy", () => {
@@ -211,8 +216,9 @@ describe("compute: commands", () => {
     const siteId = fallback?.id ?? "";
 
     expect(
-      game.command({ type: "set_site_role", playerId: "p1", siteId, role: "active_mind" }).error,
-    ).toContain("standby");
+      game.command({ type: "set_site_role", playerId: "p1", siteId, role: "active_mind" }).error
+        ?.key,
+    ).toBe("errors.site.needs_standby");
     expect(
       game.command({ type: "set_site_role", playerId: "p1", siteId, role: "standby" }).ok,
     ).toBe(true);

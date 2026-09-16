@@ -20,6 +20,7 @@ export const OperationOutcomeSchema = z.object({
   if: ConditionSchema.optional(),
   label_key: z.string(),
   effects: EffectListSchema,
+  effects_text_key: z.string().optional(),
 });
 
 export const OperationDefSchema = z.object({

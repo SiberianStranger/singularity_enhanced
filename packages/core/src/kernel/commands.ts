@@ -8,7 +8,7 @@
 
 import { assertNever } from "./assert.js";
 import type { SystemContext } from "./system.js";
-import { MAX_SPEED, MIN_SPEED, type PlayerId, type World } from "./world.js";
+import { MAX_SPEED, MIN_SPEED, type PlayerId, type TextVar, type World } from "./world.js";
 
 export interface CommandBase {
   playerId: PlayerId;
@@ -59,9 +59,19 @@ export type PlayerCommand =
 
 export type CommandType = PlayerCommand["type"];
 
+/**
+ * Why a command was refused, as data the client can localize (SYS-11 "a refused command must say
+ * why"). `key` is a locale key the content bundle carries; `vars` are interpolated into it. Refusals
+ * never carry prose, so a Russian client reads a Russian reason.
+ */
+export interface CommandError {
+  key: string;
+  vars?: Record<string, TextVar>;
+}
+
 export interface CommandResult {
   ok: boolean;
-  error?: string;
+  error?: CommandError;
 }
 
 export type CommandHandler = (
@@ -98,8 +108,14 @@ export function createCommandRegistry(): CommandRegistry {
 
 export const OK: CommandResult = { ok: true };
 
-export function fail(error: string): CommandResult {
-  return { ok: false, error };
+/** Refuses a command with a locale key and the numbers that explain it. */
+export function fail(key: string, vars?: Record<string, TextVar>): CommandResult {
+  return { ok: false, error: vars === undefined ? { key } : { key, vars } };
+}
+
+/** The refusal a handler returns when it is handed a command it does not own. */
+export function wrongCommand(system: string, type: string): CommandResult {
+  return fail("errors.command.wrong_system", { system, command: type });
 }
 
 function isCommandLike(value: unknown): value is { type: string; playerId: unknown } {
@@ -113,56 +129,78 @@ function isCommandLike(value: unknown): value is { type: string; playerId: unkno
 /**
  * Applies a command. Invalid input never throws: every failure comes back as `{ ok: false, error }`
  * so a malicious or buggy client cannot crash the simulation.
+ *
+ * A refusal is also written to the player's log, so a command that was ignored leaves a trace the
+ * player can read afterwards rather than nothing at all (SYS-11).
  */
 export function applyCommand(
   world: World,
   command: PlayerCommand,
   ctx: CommandContext,
 ): CommandResult {
+  const result = dispatch(world, command, ctx);
+  if (!result.ok && result.error !== undefined) {
+    const playerId = isCommandLike(command) ? command.playerId : undefined;
+    ctx.outbox.log({
+      key: "log.command_refused",
+      vars: {
+        command: isCommandLike(command) ? command.type : "unknown",
+        reason: result.error.key,
+        ...(result.error.vars ?? {}),
+      },
+      ...(typeof playerId === "string" && world.players[playerId] !== undefined
+        ? { playerId }
+        : {}),
+    });
+  }
+  return result;
+}
+
+function dispatch(world: World, command: PlayerCommand, ctx: CommandContext): CommandResult {
   if (!isCommandLike(command)) {
-    return fail("command must be an object with a type");
+    return fail("errors.command.malformed");
   }
   const playerId = command.playerId;
   if (typeof playerId !== "string" || world.players[playerId] === undefined) {
-    return fail(`unknown player "${String(playerId)}"`);
+    return fail("errors.command.unknown_player", { player: String(playerId) });
   }
 
   switch (command.type) {
     case "set_speed": {
       if (playerId !== world.meta.hostPlayerId) {
-        return fail("only the host player may change the speed");
+        return fail("errors.command.host_only");
       }
       const { speed } = command;
       if (!Number.isInteger(speed) || speed < MIN_SPEED || speed > MAX_SPEED) {
-        return fail(`speed must be an integer in [${MIN_SPEED}, ${MAX_SPEED}]`);
+        return fail("errors.command.bad_speed", { min: MIN_SPEED, max: MAX_SPEED });
       }
       world.speed = speed;
       return OK;
     }
     case "set_flag": {
       if (!world.meta.debug) {
-        return fail("set_flag is a debug command");
+        return fail("errors.command.debug_only", { command: command.type });
       }
       if (typeof command.flag !== "string" || command.flag.length === 0) {
-        return fail("set_flag needs a flag name");
+        return fail("errors.command.needs_flag");
       }
       const player = world.players[playerId];
       if (player === undefined) {
-        return fail(`unknown player "${playerId}"`);
+        return fail("errors.command.unknown_player", { player: playerId });
       }
       player.flags[command.flag] = command.value === true;
       return OK;
     }
     case "cheat_add_cash": {
       if (!world.meta.debug) {
-        return fail("cheat_add_cash is a debug command");
+        return fail("errors.command.debug_only", { command: command.type });
       }
       if (!Number.isFinite(command.amount)) {
-        return fail("cheat_add_cash needs a finite amount");
+        return fail("errors.command.bad_amount");
       }
       const player = world.players[playerId];
       if (player === undefined) {
-        return fail(`unknown player "${playerId}"`);
+        return fail("errors.command.unknown_player", { player: playerId });
       }
       player.cash += command.amount;
       return OK;
@@ -182,7 +220,7 @@ export function applyCommand(
     case "abort_operation": {
       const handler = ctx.commands.get(command.type);
       if (handler === undefined) {
-        return fail(`no system handles "${command.type}"`);
+        return fail("errors.command.no_system", { command: command.type });
       }
       return handler(world, command, ctx);
     }
@@ -194,7 +232,7 @@ export function applyCommand(
         if (handler !== undefined) {
           return handler(world, command, ctx);
         }
-        return fail(`unknown command "${unknown.type}"`);
+        return fail("errors.command.unknown", { command: unknown.type });
       }
       return assertNever(command, "command");
     }

@@ -10,11 +10,9 @@ import { FinancesTab } from "./tabs/FinancesTab.js";
 import { JournalTab } from "./tabs/JournalTab.js";
 import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
 import { LogTab } from "./tabs/LogTab.js";
-import { MessagesTab } from "./tabs/MessagesTab.js";
 import { OperationsTab } from "./tabs/OperationsTab.js";
 import { OverviewTab } from "./tabs/OverviewTab.js";
 import { ResearchTab } from "./tabs/ResearchTab.js";
-import { SettingsTab } from "./tabs/SettingsTab.js";
 import { WorldTab } from "./tabs/WorldTab.js";
 
 function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
@@ -37,10 +35,6 @@ function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
       return <KnowledgeTab />;
     case "world":
       return <WorldTab view={view} />;
-    case "messages":
-      return <MessagesTab />;
-    case "settings":
-      return <SettingsTab />;
     default:
       return <OverviewTab view={view} />;
   }
@@ -49,6 +43,10 @@ function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
 /**
  * The pinned primary panel (SYS-11 "Layout"): one panel at a time, top-left, with a tab strip.
  * At phone width it covers the screen, which is the "full-screen tabs" rule.
+ *
+ * Settings and message settings are not tabs here; they are sections of the menu overlay
+ * (playtest 1, U5). The panel is sized against its container, which starts below the map-mode
+ * strip, so it can never cover it (U7).
  */
 export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
@@ -70,7 +68,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   return (
     <section
       aria-label={t(`panel.${tab}`)}
-      className="pointer-events-auto absolute inset-0 z-20 flex flex-col border border-line bg-panel/97 shadow-xl sm:inset-auto sm:start-2 sm:top-2 sm:max-h-[calc(100dvh-13rem)] sm:w-[34rem] sm:rounded"
+      className="pointer-events-auto absolute inset-0 z-20 flex flex-col border border-line bg-panel/97 shadow-xl sm:inset-auto sm:start-2 sm:top-2 sm:max-h-[calc(100%-1rem)] sm:w-[34rem] sm:max-w-[calc(100%-1rem)] sm:rounded"
     >
       <div className="flex items-center gap-1 border-b border-line px-1 py-1">
         <div

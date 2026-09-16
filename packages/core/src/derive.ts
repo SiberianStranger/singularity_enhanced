@@ -330,9 +330,12 @@ export function jobRateUsdPerComputeHour(capability: Capability): number {
  * Compute-hours of freelance work the player can sell in a day. Beyond it there is nobody left to
  * take the contracts, so a bigger rack buys research and not money (SYS-07 "yield: low, scales with
  * capability"). Shown in the finance panel next to the rate, never hidden.
+ *
+ * `depthMultiplier` is what the job ladder buys: `1 + Σ player.vars.job_market_depth`, so a tech
+ * that opens better contracts widens the market rather than only raising the rate.
  */
-export function jobMarketDepth(capability: Capability): number {
-  return Math.max(0, jobSkill(capability)) * JOB_MARKET_DEPTH_CH_PER_SKILL;
+export function jobMarketDepth(capability: Capability, depthMultiplier = 1): number {
+  return Math.max(0, jobSkill(capability)) * JOB_MARKET_DEPTH_CH_PER_SKILL * depthMultiplier;
 }
 
 export function capabilityAxis(capability: Capability, axis: CapabilityAxis): number {

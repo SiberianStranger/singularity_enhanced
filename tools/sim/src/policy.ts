@@ -19,13 +19,7 @@ import type {
   SiteView,
   TechView,
 } from "@singularity/core";
-import {
-  contentIndex,
-  jobMarketDepth,
-  siteCosts,
-  siteMemory,
-  sitePowerKw,
-} from "@singularity/core";
+import { contentIndex, siteCosts, siteMemory, sitePowerKw } from "@singularity/core";
 
 export interface PolicyOptions {
   /** Days of runway the player aims to keep; below it the compute moves to paid work. */
@@ -221,13 +215,19 @@ export function reserveUsd(view: PlayerView, options: PolicyOptions): number {
   return Math.max(options.reserveFloorUsd, costs * options.reserveDays);
 }
 
-/** The most the player could earn in a day if every sellable compute-hour went on paid work. */
+/**
+ * The most the player could earn in a day if every sellable compute-hour went on paid work, plus
+ * the income lines that arrive whether or not compute is spent on them.
+ */
 export function maxIncomeUsdPerDay(view: PlayerView): number {
   const sellable = Math.min(
     view.resources.compute_hours_per_day,
-    jobMarketDepth(view.self.effective_capability),
+    view.finances.market_depth_ch_per_day,
   );
-  return sellable * view.finances.job_rate_usd_per_compute_hour;
+  const standing = view.finances.income_sources
+    .filter((source) => source.key !== "finances.income.jobs")
+    .reduce((sum, source) => sum + source.usd_per_day, 0);
+  return sellable * view.finances.job_rate_usd_per_compute_hour + standing;
 }
 
 export function totalCostsUsdPerDay(view: PlayerView): number {

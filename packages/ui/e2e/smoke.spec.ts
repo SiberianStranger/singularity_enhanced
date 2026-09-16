@@ -207,3 +207,107 @@ test("the panels the player needs all render", async ({ page }) => {
 
   expect(failures.list, "no uncaught errors were logged").toEqual([]);
 });
+
+/** Opens a primary panel tab by its label. */
+async function openPanel(page: Page, name: string): Promise<void> {
+  const tab = page.getByRole("tab", { name, exact: true });
+  await tab.click();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+}
+
+/**
+ * Every action the first playtest found broken, in one run: an event option that says what it does,
+ * a site built, hardware bought, the precision changed, an operation started, a decision taken, and
+ * a tech carried to its result text.
+ */
+test("the actions the playtest found broken all work", async ({ page }) => {
+  const failures = watchForFailures(page);
+  await startGame(page);
+
+  // C9: an event option's tooltip lists its effects before the player commits to it.
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  const firstOption = dialog.getByRole("listitem").getByRole("button").first();
+  await firstOption.hover();
+  const tooltip = dialog.getByRole("tooltip").first();
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toContainText(/effects/i);
+  await resolveOpenEvents(page);
+
+  // C1, C4: the build dialog compares the site kinds, and building one adds a site.
+  await openPanel(page, "Compute and sites");
+  const sites = page.getByRole("table", { name: "Sites" }).getByRole("row");
+  const sitesBefore = await sites.count();
+  await page.getByRole("button", { name: "Build site" }).click();
+  const build = page.getByRole("dialog");
+  await expect(build.getByRole("columnheader", { name: "Can host you" })).toBeVisible();
+  await expect(build.getByRole("columnheader", { name: "Upkeep" })).toBeVisible();
+  await build.getByRole("cell", { name: "Cloud tenancy" }).click();
+  await build.getByRole("button", { name: "Build", exact: true }).click();
+  await expect(sites).toHaveCount(sitesBefore + 1);
+
+  // C2, U1: the hardware table carries prices and parameters, and an order reaches the engine.
+  await sites.nth(1).click();
+  const nodes = page.getByRole("list").filter({ hasText: /x / });
+  await page.getByRole("button", { name: "Buy hardware" }).click();
+  const buy = page.getByRole("dialog");
+  await expect(buy.getByRole("columnheader", { name: "Vendor" })).toBeVisible();
+  await expect(buy.getByRole("columnheader", { name: "Price" })).toBeVisible();
+  // Sort by price so the cheapest card, which the starting cash can cover, is first.
+  await buy.getByRole("columnheader", { name: "Price" }).getByRole("button").click();
+  const cheapest = buy.getByRole("row").nth(1);
+  await cheapest.click();
+  await expect(buy.getByTestId("buy-summary")).toContainText("GB");
+  await buy.getByRole("button", { name: "Buy", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(nodes.first()).toBeVisible();
+
+  // C3: the precision table shows the trade-off, and changing the precision takes.
+  await sites.nth(0).click();
+  await expect(page.getByRole("table", { name: "Precision trade-off" })).toBeVisible();
+  const precision = page.getByLabel("Precision", { exact: true });
+  await precision.selectOption("int4");
+  await expect(precision).toHaveValue("int4");
+
+  // C7: an operation starts, and a blocked one says why.
+  await openPanel(page, "Operations");
+  const startable = page.getByRole("button", { name: "Start" }).and(page.locator(":enabled"));
+  await expect(startable.first()).toBeVisible();
+  await startable.first().click();
+  await expect(page.getByText(/% done/)).toBeVisible();
+
+  // C8: a decision lists what it costs and what it gives, and can be taken.
+  await openPanel(page, "Journal and decisions");
+  await expect(page.getByText("Costs").first()).toBeVisible();
+  await expect(page.getByText("Gives").first()).toBeVisible();
+  const take = page.getByRole("button", { name: "Take" }).and(page.locator(":enabled"));
+  await take.first().click();
+
+  // C5, U2: the research list defaults to what can be started; finishing one shows its result.
+  await openPanel(page, "Research");
+  await expect(page.getByRole("button", { name: "Available" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const allocation = page.getByRole("slider").first();
+  await allocation.fill(await allocation.getAttribute("max").then((max) => max ?? "1"));
+
+  await page.keyboard.press("5");
+  const done = page.getByRole("button", { name: "Done", exact: true });
+  await done.click();
+  await expect
+    .poll(
+      async () => {
+        await resolveOpenEvents(page);
+        return await page.getByTestId(/^tech-/).count();
+      },
+      { timeout: 60_000, message: "a tech finished and joined the done list" },
+    )
+    .toBeGreaterThan(0);
+  await page.keyboard.press("0");
+
+  // The result text of a finished tech, which is what C5 asked for.
+  await expect(page.getByTestId(/^tech-/).first()).toContainText(/[a-z]{4,}/);
+
+  expect(failures.list, "no uncaught errors were logged").toEqual([]);
+});

@@ -68,6 +68,8 @@ export interface EventOption {
   effects?: Effect[];
   ai_chance?: Weight;
   tooltip_key?: string;
+  /** Writer's own one-line description of what it does; overrides the generated effect summary. */
+  effects_text_key?: string;
 }
 
 /** Description with state-dependent variants; the first matching variant wins. */
@@ -157,6 +159,8 @@ export interface DecisionDef {
   effects?: Effect[];
   duration_days?: number;
   on_complete?: Effect[];
+  /** Writer's own one-line description of what it does; overrides the generated effect summary. */
+  effects_text_key?: string;
   /** Weight for the autopilot and NPC controllers. */
   ai_will_do?: Weight;
 }

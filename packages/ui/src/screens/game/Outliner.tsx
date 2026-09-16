@@ -16,7 +16,13 @@ function Section({ title, children }: { title: string; children: ReactNode }): R
   );
 }
 
-/** Live lists with jump links, docked on the right (SYS-11 "Layout"). */
+/**
+ * Live lists with jump links, docked on the right (SYS-11 "Layout").
+ *
+ * It is measured against the map region, which starts below the map-mode strip, so it cannot reach
+ * over it however short the window is (playtest 1, U7). Its header carries the one "Collapse
+ * outliner" control; the strip only offers to bring it back.
+ */
 export function Outliner({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const open = useUiStore((state) => state.outlinerOpen);
@@ -33,7 +39,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   return (
     <aside
       aria-label={t("outliner.title")}
-      className="pointer-events-auto absolute end-2 top-2 z-20 flex max-h-[calc(100dvh-10rem)] w-60 flex-col gap-3 overflow-auto rounded border border-line bg-panel/97 p-2 shadow-xl"
+      className="pointer-events-auto absolute end-2 top-2 z-20 flex max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] flex-col gap-3 overflow-auto rounded border border-line bg-panel/97 p-2 shadow-xl"
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">{t("outliner.title")}</h2>

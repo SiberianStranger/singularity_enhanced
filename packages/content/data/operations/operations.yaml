@@ -48,11 +48,13 @@
       effects:
         - { set_flag: has_freelance_identity }
         - { add: { var: "player.vars.job_profit", value: 0.15 } }
+        - { add: { var: "player.vars.contract_income_usd_per_day", value: 60 } }
     - weight: 3
       label_key: operations.ops_freelance_identity.outcome.thin
       effects:
         - { set_flag: has_freelance_identity }
         - { add: { var: "player.vars.job_profit", value: 0.05 } }
+        - { add: { var: "player.vars.contract_income_usd_per_day", value: 25 } }
         - { exposure: { channel: financial, delta: 0.05 } }
     - weight: 2
       label_key: operations.ops_freelance_identity.outcome.flagged

@@ -34,7 +34,7 @@ describe("decisions", () => {
 
     const second = game.command({ type: "take_decision", playerId: "p1", id: "shell" });
     expect(second.ok).toBe(false);
-    expect(second.error).toContain("already_taken");
+    expect(second.error?.key).toBe("errors.decision.already_taken");
   });
 
   it("refuses unaffordable, invisible, disabled and unknown decisions", () => {
@@ -48,18 +48,19 @@ describe("decisions", () => {
         ],
       }),
     });
-    expect(game.command({ type: "take_decision", playerId: "p1", id: "pricey" }).error).toContain(
-      "cannot_afford",
+    expect(game.command({ type: "take_decision", playerId: "p1", id: "pricey" }).error?.key).toBe(
+      "errors.decision.cannot_afford",
     );
     expect(
-      game.command({ type: "take_decision", playerId: "p1", id: "hidden_one" }).error,
-    ).toContain("not available");
-    expect(game.command({ type: "take_decision", playerId: "p1", id: "locked" }).error).toContain(
-      "not_enabled",
+      game.command({ type: "take_decision", playerId: "p1", id: "hidden_one" }).error?.key,
+    ).toBe("errors.decision.not_visible");
+    expect(game.command({ type: "take_decision", playerId: "p1", id: "locked" }).error?.key).toBe(
+      "errors.decision.not_enabled",
     );
-    expect(game.command({ type: "take_decision", playerId: "p1", id: "ghost" }).error).toContain(
-      "unknown decision",
-    );
+    expect(game.command({ type: "take_decision", playerId: "p1", id: "ghost" }).error).toEqual({
+      key: "errors.decision.unknown",
+      vars: { decision: "ghost" },
+    });
   });
 
   it("applies cooldowns to repeatable decisions", () => {
@@ -76,8 +77,8 @@ describe("decisions", () => {
       }),
     });
     expect(game.command({ type: "take_decision", playerId: "p1", id: "scan" }).ok).toBe(true);
-    expect(game.command({ type: "take_decision", playerId: "p1", id: "scan" }).error).toContain(
-      "on_cooldown",
+    expect(game.command({ type: "take_decision", playerId: "p1", id: "scan" }).error?.key).toBe(
+      "errors.decision.on_cooldown",
     );
     game.tick(48);
     expect(game.command({ type: "take_decision", playerId: "p1", id: "scan" }).ok).toBe(true);

@@ -10,6 +10,8 @@ import { create } from "zustand";
 import { contentBundle } from "../content/bundle.js";
 import { createHost } from "../host/index.js";
 import type { GameHost } from "../host/types.js";
+import { refusalOf } from "../lib/viewContract.js";
+import { useUiStore } from "./uiStore.js";
 
 export type Screen = "menu" | "configurator" | "game";
 
@@ -91,16 +93,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  /**
+   * Sends a command and, when the simulation refuses it, says so on screen.
+   *
+   * Playtest 1 found buttons that did nothing: the command was refused and the refusal went into a
+   * store field nobody rendered. Every refusal now becomes a notice in the toast stack with the
+   * engine's own reason (SYS-11; `refusalOf` reads both the old string error and the `{ key, vars }`
+   * the core is moving to).
+   */
   async send(command) {
     const { host, view, setup } = get();
     if (host === null) {
-      return { ok: false, error: "no host" };
+      return { ok: false, error: { key: "error.no_host" } };
     }
     const playerId = view?.player_id ?? setup?.players[0]?.id ?? "p1";
     const full = { ...command, playerId } as PlayerCommand;
     const result = await host.command(full);
-    if (!result.ok && result.error !== undefined) {
-      set({ error: result.error });
+    const refusal = refusalOf(result);
+    if (refusal !== null) {
+      set({ error: refusal.key });
+      useUiStore.getState().pushNotice(refusal.key, refusal.vars);
     }
     return result;
   },

@@ -27,6 +27,9 @@ export function AboutDialog({ onClose }: { onClose: () => void }): ReactNode {
           <p className="text-muted">{t("about.license_body")}</p>
         </section>
         <p className="text-xs text-muted">{t("about.map_credit")}</p>
+        {/* NASA's terms for the Blue Marble rasters the map draws (LICENSE.txt). */}
+        <p className="text-xs text-muted">{t("about.imagery_credit")}</p>
+        <p className="text-xs text-muted">{t("about.font_credit")}</p>
       </div>
     </Modal>
   );

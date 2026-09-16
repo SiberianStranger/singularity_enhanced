@@ -9,7 +9,37 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- A refused command says why: `game.command()` returns `{ ok, error: { key, vars } }` with a locale
+  key under `errors.*` instead of an English sentence, and every refusal is written to the player's
+  log as `log.command_refused`. The keys a greyed control shows are the same keys the command
+  refuses with.
+- Effect summaries: every effect list in the game renders as `EffectSummaryView { key, vars, text }`
+  lines, generated from the DSL and overridable per record with `effects_text_key`. They appear on
+  event options, decisions, techs and operation outcomes.
+- View contract for the client: `PlayerView.events` with effect tooltips and a reason on every
+  greyed option, `PlayerView.catalog` (site kinds and accelerators with the numbers the choice turns
+  on), `SelfView.precision_options`, `ResearchView.techs` with status, requires, unlocks and result
+  text, richer `DecisionView` and `OperationOfferView` with success chance and duration band, and
+  `FinancesView.income_sources` with the market depth and what raises it.
+- Income grows: the original game's job ladder as techs (`basic_jobs`, `intermediate_jobs`,
+  `expert_jobs`) raising both the freelance rate and the market depth, a trading line whose daily
+  return is drawn from the world RNG, standing contracts from the freelance-identity operation, and
+  `contract_brokerage` and `grant_capture` to raise them.
+
+### Changed
+- Precision is a real choice: research hours land at the capability factor squared, so a quantized
+  self researches less per hour, while paid work is capped by a market depth that also follows
+  capability. The whole trade is published as one table per precision.
+- Ten techs that changed no number now do: power masking and power engineering lower telemetry
+  exposure and site upkeep, quantum entanglement lowers network exposure, pressure domes trade
+  upkeep for human exposure, knowledge preservation opens a standing contract, and so on.
+
+### Fixed
+- Research completion says what it changed: every tech carries a `result_key` the content build
+  enforces, and the completion notice and the Research tab both show it.
+- The content build now fails a tech with no result string, and a tech that neither changes a number
+  nor unlocks anything.
 
 ## [0.1.1] - 2026-09-16
 

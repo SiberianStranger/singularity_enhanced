@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
@@ -10,10 +10,10 @@ import { blockingChoices } from "../../store/selectors.js";
 import { useUiStore } from "../../store/uiStore.js";
 import { ContextMenu, type ContextMenuState } from "./ContextMenu.js";
 import { EventWindow } from "./EventWindow.js";
+import { GameMap } from "./GameMap.js";
 import { GameMenu } from "./GameMenu.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
 import { MapModeStrip } from "./MapModeStrip.js";
-import { WorldMap } from "./map/WorldMap.js";
 import { Outliner } from "./Outliner.js";
 import { PrimaryPanel } from "./PrimaryPanel.js";
 import { SelectionPanel } from "./SelectionPanel.js";
@@ -23,16 +23,24 @@ import { useAutosave } from "./useAutosave.js";
 import { useHotkeys } from "./useHotkeys.js";
 import { useToasts } from "./useToasts.js";
 
-/** The game screen: fixed regions, as in SYS-11 "Layout". */
+/**
+ * The game screen: fixed regions, as in SYS-11 "Layout".
+ *
+ * The three rows above the map (alert bar, map-mode strip, then everything else) do not shrink, and
+ * the map region is the only thing that gives. Before that, a short window squeezed the strip to
+ * nothing and its buttons appeared under the panels that are pinned over the map (playtest 1, U7).
+ */
 export function GameScreen(): ReactNode {
   const { t } = useTranslation();
   const view = useGameStore((state) => state.view);
   const setup = useGameStore((state) => state.setup);
-  const mapMode = useUiStore((state) => state.mapMode);
   const selection = useUiStore((state) => state.selection);
   const select = useUiStore((state) => state.select);
   const openTab = useUiStore((state) => state.openTab);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const menuSection = useUiStore((state) => state.menuSection);
+  const openMenu = useUiStore((state) => state.openMenu);
+  const closeMenu = useUiStore((state) => state.closeMenu);
+  const toggleMenu = useUiStore((state) => state.toggleMenu);
   const [context, setContext] = useState<ContextMenuState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const toasts = useToasts();
@@ -85,9 +93,39 @@ export function GameScreen(): ReactNode {
   useHotkeys({
     onQuicksave: quicksave,
     onQuickload: quickload,
-    onMenu: () => setMenuOpen((open) => !open),
+    onMenu: toggleMenu,
     blocked: blocking.length > 0,
   });
+
+  const cities = view?.cities;
+  const selectedCity = selection?.kind === "city" ? selection.id : null;
+  // Rebuilt only when the cities or the selection change, so the map's marker layer survives the
+  // frames the terminator interpolates between ticks.
+  const markers = useMemo(
+    () =>
+      (cities ?? []).map((city) => ({
+        id: city.id,
+        lat: city.lat,
+        lon: city.lon,
+        label: (() => {
+          const record = cityById.get(city.id);
+          return record === undefined ? city.id : t(record.name_key);
+        })(),
+        badge: city.site_count,
+        selected: selectedCity === city.id,
+      })),
+    [cities, selectedCity, t],
+  );
+
+  const onSelectTarget = useCallback(
+    (target: { kind: "country" | "city"; id: string }) => select(target),
+    [select],
+  );
+  const onContextTarget = useCallback(
+    (target: { kind: "country" | "city"; id: string }, position: { x: number; y: number }) =>
+      setContext({ target, x: position.x, y: position.y }),
+    [],
+  );
 
   if (view === null) {
     return (
@@ -97,34 +135,21 @@ export function GameScreen(): ReactNode {
     );
   }
 
-  const markers = view.cities.map((city) => ({
-    id: city.id,
-    lat: city.lat,
-    lon: city.lon,
-    label: (() => {
-      const record = cityById.get(city.id);
-      return record === undefined ? city.id : t(record.name_key);
-    })(),
-    badge: city.site_count,
-    selected: selection?.kind === "city" && selection.id === city.id,
-  }));
-
   return (
     <main id="main" className="flex h-dvh flex-col overflow-hidden bg-bg">
-      <TopBar view={view} onMenu={() => setMenuOpen(true)} />
+      <TopBar view={view} onMenu={() => openMenu("root")} />
       <MapModeStrip />
 
-      <div className="relative flex-1">
-        <WorldMap
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <GameMap
           countries={view.countries}
-          mode={mapMode}
           markers={markers}
           date={view.date}
           selectedCountry={selection?.kind === "country" ? selection.id : null}
-          onSelect={(target) => select(target)}
-          onContext={(target, position) => setContext({ target, x: position.x, y: position.y })}
+          onSelect={onSelectTarget}
+          onContext={onContextTarget}
         />
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <PrimaryPanel view={view} />
           <SelectionPanel view={view} />
           <Outliner view={view} />
@@ -145,7 +170,7 @@ export function GameScreen(): ReactNode {
       )}
 
       {blocking[0] === undefined ? null : (
-        <EventWindow choice={blocking[0]} queued={blocking.length - 1} />
+        <EventWindow view={view} choice={blocking[0]} queued={blocking.length - 1} />
       )}
 
       {toasts.popups[0] === undefined ? null : (
@@ -165,7 +190,9 @@ export function GameScreen(): ReactNode {
         </Modal>
       )}
 
-      {menuOpen ? <GameMenu ironman={ironman} onClose={() => setMenuOpen(false)} /> : null}
+      {menuSection === null ? null : (
+        <GameMenu section={menuSection} ironman={ironman} onClose={closeMenu} />
+      )}
 
       {notice === null ? null : (
         <div

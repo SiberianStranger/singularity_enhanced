@@ -16,7 +16,7 @@ import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
 import { operationsOf, operationTable, siteTable } from "../../entities.js";
 import { daysToTicks, isDayStart } from "../../kernel/clock.js";
-import { type CommandHandler, fail, OK } from "../../kernel/commands.js";
+import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import { nextCounter, type PlayerState, type World } from "../../kernel/world.js";
 import { canAfford, payFromPlayer } from "../../money.js";
@@ -131,48 +131,57 @@ function completeOperation(
 
 const startOperation: CommandHandler = (world, command, ctx) => {
   if (command.type !== "start_operation") {
-    return fail(`operations cannot handle "${command.type}"`);
+    return wrongCommand("operations", command.type);
   }
   const player = world.players[command.playerId];
   if (player === undefined || !isAlive(player)) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const profile = player.profile;
   if (profile === null) {
-    return fail("this player has no self to act with");
+    return fail("errors.player.no_self");
   }
   const def = contentIndex(ctx.content).operations[command.operationId];
   if (def === undefined) {
-    return fail(`unknown operation "${command.operationId}"`);
+    return fail("errors.operation.unknown", { operation: command.operationId });
   }
   const dctx = dslFromSystemContext(world, ctx, player.id);
   if (def.requires !== undefined && !evaluateCondition(def.requires, dctx)) {
-    return fail(`"${def.id}" is not available yet`);
+    return fail("errors.operation.locked", { operation: def.id });
   }
   if (def.repeatable === false) {
     const already = operationsOf(world, player.id).some((entry) => entry.operationId === def.id);
     if (already) {
-      return fail(`"${def.id}" has already been run`);
+      return fail("errors.operation.not_repeatable", { operation: def.id });
     }
   }
   const capability = effectiveCapabilityOf(world, ctx.content, player);
   const total = attentionTotal(capability);
   if (attentionUsed(world, ctx.content, player.id) + def.cost.attention > total) {
-    return fail(`the self only has ${total} attention`);
+    return fail("errors.operation.attention", {
+      operation: def.id,
+      needed: def.cost.attention,
+      free: total - attentionUsed(world, ctx.content, player.id),
+    });
   }
   const compute = def.cost.compute_hours_per_day ?? 0;
   if (compute > 0) {
     const free = allocatableCompute(world, ctx.content, player.id) - totalAllocated(profile);
     if (compute > free + 1e-6) {
-      return fail(
-        `"${def.id}" needs ${compute} compute-hours per day and ${free.toFixed(1)} are free`,
-      );
+      return fail("errors.operation.compute", {
+        operation: def.id,
+        needed: compute,
+        free: Math.round(free * 10) / 10,
+      });
     }
   }
   const cash = def.cost.cash_usd ?? 0;
   if (cash > 0) {
     if (!canAfford(player, cash)) {
-      return fail(`"${def.id}" costs ${cash} and the player cannot pay it`);
+      return fail("errors.cash.insufficient", {
+        cost: Math.round(cash),
+        cash: Math.floor(player.cash),
+      });
     }
     payFromPlayer(player, cash);
   }
@@ -199,18 +208,18 @@ const startOperation: CommandHandler = (world, command, ctx) => {
 
 const abortOperation: CommandHandler = (world, command, ctx) => {
   if (command.type !== "abort_operation") {
-    return fail(`operations cannot handle "${command.type}"`);
+    return wrongCommand("operations", command.type);
   }
   const instance = operationTable(world)[command.instanceId];
   if (instance === undefined || instance.playerId !== command.playerId) {
-    return fail(`unknown operation instance "${command.instanceId}"`);
+    return fail("errors.operation.unknown_instance", { instance: command.instanceId });
   }
   if (instance.status !== "running") {
-    return fail("that operation is not running");
+    return fail("errors.operation.not_running");
   }
   const def = contentIndex(ctx.content).operations[instance.operationId];
   if (def !== undefined && def.abortable === false) {
-    return fail(`"${def.id}" cannot be called off`);
+    return fail("errors.operation.not_abortable", { operation: def.id });
   }
   instance.status = "aborted";
   ctx.outbox.log({

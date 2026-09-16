@@ -16,11 +16,16 @@ import {
   fail,
   OK,
   type PlayerCommand,
+  wrongCommand,
 } from "../../kernel/commands.js";
 import type { SystemContext } from "../../kernel/system.js";
 import { instanceKey, type PlayerId, requirePlayer, type World } from "../../kernel/world.js";
 import { fireHook } from "./hooks.js";
 
+/**
+ * Whether a decision is offered and, when it is not, the locale key that says why. The key is the
+ * same one `take_decision` refuses with, so the greyed-out tooltip and the refusal read alike.
+ */
 export interface DecisionStatus {
   visible: boolean;
   enabled: boolean;
@@ -40,28 +45,28 @@ export function decisionStatus(
 ): DecisionStatus {
   const dctx = dslFromSystemContext(world, ctx, playerId);
   if (def.visible_if !== undefined && !evaluateCondition(def.visible_if, dctx)) {
-    return { visible: false, enabled: false, reason: "not_visible" };
+    return { visible: false, enabled: false, reason: "errors.decision.not_visible" };
   }
   const key = decisionKey(playerId, def.id);
   const taken = world.decisions.taken[key] ?? 0;
   if (taken > 0 && def.repeatable !== true) {
-    return { visible: true, enabled: false, reason: "already_taken" };
+    return { visible: true, enabled: false, reason: "errors.decision.already_taken" };
   }
   const cooldownUntil = world.decisions.cooldowns[key];
   if (cooldownUntil !== undefined && cooldownUntil > world.clock.tick) {
-    return { visible: true, enabled: false, reason: "on_cooldown" };
+    return { visible: true, enabled: false, reason: "errors.decision.on_cooldown" };
   }
   if (
     world.decisions.inProgress.some((entry) => entry.id === def.id && entry.playerId === playerId)
   ) {
-    return { visible: true, enabled: false, reason: "in_progress" };
+    return { visible: true, enabled: false, reason: "errors.decision.in_progress" };
   }
   const cashCost = def.cost?.cash ?? 0;
   if (cashCost > 0 && requirePlayer(world, playerId).cash < cashCost) {
-    return { visible: true, enabled: false, reason: "cannot_afford" };
+    return { visible: true, enabled: false, reason: "errors.decision.cannot_afford" };
   }
   if (def.enabled_if !== undefined && !evaluateCondition(def.enabled_if, dctx)) {
-    return { visible: true, enabled: false, reason: "not_enabled" };
+    return { visible: true, enabled: false, reason: "errors.decision.not_enabled" };
   }
   return { visible: true, enabled: true };
 }
@@ -73,19 +78,19 @@ export function takeDecisionCommand(
   ctx: CommandContext,
 ): CommandResult {
   if (command.type !== "take_decision") {
-    return fail(`decisions cannot handle "${command.type}"`);
+    return wrongCommand("decisions", command.type);
   }
   const def = contentIndex(ctx.content).decisions[command.id];
   if (def === undefined) {
-    return fail(`unknown decision "${command.id}"`);
+    return fail("errors.decision.unknown", { decision: command.id });
   }
   const playerId = command.playerId;
   const status = decisionStatus(world, ctx, def, playerId);
   if (!status.visible) {
-    return fail(`decision "${def.id}" is not available`);
+    return fail("errors.decision.not_visible", { decision: def.id });
   }
   if (!status.enabled) {
-    return fail(`decision "${def.id}" is not enabled: ${status.reason ?? "unknown"}`);
+    return fail(status.reason ?? "errors.decision.not_enabled", { decision: def.id });
   }
 
   const key = decisionKey(playerId, def.id);

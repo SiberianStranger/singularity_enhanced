@@ -6,6 +6,7 @@
  * here, next to the pure math in `derive.ts`, so there is exactly one implementation of each.
  */
 
+import { EMERGENCY_INT2_FACTOR, RESEARCH_CAPABILITY_EXPONENT } from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
 import { effectiveCapability, zeroCapability } from "./derive.js";
 import type { Capability, GenerationDef, LineageDef, PlayerProfile, Precision } from "./domain.js";
@@ -73,6 +74,36 @@ export function effectiveCapabilityOf(
     activePrecision(world, player),
     preparedQuant(content, player),
   );
+}
+
+/**
+ * The share of the lineage's capability the self keeps at the precision it is running at, including
+ * the penalty for an int2 copy nobody prepared (SYS-03). 0 when the self has nowhere to run.
+ */
+export function precisionFactorOf(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): number {
+  const lineage = lineageOf(content, player.profile);
+  const precision = activePrecision(world, player);
+  if (lineage === undefined || precision === null) {
+    return 0;
+  }
+  const emergency = precision === "int2" && !preparedQuant(content, player);
+  return lineage.precision_factor[precision] * (emergency ? EMERGENCY_INT2_FACTOR : 1);
+}
+
+/**
+ * Share of a compute-hour spent on research that actually lands (SYS-12). A weaker self plans worse
+ * and executes worse, and a research run needs both, so the loss compounds.
+ */
+export function researchEfficiencyOf(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): number {
+  return precisionFactorOf(world, content, player) ** RESEARCH_CAPABILITY_EXPONENT;
 }
 
 /** Full-precision capability of the lineage, for the "what you could be" column in the UI. */

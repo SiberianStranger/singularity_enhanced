@@ -57,6 +57,8 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const selection = useUiStore((state) => state.selection);
   const select = useUiStore((state) => state.select);
+  const collapsed = useUiStore((state) => state.selectionCollapsed);
+  const setCollapsed = useUiStore((state) => state.setSelectionCollapsed);
   const send = useGameStore((state) => state.send);
   const [tab, setTab] = useState<Tab>("overview");
   const selectionKey = selection === null ? "" : `${selection.kind}:${selection.id}`;
@@ -262,16 +264,35 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   return (
     <section
       aria-label={t("selection.title")}
-      className="pointer-events-auto absolute bottom-2 start-2 z-20 flex max-h-64 w-72 flex-col gap-2 rounded border border-line bg-panel/97 p-2 shadow-xl sm:w-80"
+      // Measured against the map region rather than against the window, so the panel cannot run
+      // off the bottom of a short screen (playtest 1, U8); the body scrolls inside it, and at
+      // phone width it becomes a sheet across the bottom instead of a floating card.
+      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 flex flex-col gap-2 rounded border border-line bg-panel/97 p-2 shadow-xl sm:end-auto sm:w-80 ${
+        collapsed ? "" : "max-h-[calc(100%-1rem)]"
+      }`}
     >
       <div className="flex items-center justify-between gap-2">
         <h2 className="truncate text-sm font-semibold text-fg">{title}</h2>
-        <Button variant="ghost" aria-label={t("common.close")} onClick={() => select(null)}>
-          <CloseIcon />
-        </Button>
+        <span className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? t("selection.expand") : t("selection.collapse")}
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            {collapsed ? t("selection.expand") : t("selection.collapse")}
+          </Button>
+          <Button variant="ghost" aria-label={t("common.close")} onClick={() => select(null)}>
+            <CloseIcon />
+          </Button>
+        </span>
       </div>
-      <TabStrip tabs={tabs} active={tab} onSelect={setTab} />
-      <div className="overflow-auto">{body}</div>
+      {collapsed ? null : (
+        <>
+          <TabStrip tabs={tabs} active={tab} onSelect={setTab} />
+          <div className="min-h-0 flex-1 overflow-auto">{body}</div>
+        </>
+      )}
     </section>
   );
 }

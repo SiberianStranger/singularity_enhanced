@@ -1,7 +1,8 @@
-import type { ChoiceReason, PendingChoice } from "@singularity/core";
+import type { ChoiceReason, EventOptionView, PendingChoice, PlayerView } from "@singularity/core";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { EffectList } from "../../components/EffectList.js";
 import { CogIcon } from "../../components/Icon.js";
 import { Modal } from "../../components/Modal.js";
 import type { Translate } from "../../lib/labels.js";
@@ -28,6 +29,7 @@ function reasonWeight(t: Translate, reason: ChoiceReason): string {
 }
 
 interface EventWindowProps {
+  view: PlayerView;
   choice: PendingChoice;
   /** How many more blocking choices are waiting behind this one. */
   queued: number;
@@ -37,10 +39,16 @@ interface EventWindowProps {
  * A blocking event (SYS-11): title, description with interpolated vars, options with tooltips and
  * a "why did this happen" expander. Enter takes the highlighted option; Escape does nothing.
  */
-export function EventWindow({ choice, queued }: EventWindowProps): ReactNode {
+export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
-  const openTab = useUiStore((state) => state.openTab);
+  const openMenu = useUiStore((state) => state.openMenu);
+  // The same event with an effect list on every option (SYS-11); the pending choice carries the
+  // text and the queue, the event view carries what each answer does.
+  const detail = (view.events ?? []).find((entry) => entry.instance_id === choice.instanceId);
+  const detailById = new Map<string, EventOptionView>(
+    (detail?.options ?? []).map((option) => [option.id, option]),
+  );
   const enabled = choice.options.filter((option) => option.enabled);
   const [highlighted, setHighlighted] = useState(0);
 
@@ -91,7 +99,7 @@ export function EventWindow({ choice, queued }: EventWindowProps): ReactNode {
               type="button"
               aria-label={t("game.toast.settings")}
               className="hover:text-fg"
-              onClick={() => openTab("messages")}
+              onClick={() => openMenu("messages")}
             >
               <CogIcon />
             </button>
@@ -133,6 +141,8 @@ export function EventWindow({ choice, queued }: EventWindowProps): ReactNode {
         <ul className="flex flex-col gap-2">
           {choice.options.map((option) => {
             const index = enabled.findIndex((entry) => entry.id === option.id);
+            const detailed = detailById.get(option.id);
+            const blockedReason = detailed?.blocked_reason;
             return (
               <li key={option.id}>
                 <Button
@@ -140,11 +150,23 @@ export function EventWindow({ choice, queued }: EventWindowProps): ReactNode {
                   variant={index === highlighted && option.enabled ? "primary" : "default"}
                   disabled={!option.enabled}
                   tooltip={
-                    option.tooltipKey === undefined
-                      ? option.enabled
-                        ? undefined
-                        : t("game.event.option_blocked")
-                      : t(option.tooltipKey, choice.vars)
+                    <span className="flex flex-col gap-1">
+                      {option.tooltipKey === undefined ? null : (
+                        <span>{t(option.tooltipKey, choice.vars)}</span>
+                      )}
+                      <EffectList
+                        effects={detailed?.effects ?? []}
+                        title={t("game.event.effects")}
+                        empty={t("game.event.effects_none")}
+                      />
+                      {option.enabled ? null : (
+                        <span className="text-warn">
+                          {blockedReason === undefined
+                            ? t("game.event.option_blocked")
+                            : t(blockedReason, choice.vars)}
+                        </span>
+                      )}
+                    </span>
                   }
                   onMouseEnter={() => {
                     if (index >= 0) {

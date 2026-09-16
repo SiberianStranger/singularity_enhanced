@@ -193,6 +193,8 @@ describe("balance runner", () => {
         self: { effective_capability: capability },
         finances: {
           job_rate_usd_per_compute_hour: 22,
+          market_depth_ch_per_day: 25,
+          income_sources: [{ key: "finances.income.jobs", usd_per_day: 0, unlocked_by: "x" }],
           costs: [{ key: "finances.cost.site", usd_per_day: cost }],
         },
       }) as never;

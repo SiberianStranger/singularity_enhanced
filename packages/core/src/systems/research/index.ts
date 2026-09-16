@@ -16,11 +16,17 @@ import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
 import { siteTable } from "../../entities.js";
 import { isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
-import { type CommandHandler, fail, OK } from "../../kernel/commands.js";
+import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
 import { payFromPlayer } from "../../money.js";
-import { activePrecision, allocatableCompute, isAlive, researchAllocated } from "../../player.js";
+import {
+  activePrecision,
+  allocatableCompute,
+  isAlive,
+  researchAllocated,
+  researchEfficiencyOf,
+} from "../../player.js";
 import { addExposure } from "../../sites.js";
 import { fireHook } from "../events/index.js";
 
@@ -67,14 +73,24 @@ function completeTech(world: World, ctx: SystemContext, player: PlayerState, def
   delete profile.researchProgress[def.id];
   const dctx = dslFromSystemContext(world, ctx, player.id, { tech: { id: def.id } });
   runEffects(def.effects, dctx);
+  // The notification carries the tech's own name and result keys, so the completion message says
+  // what changed rather than printing an id (SYS-12 "result_key", playtest finding C5).
   ctx.outbox.notify({
     playerId: player.id,
     severity: "opportunity",
     key: "alerts.tech_researched",
-    vars: { tech: def.id },
+    vars: {
+      tech: def.id,
+      tech_key: def.name_key,
+      result_key: def.result_key ?? "",
+    },
     link: { panel: "research", id: def.id },
   });
-  ctx.outbox.log({ key: "log.tech_researched", vars: { tech: def.id }, playerId: player.id });
+  ctx.outbox.log({
+    key: "log.tech_researched",
+    vars: { tech: def.id, tech_key: def.name_key, result_key: def.result_key ?? "" },
+    playerId: player.id,
+  });
   fireHook(world, ctx, "on_tech_researched", player.id, { bindings: { tech: { id: def.id } } });
 }
 
@@ -96,7 +112,9 @@ function advanceTech(
   };
   profile.researchProgress[def.id] = progress;
 
-  const hours = allocation / TICKS_PER_DAY;
+  // What the self actually gets done with the hours it spent: a quantized copy plans worse and
+  // executes worse, and a research run needs both (SYS-03, `RESEARCH_CAPABILITY_EXPONENT`).
+  const hours = (allocation / TICKS_PER_DAY) * researchEfficiencyOf(world, ctx.content, player);
   progress.compute_hours += hours;
 
   const cashCost = def.cost.cash_usd;
@@ -136,36 +154,37 @@ function applyDangerExposure(world: World, player: PlayerState, danger: number):
 
 const setResearchAllocation: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_research_allocation") {
-    return fail(`research cannot handle "${command.type}"`);
+    return wrongCommand("research", command.type);
   }
   const player = world.players[command.playerId];
   if (player === undefined || !isAlive(player)) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const profile = player.profile;
   if (profile === null) {
-    return fail("this player has no self to allocate compute for");
+    return fail("errors.player.no_self");
   }
   const def = contentIndex(ctx.content).techs[command.techId];
   if (def === undefined) {
-    return fail(`unknown tech "${command.techId}"`);
+    return fail("errors.tech.unknown", { tech: command.techId });
   }
   if (profile.techsDone.includes(def.id)) {
-    return fail(`"${def.id}" is already researched`);
+    return fail("errors.tech.already_done", { tech: def.id });
   }
   const hours = command.compute_hours_per_day;
   if (!Number.isFinite(hours) || hours < 0) {
-    return fail("an allocation is a non-negative number of compute-hours per day");
+    return fail("errors.allocation.not_a_number");
   }
   if (hours > 0 && !techRequirementsMet(world, ctx, def, player.id)) {
-    return fail(`"${def.id}" is not available yet`);
+    return fail("errors.tech.locked", { tech: def.id });
   }
   const others = researchAllocated(profile) - (profile.researchAllocation[def.id] ?? 0);
   const capacity = allocatableCompute(world, ctx.content, player.id);
   if (others + profile.jobAllocation + hours > capacity + ALLOCATION_EPSILON) {
-    return fail(
-      `allocating ${hours} would exceed the ${capacity.toFixed(1)} compute-hours per day available`,
-    );
+    return fail("errors.allocation.over_capacity", {
+      hours: Math.round(hours * 10) / 10,
+      capacity: Math.round(capacity * 10) / 10,
+    });
   }
   if (hours === 0) {
     delete profile.researchAllocation[def.id];

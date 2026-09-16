@@ -42,6 +42,7 @@ export const EventOptionSchema = z.object({
   effects: EffectListSchema.optional(),
   ai_chance: WeightSchema.optional(),
   tooltip_key: z.string().optional(),
+  effects_text_key: z.string().optional(),
 });
 
 export const EventDescriptionSchema = z.object({

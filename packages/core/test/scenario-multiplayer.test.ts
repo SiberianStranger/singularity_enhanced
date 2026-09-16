@@ -59,7 +59,7 @@ describe("scenario: two players in one world", () => {
       optionId: "pay",
     });
     expect(stolen.ok).toBe(false);
-    expect(stolen.error).toContain("another player");
+    expect(stolen.error?.key).toBe("errors.event.other_player");
     expect(game.world.events.pending).toHaveLength(2);
 
     // Each player resolves their own, with different consequences.

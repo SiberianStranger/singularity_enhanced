@@ -33,6 +33,7 @@ export const TechDefSchema = z.object({
   danger: z.number().min(0).max(4).optional(),
   needs_precision: PrecisionSchema.optional(),
   effects: EffectListSchema.optional(),
+  effects_text_key: z.string().optional(),
   legacy_id: z.string().optional(),
 });
 

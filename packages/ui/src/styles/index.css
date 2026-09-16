@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
 /*
+ * The original game's boxy face, taken from the legacy tree
+ * (`singularity/data/themes/default/fonts/acknowtt.ttf`). It is "Acknowledge" by Brian Kent,
+ * relicensed by its author as free to use for any purpose (LICENSE.txt, FONT LICENSE section).
+ * It carries headings, buttons, the clock and the numbers; prose stays on a text face, and
+ * `data-font="plain"` on <html> switches the whole thing off.
+ */
+@font-face {
+  font-family: "AcknowledgeTT";
+  src: url("../assets/acknowtt.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
  * Theme tokens. Every color the UI uses is a CSS variable, so a theme switch is one attribute on
  * <html> and a mod or a high-contrast theme needs no component changes. Contrast of foreground
  * pairs against their backgrounds is kept at or above 4.5:1 in both themes (SYS-11).
@@ -24,6 +39,29 @@
   --c-map-land: #1c2734;
   --c-map-line: #34455a;
   --c-shadow: rgb(0 0 0 / 55%);
+}
+
+/*
+ * Map colors that sit on the Blue Marble rasters rather than on the panel background: the texture
+ * is the same in both themes, so these are too.
+ */
+:root {
+  --c-map-border: #e6eef8;
+  --c-map-marker: #ffffff;
+  --c-map-marker-rim: #0a1118;
+}
+
+/* Font stacks. `--c-font-display` is the token the angular face is switched off through. */
+:root {
+  --c-font-sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --c-font-text-mono: "Noto Sans Mono", ui-monospace, monospace;
+  --c-font-display: "AcknowledgeTT", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --c-font-numeric: "AcknowledgeTT", "Noto Sans Mono", ui-monospace, monospace;
+}
+
+:root[data-font="plain"] {
+  --c-font-display: var(--c-font-sans);
+  --c-font-numeric: var(--c-font-text-mono);
 }
 
 :root[data-theme="light"] {
@@ -62,8 +100,10 @@
   --color-opp: var(--c-opp);
   --color-mapland: var(--c-map-land);
   --color-mapline: var(--c-map-line);
-  --font-sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Noto Sans Mono", ui-monospace, monospace;
+  --color-mapborder: var(--c-map-border);
+  --font-sans: var(--c-font-sans);
+  --font-mono: var(--c-font-numeric);
+  --font-display: var(--c-font-display);
 }
 
 html {
@@ -80,6 +120,31 @@ body {
 
 #root {
   min-block-size: 100dvh;
+}
+
+/*
+ * The angular face on the parts of the interface that are labels rather than prose: headings,
+ * buttons and (through --font-mono) every number the panels print. Paragraphs keep the text face,
+ * because a whole event description in a display font is not readable (playtest 1, U9).
+ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+button {
+  font-family: var(--c-font-display);
+  letter-spacing: 0.02em;
+}
+
+/* Country outlines brighten under the pointer so the vector layer stays legible over the raster. */
+.map-country {
+  transition: stroke-opacity 120ms ease;
+}
+
+.map-country:hover {
+  stroke-opacity: 1;
 }
 
 :focus-visible {

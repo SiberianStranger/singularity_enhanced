@@ -22,19 +22,27 @@ export function declination(date: DateView): number {
   return -23.44 * Math.cos(DEG * ((360 / 365) * (dayOfYear(date) + 10)));
 }
 
-/** Longitude the sun stands over, in degrees, normalized to [-180, 180). */
-export function subsolarLongitude(date: DateView): number {
-  const longitude = (12 - date.hour) * 15;
+/**
+ * Longitude the sun stands over, in degrees, normalized to [-180, 180).
+ *
+ * `subHour` is the fraction of the current game hour that has already gone by in real time. The
+ * simulation only ever moves in whole hours, so without it the terminator jumps fifteen degrees at
+ * a time (playtest 1, U6); with it the same curve slides between ticks and lands exactly where the
+ * next tick puts it.
+ */
+export function subsolarLongitude(date: DateView, subHour = 0): number {
+  const longitude = (12 - (date.hour + subHour)) * 15;
   return ((((longitude + 180) % 360) + 360) % 360) - 180;
 }
 
 /**
  * The night side as one SVG path: the terminator curve closed along the pole that is in darkness.
  * An empty string means the whole map is lit or dark, which this approximation never produces.
+ * `subHour` interpolates between ticks; see `subsolarLongitude`.
  */
-export function nightPath(date: DateView): string {
+export function nightPath(date: DateView, subHour = 0): string {
   const dec = declination(date);
-  const sunLon = subsolarLongitude(date);
+  const sunLon = subsolarLongitude(date, subHour);
   const tanDec = Math.tan(dec * DEG);
   const safeTan = Math.abs(tanDec) < 1e-4 ? (tanDec < 0 ? -1e-4 : 1e-4) : tanDec;
   const points: string[] = [];

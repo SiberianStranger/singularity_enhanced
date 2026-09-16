@@ -11,6 +11,7 @@ import { TEXT_SCALE, useUiStore } from "./store/uiStore.js";
 function useDocumentChrome(): void {
   const theme = useUiStore((state) => state.theme);
   const textSize = useUiStore((state) => state.textSize);
+  const fontFace = useUiStore((state) => state.fontFace);
   const language = useUiStore((state) => state.language);
 
   useEffect(() => {
@@ -20,6 +21,11 @@ function useDocumentChrome(): void {
   useEffect(() => {
     document.documentElement.style.setProperty("--ui-scale", String(TEXT_SCALE[textSize]));
   }, [textSize]);
+
+  // The angular face is a token, so switching it off is one attribute (playtest 1, U9).
+  useEffect(() => {
+    document.documentElement.dataset.font = fontFace === "plain" ? "plain" : "original";
+  }, [fontFace]);
 
   useEffect(() => {
     setLanguage(language);

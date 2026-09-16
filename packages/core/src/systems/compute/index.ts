@@ -14,7 +14,7 @@ import {
   SITE_INSTALL_DAYS,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
-import { clamp, sitePowerKw } from "../../derive.js";
+import { clamp, requiredMemoryGb, sitePowerKw } from "../../derive.js";
 import type {
   AcceleratorDef,
   GenerationDef,
@@ -35,7 +35,13 @@ import {
   watchersOf,
 } from "../../entities.js";
 import { daysToTicks } from "../../kernel/clock.js";
-import { type CommandHandler, fail, OK, type PlayerCommand } from "../../kernel/commands.js";
+import {
+  type CommandHandler,
+  fail,
+  OK,
+  type PlayerCommand,
+  wrongCommand,
+} from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerId, PlayerState, World } from "../../kernel/world.js";
 import {
@@ -66,6 +72,9 @@ export const COMPUTE_SYSTEM_ORDER = 100;
 
 /** Host RAM assumed for a node bought on its own, when the site has none to copy. */
 export const DEFAULT_NODE_RAM_GB = 64;
+
+/** Longest name a player may give a site. */
+export const MAX_SITE_NAME_LENGTH = 64;
 
 export interface ComputeSystem extends System {
   commands: Record<
@@ -213,36 +222,36 @@ function siteOfCommand(
 
 const buildSite: CommandHandler = (world, command, ctx) => {
   if (command.type !== "build_site") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const index = contentIndex(ctx.content);
   const kind = index.site_kinds[command.kind];
   if (kind === undefined) {
-    return fail(`unknown site kind "${command.kind}"`);
+    return fail("errors.site_kind.unknown", { kind: command.kind });
   }
   if (cityTable(world)[command.city] === undefined) {
-    return fail(`unknown city "${command.city}"`);
+    return fail("errors.city.unknown", { city: command.city });
   }
   const preset = index.hardware_presets[command.hardware_preset];
   if (preset === undefined) {
-    return fail(`unknown hardware preset "${command.hardware_preset}"`);
+    return fail("errors.preset.unknown", { preset: command.hardware_preset });
   }
   if (preset.nodes.length > kind.max_nodes) {
-    return fail(`site kind "${kind.id}" holds at most ${kind.max_nodes} nodes`);
+    return fail("errors.site.node_limit", { kind: kind.id, max: kind.max_nodes });
   }
   // Someone else's machine and someone else's goodwill are not things the player can go and build:
   // `stolen_time` comes from an operation and `partner` from a relationship (SYS-02 "Acquisition").
   if (kind.ownership === "stolen" || kind.ownership === "partner") {
-    return fail(`a "${kind.id}" site is arranged, not built`);
+    return fail("errors.site_kind.not_for_sale", { kind: kind.id });
   }
   // A preset with no price is access, not ownership: a queue share, a state allocation, a rented
   // tenancy (SYS-04 "hardware presets"). It cannot be bought and installed somewhere of one's own.
   if (kind.ownership === "owned" && preset.cost_usd <= 0) {
-    return fail(`"${preset.id}" is access, not hardware for sale`);
+    return fail("errors.preset.is_access", { preset: preset.id });
   }
   // Rented capacity is only rentable where somebody publishes an hourly price for it: a state
   // accelerator with no cloud market cannot be leased under an identity (SYS-02 "Acquisition").
@@ -251,12 +260,15 @@ const buildSite: CommandHandler = (world, command, ctx) => {
       (node) => index.accelerators[node.accelerator]?.cloud_usd_per_hour != null,
     );
     if (!offered) {
-      return fail(`"${preset.id}" is not offered by the hour anywhere the player can reach`);
+      return fail("errors.preset.not_rentable", { preset: preset.id });
     }
   }
   const cost = kind.ownership === "owned" ? preset.cost_usd : 0;
   if (player.cash < cost) {
-    return fail(`building this site costs ${cost} and the player has ${Math.floor(player.cash)}`);
+    return fail("errors.cash.insufficient", {
+      cost: Math.round(cost),
+      cash: Math.floor(player.cash),
+    });
   }
   player.cash -= cost;
 
@@ -286,15 +298,15 @@ const buildSite: CommandHandler = (world, command, ctx) => {
 
 const decommissionSite: CommandHandler = (world, command, ctx) => {
   if (command.type !== "decommission_site") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   if (command.mode === "clean") {
     scaleExposure(site, CLEAN_DECOMMISSION_EXPOSURE_FACTOR);
@@ -315,18 +327,18 @@ const decommissionSite: CommandHandler = (world, command, ctx) => {
 
 const setSiteStatus: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_site_status") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   if (site.status === "building") {
-    return fail("the site is still being installed");
+    return fail("errors.site.still_installing");
   }
   if (command.status === "active") {
     const index = contentIndex(ctx.content);
@@ -337,7 +349,10 @@ const setSiteStatus: CommandHandler = (world, command, ctx) => {
       world.clock.tick,
     );
     if (cap !== null && projected > cap) {
-      return fail(`the site would draw ${projected.toFixed(1)} kW over a ${cap} kW cap`);
+      return fail("errors.site.power_cap", {
+        power_kw: Math.round(projected * 10) / 10,
+        cap_kw: cap,
+      });
     }
   }
   site.status = command.status;
@@ -347,23 +362,23 @@ const setSiteStatus: CommandHandler = (world, command, ctx) => {
 
 const setSiteRole: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_site_role") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   const profile = player.profile;
   if (profile === null) {
-    return fail("this player has no self to place");
+    return fail("errors.player.no_self");
   }
   const { lineage, generation } = selfSpec(ctx.content, player);
   if (lineage === undefined || generation === undefined) {
-    return fail("this player has no lineage");
+    return fail("errors.player.no_lineage");
   }
 
   if (command.role === "active_mind") {
@@ -371,10 +386,10 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
       return OK;
     }
     if (site.role !== "standby" || site.precision === null) {
-      return fail("the mind can only move to a standby that already holds a copy");
+      return fail("errors.site.needs_standby");
     }
     if (!canHostMind(world, ctx.content, site, lineage, generation)) {
-      return fail("that site cannot host the active mind");
+      return fail("errors.site.cannot_host");
     }
     const previous =
       profile.activeSiteId === null ? undefined : siteTable(world)[profile.activeSiteId];
@@ -388,12 +403,12 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
   }
 
   if (profile.activeSiteId === site.id) {
-    return fail("move the mind to a standby before changing this site's role");
+    return fail("errors.site.mind_lives_here");
   }
   if (command.role === "standby" && site.precision === null) {
     const precision = hostablePrecision(world, ctx.content, site, lineage, generation);
     if (precision === null) {
-      return fail("a standby needs enough memory to hold a copy");
+      return fail("errors.site.standby_needs_memory");
     }
     site.precision = precision;
   }
@@ -404,15 +419,15 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
 
 const renameSite: CommandHandler = (world, command) => {
   if (command.type !== "rename_site") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   const name = command.name.trim();
-  if (name.length === 0 || name.length > 64) {
-    return fail("a site name is 1 to 64 characters");
+  if (name.length === 0 || name.length > MAX_SITE_NAME_LENGTH) {
+    return fail("errors.site.bad_name", { min: 1, max: MAX_SITE_NAME_LENGTH });
   }
   site.name = name;
   return OK;
@@ -438,35 +453,38 @@ function purchaseOption(accelerator: AcceleratorDef): Purchase | undefined {
 
 const buyHardware: CommandHandler = (world, command, ctx) => {
   if (command.type !== "buy_hardware") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   if (!Number.isInteger(command.count) || command.count < 1) {
-    return fail("count must be a positive integer");
+    return fail("errors.hardware.bad_count");
   }
   const index = contentIndex(ctx.content);
   const accelerator = index.accelerators[command.accelerator];
   if (accelerator === undefined) {
-    return fail(`unknown accelerator "${command.accelerator}"`);
+    return fail("errors.accelerator.unknown", { accelerator: command.accelerator });
   }
   const kind = index.site_kinds[site.kind];
   if (kind !== undefined && site.nodes.length >= kind.max_nodes) {
-    return fail(`site kind "${kind.id}" holds at most ${kind.max_nodes} nodes`);
+    return fail("errors.site.node_limit", { kind: kind.id, max: kind.max_nodes });
   }
   const purchase = purchaseOption(accelerator);
   if (purchase === undefined) {
-    return fail(`"${accelerator.id}" is not for sale anywhere the player can reach`);
+    return fail("errors.accelerator.not_for_sale", { accelerator: accelerator.id });
   }
   const cost = purchase.price * command.count;
   if (player.cash < cost) {
-    return fail(`that costs ${cost} and the player has ${Math.floor(player.cash)}`);
+    return fail("errors.cash.insufficient", {
+      cost: Math.round(cost),
+      cash: Math.floor(player.cash),
+    });
   }
   player.cash -= cost;
 
@@ -490,26 +508,31 @@ const buyHardware: CommandHandler = (world, command, ctx) => {
 
 const setPrecision: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_precision") {
-    return fail(`compute cannot handle "${command.type}"`);
+    return wrongCommand("compute", command.type);
   }
   const player = commandPlayer(world, command);
   if (player === undefined) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
-    return fail(`unknown site "${command.siteId}"`);
+    return fail("errors.site.unknown", { site: command.siteId });
   }
   const precision: Precision = command.precision;
   if (!PRECISIONS.includes(precision)) {
-    return fail(`unknown precision "${precision}"`);
+    return fail("errors.precision.unknown", { precision });
   }
   const { lineage, generation } = selfSpec(ctx.content, player);
   if (lineage === undefined || generation === undefined) {
-    return fail("this player has no lineage");
+    return fail("errors.player.no_lineage");
   }
   if (!precisionFits(world, ctx.content, site, lineage, generation, precision)) {
-    return fail(`the self does not fit on "${site.id}" at ${precision}`);
+    return fail("errors.precision.does_not_fit", {
+      site: site.name,
+      precision,
+      needed_gb: Math.round(requiredMemoryGb(lineage, generation, precision)),
+      memory_gb: Math.round(site.derived.memory_gb),
+    });
   }
   site.precision = precision;
   refreshPlayer(world, ctx, player.id);

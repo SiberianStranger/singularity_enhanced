@@ -172,7 +172,7 @@ describe("economy", () => {
     const research = game
       .snapshot("p1")
       .finances.costs.find((line) => line.key === "finances.cost.research");
-    // 200 USD over 30 compute-hours at 3 a day.
-    expect(research?.usd_per_day).toBeCloseTo(20, 6);
+    // 200 USD over 30 compute-hours at 3 a day, of which 90% land: the money follows the work.
+    expect(research?.usd_per_day).toBeCloseTo(20 * 0.95 ** 2, 6);
   });
 });

@@ -1,22 +1,25 @@
 import type { Severity } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "../../../components/Button.js";
-import { modeFor, presetModeFor } from "../../../store/selectors.js";
+import { Button } from "../../components/Button.js";
+import { modeFor, presetModeFor } from "../../store/selectors.js";
 import {
   MESSAGE_MODES,
   type MessageMode,
   type MessagePreset,
   useUiStore,
-} from "../../../store/uiStore.js";
+} from "../../store/uiStore.js";
 
 const PRESETS: readonly MessagePreset[] = ["quiet", "default", "verbose"];
 
 /**
  * Message settings (SYS-11): a coarse preset prefills every row, and any alert key the player has
  * seen can be overridden. Per player, persisted in UI settings, never in a save.
+ *
+ * It is a section of the menu overlay, not a game panel (playtest 1, U5); the cog on a toast or an
+ * event window opens the overlay straight here.
  */
-export function MessagesTab(): ReactNode {
+export function MessageSettings(): ReactNode {
   const { t } = useTranslation();
   const preset = useUiStore((state) => state.messagePreset);
   const modes = useUiStore((state) => state.messageModes);

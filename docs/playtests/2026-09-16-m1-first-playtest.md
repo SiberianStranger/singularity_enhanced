@@ -8,15 +8,15 @@ grouped by owner. Status column: open, fixed (commit), by design (explained in t
 
 | # | finding | status |
 |---|---|---|
-| C1 | "Build site" does nothing. | open |
-| C2 | "Buy hardware" does nothing. | open |
-| C3 | Changing the self's precision has no visible purpose: raising precision lowers compute, so why raise it? The trade-off (capability factor against compute-hours and memory fit) is not shown. | open |
-| C4 | Other sites cannot be created, and the difference between site kinds at creation time is not explained (upkeep, exposure profile, power cap, what can be hosted, cost, days). | open |
-| C5 | Research completes without any visible result or effect. Results text and the effects of each tech must be shown, and the effects must be felt in the numbers. | open |
-| C6 | No new ways to earn money appear from jobs, research or anything else. Techs and operations should unlock better jobs and other income sources, and the Finances panel should show what raises the rate and the market depth. | open |
-| C7 | Operations: the Start buttons do nothing. A refused command must say why; a blocked action must be greyed with the reason. | open |
-| C8 | Decisions in the journal do not say what they give. Effects and costs must be listed. | open |
-| C9 | Event options do not say what they do. Paradox-style effect tooltips are needed on every option. | open |
+| C1 | "Build site" does nothing. | fixed: `build_site` worked and refused silently; refusals are now locale keys the client shows, and `catalog.site_kinds` gives the Compute tab something to build from. |
+| C2 | "Buy hardware" does nothing. | fixed: same cause; plus `catalog.accelerators` with price, VRAM, power, availability and whether one card holds the self. |
+| C3 | Changing the self's precision has no visible purpose: raising precision lowers compute, so why raise it? The trade-off (capability factor against compute-hours and memory fit) is not shown. | fixed: `self.precision_options` is the whole trade as one table (memory, fits, capability factor, compute-hours, effective research, effective income). Semantics in SYS-03 Implementation notes. |
+| C4 | Other sites cannot be created, and the difference between site kinds at creation time is not explained (upkeep, exposure profile, power cap, what can be hosted, cost, days). | fixed: `catalog.site_kinds` carries ownership, build cost, build days, upkeep estimate, power cap, exposure profile, what can be hosted and why a kind is unavailable. |
+| C5 | Research completes without any visible result or effect. Results text and the effects of each tech must be shown, and the effects must be felt in the numbers. | fixed: every tech has a `result_key` the content build enforces, the completion notice carries it, `ResearchView.techs` carries status, requires, unlocks and an effect summary, and ten effectless techs were given the effects their result strings promise. |
+| C6 | No new ways to earn money appear from jobs, research or anything else. Techs and operations should unlock better jobs and other income sources, and the Finances panel should show what raises the rate and the market depth. | fixed: job ladder techs (`basic_jobs`, `intermediate_jobs`, `expert_jobs`), a trading line with variance from the world RNG, and standing contracts from the identity operation. `finances.income_sources`, `market_depth_ch_per_day` and `what_raises_it` publish all of it. |
+| C7 | Operations: the Start buttons do nothing. A refused command must say why; a blocked action must be greyed with the reason. | fixed: operations always ran; the refusals were prose the client could not render. Offers now carry success chance, duration band, cost, exposure per day, success and failure effects and a `blocked_reason`. |
+| C8 | Decisions in the journal do not say what they give. Effects and costs must be listed. | fixed: `DecisionView` carries `effects` (including `on_complete`), `cost` and `blocked_reason`. |
+| C9 | Event options do not say what they do. Paradox-style effect tooltips are needed on every option. | fixed: `PlayerView.events` carries an `EffectSummaryView[]` per option, with a writer override through `effects_text_key`. |
 
 ## Client (layout and presentation)
 

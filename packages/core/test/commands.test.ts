@@ -19,7 +19,7 @@ describe("commands", () => {
     expect(g.world.speed).toBe(3);
     const denied = g.command({ type: "set_speed", playerId: "b", speed: 1 });
     expect(denied.ok).toBe(false);
-    expect(denied.error).toContain("host");
+    expect(denied.error?.key).toBe("errors.command.host_only");
     expect(g.world.speed).toBe(3);
   });
 
@@ -52,9 +52,10 @@ describe("commands", () => {
   it("never throws on unknown or malformed commands", () => {
     const g = game(true);
     expect(g.command({ type: "nope" } as unknown as PlayerCommand).ok).toBe(false);
-    expect(g.command({ type: "set_speed", playerId: "ghost", speed: 1 }).error).toContain(
-      "unknown player",
-    );
+    expect(g.command({ type: "set_speed", playerId: "ghost", speed: 1 }).error).toEqual({
+      key: "errors.command.unknown_player",
+      vars: { player: "ghost" },
+    });
     expect(g.command(undefined as unknown as PlayerCommand).ok).toBe(false);
     expect(g.command({ playerId: "a" } as unknown as PlayerCommand).ok).toBe(false);
     expect(g.command({ type: "cheat_add_cash", playerId: "a", amount: Number.NaN }).ok).toBe(false);
@@ -69,6 +70,6 @@ describe("commands", () => {
       optionId: "y",
     });
     expect(result.ok).toBe(false);
-    expect(result.error).toContain("no system handles");
+    expect(result.error?.key).toBe("errors.command.no_system");
   });
 });

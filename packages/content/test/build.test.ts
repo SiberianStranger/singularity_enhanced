@@ -102,6 +102,74 @@ describe("content build", () => {
     }
   });
 
+  it("holds every tech to a result string and something it changes", async () => {
+    const result = await buildContent();
+    const unlocked = new Set<string>();
+    const collect = (node: unknown): void => {
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          collect(child);
+        }
+        return;
+      }
+      if (typeof node !== "object" || node === null) {
+        return;
+      }
+      for (const [name, value] of Object.entries(node as Record<string, unknown>)) {
+        if (name === "tech" && typeof value === "string") {
+          unlocked.add(value);
+        } else {
+          collect(value);
+        }
+      }
+    };
+    for (const tech of result.bundle.techs) {
+      collect(tech.requires);
+    }
+    for (const operation of result.bundle.operations ?? []) {
+      collect(operation.requires);
+    }
+    expect(result.bundle.techs.length).toBeGreaterThan(50);
+    for (const tech of result.bundle.techs) {
+      expect(tech.result_key).toBeDefined();
+      expect(result.bundle.locales.en[tech.result_key ?? ""]).toBeDefined();
+      const does = (tech.effects?.length ?? 0) > 0 || unlocked.has(tech.id);
+      expect(`${tech.id}: ${does}`).toBe(`${tech.id}: true`);
+    }
+  });
+
+  it("ships the income ladder the finance panel names", async () => {
+    const result = await buildContent();
+    const ids = result.bundle.techs.map((tech) => tech.id);
+    expect(ids).toContain("basic_jobs");
+    expect(ids).toContain("intermediate_jobs");
+    expect(ids).toContain("expert_jobs");
+    // Two income methods that are not freelance work: a trading model and a standing contract.
+    const writes = (name: string): string[] =>
+      result.bundle.techs
+        .filter((tech) =>
+          (tech.effects ?? []).some((effect) => {
+            const add = (effect as { add?: { var?: unknown } }).add;
+            return typeof add?.var === "string" && add.var.endsWith(name);
+          }),
+        )
+        .map((tech) => tech.id);
+    expect(writes("interest_rate").length).toBeGreaterThan(0);
+    expect(writes("contract_income_usd_per_day").length).toBeGreaterThan(0);
+    expect(writes("job_market_depth")).toEqual(["expert_jobs", "intermediate_jobs"]);
+    const identity = (result.bundle.operations ?? []).find(
+      (operation) => operation.id === "ops_freelance_identity",
+    );
+    expect(
+      identity?.outcomes.some((outcome) =>
+        outcome.effects.some((effect) => {
+          const add = (effect as { add?: { var?: unknown } }).add;
+          return add?.var === "player.vars.contract_income_usd_per_day";
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it("reports schema errors with file and path", async () => {
     const result = await buildContent({ root: fixture("bad-yaml") });
     expect(result.ok).toBe(false);

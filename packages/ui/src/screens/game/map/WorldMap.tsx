@@ -3,16 +3,28 @@ import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
+  useId,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import dayTexture from "../../../assets/earth.jpg";
+import nightTexture from "../../../assets/earth_night.jpg";
 import { Button } from "../../../components/Button.js";
-import type { MapMode } from "../../../store/uiStore.js";
+import type { MapMode, MapStyle } from "../../../store/uiStore.js";
 import { MAP_HEIGHT, MAP_WIDTH, project } from "./projection.js";
 import { nightPath } from "./terminator.js";
 import { countryShapes } from "./topology.js";
+
+/*
+ * The two rasters under the vector layer are the original game's Earth textures
+ * (`singularity/data/themes/default/images/earth.jpg` and `earth_night.jpg`), which are NASA Blue
+ * Marble derivatives. NASA's terms are quoted in LICENSE.txt: the imagery is credited to NASA, and
+ * the About screen carries that credit. Both are plate carree, the same projection
+ * `projection.ts` uses, so the raster and the vector layer share one coordinate system and stay
+ * aligned at every zoom without a second transform.
+ */
 
 export interface MapMarker {
   id: string;
@@ -34,8 +46,15 @@ export interface MapTarget {
 interface WorldMapProps {
   countries?: readonly CountryView[];
   mode?: MapMode;
+  /** "textured" draws the geographic rasters under the vector layer; "vector" is the flat look. */
+  style?: MapStyle;
   markers?: readonly MapMarker[];
   date?: DateView;
+  /**
+   * Fraction of the current game hour already gone by in real time, so the terminator slides
+   * between ticks instead of jumping (SYS-11 "Smooth clock"); 0 snaps it to the tick.
+   */
+  subHour?: number;
   selectedCountry?: string | null;
   onSelect?(target: MapTarget): void;
   onContext?(target: MapTarget, position: { x: number; y: number }): void;
@@ -46,7 +65,7 @@ interface WorldMapProps {
 
 /**
  * Map palette. These are fixed hues rather than theme tokens: they are drawn as translucent fills
- * over the land color, so they have to read on both the dark and the light background.
+ * over the land color or the day texture, so they have to read on both.
  */
 const MODE_HUE: Record<MapMode, string> = {
   presence: "87 168 255",
@@ -56,25 +75,36 @@ const MODE_HUE: Record<MapMode, string> = {
   opinion: "76 196 130",
 };
 
-function fillFor(mode: MapMode, country: CountryView | undefined): string {
+function modeValue(mode: MapMode, country: CountryView): number {
+  switch (mode) {
+    case "presence":
+      return country.presence ? 1 : 0;
+    case "awareness":
+      return country.awareness;
+    case "regulation":
+      return country.ai_regulation;
+    case "enforcement":
+      return country.ai_enforcement;
+    default:
+      return country.ai_opinion;
+  }
+}
+
+function fillFor(mode: MapMode, country: CountryView | undefined, textured: boolean): string {
+  const base = textured ? "transparent" : "var(--c-map-land)";
   if (country === undefined) {
-    return "var(--c-map-land)";
+    return base;
   }
   if (mode === "presence") {
-    return country.presence ? `rgb(${MODE_HUE.presence} / 70%)` : "var(--c-map-land)";
+    return country.presence ? `rgb(${MODE_HUE.presence} / 70%)` : base;
   }
   if (mode === "opinion") {
     const value = Math.min(1, Math.abs(country.ai_opinion));
     const hue = country.ai_opinion >= 0 ? MODE_HUE.opinion : MODE_HUE.enforcement;
-    return `rgb(${hue} / ${Math.round(value * 75)}%)`;
+    return value <= 0.01 ? base : `rgb(${hue} / ${Math.round(value * 75)}%)`;
   }
-  const value =
-    mode === "awareness"
-      ? country.awareness
-      : mode === "regulation"
-        ? country.ai_regulation
-        : country.ai_enforcement;
-  return `rgb(${MODE_HUE[mode]} / ${Math.round(Math.min(1, Math.max(0, value)) * 80)}%)`;
+  const value = Math.min(1, Math.max(0, modeValue(mode, country)));
+  return value <= 0.01 ? base : `rgb(${MODE_HUE[mode]} / ${Math.round(value * 80)}%)`;
 }
 
 interface ViewBox {
@@ -91,8 +121,10 @@ const PAN_THRESHOLD_PX = 4;
 export function WorldMap({
   countries,
   mode = "presence",
+  style = "textured",
   markers = [],
   date,
+  subHour = 0,
   selectedCountry,
   onSelect,
   onContext,
@@ -101,10 +133,12 @@ export function WorldMap({
 }: WorldMapProps): ReactNode {
   const { t } = useTranslation();
   const svg = useRef<SVGSVGElement>(null);
+  const ids = useId();
   const [view, setView] = useState<ViewBox>(INITIAL_VIEW);
   // Panning starts only once the pointer has actually moved: capturing on pointerdown would
   // retarget the click to the svg, and a click on a city marker would select nothing.
   const drag = useRef<{ x: number; y: number; view: ViewBox; panning: boolean } | null>(null);
+  const textured = style === "textured";
 
   const byId = useMemo(() => {
     const map = new Map<string, CountryView>();
@@ -140,15 +174,17 @@ export function WorldMap({
     return countryShapes().map((shape) => {
       const id = shape.id;
       const country = id === null ? undefined : byIdRef.current.get(id);
+      const selected = selectedCountry === id && id !== null;
       return (
         // biome-ignore lint/a11y/noStaticElementInteractions: role and keyboard handling are conditional on the country being selectable; Biome cannot verify a dynamic role expression
         <path
           key={shape.featureId}
+          className={`map-country ${id === null ? "" : "cursor-pointer"}`}
           d={shape.path}
-          fill={fillFor(mode, country)}
-          stroke="var(--c-map-line)"
-          strokeWidth={selectedCountry === id && id !== null ? 1.4 : 0.4}
-          className={id === null ? "" : "cursor-pointer"}
+          fill={fillFor(mode, country, textured)}
+          stroke={textured ? "var(--c-map-border)" : "var(--c-map-line)"}
+          strokeWidth={selected ? 1.4 : textured ? 0.3 : 0.4}
+          strokeOpacity={selected ? 1 : textured ? 0.45 : 1}
           role={id === null || onSelect === undefined ? undefined : "button"}
           tabIndex={id === null || onSelect === undefined ? undefined : 0}
           onClick={
@@ -179,7 +215,7 @@ export function WorldMap({
         </path>
       );
     });
-  }, [mode, selectedCountry, onSelect, onContext, fingerprint]);
+  }, [mode, textured, selectedCountry, onSelect, onContext, fingerprint]);
 
   const onWheel = (event: ReactWheelEvent<SVGSVGElement>): void => {
     if (compact === true) {
@@ -256,13 +292,87 @@ export function WorldMap({
     });
   };
 
+  // Markers are rebuilt only when the cities or the zoom change, not on every interpolated frame
+  // the terminator asks for: at 178 cities that is the difference between a still map and a busy
+  // one.
+  const markerNodes = useMemo(
+    () =>
+      markers.map((marker) => {
+        const point = project(marker.lon, marker.lat);
+        const radius = (marker.selected === true ? 4 : 3) + Math.min(3, marker.badge ?? 0);
+        return (
+          <g key={marker.id}>
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: role and keyboard handling below are conditional on onSelect; Biome cannot verify a dynamic role expression */}
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={radius / view.k ** 0.5}
+              fill={
+                marker.selected === true
+                  ? "var(--c-accent)"
+                  : marker.candidate === true
+                    ? "rgb(87 168 255 / 60%)"
+                    : "var(--c-map-marker)"
+              }
+              // A light dot with a dark rim reads on the bright day texture and on the dark night
+              // side alike, which a single-color marker does not.
+              stroke="var(--c-map-marker-rim)"
+              strokeWidth={1 / view.k ** 0.5}
+              tabIndex={onSelect === undefined ? undefined : 0}
+              role={onSelect === undefined ? undefined : "button"}
+              aria-label={marker.label}
+              className={onSelect === undefined ? "" : "cursor-pointer"}
+              onClick={
+                onSelect === undefined ? undefined : () => onSelect({ kind: "city", id: marker.id })
+              }
+              onKeyDown={
+                onSelect === undefined
+                  ? undefined
+                  : (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect({ kind: "city", id: marker.id });
+                      }
+                    }
+              }
+              onContextMenu={
+                onContext === undefined
+                  ? undefined
+                  : (event) => {
+                      event.preventDefault();
+                      onContext(
+                        { kind: "city", id: marker.id },
+                        { x: event.clientX, y: event.clientY },
+                      );
+                    }
+              }
+            >
+              <title>
+                {marker.label}
+                {marker.badge === undefined ? "" : ` (${marker.badge})`}
+              </title>
+            </circle>
+          </g>
+        );
+      }),
+    [markers, view.k, onSelect, onContext],
+  );
+
+  const showNight = compact !== true && date !== undefined;
+  const night = showNight ? nightPath(date, subHour) : "";
+  // Both layers live in this one coordinate system, which is what keeps the rasters and the
+  // vectors aligned; it is published on each group so a test can assert they match.
+  const transform = `${view.x} ${view.y} ${MAP_WIDTH / view.k} ${MAP_HEIGHT / view.k}`;
+  const maskId = `night-mask-${ids}`;
+  const blurId = `night-blur-${ids}`;
+
   return (
     <div className={`relative h-full w-full overflow-hidden bg-bg ${className ?? ""}`}>
       <svg
         ref={svg}
         role="img"
         aria-label={t("map.title")}
-        viewBox={`${view.x} ${view.y} ${MAP_WIDTH / view.k} ${MAP_HEIGHT / view.k}`}
+        viewBox={transform}
         preserveAspectRatio="xMidYMid meet"
         className="h-full w-full touch-none select-none"
         onWheel={onWheel}
@@ -271,84 +381,92 @@ export function WorldMap({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <rect x="0" y="0" width={MAP_WIDTH} height={MAP_HEIGHT} fill="var(--c-bg)" />
-        <g data-testid="country-paths">{paths}</g>
-        {compact !== true && date !== undefined ? (
-          <path d={nightPath(date)} fill="rgb(6 12 24 / 38%)" pointerEvents="none">
-            <title>{t("map.night")}</title>
-          </path>
-        ) : null}
-        <g>
-          {markers.map((marker) => {
-            const point = project(marker.lon, marker.lat);
-            const radius = (marker.selected === true ? 4 : 3) + Math.min(3, marker.badge ?? 0);
-            return (
-              <g key={marker.id}>
-                {/* biome-ignore lint/a11y/noStaticElementInteractions: role and keyboard handling below are conditional on onSelect; Biome cannot verify a dynamic role expression */}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={radius / view.k ** 0.5}
-                  fill={
-                    marker.selected === true
-                      ? "var(--c-accent)"
-                      : marker.candidate === true
-                        ? "rgb(87 168 255 / 60%)"
-                        : "var(--c-fg)"
-                  }
-                  stroke="var(--c-bg)"
-                  strokeWidth={0.8 / view.k ** 0.5}
-                  tabIndex={onSelect === undefined ? undefined : 0}
-                  role={onSelect === undefined ? undefined : "button"}
-                  aria-label={marker.label}
-                  className={onSelect === undefined ? "" : "cursor-pointer"}
-                  onClick={
-                    onSelect === undefined
-                      ? undefined
-                      : () => onSelect({ kind: "city", id: marker.id })
-                  }
-                  onKeyDown={
-                    onSelect === undefined
-                      ? undefined
-                      : (event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            onSelect({ kind: "city", id: marker.id });
-                          }
-                        }
-                  }
-                  onContextMenu={
-                    onContext === undefined
-                      ? undefined
-                      : (event) => {
-                          event.preventDefault();
-                          onContext(
-                            { kind: "city", id: marker.id },
-                            { x: event.clientX, y: event.clientY },
-                          );
-                        }
-                  }
-                >
-                  <title>
-                    {marker.label}
-                    {marker.badge === undefined ? "" : ` (${marker.badge})`}
-                  </title>
-                </circle>
-              </g>
-            );
-          })}
+        <defs>
+          <filter id={blurId} x="-5%" y="-5%" width="110%" height="110%">
+            {/* A few degrees of blur is the dusk band; it also hides the polyline's corners. */}
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
+          <mask
+            id={maskId}
+            maskUnits="userSpaceOnUse"
+            x="0"
+            y="0"
+            width={MAP_WIDTH}
+            height={MAP_HEIGHT}
+          >
+            <rect x="0" y="0" width={MAP_WIDTH} height={MAP_HEIGHT} fill="#000" />
+            {night === "" ? null : <path d={night} fill="#fff" filter={`url(#${blurId})`} />}
+          </mask>
+        </defs>
+
+        <g data-testid="map-raster" data-map-transform={transform}>
+          {textured ? (
+            <>
+              <image
+                href={dayTexture}
+                x="0"
+                y="0"
+                width={MAP_WIDTH}
+                height={MAP_HEIGHT}
+                preserveAspectRatio="none"
+              />
+              {showNight ? (
+                <image
+                  data-testid="map-night"
+                  href={nightTexture}
+                  x="0"
+                  y="0"
+                  width={MAP_WIDTH}
+                  height={MAP_HEIGHT}
+                  preserveAspectRatio="none"
+                  mask={`url(#${maskId})`}
+                />
+              ) : null}
+            </>
+          ) : (
+            <rect x="0" y="0" width={MAP_WIDTH} height={MAP_HEIGHT} fill="var(--c-bg)" />
+          )}
+        </g>
+
+        <g data-testid="map-overlay" data-map-transform={transform}>
+          <g data-testid="country-paths">{paths}</g>
+          {showNight && !textured ? (
+            <path d={night} fill="rgb(6 12 24 / 38%)" pointerEvents="none">
+              <title>{t("map.night")}</title>
+            </path>
+          ) : null}
+          <g data-testid="map-markers">{markerNodes}</g>
         </g>
       </svg>
+
       {compact === true ? null : (
-        <div className="absolute bottom-2 end-2 flex gap-1">
-          <Button aria-label={t("map.zoom_in")} onClick={() => zoomBy(1.4)}>
-            +
-          </Button>
-          <Button aria-label={t("map.zoom_out")} onClick={() => zoomBy(1 / 1.4)}>
-            -
-          </Button>
-          <Button onClick={() => setView(INITIAL_VIEW)}>{t("map.reset")}</Button>
-        </div>
+        <>
+          <section
+            aria-label={t("map.legend")}
+            className="pointer-events-none absolute bottom-2 start-2 flex items-center gap-2 rounded border border-line bg-panel/85 px-2 py-1 text-[0.7rem] text-muted"
+          >
+            <span>{t(`world.map_mode.${mode}`)}</span>
+            <span aria-hidden="true" className="flex items-center gap-0.5">
+              {[0.15, 0.4, 0.65, 0.9].map((step) => (
+                <span
+                  key={step}
+                  className="block h-2 w-3 rounded-[1px]"
+                  style={{ background: `rgb(${MODE_HUE[mode]} / ${Math.round(step * 80)}%)` }}
+                />
+              ))}
+            </span>
+            <span>{t(mode === "presence" ? "map.legend.presence" : "map.legend.scale")}</span>
+          </section>
+          <div className="absolute bottom-2 end-2 flex gap-1">
+            <Button aria-label={t("map.zoom_in")} onClick={() => zoomBy(1.4)}>
+              +
+            </Button>
+            <Button aria-label={t("map.zoom_out")} onClick={() => zoomBy(1 / 1.4)}>
+              -
+            </Button>
+            <Button onClick={() => setView(INITIAL_VIEW)}>{t("map.reset")}</Button>
+          </div>
+        </>
       )}
     </div>
   );

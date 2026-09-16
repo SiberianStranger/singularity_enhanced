@@ -8,6 +8,7 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
 import { GameScreen } from "../src/screens/game/GameScreen.js";
 import { DEFAULT_SPEED } from "../src/screens/game/useHotkeys.js";
@@ -134,8 +135,9 @@ describe("game screen", () => {
     await userEvent.hover(cash);
 
     const tooltip = await within(header).findByRole("tooltip");
-    // The finances lines the core reports, not a made-up number.
-    expect(within(tooltip).getByText(/site upkeep/i)).toBeInTheDocument();
+    // The finances lines the core reports, not a made-up number. The label is looked up rather
+    // than spelled out, so renaming the line in content does not fail this test.
+    expect(within(tooltip).getByText(i18next.t("finances.cost.site"))).toBeInTheDocument();
   });
 
   it("lists what a watcher's suspicion is made of", async () => {

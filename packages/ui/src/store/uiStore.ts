@@ -7,6 +7,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+/** Counter behind notice ids: the client never needs randomness for a list key. */
+let noticeSeq = 0;
+
 /** Tabs of the pinned primary panel, in strip order. Later systems add their own. */
 export const PRIMARY_TABS = [
   "overview",
@@ -19,10 +22,16 @@ export const PRIMARY_TABS = [
   "log",
   "knowledge",
   "world",
-  "messages",
-  "settings",
 ] as const;
 export type PrimaryTab = (typeof PRIMARY_TABS)[number];
+
+/**
+ * Sections of the menu overlay (the Menu button and Escape). Settings and message settings live
+ * here rather than as game panels: they are not part of playing, and a panel tab for them is a tab
+ * the player scrolls past forever (playtest 1, U5).
+ */
+export const MENU_SECTIONS = ["root", "save", "load", "settings", "messages"] as const;
+export type MenuSection = (typeof MENU_SECTIONS)[number];
 
 /** Panel hotkeys (SYS-11). `A` opens Detection, which is where M1 keeps actors. */
 export const PANEL_HOTKEYS: Readonly<Record<string, PrimaryTab>> = {
@@ -48,8 +57,20 @@ export interface Selection {
 export type MessageMode = "popup_and_pause" | "popup" | "toast" | "icon_only" | "log_only";
 export type MessagePreset = "quiet" | "default" | "verbose";
 export type Theme = "dark" | "light";
+/** "original" is the legacy game's angular face on labels and numbers; "plain" is the text face. */
+export type FontFace = "original" | "plain";
 export type TextSize = "small" | "normal" | "large";
 export type MapMode = "presence" | "awareness" | "regulation" | "enforcement" | "opinion";
+/** The textured map draws the geographic rasters under the vector layer; "vector" is the old look. */
+export type MapStyle = "textured" | "vector";
+
+/** A message the client itself raises, such as the reason a command was refused. */
+export interface Notice {
+  id: string;
+  key: string;
+  vars: Record<string, string | number | boolean>;
+  tone: "info" | "error";
+}
 
 export const MESSAGE_MODES: readonly MessageMode[] = [
   "popup_and_pause",
@@ -76,6 +97,7 @@ export const TEXT_SCALE: Readonly<Record<TextSize, number>> = {
 interface UiStore {
   theme: Theme;
   textSize: TextSize;
+  fontFace: FontFace;
   language: string;
   /** The pinned primary panel: open or collapsed, and which tab it shows. */
   primaryOpen: boolean;
@@ -84,7 +106,14 @@ interface UiStore {
   focusId: string | null;
   outlinerOpen: boolean;
   selection: Selection | null;
+  /** The selection panel shrinks to its title bar rather than covering the map corner. */
+  selectionCollapsed: boolean;
   mapMode: MapMode;
+  mapStyle: MapStyle;
+  /** Open section of the menu overlay; null when the overlay is closed. */
+  menuSection: MenuSection | null;
+  /** Client-raised messages (refused commands); never persisted. */
+  notices: Notice[];
   messagePreset: MessagePreset;
   /** Per alert key override of the preset; only keys the player touched are stored. */
   messageModes: Record<string, MessageMode>;
@@ -94,13 +123,21 @@ interface UiStore {
 
   setTheme(theme: Theme): void;
   setTextSize(size: TextSize): void;
+  setFontFace(face: FontFace): void;
   setLanguage(language: string): void;
   openTab(tab: PrimaryTab, focusId?: string): void;
   toggleTab(tab: PrimaryTab): void;
   closePrimary(): void;
   select(selection: Selection | null): void;
+  setSelectionCollapsed(collapsed: boolean): void;
   setOutliner(open: boolean): void;
   setMapMode(mode: MapMode): void;
+  setMapStyle(style: MapStyle): void;
+  openMenu(section?: MenuSection): void;
+  closeMenu(): void;
+  toggleMenu(): void;
+  pushNotice(key: string, vars?: Notice["vars"], tone?: Notice["tone"]): void;
+  dismissNotice(id: string): void;
   setMessagePreset(preset: MessagePreset): void;
   setMessageMode(key: string, mode: MessageMode): void;
   resetMessageModes(): void;
@@ -112,13 +149,18 @@ export const useUiStore = create<UiStore>()(
     (set, get) => ({
       theme: "dark",
       textSize: "normal",
+      fontFace: "original",
       language: "en",
       primaryOpen: true,
       primaryTab: "overview",
       focusId: null,
       outlinerOpen: true,
       selection: null,
+      selectionCollapsed: false,
       mapMode: "presence",
+      mapStyle: "textured",
+      menuSection: null,
+      notices: [],
       messagePreset: "default",
       messageModes: {},
       seenAlertKeys: [],
@@ -129,6 +171,9 @@ export const useUiStore = create<UiStore>()(
       },
       setTextSize(textSize) {
         set({ textSize });
+      },
+      setFontFace(fontFace) {
+        set({ fontFace });
       },
       setLanguage(language) {
         set({ language });
@@ -148,13 +193,36 @@ export const useUiStore = create<UiStore>()(
         set({ primaryOpen: false });
       },
       select(selection) {
-        set({ selection });
+        set({ selection, selectionCollapsed: false });
+      },
+      setSelectionCollapsed(selectionCollapsed) {
+        set({ selectionCollapsed });
       },
       setOutliner(outlinerOpen) {
         set({ outlinerOpen });
       },
       setMapMode(mapMode) {
         set({ mapMode });
+      },
+      setMapStyle(mapStyle) {
+        set({ mapStyle });
+      },
+      openMenu(section = "root") {
+        set({ menuSection: section });
+      },
+      closeMenu() {
+        set({ menuSection: null });
+      },
+      toggleMenu() {
+        set({ menuSection: get().menuSection === null ? "root" : null });
+      },
+      pushNotice(key, vars = {}, tone = "error") {
+        const notices = get().notices;
+        noticeSeq += 1;
+        set({ notices: [...notices, { id: `notice_${noticeSeq}`, key, vars, tone }].slice(-4) });
+      },
+      dismissNotice(id) {
+        set({ notices: get().notices.filter((notice) => notice.id !== id) });
       },
       setMessagePreset(messagePreset) {
         set({ messagePreset, messageModes: {} });
@@ -174,15 +242,33 @@ export const useUiStore = create<UiStore>()(
     }),
     {
       name: "singularity.ui",
-      version: 2,
+      version: 3,
+      // Settings and message settings stopped being panel tabs in version 3; a session that was
+      // left on one of them opens on the overview instead of on a tab that no longer exists.
+      migrate: (state, from) => {
+        const stored = state as Partial<UiStore> | undefined;
+        if (stored === undefined || from >= 3) {
+          return stored as UiStore;
+        }
+        const tab = stored.primaryTab;
+        return {
+          ...stored,
+          primaryTab:
+            tab !== undefined && (PRIMARY_TABS as readonly string[]).includes(tab)
+              ? tab
+              : "overview",
+        } as UiStore;
+      },
       partialize: (state) => ({
         theme: state.theme,
         textSize: state.textSize,
+        fontFace: state.fontFace,
         language: state.language,
         primaryOpen: state.primaryOpen,
         primaryTab: state.primaryTab,
         outlinerOpen: state.outlinerOpen,
         mapMode: state.mapMode,
+        mapStyle: state.mapStyle,
         messagePreset: state.messagePreset,
         messageModes: state.messageModes,
         autosaveDays: state.autosaveDays,

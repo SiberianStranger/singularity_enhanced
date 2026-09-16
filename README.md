@@ -151,6 +151,11 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record. Version 0.1.1 (2026-09-16) is
 the first playable preview, milestone M1.
 
+Unreleased, from the first playtest: refused commands now say why in a language the client can
+translate, every effect list renders as a tooltip, the client gets catalogs of site kinds and
+accelerators, precision is a real choice between research and money, research says what it changed,
+and income grows through the job ladder, a trading model and standing contracts.
+
 - Added: architecture decision records (stack, content format and DSL, simulation model), design
   specifications for 24 systems including space and off-planet industry and biotech research, the
   state-capture benchmark scenario with its full source extraction and the alternative treatments,

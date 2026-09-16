@@ -489,6 +489,63 @@ function validateDomainScripts(
   }
 }
 
+/** Every tech id a `requires` tree names, however it is nested. */
+function techIdsIn(condition: unknown, out: Set<string>): void {
+  if (Array.isArray(condition)) {
+    for (const child of condition) {
+      techIdsIn(child, out);
+    }
+    return;
+  }
+  if (!isRecord(condition)) {
+    return;
+  }
+  for (const [name, value] of Object.entries(condition)) {
+    if (name === "tech" && typeof value === "string") {
+      out.add(value);
+      continue;
+    }
+    techIdsIn(value, out);
+  }
+}
+
+/**
+ * Every tech has to be worth researching and has to say so (SYS-12, playtest finding C5): a result
+ * string the completion notice and the Research tab show, and either an effect of its own or
+ * something it unlocks. A tech that does neither is a compute sink, which is what the tree was
+ * before the M1 pass.
+ */
+function techsDoSomething(
+  loaded: Records,
+  locales: Record<string, string>,
+  issues: BuildIssue[],
+): void {
+  const unlocked = new Set<string>();
+  for (const record of [...(loaded.techs ?? []), ...(loaded.operations ?? [])]) {
+    techIdsIn(record.requires, unlocked);
+  }
+  for (const tech of loaded.techs ?? []) {
+    const id = String(tech.id);
+    const path = `techs.${id}`;
+    const result = tech.result_key;
+    if (typeof result !== "string" || locales[result] === undefined) {
+      issues.push({
+        file: "bundle",
+        path: `${path}.result_key`,
+        message: "every tech needs a result string the player is shown when it finishes",
+      });
+    }
+    const effects = Array.isArray(tech.effects) ? tech.effects : [];
+    if (effects.length === 0 && !unlocked.has(id)) {
+      issues.push({
+        file: "bundle",
+        path: `${path}.effects`,
+        message: "a tech with no effects and nothing depending on it is a compute sink",
+      });
+    }
+  }
+}
+
 /** Whether any effect in a list, at any depth, is of this kind. */
 function usesEffect(effects: unknown, kind: string): boolean {
   if (Array.isArray(effects)) {
@@ -535,6 +592,8 @@ function coverage(loaded: Records, locales: Record<string, string>, issues: Buil
       });
     }
   }
+
+  techsDoSomething(loaded, locales, issues);
 
   for (const event of loaded.events ?? []) {
     const options = Array.isArray(event.options) ? event.options : [];

@@ -19,6 +19,7 @@ import {
   fail,
   OK,
   type PlayerCommand,
+  wrongCommand,
 } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import { instanceKey, type World } from "../../kernel/world.js";
@@ -93,34 +94,34 @@ export function resolveEventCommand(
   ctx: CommandContext,
 ): CommandResult {
   if (command.type !== "resolve_event") {
-    return fail(`the event engine cannot handle "${command.type}"`);
+    return wrongCommand("events", command.type);
   }
   const index = world.events.pending.findIndex(
     (choice) => choice.instanceId === command.instanceId,
   );
   const choice = world.events.pending[index];
   if (choice === undefined) {
-    return fail(`no pending event "${command.instanceId}"`);
+    return fail("errors.event.unknown_instance", { instance: command.instanceId });
   }
   if (choice.playerId !== command.playerId) {
-    return fail(`event "${command.instanceId}" belongs to another player`);
+    return fail("errors.event.other_player", { instance: command.instanceId });
   }
   const def = contentIndex(ctx.content).events[choice.eventId];
   if (def === undefined) {
-    return fail(`unknown event "${choice.eventId}"`);
+    return fail("errors.event.unknown", { event: choice.eventId });
   }
   const option = def.options.find((candidate) => candidate.id === command.optionId);
   if (option === undefined) {
-    return fail(`unknown option "${command.optionId}" for event "${def.id}"`);
+    return fail("errors.event.unknown_option", { option: command.optionId, event: def.id });
   }
 
   const target = targetFromRef(world, ctx, choice.target);
   const dctx = eventContext(world, ctx, def, choice.playerId, choice.instanceId, target);
   if (option.if !== undefined && option.fallback !== true && !evaluateCondition(option.if, dctx)) {
-    return fail(`option "${option.id}" is not available`);
+    return fail("errors.event.option_unavailable", { option: option.id });
   }
   if (option.enabled_if !== undefined && !evaluateCondition(option.enabled_if, dctx)) {
-    return fail(`option "${option.id}" is not enabled`);
+    return fail("errors.event.option_disabled", { option: option.id });
   }
 
   world.events.pending.splice(index, 1);

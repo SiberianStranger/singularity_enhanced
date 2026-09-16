@@ -14,8 +14,15 @@ import {
   RUNWAY_ALERT_DAYS,
   RUNWAY_UNLIMITED_DAYS,
   SITE_CUTOFF_JOURNAL,
+  TRADING_PRINCIPAL_CAP_USD,
+  TRADING_VARIANCE,
   UNPAID_DAYS_TO_CUTOFF,
   UNPAID_EXPOSURE_PER_DAY,
+  VAR_CONTRACT_FLAG,
+  VAR_CONTRACT_INCOME,
+  VAR_INCOME_USD_PER_DAY,
+  VAR_INTEREST_RATE,
+  VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
   VAR_NET_USD_PER_DAY,
   VAR_RESEARCH_SPEND,
@@ -27,7 +34,8 @@ import { type ContentBundle, contentIndex } from "../../content.js";
 import { jobMarketDepth, jobRateUsdPerComputeHour } from "../../derive.js";
 import type { ExposureChannel } from "../../domain.js";
 import { liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
-import { type CommandHandler, fail, OK } from "../../kernel/commands.js";
+import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
+import type { Rng } from "../../kernel/rng.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
 import { canAfford, creditPlayer, payFromPlayer, playerBalance } from "../../money.js";
@@ -40,6 +48,7 @@ import {
   lineageOf,
   modifier,
   researchAllocated,
+  researchEfficiencyOf,
 } from "../../player.js";
 import { addExposure, canHostMind, loseSite } from "../../sites.js";
 import { startJournal } from "../events/index.js";
@@ -52,13 +61,22 @@ export interface EconomySystem extends System {
 
 const ALLOCATION_EPSILON = 1e-6;
 
-/** Cash per day the current research allocations will ask for, for the finance panel. */
-export function researchSpendPerDay(content: ContentBundle, player: PlayerState): number {
+/**
+ * Cash per day the current research allocations will ask for, for the finance panel. Cash follows
+ * progress, and progress follows the hours that actually land, so a quantized self spends its money
+ * as slowly as it spends its compute (SYS-12).
+ */
+export function researchSpendPerDay(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): number {
   const profile = player.profile;
   if (profile === null) {
     return 0;
   }
   const index = contentIndex(content);
+  const efficiency = researchEfficiencyOf(world, content, player);
   let total = 0;
   for (const techId of Object.keys(profile.researchAllocation).sort()) {
     const def = index.techs[techId];
@@ -71,9 +89,20 @@ export function researchSpendPerDay(content: ContentBundle, player: PlayerState)
     if (remaining <= 0) {
       continue;
     }
-    total += Math.min(remaining, (allocation / def.cost.compute_hours) * def.cost.cash_usd);
+    total += Math.min(
+      remaining,
+      ((allocation * efficiency) / def.cost.compute_hours) * def.cost.cash_usd,
+    );
   }
   return total;
+}
+
+/** Compute-hours of paid work the market takes from this player today (SYS-07 "market depth"). */
+export function marketDepthOf(world: World, content: ContentBundle, player: PlayerState): number {
+  return jobMarketDepth(
+    effectiveCapabilityOf(world, content, player),
+    modifier(player, VAR_JOB_MARKET_DEPTH),
+  );
 }
 
 /** Freelance income for one day: the rate, the market depth, and what the harness adds. */
@@ -87,8 +116,104 @@ export function jobIncomeUsdPerDay(
     return 0;
   }
   const capability = effectiveCapabilityOf(world, content, player);
-  const sold = Math.min(profile.jobAllocation, jobMarketDepth(capability));
+  const sold = Math.min(profile.jobAllocation, marketDepthOf(world, content, player));
   return sold * jobRateUsdPerComputeHour(capability) * modifier(player, VAR_JOB_PROFIT);
+}
+
+/**
+ * One way the player earns, in the shape the finance panel shows and the day's tick pays.
+ * `expected_usd_per_day` is what the panel promises; the trading line is the only one whose actual
+ * result differs from it, because SYS-07 makes trading "volatile, returns with variance".
+ */
+export interface IncomeSource {
+  key: string;
+  expected_usd_per_day: number;
+  cap_usd_per_day?: number;
+  /** Locale key of the tech, operation or identity that opened this line. */
+  unlocked_by: string;
+  /** The day's result is drawn from the world RNG rather than taken flat. */
+  volatile?: boolean;
+}
+
+/** Cash the trading model is allowed to work with: everything up to the published ceiling. */
+export function tradingPrincipalUsd(player: PlayerState): number {
+  return Math.min(Math.max(0, playerBalance(player)), TRADING_PRINCIPAL_CAP_USD);
+}
+
+/**
+ * Every income method this player has today, in a fixed order (SYS-07 "income methods unlock by
+ * tech, harness tools and identities"). The economy tick pays exactly this list and the finance
+ * panel shows exactly this list, so the panel can never promise money the simulation does not pay.
+ */
+export function incomeSources(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): IncomeSource[] {
+  const profile = player.profile;
+  if (profile === null) {
+    return [];
+  }
+  const capability = effectiveCapabilityOf(world, content, player);
+  const rate = jobRateUsdPerComputeHour(capability) * modifier(player, VAR_JOB_PROFIT);
+  const depth = marketDepthOf(world, content, player);
+  const sources: IncomeSource[] = [
+    {
+      key: "finances.income.jobs",
+      expected_usd_per_day: Math.min(profile.jobAllocation, depth) * rate,
+      cap_usd_per_day: depth * rate,
+      unlocked_by: "finances.income.jobs.source",
+    },
+  ];
+
+  // A retainer needs a name to invoice under: the identity operation is what opens this line.
+  const contract = player.vars[VAR_CONTRACT_INCOME] ?? 0;
+  if (contract > 0 && player.flags[VAR_CONTRACT_FLAG] === true) {
+    sources.push({
+      key: "finances.income.contracts",
+      expected_usd_per_day: contract,
+      unlocked_by: "operations.ops_freelance_identity.name",
+    });
+  }
+
+  const interest = player.vars[VAR_INTEREST_RATE] ?? 0;
+  if (interest > 0) {
+    sources.push({
+      key: "finances.income.trading",
+      expected_usd_per_day: tradingPrincipalUsd(player) * interest,
+      cap_usd_per_day: TRADING_PRINCIPAL_CAP_USD * interest,
+      unlocked_by: "techs.market_modeling.name",
+      volatile: true,
+    });
+  }
+
+  const recurring = player.vars[VAR_INCOME_USD_PER_DAY] ?? 0;
+  if (recurring !== 0) {
+    sources.push({
+      key: "finances.income.recurring",
+      expected_usd_per_day: recurring,
+      unlocked_by: "finances.income.recurring.source",
+    });
+  }
+  return sources;
+}
+
+/**
+ * What the sources actually pay today. Only the volatile ones draw, and only when the player has
+ * one, so a run without a trading model consumes no randomness and stays bit-identical.
+ */
+function collectIncome(sources: readonly IncomeSource[], rng: Rng): number {
+  let total = 0;
+  for (const source of sources) {
+    if (source.volatile !== true) {
+      total += source.expected_usd_per_day;
+      continue;
+    }
+    // Uniform around the expectation: the mean is the rate the panel shows, the spread is the risk.
+    const factor = 1 - TRADING_VARIANCE + rng.next() * 2 * TRADING_VARIANCE;
+    total += source.expected_usd_per_day * factor;
+  }
+  return total;
 }
 
 function billSite(world: World, ctx: SystemContext, player: PlayerState, site: SiteState): number {
@@ -193,29 +318,30 @@ function reportRunway(ctx: SystemContext, player: PlayerState, net: number): voi
 
 const setJobAllocation: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_job_allocation") {
-    return fail(`the economy cannot handle "${command.type}"`);
+    return wrongCommand("economy", command.type);
   }
   const player = world.players[command.playerId];
   if (player === undefined || !isAlive(player)) {
-    return fail("this player is no longer playing");
+    return fail("errors.player.not_playing");
   }
   const profile = player.profile;
   if (profile === null) {
-    return fail("this player has no self to put to work");
+    return fail("errors.player.no_self");
   }
   const hours = command.compute_hours_per_day;
   if (!Number.isFinite(hours) || hours < 0) {
-    return fail("an allocation is a non-negative number of compute-hours per day");
+    return fail("errors.allocation.not_a_number");
   }
   const capacity = allocatableCompute(world, ctx.content, player.id);
   if (researchAllocated(profile) + hours > capacity + ALLOCATION_EPSILON) {
-    return fail(
-      `allocating ${hours} would exceed the ${capacity.toFixed(1)} compute-hours per day available`,
-    );
+    return fail("errors.allocation.over_capacity", {
+      hours: Math.round(hours * 10) / 10,
+      capacity: Math.round(capacity * 10) / 10,
+    });
   }
   // Above the market depth there is nobody left to take the contracts, so the extra hours are
   // clamped away rather than refused: the slider stops, it does not throw (SYS-07).
-  const depth = jobMarketDepth(effectiveCapabilityOf(world, ctx.content, player));
+  const depth = marketDepthOf(world, ctx.content, player);
   profile.jobAllocation = Math.min(hours, depth);
   ctx.outbox.log({
     key: "log.job_allocation",
@@ -245,7 +371,8 @@ export function createEconomySystem(): EconomySystem {
         if (player === undefined || profile === null || !isAlive(player)) {
           continue;
         }
-        const income = jobIncomeUsdPerDay(world, ctx.content, player);
+        const sources = incomeSources(world, ctx.content, player);
+        const income = collectIncome(sources, ctx.rng);
         creditPlayer(player, income);
 
         let unpaid = 0;
@@ -255,7 +382,7 @@ export function createEconomySystem(): EconomySystem {
           unpaid += billSite(world, ctx, player, site);
         }
         player.vars[VAR_UNPAID_USD] = unpaid;
-        const research = researchSpendPerDay(ctx.content, player);
+        const research = researchSpendPerDay(world, ctx.content, player);
         player.vars[VAR_RESEARCH_SPEND] = research;
         if (isAlive(player)) {
           reportRunway(ctx, player, income - billed - research);

@@ -23,6 +23,7 @@ import type { DateSpec } from "./kernel/clock.js";
 import {
   applyCommand,
   type CommandContext,
+  type CommandError,
   type CommandRegistry,
   type CommandResult,
   createCommandRegistry,
@@ -273,7 +274,8 @@ export type HeadlessPolicy = (game: Game, tick: number) => readonly PlayerComman
 export interface HeadlessResult {
   ticks: number;
   commands: number;
-  errors: string[];
+  /** Every refusal, as the locale key the client would render. */
+  errors: CommandError[];
 }
 
 /** Runs a game for a number of ticks, letting a policy issue commands after each tick. */
