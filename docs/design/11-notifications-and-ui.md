@@ -16,6 +16,43 @@ Every notification: `{ id, playerId, tick, severity, key, vars, link, read, expi
 `link` opens the relevant panel/entity (`{ panel: "detection", entity: "site:abc" }`). Groups
 collapse repeated alerts of the same key into one icon with a count.
 
+### Alert types (content) and message settings (per player)
+
+Channel, severity and pausability are three independent axes (`research/design-references.md` §1),
+so one alert type can be a toast *and* an icon, and only some types may ever pause the game.
+
+```ts
+interface AlertTypeDef {
+  id: string;                          // stable key; effects `notify` reference it
+  category: "security" | "finance" | "compute" | "research" | "world" | "actors" | "story" | "system";
+  severity: "info" | "warning" | "critical" | "opportunity";
+  default_channels: ("popup" | "toast" | "icon" | "log")[];
+  pausable: boolean;                   // may request auto-pause (only if the player allows it for this type)
+  navigable: boolean;                  // click opens `link`
+  grouping_key?: string;               // identical keys stack into "×N"
+  ttl_days?: number;                   // expiry is the default, not the exception
+  on_expire?: Effect[];                // an ignored alert still does something (usually the fallback)
+  log_channel: string;                 // which permanent log tab records it
+  subject_scope?: "country" | "site" | "actor";   // enables per-subject filtering
+}
+
+interface MessageSetting {             // one row per (player, alert type); persisted in UI settings
+  alertType: string;
+  mode: "popup_and_pause" | "popup" | "toast" | "icon_only" | "log_only";
+  subjects?: "all" | "countries_of_interest" | "my_sites_only";
+}
+```
+
+- A coarse global preset ("quiet", "default", "verbose") prefills the per-type rows; the player
+  never has to touch forty checkboxes, but can.
+- A settings cog sits on every toast and event window, so "stop telling me this" is one click
+  in context.
+- Per-subject filtering exists from day one: at 100+ countries, "only alert me about countries I
+  am active in" is mandatory, not a later feature.
+- `hidden` events (SYS-10) are hidden in all four channels.
+- Exactly one hard-blocking tier exists (blocking events); nothing else stops time except the
+  player's own pause rules.
+
 ## Alert bar (top)
 
 Left to right: date and speed controls (0-5, keys 0-5, space = pause), cash and runway, compute

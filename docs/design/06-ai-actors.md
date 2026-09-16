@@ -53,6 +53,22 @@ deterministic noise from the world RNG; the top plan runs as a set of scripted e
 entries. All plan scoring inputs are in the world state, so replays are exact. Plans, goals and
 personalities are content (`actors/*.yaml`), not code.
 
+Rules taken from `research/design-references.md` §7:
+
+- **Same vocabulary as the player.** NPC AIs act through the same operations (SYS-17), decisions,
+  sites and identities the player uses, executed through the same effect DSL; there are no AI-only
+  levers. The autopilot for a disconnected human (SYS-16) is the same controller.
+- **Archetypes with personality curves.** `archetype` (rival_ai, corporate_lab_model, state_program,
+  activist_swarm, quant_ghost, fleet_mind) plus `personality { aggression, risk_tolerance, patience,
+  curiosity }` feed the scoring curves; 3-8 actors that behave differently beat 20 reskins.
+- **Escalation meter per NPC AI**, visible to the player once intel allows: it drives the actor's
+  aggression and doubles as a readable pressure gauge next to the hunt level (SYS-05).
+- **Difficulty through decision quality**, not resource multipliers: presets inject "intelligent
+  mistakes" (fuzzy top-k selection, delayed reactions) so the AI reads as a rival, not a cheater.
+- **Negotiation as a scored object**: offers, threats and demands are records
+  `{ from, to, kind, terms[], ai_accept: Weight }` evaluated with the shared weight DSL (SYS-10), so
+  player↔NPC and NPC↔NPC diplomacy share one code path and one UI.
+
 ## Agencies and institutions
 
 Each country's agencies (cyber, intelligence, police, AI regulator, financial intelligence) are

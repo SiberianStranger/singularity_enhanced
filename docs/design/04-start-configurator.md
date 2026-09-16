@@ -110,6 +110,25 @@ Visible effects on capability and on the `behavioral` and `network` channels.
 - **Polyglot**: no `world` penalty in foreign countries; -0.5 `coding`.
 - **Merged model**: +1 to one capability; weights instability events.
 
+## Three independent layers
+
+From `research/design-references.md` §3: the setup keeps three layers that a preset may fill
+together but that the player can always adjust separately:
+
+1. **Scenario** (lineage, generation, origin, hardware, harness, location, quirks): who you are and
+   where. Origins express their tradeoffs largely as **starting relationships** (which actors start
+   wary, hostile or unaware) rather than as an artificial stat block.
+2. **Difficulty preset** ("story", "normal", "hard", "impossible") that only prefills independently
+   tunable sliders (exposure growth, suspicion gain, NPC aggression, event frequency, grace windows)
+   and a list of **disclosed, individually toggleable challenge modifiers** (no manual pause,
+   hostile press, sanctions-era hardware prices, an extra rival AI). Every modifier states its effect.
+3. **Pacing personality** (the storyteller: "slow burn", "classic", "relentless") controlling how
+   dense random events and world incidents are, independent of difficulty.
+
+Quirks use a small budget (2 points) where negative quirks refund points and the cost curve is
+nonlinear near the cap, so there is no single dominant build. A "random build" button and a reroll
+budget of 3 sit next to the manual build.
+
 ## Challenge rating
 
 `CR = f(memory headroom, CH/day, cash runway, Σ starting suspicion × actor competence, enforcement at
