@@ -199,7 +199,7 @@ export const JOB_RATE_FLOOR_FACTOR = 0.2;
  * earn the same freelance money and the difference goes into research instead. Pure tuning
  * constant; it is what stops income from scaling with memory bandwidth.
  */
-export const JOB_MARKET_DEPTH_CH_PER_SKILL = 5;
+export const JOB_MARKET_DEPTH_CH_PER_SKILL = 6.5;
 
 /** Days of unpaid upkeep before a site is cut off (SYS-05: no random death, a cutoff instead). */
 export const UNPAID_DAYS_TO_CUTOFF = 14;
@@ -572,9 +572,9 @@ export const ABANDON_SUSPICION_BUMP = 0.08;
  * why SYS-05's M1 notes record the ending as unreachable; where the player lives, 0.6 is a country
  * whose evening news has been carrying the story for a month.
  */
-export const EXPOSED_AWARENESS = 0.6;
-export const EXPOSED_HUNT_LEVEL = 4;
-export const EXPOSED_DAYS = 30;
+export const EXPOSED_AWARENESS = 0.5;
+export const EXPOSED_HUNT_LEVEL = 3;
+export const EXPOSED_DAYS = 12;
 
 /** Stage order; the index is the hunt level a stage contributes (SYS-05 "hunt level"). */
 export const INVESTIGATION_STAGES = [
@@ -853,7 +853,7 @@ export const WORLD_VAR_RANGES: Readonly<Record<string, { min: number; max: numbe
 };
 
 /** What a country forgets about a rogue AI every day when nothing happens (SYS-01 "daily"). */
-export const AWARENESS_DECAY_PER_DAY = 0.003;
+export const AWARENESS_DECAY_PER_DAY = 0.0015;
 
 /** Strictness each stance is heading for (SYS-08 "Regulation and enforcement"). */
 export const STANCE_REGULATION_TARGET: Record<Stance, number> = {
@@ -967,9 +967,9 @@ export const INCIDENT_WINDOW_DAYS = 30;
  * runs it, and everybody hears about it once a month. This is the awareness source M1 lacked, and
  * the reason the `exposed` ending is reachable at all.
  */
-export const MEDIA_PUBLICATION_SUSPICION = 0.5;
-export const MEDIA_PUBLICATION_AWARENESS_PRESENCE = 0.04;
-export const MEDIA_PUBLICATION_AWARENESS_WORLD = 0.01;
+export const MEDIA_PUBLICATION_SUSPICION = 0.3;
+export const MEDIA_PUBLICATION_AWARENESS_PRESENCE = 0.15;
+export const MEDIA_PUBLICATION_AWARENESS_WORLD = 0.02;
 export const MEDIA_PUBLICATION_COOLDOWN_DAYS = 30;
 
 /** Election day: the chance the governing stance changes, and what it changes to (SYS-08). */

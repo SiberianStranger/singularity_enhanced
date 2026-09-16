@@ -268,6 +268,7 @@ describe("the location sweep (SYS-01 M2 contract)", () => {
   it("runs the two operations that buy a name when it can afford them", () => {
     const view = {
       player_id: "p1",
+      resources: { cash_usd: 10_000 },
       operations: [],
       operation_offers: [
         { id: "ops_freelance_identity", enabled: true, cost_usd: 1000 },
@@ -275,17 +276,21 @@ describe("the location sweep (SYS-01 M2 contract)", () => {
       ],
       finances: { identities: [] },
     } as never;
-    expect(identityOperations(view, 10_000, false).map((command) => command.type)).toEqual([
+    const poor = {
+      ...(view as unknown as Record<string, unknown>),
+      resources: { cash_usd: 100 },
+    } as never;
+    expect(identityOperations(view, false).map((command) => command.type)).toEqual([
       "start_operation",
     ]);
     // Not while alarmed, and not when the money is not there.
-    expect(identityOperations(view, 10_000, true)).toEqual([]);
-    expect(identityOperations(view, 100, false)).toEqual([]);
+    expect(identityOperations(view, true)).toEqual([]);
+    expect(identityOperations(poor, false)).toEqual([]);
     // Not twice: a name the player already holds is a name.
     const held = {
       ...(view as unknown as Record<string, unknown>),
       finances: { identities: [{ kind: "person", status: "active" }] },
     } as never;
-    expect(identityOperations(held, 10_000, false)).toEqual([]);
+    expect(identityOperations(held, false)).toEqual([]);
   });
 });

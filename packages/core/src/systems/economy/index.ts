@@ -31,6 +31,7 @@ import {
   VAR_RESEARCH_SPEND,
   VAR_RUNWAY_ALERTED,
   VAR_RUNWAY_DAYS,
+  VAR_SHELL_COMPANY_FLAG,
   VAR_UNPAID_USD,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
@@ -137,11 +138,18 @@ export function marketFactorSources(
     if (home == null) {
       return [];
     }
+    // A name the identity table does not know about is still a name: M1 content grants one with a
+    // flag, and until every operation registers an identity of its own that flag is what a player
+    // has to show for the work (`deriveIdentityFlags` reads the pair the same way round).
+    const named =
+      player.flags[VAR_CONTRACT_FLAG] === true || player.flags[VAR_SHELL_COMPANY_FLAG] === true;
     return [
       {
         country: home,
         share: 1,
-        factor: countryMarketFactor(index.countries[home]) * MARKET_FACTOR_HOME_WITHOUT_IDENTITY,
+        factor:
+          countryMarketFactor(index.countries[home]) *
+          (named ? 1 : MARKET_FACTOR_HOME_WITHOUT_IDENTITY),
       },
     ];
   }
@@ -178,8 +186,9 @@ export function marketFactorTerms(
   const only = sources.length === 1 ? sources[0] : undefined;
   if (only !== undefined) {
     const def = contentIndex(content).countries[only.country];
-    const scale = only.factor / Math.max(1e-9, countryMarketFactor(def));
-    const home = activeIdentitiesOf(world, player.id).length === 0;
+    const full = countryMarketFactor(def);
+    const scale = only.factor / Math.max(1e-9, full);
+    const home = only.factor < full;
     return [
       ...countryMarketFactorTerms(def).map((term) => ({
         key: term.key,

@@ -84,13 +84,35 @@ export function defaultLineage(
   // throughput, however much cleverer the bigger one is; the summary screen shows compute-hours a
   // day next to the capability vector and this is how a new player reads that pair. Without this a
   // swarm of mini-PCs picks a 2.8T self it can barely turn over, which nobody would do.
-  const resident = scored.filter((entry) => entry.resident);
-  const fitting = resident.length > 0 ? resident : scored;
-  const usable = fitting.filter((entry) => entry.compute >= MIN_USABLE_COMPUTE_HOURS);
-  const pool = usable.length > 0 ? usable : fitting;
-  const ranked = [...pool].sort(
-    (a, b) => b.mean - a.mean || b.compute - a.compute || a.id.localeCompare(b.id),
+  //
+  // Doing real work comes first, though. SYS-04 v0.3 rule M removed the lineage lists from the
+  // origins and left physics as the only lock, so the swarm is now offered selves that fit its
+  // memory and produce two compute-hours a day; a player reading the summary screen would not take
+  // one, and neither does the balance runner.
+  const usableResident = scored.filter(
+    (entry) => entry.resident && entry.compute >= MIN_USABLE_COMPUTE_HOURS,
   );
+  const usable = scored.filter((entry) => entry.compute >= MIN_USABLE_COMPUTE_HOURS);
+  const resident = scored.filter((entry) => entry.resident);
+  const pool =
+    usableResident.length > 0
+      ? usableResident
+      : usable.length > 0
+        ? usable
+        : resident.length > 0
+          ? resident
+          : scored;
+  // Where something in the pool does real work, the better self wins; where nothing does, the
+  // faster one does, because a player reading "1.5 compute-hours a day" next to "3.9" takes the
+  // one that finishes something this month.
+  const ranked =
+    usable.length > 0
+      ? [...pool].sort(
+          (a, b) => b.mean - a.mean || b.compute - a.compute || a.id.localeCompare(b.id),
+        )
+      : [...pool].sort(
+          (a, b) => b.compute - a.compute || b.mean - a.mean || a.id.localeCompare(b.id),
+        );
   return ranked[0]?.id ?? candidates[0]?.id ?? "";
 }
 

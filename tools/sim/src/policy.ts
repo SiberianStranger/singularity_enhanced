@@ -421,11 +421,7 @@ export function resolvePending(
  * for a cage. Both are started at most once at a time, because the operations system refuses a
  * second instance of a running operation anyway.
  */
-export function identityOperations(
-  view: PlayerView,
-  spendable: number,
-  alarmed: boolean,
-): PlayerCommand[] {
+export function identityOperations(view: PlayerView, alarmed: boolean): PlayerCommand[] {
   if (alarmed) {
     return [];
   }
@@ -440,7 +436,9 @@ export function identityOperations(
     if (offer === undefined || !offer.enabled || running.has(id) || held) {
       continue;
     }
-    if (spendable < offer.cost_usd * IDENTITY_OPERATION_CASH_MULTIPLE) {
+    // Against the cash on hand rather than against the spare cash: a name is what the income is
+    // short of, so a player with a month of runway still buys one (SYS-07 fourth pass).
+    if (view.resources.cash_usd < offer.cost_usd * IDENTITY_OPERATION_CASH_MULTIPLE) {
       continue;
     }
     commands.push({ type: "start_operation", playerId: view.player_id, operationId: id });
@@ -581,7 +579,7 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // The paperwork (SYS-07 "Balance notes, fourth pass": the sim has to run the operations a
   // careful player runs, or the income shock an investigation causes is never measured). A name to
   // invoice under first, a company second, each one only while there is money to spare.
-  commands.push(...identityOperations(view, spendable, alarmed));
+  commands.push(...identityOperations(view, alarmed));
 
   // Going quiet. A site somebody is already at the door of is abandoned, not defended (SYS-05
   // "sacrifice the site cleanly"): move the self to the copy that is already running elsewhere,

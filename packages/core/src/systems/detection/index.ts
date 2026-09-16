@@ -296,7 +296,12 @@ function dailyDetection(world: World, ctx: SystemContext, player: PlayerState): 
 function checkExposedEnding(world: World, ctx: SystemContext, player: PlayerState): void {
   const aware = awarenessPresence(world, player.id) >= EXPOSED_AWARENESS;
   const hunted = huntLevel(world, player.id) >= EXPOSED_HUNT_LEVEL;
-  const days = aware && hunted ? (player.vars[VAR_EXPOSED_DAYS] ?? 0) + 1 : 0;
+  // The clock winds down rather than resetting: a day the hunt loses the thread is a day back, not
+  // a fresh start, or a player who is raided, survives and is investigated again a fortnight later
+  // would never reach the end of a countdown the world has been running all along (SYS-05 "grace
+  // after the clock fills").
+  const before = player.vars[VAR_EXPOSED_DAYS] ?? 0;
+  const days = aware && hunted ? before + 1 : Math.max(0, before - 1);
   player.vars[VAR_EXPOSED_DAYS] = days;
   if (days >= EXPOSED_DAYS) {
     endGame(world, ctx.outbox, player, "exposed", { days });
