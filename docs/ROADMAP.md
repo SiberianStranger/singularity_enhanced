@@ -55,12 +55,38 @@ not the order.
 - DoD: a new player can start, survive or lose within 30-60 minutes, and understand why; headless
   balance runs show survival distributions across origins; web build deployed from CI.
 
-## M2: World
+## M2: World (next block after the playtest passes)
 
-- Full country/city dataset (~100 countries), macro-regions, politics v0 (stances, regulation,
-  enforcement, elections from the 2027 calendar), demography v0, world economy v0, compute market,
-  identities and companies, awareness and hunt clocks, country/city/world panels and map modes.
-- DoD: countries visibly differ in play; investigations differ by agency; balance runs per location.
+The 105 countries and 178 cities already load; M2 makes them different to play in. Work is split
+by package so three agents can run it: core (systems), content (data and events), client (panels
+and map modes). Specs: SYS-01 "Country dynamics", SYS-08, SYS-09, SYS-07 (world economy), SYS-05
+(awareness and hunt clocks), SYS-17 (identities), SYS-11 (World, Country and City panels).
+
+- Country dynamics v0 (core): daily and weekly ticks per country for stance toward rogue AI,
+  regulation level, enforcement budget, public awareness and opinion; the 2027 election calendar
+  from the baseline moves stances; `on_country_month` events per region.
+- Politics v0 (core, content): regulation and enforcement drive watcher competence, KYC strictness
+  in identity checks, cloud and colocation availability, and power prices; ten regional event
+  families (raids, hearings, leaks, export-rule changes, elections) with journal entries.
+- Demography v0 (core, content): population and engineer pools per country feed the job market
+  depth per country and the human exposure channel; migration is out of scope.
+- World economy v0 (core, content): power price bands, cloud price bands and hardware availability
+  by country and export regime from the baseline and the hardware catalog; a used-GPU price index
+  that drifts with the world RNG. Ordering channels stay deferred; only prices and availability.
+- Identities and companies (core, content): identities per country with KYC strength, the shell
+  company as an entity that can hold sites and accounts, identity checks as events.
+- Awareness and hunt clocks (core): population-weighted global awareness fed by incidents and
+  investigation aftermaths, the hunt level as a function of open investigations and awareness, the
+  `exposed` ending reachable, both with published thresholds and contributions in the view.
+- Client: the World panel (sortable countries table, map modes presence, awareness, regulation,
+  enforcement, opinion, power price, with legends), the Country selection tabs (Overview, Politics,
+  Economy, Watchers, Cities) and the City tabs (Overview, Sites, Providers, Power, Scrutiny) per
+  SYS-11, tooltips with the formula behind every number.
+- Balance: runs per starting city; the starting regions (United States, China, European Union,
+  Russia) differ visibly in watchers, prices and events, and no location dominates.
+- DoD: a run in San Jose, Shenzhen, Warsaw and Novosibirsk plays differently for reasons the
+  player can read in the panels; investigations differ by agency; balance runs per location;
+  tagged `playable-M2` and released.
 
 ## M3: Actors and NPC AIs
 
