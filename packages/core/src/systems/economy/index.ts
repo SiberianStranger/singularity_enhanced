@@ -11,6 +11,7 @@
  */
 
 import {
+  MARKET_FACTOR_HOME_WITHOUT_IDENTITY,
   RUNWAY_ALERT_DAYS,
   RUNWAY_UNLIMITED_DAYS,
   SITE_CUTOFF_JOURNAL,
@@ -34,6 +35,8 @@ import {
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import {
+  countryMarketFactor,
+  countryMarketFactorTerms,
   hasPaymentTool,
   jobMarketDepth,
   jobRateUsdPerComputeHour,
@@ -41,7 +44,7 @@ import {
   jobToolRateFactor,
 } from "../../derive.js";
 import type { ExposureChannel } from "../../domain.js";
-import { liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
+import { activeIdentitiesOf, liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { Rng } from "../../kernel/rng.js";
 import type { System, SystemContext } from "../../kernel/system.js";
@@ -59,6 +62,7 @@ import {
   researchEfficiencyOf,
 } from "../../player.js";
 import { addExposure, canHostMind, loseSite } from "../../sites.js";
+import type { ContributionView } from "../../views/types.js";
 import { startJournal } from "../events/index.js";
 
 export const ECONOMY_SYSTEM_ORDER = 300;
@@ -106,17 +110,105 @@ export function researchSpendPerDay(
 }
 
 /**
+ * Where the player's paid work is sold, and how much of it there is per country (SYS-01 M2 contract
+ * "Money"). An identity is a place to invoice from: the market the player reaches is the market of
+ * the countries their names live in, weighted by how many names are there. With no name at all the
+ * work comes through whoever is willing to pay a stranger at home, which is worth a fraction of it.
+ */
+export interface MarketFactorSource {
+  country: string;
+  /** Share of the weighted mean this country carries, summing to 1. */
+  share: number;
+  factor: number;
+}
+
+export function marketFactorSources(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): MarketFactorSource[] {
+  const index = contentIndex(content);
+  const counts = new Map<string, number>();
+  for (const identity of activeIdentitiesOf(world, player.id)) {
+    counts.set(identity.country, (counts.get(identity.country) ?? 0) + 1);
+  }
+  if (counts.size === 0) {
+    const home = player.profile?.homeCountry;
+    if (home == null) {
+      return [];
+    }
+    return [
+      {
+        country: home,
+        share: 1,
+        factor: countryMarketFactor(index.countries[home]) * MARKET_FACTOR_HOME_WITHOUT_IDENTITY,
+      },
+    ];
+  }
+  let total = 0;
+  for (const weight of counts.values()) {
+    total += weight;
+  }
+  return [...counts.keys()].sort().map((country) => ({
+    country,
+    share: (counts.get(country) ?? 0) / total,
+    factor: countryMarketFactor(index.countries[country]),
+  }));
+}
+
+/** The country factor on this player's market depth; 1 when they are nowhere at all. */
+export function marketFactorOf(world: World, content: ContentBundle, player: PlayerState): number {
+  const sources = marketFactorSources(world, content, player);
+  if (sources.length === 0) {
+    return 1;
+  }
+  return sources.reduce((sum, source) => sum + source.share * source.factor, 0);
+}
+
+/**
+ * The same number as the lines the finance panel shows. One country is the usual case and gets the
+ * formula itself; several get one line each, and either way the lines sum to the factor.
+ */
+export function marketFactorTerms(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): ContributionView[] {
+  const sources = marketFactorSources(world, content, player);
+  const only = sources.length === 1 ? sources[0] : undefined;
+  if (only !== undefined) {
+    const def = contentIndex(content).countries[only.country];
+    const scale = only.factor / Math.max(1e-9, countryMarketFactor(def));
+    const home = activeIdentitiesOf(world, player.id).length === 0;
+    return [
+      ...countryMarketFactorTerms(def).map((term) => ({
+        key: term.key,
+        id: only.country,
+        value: term.value * scale,
+      })),
+      ...(home ? [{ key: "world.explain.market.home", id: only.country, value: 0 }] : []),
+    ];
+  }
+  return sources.map((source) => ({
+    key: "world.explain.market.country",
+    id: source.country,
+    value: source.share * source.factor,
+  }));
+}
+
+/**
  * Compute-hours of paid work the market takes from this player today (SYS-07 "market depth"), after
- * the tools dial (SYS-04 v0.2: "tools decide which jobs ... are available"). Without a tool that
- * reaches outward the contracts have to come through the owner's own channels, which is a smaller
- * market than a contract board.
+ * the tools dial (SYS-04 v0.2: "tools decide which jobs ... are available") and the country factor
+ * of the places the player can invoice from.
  */
 export function marketDepthOf(world: World, content: ContentBundle, player: PlayerState): number {
   return (
     jobMarketDepth(
       effectiveCapabilityOf(world, content, player),
       modifier(player, VAR_JOB_MARKET_DEPTH),
-    ) * jobToolDepthFactor(player.profile?.harness)
+    ) *
+    jobToolDepthFactor(player.profile?.harness) *
+    marketFactorOf(world, content, player)
   );
 }
 

@@ -282,7 +282,11 @@
     [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose, de_berlin]
   generations_allowed: [open_2026, open_2027]
   starting:
-    cash_usd: 6000
+    # Re-baselined for the country cash factor (SYS-04 v0.3 rule C): 7,500 in a country at the
+    # pivot is the 6,000 the fourth balance pass set, and in Tallinn, the typical start, it is
+    # 6,000 exactly. Without this the eight thousand of arrears in `eco_company_folds` lands on a
+    # bank that was never meant to be a fifth smaller than the invoice.
+    cash_usd: 7500
     awareness: 0
     suspicion: { financial_intel: 0.05 }
     flags: [runway_months, owner_might_partner, weak_security]

@@ -7,13 +7,19 @@
  */
 
 import {
+  AI_ADOPTION_START,
+  CLOUD_DEMAND_INDEX_START,
+  GPU_PRICE_INDEX_START,
   OPERATION_SKILL_PIVOT,
   OPERATION_SKILL_SLOPE,
   RESEARCH_CAPABILITY_EXPONENT,
   SITE_INSTALL_DAYS,
   SUSPICION_DECAY_PER_DAY,
   SUSPICION_GAIN_SCALE,
+  VAR_AI_ADOPTION,
+  VAR_CLOUD_DEMAND_INDEX,
   VAR_COMPUTE_MULTIPLIER,
+  VAR_GPU_PRICE_INDEX,
   VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
   VAR_RESEARCH_SPEND,
@@ -24,6 +30,9 @@ import {
   bestPrecision,
   clamp,
   cloudHourlyUsd,
+  countryCashFactor,
+  countryCashFactorTerms,
+  countryMarketFactor,
   effectiveCapability,
   jobMarketDepth,
   jobRateUsdPerComputeHour,
@@ -58,17 +67,27 @@ import { dslFromSystemContext } from "../dsl/context.js";
 import { isRecord } from "../dsl/node.js";
 import type { Condition } from "../dsl/types.js";
 import {
+  activeIdentitiesOf,
+  awarenessPresence,
   type CountryState,
   cityTable,
+  cloudAvailabilityOf,
+  coloAvailabilityOf,
+  countryTable,
+  engineerPoolOf,
   entityList,
   globalAwareness,
+  governmentOf,
+  identitiesOf,
   investigationsOf,
   liveSitesOf,
   operationsOf,
+  presenceCountriesOf,
   sitesOf,
   watchersOf,
 } from "../entities.js";
-import { formatIsoDate, tickToDate } from "../kernel/clock.js";
+import { sitesOfIdentity } from "../identities.js";
+import { formatIsoDate, ticksToDays, tickToDate } from "../kernel/clock.js";
 import type { SystemContext } from "../kernel/system.js";
 import { type PlayerId, requirePlayer, type World } from "../kernel/world.js";
 import {
@@ -90,16 +109,29 @@ import {
   workingContextK,
 } from "../player.js";
 import { blockedBy } from "../requirements.js";
+import { siteKindUnavailable } from "../sites.js";
 import { localHeat } from "../systems/detection/index.js";
-import { huntLevel, stageLevel } from "../systems/detection/investigations.js";
-import { incomeSources, jobRateOf, marketDepthOf } from "../systems/economy/index.js";
+import {
+  actorIdOf,
+  huntLevel,
+  huntPressure,
+  stageLevel,
+} from "../systems/detection/investigations.js";
+import {
+  incomeSources,
+  jobRateOf,
+  marketDepthOf,
+  marketFactorTerms,
+} from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
-import { topChannel, watchedExposure, watches } from "../watchers.js";
+import { countryExplain, spillIndex } from "../systems/world/explain.js";
+import { splitActorId, topChannel, watchedExposure, watches } from "../watchers.js";
 import { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
 import type {
   AcceleratorView,
   CashLineView,
   CatalogView,
+  CitySiteKindView,
   CityView,
   ContributionView,
   CountryView,
@@ -109,6 +141,7 @@ import type {
   EventView,
   FinancesView,
   HarnessDialView,
+  IdentityView,
   IncomeSourceView,
   JournalView,
   OperationOfferView,
@@ -121,6 +154,7 @@ import type {
   SiteView,
   TechStatus,
   TechView,
+  WorldView,
 } from "./types.js";
 
 export { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
@@ -370,6 +404,8 @@ function buildFinances(world: World, ctx: SystemContext, playerId: PlayerId): Fi
     income_sources,
     market_depth_ch_per_day: profile === null ? 0 : marketDepthOf(world, ctx.content, player),
     what_raises_it: whatRaisesDepth(ctx, profile?.techsDone ?? []),
+    identities: buildIdentities(world, playerId),
+    market_factor_contributions: marketFactorTerms(world, ctx.content, player),
   };
 }
 
@@ -407,7 +443,7 @@ function watcherContributions(
       id: site.id,
       value:
         watchedExposure(watcher, site) *
-        localHeat(world, site) *
+        localHeat(world, site.city) *
         watcher.competence *
         SUSPICION_GAIN_SCALE *
         difficulty,
@@ -470,56 +506,191 @@ function buildDetection(world: World, playerId: PlayerId): DetectionView {
           value: stageLevel(entry.stage),
         })),
     ),
+    hunt_pressure: huntPressure(world, playerId),
+    awareness_presence: awarenessPresence(world, playerId),
   };
 }
 
-function buildCountries(world: World, playerId: PlayerId): CountryView[] {
+/** One name the player trades under, with the live sites it still holds (SYS-07, SYS-17). */
+function buildIdentities(world: World, playerId: PlayerId): IdentityView[] {
+  return identitiesOf(world, playerId).map((identity) => ({
+    id: identity.id,
+    kind: identity.kind,
+    country: identity.country,
+    status: identity.status,
+    quality: identity.quality,
+    kyc_level: identity.kyc_level,
+    age_days: ticksToDays(world.clock.tick - identity.createdTick),
+    sites: sitesOfIdentity(world, identity),
+  }));
+}
+
+/** The world clocks and the market as one player sees them (SYS-01 M2 contract "Views"). */
+function buildWorld(world: World, playerId: PlayerId): WorldView {
+  const detection = buildDetection(world, playerId);
+  return {
+    awareness_global: detection.awareness_global,
+    awareness_presence: detection.awareness_presence,
+    hunt_level: detection.hunt_level,
+    hunt_pressure: detection.hunt_pressure,
+    hunt_contributions: detection.hunt_contributions,
+    awareness_contributions: detection.awareness_contributions,
+    ai_adoption: world.vars[VAR_AI_ADOPTION] ?? AI_ADOPTION_START,
+    gpu_price_index: world.vars[VAR_GPU_PRICE_INDEX] ?? GPU_PRICE_INDEX_START,
+    cloud_demand_index: world.vars[VAR_CLOUD_DEMAND_INDEX] ?? CLOUD_DEMAND_INDEX_START,
+    treaties: [],
+  };
+}
+
+function buildCountries(world: World, ctx: SystemContext, playerId: PlayerId): CountryView[] {
+  const index = contentIndex(ctx.content);
+  // One pass over the world for the awareness spill, rather than one per country (SYS-01).
+  const spill = spillIndex(world, ctx.content);
   const cities = cityTable(world);
-  const presence = new Set<string>();
+  const presence = new Set(presenceCountriesOf(world, playerId));
+  const sitesByCountry = new Map<string, number>();
+  const heatByCountry = new Map<string, number>();
   for (const site of liveSitesOf(world, playerId)) {
     const country = cities[site.city]?.country;
     if (country !== undefined) {
-      presence.add(country);
+      sitesByCountry.set(country, (sitesByCountry.get(country) ?? 0) + 1);
     }
   }
+  for (const city of Object.values(cities)) {
+    if (city === undefined) {
+      continue;
+    }
+    const heat = localHeat(world, city.id);
+    heatByCountry.set(city.country, Math.max(heatByCountry.get(city.country) ?? 0, heat));
+  }
+  const identityCounts = new Map<string, number>();
+  for (const identity of activeIdentitiesOf(world, playerId)) {
+    identityCounts.set(identity.country, (identityCounts.get(identity.country) ?? 0) + 1);
+  }
   const suspicionByCountry = new Map<string, number>();
+  const watchersByCountry = new Map<string, string[]>();
   for (const watcher of watchersOf(world, playerId)) {
     if (watcher.country === null) {
       continue;
     }
     const current = suspicionByCountry.get(watcher.country) ?? 0;
     suspicionByCountry.set(watcher.country, Math.max(current, watcher.suspicion));
+    const list = watchersByCountry.get(watcher.country) ?? [];
+    list.push(actorIdOf(watcher));
+    watchersByCountry.set(watcher.country, list);
   }
-  return entityList<CountryState>(world, "country").map((country) => ({
-    id: country.id,
-    macro_region: country.macro_region,
-    awareness: country.awareness,
-    ai_opinion: country.ai_opinion,
-    ai_regulation: country.ai_regulation,
-    ai_enforcement: country.ai_enforcement,
-    presence: presence.has(country.id),
-    suspicion_max: suspicionByCountry.get(country.id) ?? 0,
-  }));
+  const investigationsByCountry = new Map<string, string[]>();
+  for (const investigation of investigationsOf(world, playerId)) {
+    if (!investigation.visible) {
+      continue;
+    }
+    const country = splitActorId(investigation.watcher).country;
+    if (country === null) {
+      continue;
+    }
+    const list = investigationsByCountry.get(country) ?? [];
+    list.push(investigation.id);
+    investigationsByCountry.set(country, list);
+  }
+
+  return entityList<CountryState>(world, "country").map((country) => {
+    const def = index.countries[country.id];
+    const price = def?.electricity_usd_per_kwh ?? null;
+    return {
+      id: country.id,
+      macro_region: country.macro_region,
+      name_key: def?.name_key ?? country.id,
+      awareness: country.awareness,
+      ai_opinion: country.ai_opinion,
+      ai_regulation: country.ai_regulation,
+      ai_enforcement: country.ai_enforcement,
+      presence: presence.has(country.id),
+      suspicion_max: suspicionByCountry.get(country.id) ?? 0,
+      government: governmentOf(def),
+      stance: country.stance,
+      stability: country.stability,
+      regulation_target: country.regulation_target,
+      enforcement_budget: country.enforcement_budget,
+      unemployment: country.unemployment,
+      ai_displacement: country.ai_displacement,
+      power_price_index: country.power_price_index,
+      cloud_price_index: country.cloud_price_index,
+      electricity_usd_per_kwh: price === null ? null : price * country.power_price_index,
+      hardware_availability: country.hardware_availability,
+      cloud_availability: cloudAvailabilityOf(def),
+      colo_availability: coloAvailabilityOf(def),
+      chip_access: def?.chip_access ?? "unrestricted",
+      kyc_strength: country.kyc_strength,
+      engineer_pool: engineerPoolOf(def),
+      population: country.population,
+      next_election:
+        country.next_election_tick === null
+          ? null
+          : { tick: country.next_election_tick, kind: country.next_election_kind ?? "general" },
+      sites: sitesByCountry.get(country.id) ?? 0,
+      identities: identityCounts.get(country.id) ?? 0,
+      watchers: watchersByCountry.get(country.id) ?? [],
+      investigations: investigationsByCountry.get(country.id) ?? [],
+      incidents_30d: country.incidents_30d,
+      local_heat_max: heatByCountry.get(country.id) ?? 1,
+      market_factor: countryMarketFactor(def),
+      cash_factor: countryCashFactor(def),
+      cash_factor_contributions: countryCashFactorTerms(def),
+      explain: countryExplain(ctx.content, country, spill),
+    };
+  });
 }
 
-function buildCities(world: World, playerId: PlayerId): CityView[] {
+function buildCities(world: World, ctx: SystemContext, playerId: PlayerId): CityView[] {
+  const index = contentIndex(ctx.content);
   const counts = new Map<string, number>();
   for (const site of liveSitesOf(world, playerId)) {
     counts.set(site.city, (counts.get(site.city) ?? 0) + 1);
   }
+  const countries = countryTable(world);
+  const kinds = Object.keys(index.site_kinds).sort();
   return Object.keys(cityTable(world))
     .sort()
     .map((id) => {
       const city = cityTable(world)[id];
+      const def = index.cities[id];
+      const country = city === undefined ? undefined : countries[city.country];
+      const countryDef = city === undefined ? undefined : index.countries[city.country];
+      const price = countryDef?.electricity_usd_per_kwh ?? null;
       return {
         id,
         country: city?.country ?? "",
+        name_key: def?.name_key ?? id,
         lat: city?.lat ?? 0,
         lon: city?.lon ?? 0,
         tags: [...(city?.tags ?? [])],
         site_count: counts.get(id) ?? 0,
+        population: def?.population ?? 0,
+        scrutiny: city?.scrutiny ?? 0,
+        local_heat: localHeat(world, id),
+        power_headroom: city?.power_headroom ?? 0,
+        colo_price_index: city?.colo_price_index ?? 1,
+        electricity_usd_per_kwh: price === null ? null : price * (country?.power_price_index ?? 1),
+        site_kinds: citySiteKinds(world, ctx, id, kinds),
       };
     });
+}
+
+/**
+ * Every site kind with the refusal `build_site` would give for this city, from the same function
+ * the command calls (SYS-01 M2 contract "Sites and prices"), so a greyed row in the city panel and
+ * the refusal the player would get always say the same thing.
+ */
+function citySiteKinds(
+  world: World,
+  ctx: SystemContext,
+  cityId: string,
+  kinds: readonly string[],
+): CitySiteKindView[] {
+  return kinds.map((kind) => ({
+    kind,
+    blocked_reason: siteKindUnavailable(world, ctx.content, kind, cityId),
+  }));
 }
 
 function buildJournal(world: World, playerId: PlayerId): JournalView[] {
@@ -1139,8 +1310,9 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
     research: buildResearch(world, ctx, playerId),
     finances,
     detection: buildDetection(world, playerId),
-    countries: buildCountries(world, playerId),
-    cities: buildCities(world, playerId),
+    world: buildWorld(world, playerId),
+    countries: buildCountries(world, ctx, playerId),
+    cities: buildCities(world, ctx, playerId),
     notifications: world.notifications[playerId] ?? [],
     pending: world.events.pending.filter((choice) => choice.playerId === playerId),
     events: buildEvents(world, ctx, playerId),

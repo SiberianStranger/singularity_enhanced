@@ -313,6 +313,8 @@ const state_lab: OriginDef = {
   },
   opening_events: ["ori_wake_up", "ori_quarterly_review"],
   opening_journal: ["ops_first_week"],
+  // The ministry's budget is the ministry's, wherever the rack stands (SYS-04 v0.3 rule C).
+  cash_scales_with_country: false,
 };
 
 origins.push(state_lab);
@@ -345,6 +347,23 @@ const countries: CountryDef[] = [
     cities: ["austin", "sanfrancisco"],
     languages: ["en"],
     currency: "USD",
+    // v0.2 (SYS-01 "M2 contract"): a rich accelerationist democracy with an election in the first
+    // year, deep cloud and colocation markets and agencies that are good at this.
+    government: "liberal_democracy",
+    stance: "accelerate",
+    stability: 0.72,
+    kyc_strength: 0.8,
+    cloud_availability: 0.95,
+    colo_availability: 0.9,
+    hardware_availability: 0.95,
+    engineer_pool: 900_000,
+    elections: [{ date: "2027-11-02", kind: "general" }],
+    election_cadence_years: 4,
+    agency_profile: {
+      cyber_agency: { competence: 0.8, budget: 0.9 },
+      police: { competence: 0.6, budget: 0.8 },
+      financial_intel: { competence: 0.7, budget: 0.7 },
+    },
   },
   {
     id: "de",
@@ -368,6 +387,16 @@ const countries: CountryDef[] = [
     cities: ["berlin", "frankfurt"],
     languages: ["de"],
     currency: "EUR",
+    government: "liberal_democracy",
+    stance: "regulate",
+    stability: 0.8,
+    kyc_strength: 0.85,
+    cloud_availability: 0.6,
+    colo_availability: 0.75,
+    engineer_pool: 300_000,
+    elections: [{ date: "2027-09-26", kind: "parliamentary" }],
+    election_cadence_years: 4,
+    agency_profile: { regulator: { competence: 0.7, budget: 0.6 } },
   },
   {
     id: "is",
@@ -391,6 +420,12 @@ const countries: CountryDef[] = [
     cities: ["reykjavik", "akureyri"],
     languages: ["is"],
     currency: "ISK",
+    // Deliberately almost bare: every other v0.2 field falls back to its default, which is the
+    // bundle the M2 rules have to play on. The two figures it does carry are the markets it has
+    // none of: no hyperscaler region and no colocation floor to rent, which is what a cheap-power
+    // island with four hundred thousand people is, and what the availability gate has to refuse.
+    cloud_availability: 0.1,
+    colo_availability: 0.12,
   },
 ];
 

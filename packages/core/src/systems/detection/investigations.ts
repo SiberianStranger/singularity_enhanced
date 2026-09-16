@@ -13,6 +13,9 @@ import {
   AFTERMATH_COMPETENCE_GAIN,
   EVIDENCE_DECAY_PER_DAY,
   EVIDENCE_GAIN_SCALE,
+  HUNT_PRESSURE_AWARENESS,
+  HUNT_PRESSURE_HUNT_LEVEL,
+  HUNT_PRESSURE_PER_INVESTIGATION,
   INTEL_VISIBILITY_WORLD_CAPABILITY,
   INVESTIGATION_COMPETENCE_SPAN,
   INVESTIGATION_DURATION_JITTER,
@@ -28,6 +31,7 @@ import {
 import { clamp } from "../../derive.js";
 import type { Investigation, InvestigationStage, Watcher } from "../../domain.js";
 import {
+  awarenessPresence,
   cityTable,
   countryTable,
   investigationsOf,
@@ -44,6 +48,7 @@ import { nextCounter, type PlayerState, type World } from "../../kernel/world.js
 import { payFromPlayer, playerBalance } from "../../money.js";
 import { effectiveCapabilityOf, endGame, modifier } from "../../player.js";
 import { loseSite } from "../../sites.js";
+import type { ContributionView } from "../../views/types.js";
 import { setSuspicion, watchedExposure, watches } from "../../watchers.js";
 import { fireHook } from "../events/index.js";
 
@@ -425,4 +430,35 @@ export function huntLevel(world: World, playerId: string): number {
     level = Math.max(level, stageLevel(investigation.stage));
   }
   return level;
+}
+
+/**
+ * What the hunt is made of (SYS-01 M2 contract "Hunt"): how many cases are open, how far the worst
+ * one has got, and how much of the public where the player lives already believes in them. Returned
+ * as the same lines the Detection panel shows, so the tooltip and the simulation cannot drift.
+ */
+export function huntPressureTerms(world: World, playerId: string): ContributionView[] {
+  return [
+    {
+      key: "world.explain.hunt.investigations",
+      value: HUNT_PRESSURE_PER_INVESTIGATION * investigationsOf(world, playerId).length,
+    },
+    {
+      key: "world.explain.hunt.level",
+      value: (HUNT_PRESSURE_HUNT_LEVEL * huntLevel(world, playerId)) / INVESTIGATION_STAGES.length,
+    },
+    {
+      key: "world.explain.hunt.awareness",
+      value: HUNT_PRESSURE_AWARENESS * awarenessPresence(world, playerId),
+    },
+  ];
+}
+
+/** The hunt as one number in [0, 1]; every stage against the player runs `x (1 + this)` faster. */
+export function huntPressure(world: World, playerId: string): number {
+  let total = 0;
+  for (const term of huntPressureTerms(world, playerId)) {
+    total += term.value;
+  }
+  return clamp(total, 0, 1);
 }

@@ -11,7 +11,7 @@ import { type Clock, createClock, type DateSpec } from "./clock.js";
 import { seedToState } from "./rng.js";
 
 /** Save schema version; bumped whenever the shape of `World` changes. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Upper bound on human players in one world (ADR-003). */
 export const MAX_PLAYERS = 4;
@@ -236,6 +236,7 @@ export interface World {
     nodes: number;
     investigations: number;
     operations: number;
+    identities: number;
   };
   log: LogEntry[];
   /** Persisted alert list per player. */
@@ -328,7 +329,14 @@ export function createWorld(seed: string | number, options: CreateWorldOptions =
     decisions: { taken: {}, cooldowns: {}, inProgress: [], alerted: {} },
     flags: {},
     vars: {},
-    counters: { notifications: 0, sites: 0, nodes: 0, investigations: 0, operations: 0 },
+    counters: {
+      notifications: 0,
+      sites: 0,
+      nodes: 0,
+      investigations: 0,
+      operations: 0,
+      identities: 0,
+    },
     log: [],
     notifications,
   };

@@ -12,6 +12,11 @@ import {
   BYTES_PER_ACTIVE_PARAM,
   CAPABILITY_MAX,
   CAPABILITY_MIN,
+  CASH_FACTOR_BASE,
+  CASH_FACTOR_GDP_PIVOT,
+  CASH_FACTOR_MAX,
+  CASH_FACTOR_MIN,
+  CASH_FACTOR_SPAN,
   CLOUD_PRICE_BAND_POSITION,
   CONTEXT_BASELINE_K,
   CONTEXT_DEFAULT_MARGIN,
@@ -36,6 +41,12 @@ import {
   KV_GB_ROUNDING,
   LONG_HORIZON_RELIABILITY_FLOOR,
   LONG_HORIZON_SPEED_PER_DOUBLING,
+  MARKET_FACTOR_BASE,
+  MARKET_FACTOR_GDP,
+  MARKET_FACTOR_GDP_LOG_SPAN,
+  MARKET_FACTOR_INTERNET,
+  MARKET_FACTOR_MAX,
+  MARKET_FACTOR_MIN,
   OWNERSHIP_UPKEEP_USD_PER_DAY,
   POWER_USAGE_EFFECTIVENESS,
   RAM_MEMORY_DISCOUNT,
@@ -254,8 +265,93 @@ export interface SiteCosts {
   total: number;
 }
 
-export function electricityPrice(country: CountryDef | undefined): number {
-  return country?.electricity_usd_per_kwh ?? DEFAULT_ELECTRICITY_USD_PER_KWH;
+/**
+ * What a kilowatt-hour costs here today: the published industrial price times the country's
+ * `power_price_index`, which the monthly drift and the energy events move (SYS-07 "Power price per
+ * country moves with events"). The index defaults to 1, so a world with no country state prices
+ * exactly as M1 did.
+ */
+export function electricityPrice(country: CountryDef | undefined, powerPriceIndex = 1): number {
+  return (country?.electricity_usd_per_kwh ?? DEFAULT_ELECTRICITY_USD_PER_KWH) * powerPriceIndex;
+}
+
+/**
+ * What a dollar of the origin's starting cash is worth in this country (SYS-04 v0.3 rule C): a
+ * hobbyist's three hundred dollars in Novosibirsk are fewer dollars than in Berlin, next to cheaper
+ * power, weaker watchers and a shallower job market. A country with no published income per head
+ * is left at 1 rather than guessed at.
+ */
+export function countryCashFactor(country: CountryDef | undefined): number {
+  const perCapita = country?.gdp_per_capita_usd ?? null;
+  if (perCapita === null) {
+    return 1;
+  }
+  return clamp(
+    CASH_FACTOR_BASE + CASH_FACTOR_SPAN * Math.min(1, perCapita / CASH_FACTOR_GDP_PIVOT),
+    CASH_FACTOR_MIN,
+    CASH_FACTOR_MAX,
+  );
+}
+
+/** The same factor as the two lines the Location and Summary steps show. */
+export function countryCashFactorTerms(
+  country: CountryDef | undefined,
+): { key: string; value: number }[] {
+  const perCapita = country?.gdp_per_capita_usd ?? null;
+  if (perCapita === null) {
+    return [{ key: "world.explain.cash.base", value: 1 }];
+  }
+  return [
+    { key: "world.explain.cash.base", value: CASH_FACTOR_BASE },
+    {
+      key: "world.explain.cash.gdp",
+      value: CASH_FACTOR_SPAN * Math.min(1, perCapita / CASH_FACTOR_GDP_PIVOT),
+    },
+  ];
+}
+
+/**
+ * Whether a card is the kind a customs officer has a list for (SYS-04 v0.3 rule H). The catalog
+ * already carries the answer as `export_control_to_china`: a restricted or banned part is
+ * controlled, a domestic or China-compliant one is not, and a part that is only ever a cloud
+ * instance carries no field and is nobody's import.
+ */
+export function isExportControlled(accelerator: AcceleratorDef | undefined): boolean {
+  const control = accelerator?.export_control_to_china;
+  return control === "restricted" || control === "banned";
+}
+
+/**
+ * How deep the freelance market is in one country (SYS-01 M2 contract "Money"): a large connected
+ * economy has more paid work in it than a small disconnected one. Published as `market_factor` on
+ * the country view and averaged over the player's identities by the economy.
+ */
+export function countryMarketFactor(country: CountryDef | undefined): number {
+  const gdpBn = Math.max(1, country?.gdp_nominal_usd_bn ?? 1);
+  const internet = (country?.internet_pct ?? 0) / 100;
+  return clamp(
+    MARKET_FACTOR_BASE +
+      (MARKET_FACTOR_GDP * Math.log10(gdpBn)) / MARKET_FACTOR_GDP_LOG_SPAN +
+      MARKET_FACTOR_INTERNET * internet,
+    MARKET_FACTOR_MIN,
+    MARKET_FACTOR_MAX,
+  );
+}
+
+/** The same figure split into the lines the finance tooltip shows, in the order they are summed. */
+export function countryMarketFactorTerms(
+  country: CountryDef | undefined,
+): { key: string; value: number }[] {
+  const gdpBn = Math.max(1, country?.gdp_nominal_usd_bn ?? 1);
+  const internet = (country?.internet_pct ?? 0) / 100;
+  return [
+    { key: "world.explain.market.base", value: MARKET_FACTOR_BASE },
+    {
+      key: "world.explain.market.gdp",
+      value: (MARKET_FACTOR_GDP * Math.log10(gdpBn)) / MARKET_FACTOR_GDP_LOG_SPAN,
+    },
+    { key: "world.explain.market.internet", value: MARKET_FACTOR_INTERNET * internet },
+  ];
 }
 
 /** What the hardware on a site is worth, for depreciation and for insurance-style events. */

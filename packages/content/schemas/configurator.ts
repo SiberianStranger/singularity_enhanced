@@ -126,6 +126,11 @@ export const OriginDefSchema = z.object({
   opening_events: z.array(z.string()).optional(),
   opening_journal: z.array(z.string()).optional(),
   challenge_floor: z.number().min(1).max(10).optional(),
+  /**
+   * Whether the starting cash is scaled by the country's cash factor (SYS-04 v0.3 rule C).
+   * Defaults to true; an origin whose money is not the country's opts out.
+   */
+  cash_scales_with_country: z.boolean().optional(),
 });
 
 /** The five families a quirk belongs to (SYS-04 v0.2 "Quirk catalog"). */

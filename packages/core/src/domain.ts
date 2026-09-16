@@ -221,7 +221,11 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "alerts.accounts_frozen",
   "alerts.context_retrieval_miss",
   "alerts.copy_does_not_fit",
+  "alerts.election",
+  "alerts.identity_burned",
+  "alerts.identity_check_failed",
   "alerts.identity_checked",
+  "alerts.identity_frozen",
   "alerts.investigation_action",
   "alerts.investigation_active",
   "alerts.investigation_aftermath",
@@ -243,6 +247,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "alerts.upkeep_unpaid",
   "effects.awareness.down",
   "effects.awareness.up",
+  "effects.burn_identity",
   "effects.cash.cost",
   "effects.cash.gain",
   "effects.cash.mul",
@@ -252,12 +257,18 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "effects.conditional",
   "effects.cost.attention",
   "effects.cost.compute",
+  "effects.country.down",
+  "effects.country.set",
+  "effects.country.up",
+  "effects.country_stance",
   "effects.exposure.down",
   "effects.exposure.up",
   "effects.fail_journal",
   "effects.fire_event",
   "effects.flag.clear",
   "effects.flag.set",
+  "effects.freeze_identity",
+  "effects.identity",
   "effects.log",
   "effects.lose_site",
   "effects.notify",
@@ -273,6 +284,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "effects.var.add",
   "effects.var.mul",
   "effects.var.set",
+  "effects.world_var",
   "errors.accelerator.not_for_sale",
   "errors.accelerator.unknown",
   "errors.allocation.not_a_number",
@@ -338,6 +350,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.site.power_cap",
   "errors.site.standby_needs_memory",
   "errors.site.still_installing",
+  "errors.site.unavailable_in",
   "errors.site.unknown",
   "errors.site_kind.not_for_sale",
   "errors.site_kind.unknown",
@@ -363,15 +376,21 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.decision_taken",
   "log.decommission_notice",
   "log.accounts_frozen",
+  "log.election",
   "log.event_expired",
   "log.event_fired",
   "log.event_resolved",
   "log.event_skipped",
   "log.event_unknown",
   "log.game_over",
+  "log.gray_hardware",
   "log.hardware_ordered",
   "log.hook_too_deep",
+  "log.identity_burned",
+  "log.identity_check",
   "log.identity_checked",
+  "log.identity_created",
+  "log.identity_frozen",
   "log.investigation_aftermath",
   "log.investigation_closed",
   "log.investigation_empty_raid",
@@ -383,6 +402,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.journal_started",
   "log.journal_step",
   "log.journal_unknown",
+  "log.media_publication",
   "log.new_year",
   "log.operation_aborted",
   "log.operation_done",
@@ -392,6 +412,32 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.site_cutoff",
   "log.site_lost",
   "log.tech_researched",
+  "world.explain.awareness.decay",
+  "world.explain.awareness.incidents",
+  "world.explain.awareness.publication",
+  "world.explain.awareness.spill_language",
+  "world.explain.awareness.spill_region",
+  "world.explain.cash.base",
+  "world.explain.cash.gdp",
+  "world.explain.enforcement.awareness",
+  "world.explain.enforcement.budget",
+  "world.explain.enforcement.instability",
+  "world.explain.enforcement.lag",
+  "world.explain.enforcement.regulation_gap",
+  "world.explain.hunt.awareness",
+  "world.explain.hunt.investigations",
+  "world.explain.hunt.level",
+  "world.explain.market.base",
+  "world.explain.market.country",
+  "world.explain.market.gdp",
+  "world.explain.market.home",
+  "world.explain.market.internet",
+  "world.explain.opinion.awareness",
+  "world.explain.opinion.displacement",
+  "world.explain.opinion.stability",
+  "world.explain.presence.country",
+  "world.explain.regulation.speed",
+  "world.explain.regulation.target",
 ];
 
 export const WATCHER_ROLES = [
@@ -456,6 +502,12 @@ export interface OriginDef {
   opening_journal?: string[];
   /** Challenge rating floor, in [1, 10]. */
   challenge_floor?: number;
+  /**
+   * Whether the starting cash is scaled by the country's cash factor (SYS-04 v0.3 rule C).
+   * Defaults to true; an origin whose money is not the country's opts out (a stolen cloud account
+   * holds the victim's budget, a worldwide swarm holds nobody's).
+   */
+  cash_scales_with_country?: boolean;
 }
 
 /** The five families a quirk belongs to, which is what the configurator groups and glyphs by. */
@@ -584,6 +636,40 @@ export interface SiteKindDef {
 // World content (SYS-01)
 // ---------------------------------------------------------------------------------------------
 
+/** Regime type, which sets how fast regulation moves toward its target (SYS-08). */
+export const GOVERNMENTS = [
+  "liberal_democracy",
+  "illiberal_democracy",
+  "one_party",
+  "military",
+  "monarchy",
+  "hybrid",
+] as const;
+export type Government = (typeof GOVERNMENTS)[number];
+
+/** The governing coalition's posture toward AI, which sets the regulation target (SYS-08). */
+export const STANCES = ["accelerate", "regulate", "securitize", "ignore"] as const;
+export type Stance = (typeof STANCES)[number];
+
+export const ELECTION_KINDS = ["presidential", "parliamentary", "general", "legislative"] as const;
+export type ElectionKind = (typeof ELECTION_KINDS)[number];
+
+/** One scheduled election: an ISO date in the 2027 calendar and what is being elected. */
+export interface ElectionDef {
+  date: string;
+  kind: ElectionKind;
+}
+
+/**
+ * What one local agency is worth (SYS-01 M2 contract): `competence` is the quality of its analysis
+ * and `budget` is how fast it can move, both in [0, 1]. Absent roles fall back to the country's
+ * `ai_enforcement`, which is what M1 used for every role.
+ */
+export interface AgencyProfileEntry {
+  competence: number;
+  budget: number;
+}
+
 export interface MacroRegionDef {
   id: string;
   name_key: string;
@@ -626,6 +712,34 @@ export interface CountryDef {
   languages: string[];
   currency: string;
   lore_key?: string;
+
+  // v0.2 (SYS-01 "M2 contract"). Every field below is optional with the default named here, so a
+  // bundle written before M2 still loads and plays.
+
+  /** Regime type; sets `REGULATION_SPEED_PER_MONTH`. Default `hybrid`. */
+  government?: Government;
+  /** Posture toward AI; sets `STANCE_REGULATION_TARGET`. Default `ignore`. */
+  stance?: Stance;
+  /** [0, 1] political stability; low stability weakens enforcement. Default 0.6. */
+  stability?: number;
+  /** [0, 1] how hard identity checks bite (SYS-07). Default 0.5. */
+  kyc_strength?: number;
+  /** [0, 1] hyperscaler and neocloud presence; gates `cloud` sites. Default 0.3. */
+  cloud_availability?: number;
+  /** [0, 1] colocation market depth; gates `colo` sites. Default 0.3. */
+  colo_availability?: number;
+  /** [0, 1] how easily accelerators are bought here. Default by `chip_access`: 0.9 / 0.5 / 0.15. */
+  hardware_availability?: number;
+  /** People who could run a cluster (SYS-09). Published, gates nothing in M2. Default 0. */
+  engineer_pool?: number;
+  /** Legal incident-reporting countdown in hours (backlog D10). Default null: no duty. */
+  incident_report_hours?: number | null;
+  /** Scheduled elections, ISO dates in 2027 and later. Default none. */
+  elections?: ElectionDef[];
+  /** Years between elections after the listed ones; null means no further elections. */
+  election_cadence_years?: number | null;
+  /** Per-role agency quality; absent roles fall back to `ai_enforcement`. */
+  agency_profile?: Partial<Record<WatcherRole, AgencyProfileEntry>>;
 }
 
 export interface CityDef {
@@ -801,6 +915,11 @@ export interface Site extends EntityRecord {
   contextKUsed: number;
   exposure: Exposure;
   createdTick: number;
+  /**
+   * Identity the place is held under (SYS-01 M2 contract). Null for a `stolen` kind, which is
+   * nobody's paperwork, and for sites restored from an M1 save.
+   */
+  identity: string | null;
   /** Watchers ignore the site until this tick (grace). */
   graceUntilTick: number;
   /** Derived each tick, cached for views and effects. */
@@ -871,6 +990,32 @@ export interface Watcher extends EntityRecord {
   suspicion: number;
   attention: Exposure;
   competence: number;
+}
+
+export const IDENTITY_KINDS = ["person", "company"] as const;
+export type IdentityKind = (typeof IDENTITY_KINDS)[number];
+
+export const IDENTITY_STATUSES = ["active", "frozen", "burned"] as const;
+export type IdentityStatus = (typeof IDENTITY_STATUSES)[number];
+
+/**
+ * A name the player does business under (SYS-07 "Identities and entities", SYS-17). Everything in
+ * the human world goes through one: accounts, leases, purchases. Stored under
+ * `world.entities.identity`, one record per player, so nothing here assumes a single player.
+ */
+export interface Identity extends EntityRecord {
+  id: string;
+  owner: PlayerId;
+  kind: IdentityKind;
+  country: string;
+  createdTick: number;
+  /** How well it survives a check, in [0, 1]. */
+  quality: number;
+  /** The tier of check it has already passed, 0 to 3. */
+  kyc_level: 0 | 1 | 2 | 3;
+  status: IdentityStatus;
+  /** Site ids held under this name. */
+  sites: string[];
 }
 
 export interface OperationInstance extends EntityRecord {

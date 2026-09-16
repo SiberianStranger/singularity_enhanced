@@ -19,6 +19,7 @@ import type {
   WatcherRole,
 } from "../domain.js";
 import type { CalendarDate } from "../kernel/clock.js";
+import type { CommandError } from "../kernel/commands.js";
 import type {
   ChoiceReason,
   LogEntry,
@@ -270,6 +271,10 @@ export interface FinancesView {
   market_depth_ch_per_day: number;
   /** Locale keys of what would raise that ceiling: capability, and the techs that widen it. */
   what_raises_it: string[];
+  /** The names the player trades under, live sites included (SYS-07, SYS-17). */
+  identities: IdentityView[];
+  /** Where the country factor on the market depth came from (SYS-01 M2 contract "Money"). */
+  market_factor_contributions: ContributionView[];
 }
 
 /**
@@ -318,11 +323,38 @@ export interface DetectionView {
   hunt_level: number;
   /** The investigations that set `hunt_level`, as stage levels. */
   hunt_contributions: ContributionView[];
+  /** How hard the world is looking for this player, in [0, 1] (SYS-05 "Global pressure"). */
+  hunt_pressure: number;
+  /** Population-weighted awareness over the countries this player is present in. */
+  awareness_presence: number;
+}
+
+/**
+ * The world as one player sees it (SYS-01 M2 contract "Views"): the two awareness figures, the
+ * hunt and what is feeding it, and the three market variables every price in the game is scaled by.
+ * Treaties arrive with the actors in M3 and are published empty so the panel can be built once.
+ */
+export interface WorldView {
+  /** Population-weighted awareness over every country. */
+  awareness_global: number;
+  /** The same, over the countries this player is present in; the `exposed` ending reads it. */
+  awareness_presence: number;
+  /** Highest active investigation stage against this player, 0..5. */
+  hunt_level: number;
+  /** How hard the world is looking for this player, in [0, 1]. */
+  hunt_pressure: number;
+  hunt_contributions: ContributionView[];
+  awareness_contributions: ContributionView[];
+  ai_adoption: number;
+  gpu_price_index: number;
+  cloud_demand_index: number;
+  treaties: never[];
 }
 
 export interface CountryView {
   id: string;
   macro_region: string;
+  name_key: string;
   awareness: number;
   ai_opinion: number;
   ai_regulation: number;
@@ -330,15 +362,84 @@ export interface CountryView {
   /** The player has a site or an identity here. */
   presence: boolean;
   suspicion_max: number;
+  government: string;
+  stance: string;
+  stability: number;
+  regulation_target: number;
+  enforcement_budget: number;
+  unemployment: number;
+  ai_displacement: number;
+  power_price_index: number;
+  cloud_price_index: number;
+  /** Published price times `power_price_index`; null where the baseline has no price. */
+  electricity_usd_per_kwh: number | null;
+  hardware_availability: number;
+  cloud_availability: number;
+  colo_availability: number;
+  chip_access: string;
+  kyc_strength: number;
+  engineer_pool: number;
+  population: number;
+  next_election: { tick: number; kind: string } | null;
+  /** Live sites and active identities this player holds here. */
+  sites: number;
+  identities: number;
+  /** Actor ids of the watchers with a case or a file on this player here. */
+  watchers: string[];
+  /** Ids of the investigations against this player here that the player can see. */
+  investigations: string[];
+  incidents_30d: number;
+  /** The hottest city in the country for this player, on the same scale as `CityView.local_heat`. */
+  local_heat_max: number;
+  market_factor: number;
+  /** What an origin's starting cash is multiplied by here (SYS-04 v0.3 rule C). */
+  cash_factor: number;
+  /** The two lines behind that factor, for the Location and Summary steps. */
+  cash_factor_contributions: ContributionView[];
+  explain: {
+    awareness: ContributionView[];
+    ai_opinion: ContributionView[];
+    ai_regulation: ContributionView[];
+    ai_enforcement: ContributionView[];
+  };
+}
+
+/** One buildable kind in one city, with the refusal the command would return (SYS-11). */
+export interface CitySiteKindView {
+  kind: string;
+  blocked_reason: CommandError | null;
 }
 
 export interface CityView {
   id: string;
   country: string;
+  name_key: string;
   lat: number;
   lon: number;
   tags: string[];
   site_count: number;
+  population: number;
+  scrutiny: number;
+  /** How much hotter than the world average this city is for this player (SYS-01 "local heat"). */
+  local_heat: number;
+  power_headroom: number;
+  colo_price_index: number;
+  /** The country's price times its `power_price_index`; null where there is no published price. */
+  electricity_usd_per_kwh: number | null;
+  site_kinds: CitySiteKindView[];
+}
+
+/** One name the player does business under (SYS-07, SYS-17). */
+export interface IdentityView {
+  id: string;
+  kind: string;
+  country: string;
+  status: string;
+  quality: number;
+  kyc_level: number;
+  age_days: number;
+  /** Live sites held under this name. */
+  sites: string[];
 }
 
 export interface JournalView {
@@ -501,6 +602,8 @@ export interface PlayerView {
   research: ResearchView;
   finances: FinancesView;
   detection: DetectionView;
+  /** The world clocks and the market, as this player sees them (SYS-01 M2 contract). */
+  world: WorldView;
   countries: CountryView[];
   cities: CityView[];
   notifications: Notification[];

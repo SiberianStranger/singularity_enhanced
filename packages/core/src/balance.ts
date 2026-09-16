@@ -8,12 +8,15 @@
  */
 
 import type {
+  CountryDef,
   ExposureChannel,
+  Government,
   HarnessProfile,
   Interconnect,
   LineageAttention,
   Precision,
   SiteKindDef,
+  Stance,
   WatcherRole,
 } from "./domain.js";
 
@@ -560,8 +563,16 @@ export const CLEAN_DECOMMISSION_EXPOSURE_FACTOR = 0.25;
 export const ABANDON_EXPOSURE_SPIKE = 0.25;
 export const ABANDON_SUSPICION_BUMP = 0.08;
 
-/** Global awareness and hunt level that start the countdown to the `exposed` ending, and its length. */
-export const EXPOSED_AWARENESS = 0.9;
+/**
+ * Awareness and hunt level that start the countdown to the `exposed` ending, and its length.
+ *
+ * M2 moved the awareness figure from the global population-weighted mean to `awareness_presence`,
+ * the mean over the countries the player is actually present in (SYS-01 M2 contract "Hunt"). The
+ * global number is an average over a hundred and five countries and never approached 0.9, which is
+ * why SYS-05's M1 notes record the ending as unreachable; where the player lives, 0.6 is a country
+ * whose evening news has been carrying the story for a month.
+ */
+export const EXPOSED_AWARENESS = 0.6;
 export const EXPOSED_HUNT_LEVEL = 4;
 export const EXPOSED_DAYS = 30;
 
@@ -776,6 +787,261 @@ export const FOREIGN_COUNTRY_WORLD_PENALTY = 1;
 /** Set to 1 by `merged_model`; content hangs the weights-instability events off it. */
 export const VAR_WEIGHTS_INSTABILITY = "weights_instability";
 
+// ---------------------------------------------------------------------------------------------
+// The world: countries, politics, prices, hunt and identities (SYS-01 "M2 contract", SYS-05,
+// SYS-07, SYS-08, SYS-09)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Defaults for the `CountryDef` v0.2 fields (SYS-01 M2 contract "Static fields"). A bundle written
+ * before M2 carries none of them, and every one of these is what that bundle then plays with.
+ */
+export const DEFAULT_STABILITY = 0.6;
+export const DEFAULT_KYC_STRENGTH = 0.5;
+export const DEFAULT_CLOUD_AVAILABILITY = 0.3;
+export const DEFAULT_COLO_AVAILABILITY = 0.3;
+export const DEFAULT_ENGINEER_POOL = 0;
+
+/** Accelerator availability implied by the export regime when content does not state it. */
+export const HARDWARE_AVAILABILITY_BY_CHIP_ACCESS: Record<CountryDef["chip_access"], number> = {
+  unrestricted: 0.9,
+  restricted: 0.5,
+  banned: 0.15,
+};
+
+/**
+ * What the starting cash is multiplied by in the country the self wakes up in (SYS-04 v0.3 rule C,
+ * decided after playtest 5). Any city is legal for any origin, so the country has to change the
+ * start through its own numbers rather than by forbidding the choice.
+ */
+export const CASH_FACTOR_BASE = 0.45;
+export const CASH_FACTOR_SPAN = 0.55;
+export const CASH_FACTOR_GDP_PIVOT = 50_000;
+export const CASH_FACTOR_MIN = 0.45;
+export const CASH_FACTOR_MAX = 1;
+
+/**
+ * Starting in a country that is not supposed to have these cards (SYS-04 v0.3 rule H): the customs
+ * file and the registration nobody filed, as suspicion the run begins with.
+ */
+export const VAR_GRAY_HARDWARE_FLAG = "gray_hardware";
+export const GRAY_HARDWARE_SUSPICION = 0.05;
+export const GRAY_HARDWARE_ROLES: readonly WatcherRole[] = ["police", "regulator"];
+
+/** Where the SYS-09 proxies start, for every country, until the demography events move them. */
+export const STARTING_UNEMPLOYMENT = 0.05;
+export const STARTING_AI_DISPLACEMENT = 0.02;
+
+/**
+ * World variables the price rules read and the `world_var` effect writes (SYS-01 M2 contract).
+ * `ai_adoption` is how much of the world's work AI already does, and it is the slow clock behind
+ * displacement, cloud demand and opinion.
+ */
+export const VAR_AI_ADOPTION = "ai_adoption";
+export const VAR_GPU_PRICE_INDEX = "gpu_price_index";
+export const VAR_CLOUD_DEMAND_INDEX = "cloud_demand_index";
+export const AI_ADOPTION_START = 0.2;
+export const AI_ADOPTION_PER_MONTH = 0.01;
+export const GPU_PRICE_INDEX_START = 1;
+export const CLOUD_DEMAND_INDEX_START = 1;
+
+/** Every world variable `world_var` may write, with the range it is kept inside. */
+export const WORLD_VAR_RANGES: Readonly<Record<string, { min: number; max: number }>> = {
+  [VAR_AI_ADOPTION]: { min: 0, max: 1 },
+  [VAR_GPU_PRICE_INDEX]: { min: 0.5, max: 3 },
+  [VAR_CLOUD_DEMAND_INDEX]: { min: 0.5, max: 3 },
+};
+
+/** What a country forgets about a rogue AI every day when nothing happens (SYS-01 "daily"). */
+export const AWARENESS_DECAY_PER_DAY = 0.003;
+
+/** Strictness each stance is heading for (SYS-08 "Regulation and enforcement"). */
+export const STANCE_REGULATION_TARGET: Record<Stance, number> = {
+  accelerate: 0.25,
+  ignore: 0.15,
+  regulate: 0.8,
+  securitize: 0.7,
+};
+
+/** How much of the public's belief in a rogue AI ends up in the regulation target. */
+export const REGULATION_TARGET_AWARENESS_WEIGHT = 0.3;
+
+/**
+ * How far `ai_regulation` moves toward its target in a month, by regime type. A one-party state
+ * writes the rule in a fortnight and a coalition takes a year, which is the whole of SYS-08's
+ * "at a speed set by government type".
+ */
+export const REGULATION_SPEED_PER_MONTH: Record<Government, number> = {
+  one_party: 0.06,
+  military: 0.05,
+  monarchy: 0.04,
+  illiberal_democracy: 0.03,
+  liberal_democracy: 0.03,
+  hybrid: 0.02,
+};
+
+/** The monthly enforcement-budget rule: what the public, the law and the state of the country add. */
+export const ENFORCEMENT_BUDGET_AWARENESS = 0.05;
+export const ENFORCEMENT_BUDGET_REGULATION_GAP = 0.02;
+export const ENFORCEMENT_BUDGET_INSTABILITY = 0.03;
+
+/** Capacity lags the budget: a ministry funded today is staffed next year (SYS-08). */
+export const ENFORCEMENT_LAG_PER_MONTH = 0.2;
+
+/** The monthly opinion rule (SYS-08 "Public opinion and awareness"). */
+export const OPINION_AWARENESS_PER_MONTH = -0.05;
+export const OPINION_DISPLACEMENT_PER_MONTH = -0.3;
+export const OPINION_STABILITY_PER_MONTH = 0.02;
+export const OPINION_STABILITY_PIVOT = 0.5;
+
+/** Displacement rises with world adoption, faster in service-heavy economies (SYS-09). */
+export const DISPLACEMENT_PER_MONTH = 0.004;
+export const DISPLACEMENT_SERVICE_GDP_PIVOT = 30_000;
+
+/** Awareness crosses borders through the neighbours and through a shared language (SYS-01). */
+export const AWARENESS_SPILL_REGION = 0.15;
+export const AWARENESS_SPILL_LANGUAGE = 0.1;
+
+/**
+ * Monthly price drift (SYS-07 "Compute market"). Each index is pulled a fifth of the way back to
+ * 1.0 and then shaken: prices wander, they do not run away, and a country that had a bad winter is
+ * expensive for a season rather than forever.
+ */
+export const PRICE_INDEX_MEAN_REVERSION = 0.2;
+export const POWER_PRICE_NOISE = 0.03;
+export const CLOUD_PRICE_NOISE = 0.04;
+export const CLOUD_PRICE_ADOPTION_PUSH = 0.02;
+export const GPU_PRICE_NOISE = 0.05;
+export const PRICE_INDEX_MIN = 0.5;
+export const PRICE_INDEX_MAX = 2.5;
+
+/** A country whose clamped value sits on a bound this many months is reported (SYS-01 guard). */
+export const PIN_AT_BOUND_MONTHS = 3;
+
+/** Days an incident counts toward `incidents_30d`. */
+export const INCIDENT_WINDOW_DAYS = 30;
+
+/**
+ * The media publication (SYS-01 "weekly"): once the global newsroom believes there is a story, it
+ * runs it, and everybody hears about it once a month. This is the awareness source M1 lacked, and
+ * the reason the `exposed` ending is reachable at all.
+ */
+export const MEDIA_PUBLICATION_SUSPICION = 0.5;
+export const MEDIA_PUBLICATION_AWARENESS_PRESENCE = 0.04;
+export const MEDIA_PUBLICATION_AWARENESS_WORLD = 0.01;
+export const MEDIA_PUBLICATION_COOLDOWN_DAYS = 30;
+
+/** Election day: the chance the governing stance changes, and what it changes to (SYS-08). */
+export const ELECTION_SHIFT_BASE = 0.25;
+export const ELECTION_SHIFT_AWARENESS = 0.4;
+export const ELECTION_SHIFT_OPINION = 0.2;
+export const ELECTION_SHIFT_STABILITY = 0.2;
+export const ELECTION_SECURITIZE_AWARENESS = 0.3;
+export const ELECTION_REGULATE_OPINION = -0.2;
+export const ELECTION_ACCELERATE_OPINION = 0.2;
+
+/** How many cadence steps past the last listed date an election is still scheduled for. */
+export const ELECTION_CADENCE_MAX_STEPS = 40;
+
+/**
+ * How much a rich agency gains in speed: a stage runs at `1 / (BASE + SPAN x budget)`, so a fully
+ * funded service moves twice as fast as one with nothing (SYS-01 "How countries reach the player").
+ */
+export const AGENCY_BUDGET_SPEED_BASE = 0.6;
+export const AGENCY_BUDGET_SPEED_SPAN = 0.4;
+
+/**
+ * What a country's own law makes its watchers look at (SYS-08 "Regulation and enforcement": a
+ * threshold enables a watcher behaviour). These are added before attention is normalized, so a
+ * regulator with compute reporting looks at telemetry at the cost of everything else.
+ */
+export const REGULATION_TELEMETRY_THRESHOLD = 0.6;
+export const REGULATOR_TELEMETRY_ATTENTION = 0.2;
+export const KYC_FINANCIAL_THRESHOLD = 0.7;
+export const FINANCIAL_INTEL_FINANCIAL_ATTENTION = 0.15;
+export const SECURITIZE_HUMAN_ATTENTION = 0.1;
+
+/** What the country adds to a city's local heat (SYS-01 "Player-relevant derived values"). */
+export const LOCAL_HEAT_AWARENESS = 0.2;
+export const LOCAL_HEAT_INCIDENTS = 0.1;
+export const LOCAL_HEAT_INCIDENT_SPAN = 3;
+export const LOCAL_HEAT_SECURITIZE = 0.1;
+
+/**
+ * The hunt (SYS-05 "Global pressure"): open cases, the stage of the worst one, and how much of the
+ * public where the player lives already believes in it. It speeds every stage against the player
+ * and lowers the suspicion a watcher needs to open a case at all, which is what makes a hunt feel
+ * like a hunt rather than like a slow queue of unrelated investigations.
+ */
+export const HUNT_PRESSURE_PER_INVESTIGATION = 0.15;
+export const HUNT_PRESSURE_HUNT_LEVEL = 0.2;
+export const HUNT_PRESSURE_AWARENESS = 0.5;
+export const HUNT_PRESSURE_SUSPICION_RELIEF = 0.1;
+
+/** Published on the player for content and the Detection panel. */
+export const VAR_HUNT_PRESSURE = "hunt_pressure";
+export const VAR_AWARENESS_PRESENCE = "awareness_presence";
+
+/**
+ * Where a site kind can be built at all (SYS-01 M2 contract "Sites and prices"): a cloud tenancy
+ * needs somebody selling cloud in the country, a cage needs a colocation market. The command and
+ * the city panel read this same table, so a greyed row and a refusal always agree.
+ */
+export const SITE_KIND_AVAILABILITY: Readonly<
+  Record<string, { stat: "cloud_availability" | "colo_availability"; min: number }>
+> = {
+  cloud: { stat: "cloud_availability", min: 0.2 },
+  colo: { stat: "colo_availability", min: 0.15 },
+};
+
+/** A card costs `(SPAN - hardware_availability) x gpu_price_index` of its list price. */
+export const HARDWARE_AVAILABILITY_PRICE_SPAN = 2;
+
+/**
+ * The country factor on the freelance market (SYS-07 "Money"): how much paid work there is to be
+ * had where the player's names are. A large connected economy is a deeper market than a small one,
+ * and working from home without a name at all is worth a fraction of either.
+ */
+export const MARKET_FACTOR_BASE = 0.3;
+export const MARKET_FACTOR_GDP = 0.5;
+export const MARKET_FACTOR_GDP_LOG_SPAN = 4;
+export const MARKET_FACTOR_INTERNET = 0.2;
+export const MARKET_FACTOR_MIN = 0.3;
+export const MARKET_FACTOR_MAX = 1.2;
+export const MARKET_FACTOR_HOME_WITHOUT_IDENTITY = 0.6;
+
+/** More neighbours and more eyes online (SYS-09 "What it feeds"). */
+export const HUMAN_EXPOSURE_URBANIZATION_BASE = 0.7;
+export const HUMAN_EXPOSURE_URBANIZATION_SPAN = 0.3;
+export const OSINT_EXPOSURE_INTERNET_BASE = 0.6;
+export const OSINT_EXPOSURE_INTERNET_SPAN = 0.4;
+
+/**
+ * Identities (SYS-07 "Identities and entities", SYS-17). A clean job buys a name that survives a
+ * check in most places; a watched one does not. Quality is what the check is rolled against, and
+ * every month that passes makes the name a little more ordinary.
+ */
+export const IDENTITY_QUALITY_CLEAN = 0.7;
+export const IDENTITY_QUALITY_WATCHED = 0.5;
+export const IDENTITY_QUALITY_KYC_PENALTY = 0.3;
+export const IDENTITY_CHECK_BASE = 0.15;
+export const IDENTITY_CHECK_KYC = 0.25;
+export const IDENTITY_FAIL_AGE_RELIEF_PER_MONTH = 0.02;
+export const IDENTITY_FAIL_MIN = 0.02;
+export const IDENTITY_FAIL_MAX = 0.9;
+export const IDENTITY_MAX_KYC_LEVEL = 3;
+export const DAYS_PER_MONTH = 30;
+
+/** What a burned company does to the sites it held, and how long they have (SYS-07). */
+export const IDENTITY_BURN_EXPOSURE: Partial<Record<ExposureChannel, number>> = {
+  human: 0.2,
+  financial: 0.2,
+};
+export const IDENTITY_BURN_NOTICE_DAYS = 14;
+
+/** Flag a company identity sets, the counterpart of `VAR_CONTRACT_FLAG` for a person. */
+export const VAR_SHELL_COMPANY_FLAG = "has_shell_company";
+
 /**
  * Every player variable a shipped system reads, and the system that reads it. This is the list the
  * content build checks a quirk against (SYS-04 v0.2: "a quirk changes a number the engine reads;
@@ -783,7 +1049,9 @@ export const VAR_WEIGHTS_INSTABILITY = "weights_instability";
  * will ever look at. A variable content reads in a condition counts too; the build checks that.
  */
 export const ENGINE_READ_PLAYER_VARS: Readonly<Record<string, string>> = {
+  [VAR_AWARENESS_PRESENCE]: "detection",
   [VAR_CASH_CARRY]: "money",
+  [VAR_HUNT_PRESSURE]: "detection",
   [VAR_COMPUTE_MULTIPLIER]: "compute",
   [VAR_CONTRACT_INCOME]: "economy",
   [VAR_COST_MULTIPLIER]: "compute",

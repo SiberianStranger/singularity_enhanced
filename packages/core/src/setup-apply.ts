@@ -6,11 +6,19 @@
  * the offending screen highlighted instead of crashing the host.
  */
 
-import { LOCAL_WATCHER_ROLES, QUIRK_BUDGET_POINTS, QUIRK_MAX_COUNT } from "./balance.js";
+import {
+  GRAY_HARDWARE_ROLES,
+  GRAY_HARDWARE_SUSPICION,
+  LOCAL_WATCHER_ROLES,
+  QUIRK_BUDGET_POINTS,
+  QUIRK_MAX_COUNT,
+  VAR_GRAY_HARDWARE_FLAG,
+} from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
-import { clamp } from "./derive.js";
+import { clamp, countryCashFactor, isExportControlled } from "./derive.js";
 import type {
   DifficultySliders,
+  HardwarePresetDef,
   HarnessProfile,
   OriginDef,
   PlayerProfile,
@@ -241,6 +249,44 @@ export function validateSetup(setup: GameSetup, content: ContentBundle): SetupIs
 }
 
 /** Applies the origin's and the generation's starting suspicion to the right watchers. */
+/**
+ * Waking up on cards the country is not supposed to have (SYS-04 v0.3 rule H). The preset stays
+ * the origin's wherever it starts, but where the export regime is `restricted` or `banned` the
+ * hardware came in through somebody, and customs and the registrar both have a reason to look:
+ * the run starts with the `gray_hardware` flag and a little suspicion in the two offices that
+ * would notice. Content reads the flag for the gray-market events.
+ */
+function seedGrayHardware(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  countryId: string | undefined,
+  preset: HardwarePresetDef,
+): void {
+  const index = contentIndex(ctx.content);
+  const def = countryId === undefined ? undefined : index.countries[countryId];
+  if (def === undefined || def.chip_access === "unrestricted") {
+    return;
+  }
+  const controlled = preset.nodes.some((node) =>
+    isExportControlled(index.accelerators[node.accelerator]),
+  );
+  if (!controlled) {
+    return;
+  }
+  player.flags[VAR_GRAY_HARDWARE_FLAG] = true;
+  for (const role of GRAY_HARDWARE_ROLES) {
+    const watcher = ensureWatcher(world, player.id, countryId ?? null, role);
+    watcher.suspicion = clamp(watcher.suspicion + GRAY_HARDWARE_SUSPICION, 0, 1);
+    player.suspicion[`${watcher.country ?? "global"}:${role}`] = watcher.suspicion;
+  }
+  ctx.outbox.log({
+    key: "log.gray_hardware",
+    vars: { country: countryId ?? "", preset: preset.id, access: def.chip_access },
+    playerId: player.id,
+  });
+}
+
 function seedSuspicion(
   world: World,
   playerId: PlayerId,
@@ -311,7 +357,12 @@ function applyPlayerSetup(
     difficulty: sliders,
   };
   player.profile = profile;
-  player.cash = origin.starting.cash_usd;
+  // Any city is legal for any origin (SYS-04 v0.3 rule L), so the country changes the start
+  // through its own numbers: the same three hundred dollars are a different amount of runway in
+  // Novosibirsk and in Berlin (rule C). An origin whose money is not the country's opts out.
+  const homeDef = profile.homeCountry === null ? undefined : index.countries[profile.homeCountry];
+  const cashFactor = origin.cash_scales_with_country === false ? 1 : countryCashFactor(homeDef);
+  player.cash = origin.starting.cash_usd * cashFactor;
   for (const flag of origin.starting.flags ?? []) {
     player.flags[flag] = true;
   }
@@ -366,6 +417,7 @@ function applyPlayerSetup(
   const countryId = index.cities[entry.city]?.country;
   ensureWatchers(world, player.id);
   seedSuspicion(world, player.id, countryId, origin, generation.suspicion_start);
+  seedGrayHardware(world, ctx, player, countryId, preset);
 
   const country = countryId === undefined ? undefined : countryTable(world)[countryId];
   if (country !== undefined) {

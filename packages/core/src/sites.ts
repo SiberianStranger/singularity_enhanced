@@ -7,6 +7,7 @@
  */
 
 import {
+  SITE_KIND_AVAILABILITY,
   VAR_COMPUTE_MULTIPLIER,
   VAR_COST_MULTIPLIER,
   VAR_POWER_DRAW,
@@ -38,8 +39,15 @@ import type {
   SiteStatus,
 } from "./domain.js";
 import { EXPOSURE_CHANNELS } from "./domain.js";
-import { cityTable, type SiteState, siteTable } from "./entities.js";
+import {
+  cityTable,
+  cloudAvailabilityOf,
+  coloAvailabilityOf,
+  type SiteState,
+  siteTable,
+} from "./entities.js";
 import { daysToTicks } from "./kernel/clock.js";
+import type { CommandError } from "./kernel/commands.js";
 import type { SystemContext } from "./kernel/system.js";
 import { nextCounter, type PlayerId, type World } from "./kernel/world.js";
 import { modifier, selfTuningOf } from "./player.js";
@@ -64,6 +72,41 @@ export function scaleExposure(site: SiteState, factor: number): void {
   }
 }
 
+/**
+ * Whether a kind of place can be had in this city at all (SYS-01 M2 contract "Sites and prices"):
+ * a cloud tenancy needs somebody selling cloud in the country and a cage needs a colocation market.
+ * Returns the refusal `build_site` gives, as the structured `{key, vars}` every refusal is
+ * (SYS-11), or null when the kind is available. The city panel calls the same function, so the
+ * greyed row and the refusal can never disagree.
+ */
+export function siteKindUnavailable(
+  world: World,
+  content: ContentBundle,
+  kindId: string,
+  cityId: string,
+): CommandError | null {
+  const rule = SITE_KIND_AVAILABILITY[kindId];
+  if (rule === undefined) {
+    return null;
+  }
+  const city = cityTable(world)[cityId];
+  const def = city === undefined ? undefined : contentIndex(content).countries[city.country];
+  const available =
+    rule.stat === "cloud_availability" ? cloudAvailabilityOf(def) : coloAvailabilityOf(def);
+  if (available >= rule.min) {
+    return null;
+  }
+  return {
+    key: "errors.site.unavailable_in",
+    vars: {
+      kind: kindId,
+      country: city?.country ?? "",
+      available: Math.round(available * 100) / 100,
+      needed: rule.min,
+    },
+  };
+}
+
 export interface CreateSiteOptions {
   owner: PlayerId;
   kind: string;
@@ -75,6 +118,11 @@ export interface CreateSiteOptions {
   role: SiteRole;
   /** Multiplier on the site kind's grace window (difficulty slider `grace_windows`). */
   graceFactor?: number;
+  /**
+   * Identity the place is held under (SYS-01 M2 contract). Null, the default, is a place nobody
+   * signed for: a stolen machine, or the one the self woke up on.
+   */
+  identity?: string | null;
 }
 
 export function createNodes(
@@ -116,6 +164,7 @@ export function createSite(
     contextKUsed: 0,
     exposure: zeroExposure(),
     createdTick: world.clock.tick,
+    identity: options.identity ?? null,
     graceUntilTick: options.readyTick + daysToTicks(graceDays),
     unpaidDays: 0,
     downUntilTick: 0,

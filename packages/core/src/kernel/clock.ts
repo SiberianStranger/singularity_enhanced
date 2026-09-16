@@ -134,6 +134,25 @@ export function gameDay(clock: Clock, tick: number = clock.tick): number {
   return Math.floor(tick / TICKS_PER_DAY);
 }
 
+/**
+ * "2027-11-03" as a date spec, or null when the text is not an ISO calendar date. Content writes
+ * election dates as ISO strings (SYS-01 M2 contract) and the core never touches `Date`, so this is
+ * the one place a date string becomes a number.
+ */
+export function parseIsoDate(text: string): DateSpec | null {
+  const match = /^(-?\d{4,})-(\d{2})-(\d{2})$/.exec(text);
+  if (match === null) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+  return { year, month, day, hour: 0 };
+}
+
 export function daysToTicks(days: number): number {
   return Math.round(days * TICKS_PER_DAY);
 }

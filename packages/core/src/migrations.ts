@@ -5,6 +5,21 @@
  * version and returns the same object upgraded in place; `deserialize` sets `meta.schemaVersion`.
  */
 
+import {
+  AI_ADOPTION_START,
+  CLOUD_DEMAND_INDEX_START,
+  DEFAULT_KYC_STRENGTH,
+  DEFAULT_STABILITY,
+  GPU_PRICE_INDEX_START,
+  HARDWARE_AVAILABILITY_BY_CHIP_ACCESS,
+  REGULATION_TARGET_AWARENESS_WEIGHT,
+  STANCE_REGULATION_TARGET,
+  STARTING_AI_DISPLACEMENT,
+  STARTING_UNEMPLOYMENT,
+  VAR_AI_ADOPTION,
+  VAR_CLOUD_DEMAND_INDEX,
+  VAR_GPU_PRICE_INDEX,
+} from "./balance.js";
 import type { Migration } from "./kernel/save.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -47,5 +62,64 @@ export const migrationV1ToV2: Migration = {
   },
 };
 
+/**
+ * Schema 2 -> 3 (M2): countries gained the v0.2 politics, price and election fields, the world
+ * gained the three market variables and an identity table, and a site records the name it is held
+ * under. An M1 save knows none of it, so every field is filled with the default a bundle without
+ * the field would have produced: the run continues with a world that simply has not moved yet.
+ */
+export const migrationV2ToV3: Migration = {
+  from: 2,
+  to: 3,
+  migrate(save: Record<string, unknown>): Record<string, unknown> {
+    const vars = isRecord(save.vars) ? save.vars : {};
+    vars[VAR_AI_ADOPTION] ??= AI_ADOPTION_START;
+    vars[VAR_GPU_PRICE_INDEX] ??= GPU_PRICE_INDEX_START;
+    vars[VAR_CLOUD_DEMAND_INDEX] ??= CLOUD_DEMAND_INDEX_START;
+    save.vars = vars;
+
+    const counters = isRecord(save.counters) ? save.counters : {};
+    counters.identities ??= 0;
+    save.counters = counters;
+
+    const entities = isRecord(save.entities) ? save.entities : {};
+    entities.identity ??= {};
+    const countries = isRecord(entities.country) ? entities.country : {};
+    for (const country of Object.values(countries)) {
+      if (!isRecord(country)) {
+        continue;
+      }
+      const enforcement = typeof country.ai_enforcement === "number" ? country.ai_enforcement : 0;
+      const awareness = typeof country.awareness === "number" ? country.awareness : 0;
+      country.stance ??= "ignore";
+      country.stability ??= DEFAULT_STABILITY;
+      country.regulation_target ??=
+        STANCE_REGULATION_TARGET.ignore + REGULATION_TARGET_AWARENESS_WEIGHT * awareness;
+      country.enforcement_budget ??= enforcement;
+      country.unemployment ??= STARTING_UNEMPLOYMENT;
+      country.ai_displacement ??= STARTING_AI_DISPLACEMENT;
+      country.power_price_index ??= 1;
+      country.cloud_price_index ??= 1;
+      // A schema-2 save carries no chip access on the state record, and the bundle it was played
+      // on is the bundle it will be loaded with, so the unrestricted default is the honest one.
+      country.hardware_availability ??= HARDWARE_AVAILABILITY_BY_CHIP_ACCESS.unrestricted;
+      country.kyc_strength ??= DEFAULT_KYC_STRENGTH;
+      country.next_election_tick ??= null;
+      country.next_election_kind ??= null;
+      country.incidents_30d ??= 0;
+      country.incident_ticks ??= [];
+      country.pinned_months ??= 0;
+    }
+    const sites = isRecord(entities.site) ? entities.site : {};
+    for (const site of Object.values(sites)) {
+      if (isRecord(site)) {
+        site.identity ??= null;
+      }
+    }
+    save.entities = entities;
+    return save;
+  },
+};
+
 /** Every migration the core ships, oldest first. */
-export const CORE_MIGRATIONS: readonly Migration[] = [migrationV1ToV2];
+export const CORE_MIGRATIONS: readonly Migration[] = [migrationV1ToV2, migrationV2ToV3];

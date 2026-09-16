@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jobMarketDepth, jobRateUsdPerComputeHour, jobToolRateFactor } from "../src/derive.js";
+import { jobRateUsdPerComputeHour, jobToolRateFactor } from "../src/derive.js";
 import { createGame, type Game } from "../src/index.js";
 import { m1Content, m1Setup } from "./fixtures/m1/index.js";
 
@@ -125,8 +125,9 @@ describe("economy", () => {
 
   it("sells only as much freelance work as the market has depth for", () => {
     const game = startGame();
-    const capability = game.snapshot("p1").self.effective_capability;
-    const depth = jobMarketDepth(capability);
+    // The published ceiling, not the raw capability one: the market depth carries the tools dial
+    // and the country factor of the places the player can invoice from (SYS-01 M2 contract).
+    const depth = game.snapshot("p1").finances.market_depth_ch_per_day;
     game.command({ type: "cheat_add_cash", playerId: "p1", amount: 1_000_000 });
     game.command({
       type: "build_site",

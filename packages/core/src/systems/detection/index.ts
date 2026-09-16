@@ -35,7 +35,7 @@ import {
 } from "../../balance.js";
 import { contentIndex } from "../../content.js";
 import { clamp } from "../../derive.js";
-import type { ExposureChannel, Site, Watcher } from "../../domain.js";
+import type { ExposureChannel, Watcher } from "../../domain.js";
 import { EXPOSURE_CHANNELS } from "../../domain.js";
 import { compareValue, createConditionRegistry } from "../../dsl/conditions.js";
 import { createEffectRegistry } from "../../dsl/effects.js";
@@ -75,9 +75,14 @@ const SUSPICION_ALERT_LEVELS = [
   INVESTIGATION_STAGE_SUSPICION.action ?? 0.7,
 ];
 
-/** How much hotter a place is than the world average (SYS-01 "local heat"). */
-export function localHeat(world: World, site: Site): number {
-  const city = cityTable(world)[site.city];
+/**
+ * How much hotter a place is than the world average (SYS-01 "local heat"). Takes a city rather than
+ * a site, because the city panel asks the same question about a place the player has not built in
+ * yet and must get the same answer (SYS-11 "the number in the tooltip is the number the simulation
+ * uses").
+ */
+export function localHeat(world: World, cityId: string): number {
+  const city = cityTable(world)[cityId];
   const country = city === undefined ? undefined : countryTable(world)[city.country];
   return (
     1 +
@@ -173,7 +178,7 @@ function accrueSuspicion(
     if (!watches(world, watcher, site) || site.graceUntilTick > tick) {
       continue;
     }
-    seen += watchedExposure(watcher, site) * localHeat(world, site);
+    seen += watchedExposure(watcher, site) * localHeat(world, site.city);
   }
   const difficulty = player.profile?.difficulty.suspicion_gain ?? 1;
   const gain = seen * watcher.competence * SUSPICION_GAIN_SCALE * difficulty;

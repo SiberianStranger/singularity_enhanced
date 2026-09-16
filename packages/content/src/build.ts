@@ -81,13 +81,30 @@ export const FUTURE_WRITABLE_PATHS: readonly string[] = [];
  * register all of them today, and validation uses the real handlers when they do; an entry here
  * only keeps the build green for a kind whose system has not landed yet.
  */
-export const SYSTEM_EFFECT_KINDS: readonly string[] = ["suspicion", "exposure", "awareness"];
+export const SYSTEM_EFFECT_KINDS: readonly string[] = [
+  "suspicion",
+  "exposure",
+  "awareness",
+  // M2 (SYS-01 "M2 contract", registered by the `world` system).
+  "country",
+  "country_stance",
+  "identity",
+  "burn_identity",
+  "freeze_identity",
+  "world_var",
+];
 
-/** The same list for condition kinds (SYS-02, SYS-05). */
+/** The same list for condition kinds (SYS-02, SYS-05, SYS-01). */
 export const SYSTEM_CONDITION_KINDS: readonly string[] = [
   "has_site_in",
   "investigation_stage",
   "exposure",
+  // M2 (SYS-01 "M2 contract", registered by the `world` system).
+  "country_stat",
+  "country_is",
+  "has_identity_in",
+  "election_within_days",
+  "presence_in",
 ];
 
 export interface BuildIssue {

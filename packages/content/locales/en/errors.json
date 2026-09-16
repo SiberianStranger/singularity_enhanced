@@ -64,6 +64,7 @@
   "errors.site.power_cap": "That would draw {power_kw} kW over a {cap_kw} kW cap.",
   "errors.site.standby_needs_memory": "A standby needs enough memory to hold a copy.",
   "errors.site.still_installing": "The site is still being installed.",
+  "errors.site.unavailable_in": "There is no market for that here: {country} has {available} of the {needed} this kind of place needs.",
   "errors.site.unknown": "There is no site {site}.",
   "errors.site_kind.not_for_sale": "A {kind} site is arranged through an operation, not bought.",
   "errors.site_kind.unknown": "There is no site kind called {kind}.",
