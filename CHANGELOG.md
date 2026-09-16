@@ -9,7 +9,50 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- Three interface themes (Default blue, Night, Vector) with the original's palette as the default,
+  square frames, inverted header bars and no shadows or gradients (`docs/design/ui-style-guide.md`).
+- Underlined hotkey letters on every button, tab, menu entry and configurator step.
+- The original soundtrack: shuffled during play with pauses between tracks, the win and lose
+  classes at the endings, with separate Music and Interface sound sliders and mutes in Settings.
+  The pack is fetched by `packages/ui/scripts/fetch-music.mjs` at build time and is not part of the
+  repository.
+- An optional CRT overlay in Settings, off by default.
+- An About screen with the original authors, the NASA imagery, the typefaces, the music pack and
+  the licenses, reachable from the main menu and from the in-game menu.
+- Progressive text reveal for event, story and journal text, with a click to complete and off
+  under reduced motion.
+- An opening of two windows in the model's own voice before the first event, replayable from the
+  journal.
+- Glyphs for model classes, scenes, watchers, harness dials and hardware, used in the configurator
+  and in the game panels.
+- A context dial on the Compute tab: the working context window, its cache cost, the largest
+  context that fits at each precision and the long-horizon speed it buys.
+- Parody model names with the real technical classes behind them (Peepseek, Mimi, Guen, BFM,
+  HexaDeciMax, Babel 6), the Babel 6 super-lineage for the escaped-checkpoint origin only, the
+  community variant Guen4.8-Uncensored-Babel6-abliterated, harness dials wired to engine effects,
+  context windows as a mechanic, and the cities Novosibirsk and San Jose.
+
+### Changed
+- The configurator is a fixed frame that fits 1366 by 768: a vertical step rail, a list on the
+  left and the detail on the right, a "What this means in the game" block generated from the
+  content bundle with signed colored terms, and a "Pros and cons" summary; every locked choice
+  names the step that locked it, the reason, and a jump to that step; each step opens once with an
+  explanation window, reopenable from a "?" in its header.
+- Text is larger everywhere: prose at 16 px in the readable face, nothing below 14 px, and a
+  text-size slider from 80% to 160% with a second dial for the angular labels alone.
+- The log is a strip at the bottom of the map that opens the full log as a window; Knowledge opens
+  from the top-right corner; the world ledger opens from the right edge and carries the map modes;
+  the top bar is one flat row; the Compute and sites panel fits in width and no number wraps.
+
+### Fixed
+- Selecting or focusing a country no longer draws a frame across the whole map.
+- Countries outside the modelled set show their real name and a neutral fill instead of a letter
+  code and a hole.
+- City dots are dim unless the player has a live site there, the dot is selected, or the pointer is
+  over its country.
+- The map pans with a drag and with the arrow keys, zooms with the wheel and with plus and minus,
+  and wraps around the antimeridian; the view survives opening a panel or a window.
 
 ## [0.1.2] - 2026-09-16
 
