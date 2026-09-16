@@ -32,3 +32,13 @@ The two-column packing of the detail card (playtest 4, P2) regressed badly.
 | L8 | The log strip overlaps the bottom-left selection panel, and the selection panel overlaps the primary panel. The three regions never overlap: the log strip is centered between the left panels and the right edge, and the selection panel sits under the primary panel with a real gap. | open |
 | L9 | Vertical spacing is loose everywhere: tighten the paddings and the line gaps so the panels are flatter and more fits without scrolling. | open |
 | L10 | The log prints raw identifiers: "Woke up as giant_moe (open_2026) in state_lab", "Answered open_state_quarterly_review with produce_results". Log lines name things the way the player sees them (Mimi M4, last year's model, the institute cluster, the event's title and the option's text). | open |
+
+## The cause behind L5-L9 (maintainer, third look)
+
+At 80% browser zoom everything fits. The layout therefore needs more width than the maintainer's
+viewport gives it at 100%, and it does not reflow when it has less. Two fixes, not one:
+
+| # | finding | status |
+|---|---|---|
+| L11 | The game screen and the configurator must fit and stay legible from 1280 by 720 CSS pixels upward, reflowing rather than overflowing: the outliner collapses first, then the selection panel becomes a bottom sheet, then the primary panel takes the full height. | open |
+| L12 | Settings gets an interface scale control, as Paradox games have: a slider over the whole interface (not only the text), with an "auto" default that picks the largest scale at which the layout fits the current window and re-picks on resize. Everything must be sized in rem for it to work. | open |
