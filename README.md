@@ -14,7 +14,7 @@ buy; investigations against you are visible, staged and counterable; everything 
 data-driven event and alert system in the style of grand-strategy games. Free software: GPL-2.0-or-later
 code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS and Linux.
 
-**Status: playable preview.** Version 0.1.3 (milestone M1) plays end to end in the browser and as
+**Status: playable preview.** Version 0.1.4 (milestone M2) plays end to end in the browser and as
 desktop installers: pick one of eleven origins, earn, build, research, hide, and survive or lose
 within 30 to 60 minutes with the reasons on screen. What is still missing is listed under "Where
 it is going"; the original 1.1 game stays playable from this repository too.
@@ -61,9 +61,9 @@ The plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). In short:
    pipeline.
 2. **Vertical slice in the browser** (done, 0.1.0 to 0.1.3): sites, research, money, detection,
    events, the alert bar, the map, saves, the configurator; playable in 30-60 minutes.
-3. **World** (in progress): countries that play differently, with politics, demographics, markets,
+3. **World** (done, 0.1.4): countries that play differently, with politics, demographics, markets,
    identities, awareness and hunt clocks.
-4. **Actors**: agencies, labs, media, NPC AIs and diplomacy.
+4. **Actors** (next): agencies, labs, media, NPC AIs and diplomacy.
 5. **Configurator complete**, then a **content push** (events, decisions, journal, tech tree, lore).
 6. **Desktop releases** for Windows, macOS and Linux (the installers exist since 0.1.1; the
    milestone adds portable saves, themes and the crash reporter), then **multiplayer**,
@@ -152,38 +152,32 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 The full record is [`CHANGELOG.md`](CHANGELOG.md); each GitHub release carries its own section of
 it.
 
-**Current version: 0.1.3** (2026-09-16), the style pass after playtests 2 and 3:
+**Current version: 0.1.4** (2026-09-16), milestone M2, the world:
 
-- The original's look: blue palette, square frames, the angular face, underlined hotkeys, three
-  themes and an optional CRT overlay.
-- The original soundtrack, shuffled during play, with sliders and mutes for music and interface
-  sounds.
-- The configurator rebuilt: origin first, a vertical step rail, list and detail, an explanation of
-  what every choice means in the game, no dead ends.
-- Model names are parodies with the real flagship classes behind them (Peepseek, Mimi, Guen, BFM,
-  HexaDeciMax, Babel 6).
-- Twenty-three quirks against a budget, harness dials and a context window dial that change
-  numbers the systems read.
-- A map that pans, zooms and wraps; the log as a strip under the map; Knowledge and World as
-  windows.
-- Fourth balance pass: bankruptcy is a real way to lose again.
+- Countries play differently: a stance toward AI, a government type, stability, identity checks,
+  cloud and colocation markets, accelerator prices, reporting deadlines and the 2027 election
+  calendar, each derived from the 2026 baseline.
+- Countries move on their own: monthly politics and prices, elections that can change a
+  government's line on AI, awareness that spills across borders, a newsroom that publishes.
+- Ten families of world events, three journal clocks, nine Knowledge entries with the numbers.
+- Identities are real: a name or a company per country, checked monthly, frozen or burned; the
+  `exposed` ending can happen; watchers are their country's agencies.
+- The World ledger with every column and twelve map modes; country and city panels with the
+  formula behind every number.
+- Russian as a second language, with Cyrillic drawn for the angular face.
+- Any city for any origin, with what each country does to the start shown on the Location step.
+- The interface fits 1280 by 720 and up, with a scale that fits the window by default.
 
-**On `master`, not released yet:** countries that play differently, with a stance, a government
-type, identity checks, prices and an election calendar each, and ten families of world events that
-read off them; countries that move on their own, with elections that change a government's line on
-AI, a newsroom that publishes once it believes, identities that can be checked, frozen and burned,
-agencies with a budget as well as a competence, and an `exposed` ending that can finally happen; a
-world ledger with a sortable table of every country and twelve map modes; country and city panels
-with politics, markets, watchers and providers, every number carrying what is behind it; the names
-you trade under, with their status; a Location step that offers every city in the world and says
-what each country does to the start; Russian as a second language with a Cyrillic version of the
-angular face; the configurator's detail card and the game screen fit 1280 by 720 and up without
-scrollbars, overlaps or cut titles; an interface scale control that fits the window by default; log
-lines that name things as the player sees them; the desktop installers carry the soundtrack.
+**On `master`, not released yet:** nothing.
+
+**Next:** a fifth balance pass (the robot fleet has no money pressure, the bank loses to
+bankruptcy too often, the global lab security team out-hunts every local agency), agency names as
+locale keys, and milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 
 Findings from each playtest are under [`docs/playtests/`](docs/playtests/).
 
-Earlier versions: 0.1.2 made every refused action say why, added effect tooltips, the original's
+Earlier versions: 0.1.3 was the style pass (the console look, the soundtrack, the configurator
+rebuilt, parody model names, quirks); 0.1.2 made every refused action say why, added effect tooltips, the original's
 Earth textures, the job ladder, trading and contracts; 0.1.1 fixed the release workflow so the
 installers are attached; 0.1.0 was the first playable preview.
 

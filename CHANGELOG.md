@@ -11,6 +11,34 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.4] - 2026-09-16
+
+Milestone M2, the world: the 105 countries play differently and the player can read why. Countries
+carry a stance, a government, identity checks, prices and an election calendar; they move on their
+own; ten families of world events read off them; identities are real; the World ledger and the
+country and city panels show every number with what is behind it; Russian is the second language;
+any city is a legal start; the interface fits 1280 by 720 and up.
+
+Highlights:
+- Countries that play differently: stance toward AI, government type, stability, identity checks,
+  cloud and colocation markets, accelerator prices, legal reporting deadlines and the 2027 election
+  calendar, all derived from the 2026 baseline by a generator with the rules in its headers.
+- Countries that move: monthly politics and prices, elections that can change a government's line
+  on AI, awareness that fades and spills across borders and languages, a newsroom that publishes.
+- Ten families of world events (thirty-one events), three clocks in the journal, nine Knowledge
+  entries with the exact numbers.
+- Identities are real: a name or a company per country, checked monthly, frozen or burned, holding
+  the sites rented under it; the `exposed` ending can happen; watchers are their country's agencies.
+- The World ledger with every column of the world model and twelve map modes; country and city
+  panels with tabs and the formula behind every number.
+- Russian as a second language, 2,840 strings, with Cyrillic drawn for the angular face.
+- Any city for any origin: the Location step offers the whole world and says what each country
+  does to the start; starting cash is worth what it is worth locally.
+- The configurator's detail card and the game screen fit 1280 by 720 and up without scrollbars or
+  overlaps; an interface scale that fits the window by default.
+
 ### Added
 - Countries move on their own: a monthly rule per country for regulation, the enforcement budget
   and the capacity that lags it, public opinion, jobs lost to automation, and the two price indexes
