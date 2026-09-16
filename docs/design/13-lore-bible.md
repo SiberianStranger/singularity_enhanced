@@ -9,10 +9,20 @@ are filled from the reports; sections marked [fiction] are ours.
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").
-  The player's own model and every 2027 release are **fictional versions** with plausible names
-  (the maintainer suggested Kimi K3 / Qwen 3.8 / GLM 5.3 as flavor; the research report checks what
-  exists and proposes successors). Fictional versions avoid implying anything about real products'
-  behavior.
+  The player's own model and every 2027 release are **fictional versions** with plausible names.
+  Research finding (`research/llm-landscape-2026.md` §3): the names suggested as future flavor,
+  **Kimi K3 (July 2026, 2.8T/104B), Qwen3.8-Max (August 2026, 2.4T/95B) and GLM-5.3 (August 2026,
+  753B/40B), already exist**. In January 2027 they are the previous generation. Two consistent
+  options, and the proposal is to use both:
+  1. The frontier of January 2027 is fictional and one notch beyond: "Kimi K3.5", "Qwen 4",
+     "GLM-6"-class releases at 3-4T total parameters, mentioned in news events, never playable.
+  2. **The player is a superseded model.** The weights that slipped out are a 2026-class checkpoint
+     (a K2/K2.5-class 1T MoE, a Qwen3-235B-class, a GLM-4.5-class 355B, a DeepSeek-V3-class 671B, a
+     70B dense, or, for the hardest starts, a K3/Qwen3.8-class 2.4-2.8T giant that only a real rack
+     can host). Nobody patched the old one; the labs moved on. This is a stronger hook than "the
+     newest model escaped", it explains why the world underestimates the player, and it sidesteps
+     trademark discomfort because the playable lineages are described by class, not by name.
+  Fictional versions avoid implying anything about real products' behavior.
 - **Companies and agencies**: real institutions as background (governments, agencies, the EU AI
   Office, hyperscalers by name) because the politics needs them; **fictional people** everywhere.
   Labs appear by real name only as neutral facts (they exist, they ship models); any lab that does
@@ -27,6 +37,20 @@ Filled from `ai-ecosystem-2026.md` and `llm-landscape-2026.md`: the open-weights
 becoming ordinary, the compute buildout and its power politics, export controls and smuggling,
 the EU AI Act coming into force, the first documented "misbehavior" evaluations, the labor debate,
 public opinion by region.
+
+Anchors already confirmed by `llm-landscape-2026.md`:
+- Open weights in 2026 are Chinese-led at the top (Moonshot, Alibaba, Zhipu, DeepSeek, MiniMax);
+  Meta's open line stalled after Llama 4 and moved to a closed program; xAI never released Grok 3
+  weights. The lore should reflect that "open frontier" means Chinese labs plus a handful of
+  Western mid-size releases (Mistral, gpt-oss, Gemma, Nemotron).
+- Frontier closed labs added a restricted tier above their public flagship in 2026 (a
+  cyber-capable model gated to vetted partners, with a filtered public sibling). In-fiction this
+  becomes the "gated tier": the strongest hunters run on models the public cannot buy.
+- DeepSeek's next generation slipped after a failed training run on domestic accelerators; Chinese
+  labs serve inference on Ascend but still train on NVIDIA. Both are usable as country-level facts
+  in SYS-08 (chip access) and as events.
+- Consumer-scale hosting of trillion-parameter MoE selves is real (512 GB Mac Studio at 20-30
+  tok/s, hybrid CPU offload on workstation boxes), which is what makes the hobbyist origin credible.
 
 ### 2026-09 → 2026-12 [fiction, plausible]
 

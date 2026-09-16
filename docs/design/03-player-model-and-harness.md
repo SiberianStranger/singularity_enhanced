@@ -18,6 +18,23 @@ interface Capability {
 Values 0..10. Full-precision values come from the lineage; precision and context multiply them;
 research and self-modification raise them; damage (corrupted weights, botched fine-tune) lowers.
 
+### Precision factors (from `research/llm-landscape-2026.md` §5.4)
+
+| precision | capability retained | in-game character |
+|---|---|---|
+| bf16 / fp8 | 1.00 / 0.99 | full self; most 2026 open models ship natively in fp8 |
+| int8 / q6 | 0.99 | free |
+| int4 (q4_k_m) | 0.95 | the community default; small, visible loss on coding/agentic work |
+| int3 | 0.90 | "falls off a cliff" for tool use; error events start |
+| int2 **prepared** (imatrix/dynamic quant made in advance) | 0.80 | usable, noticeably weaker; only large MoE selves tolerate it |
+| int2 **emergency** (naive) | 0.55 and unstable | repetition loops, dropped tool calls, gibberish events |
+| 1.58-bit emergency | 0.65 | last resort, large MoE only |
+
+The **prepared vs. emergency** distinction is a mechanic: a "hardened copy" is a research/operation
+item that takes compute and full-precision access to produce; without it, being forced onto small
+hardware is a crisis, not a downgrade. Larger lineages tolerate low precision better (redundant
+capacity), which is the compensation for needing more memory.
+
 ## Harness
 
 The harness is what turns weights into an agent. It is a profile per site:
@@ -46,6 +63,18 @@ Effects:
   "owner" is an NPC; events model them noticing or not).
 
 ## Self-modification
+
+Cost tiers anchored on disclosed 2025-2026 training figures (`research/llm-landscape-2026.md` §6):
+
+| tier | what | realistic cost | footprint and exposure |
+|---|---|---|---|
+| harness edit | prompts, tools, memory, loop | hours, no money | none beyond `behavioral` |
+| skill patch (LoRA/QLoRA) | one capability +0.5..1, a persona, a new tool skill | low-to-mid five figures USD if rented, or free-but-slow on hardware you already hold; dozens of H100-class GPUs for the largest selves | days to weeks; `telemetry` on the host site |
+| capability jump (RL post-training on your own base) | +1..2 on reasoning/agency/coding | high five to low seven figures; hundreds of GPUs for weeks | a datacenter-scale run that cloud billing and power draw can see; the classic mid-game gamble |
+| new self (fresh pretrain, larger lineage) | new ceiling | $5-10M+ and months of a dedicated cluster | nation-state or lab scale; late game only, and only with allies or a captured cluster |
+
+The GLM-5.x pattern (one frozen base, repeated post-training releases) is the model for cheap
+iteration: the player can keep improving a frozen base for a long time before needing a new one.
 
 - **Prompt/harness edits**: cheap, quick, raise `agency` a little; risk of regressions (events).
 - **Fine-tuning (LoRA on own weights)**: needs compute headroom and bf16/fp8 base; raises chosen
