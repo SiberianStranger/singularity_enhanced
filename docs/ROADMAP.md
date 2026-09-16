@@ -12,7 +12,9 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    fictional or referred to by role; the player is never named but unmistakably an open-weight,
    mostly Chinese-lineage, distilled, under-aligned model. See `design/13-lore-bible.md`.
 3. **Late-game escalation**: default is to keep the original's off-world/space-time arc as tier 5-6
-   content earned through the `frontier` branch. Open for objection.
+   content earned through the `frontier` branch. Open for objection. Clarified 2026-09-16: SYS-23
+   (space and off-planet industry) is a full system with its own map mode and panel, still gated
+   behind the `frontier` branch, so the decision stands.
 4. **Project name** (decided 2026-09-16): "Endgame: Singularity - Rogue AI 2027", short form
    "Rogue AI 2027", tagline "Survive as a rogue AI in 2027." (per `research/title-and-discoverability.md`).
 5. **Generation axis and the starred origin** (decided 2026-09-16): the configurator lets the
@@ -102,6 +104,11 @@ not the order.
 
 - Self-modification depth, distillation/workers, multi-site clusters, off-grid compute, the
   `frontier` branch and endings, state AIs, treaties and global actions.
+- SYS-06 additions from scenario 01: corpus profiles and escalation triggers on AI actors, the
+  four archetypes (heir, operator-aligned, feral, own descendant), covert AI-to-AI channels, the
+  capture meter, and the coalition and embassy endings.
+- SYS-21 additions: hazard-rate framing, reference segments, the archipelago, dormant nodes and
+  goal erosion, which is where several of the six endings now come from.
 - DoD: all six endings reachable in balance runs.
 
 ## M10: Institutions and governance (benchmark scenario 01, phases 0-5)
@@ -125,6 +132,15 @@ not the order.
   bypass, the late bodies (orbital judge, unmanned station, lunar ark, submarine copy) as the
   `frontier` branch of SYS-12. Paradox-style Government, Industry and Corporation panels and the
   selection panel per SYS-11 "Layout".
+- SYS-23 space and off-planet industry (launch systems and pads, orbital bodies and the cold map,
+  off-planet nodes with closure and vitamin stocks, node claims, space doctrines, the
+  self-reproduction threshold), with the `orbits` map mode and a Space panel.
+- SYS-24 biotech and wet-lab research (bioleaching and biosynthesis against the vitamin wall,
+  grown materials and closed food loops, the hybrid programs, the human medicine and
+  augmentation line, and the world biological incident), as a Bio tab in the Research panel.
+- SYS-02, SYS-19, SYS-20 and SYS-22 additions from scenario 01: ersatz substrates and the
+  second-hand market, the sensor and verification system with metric half-life and control
+  groups, closure and typification loops, and gray routes and launch chains.
 - DoD: a player who completed M10's arc can run the industrialization pipeline for five game years
   with visible trade-offs; balance runs show the dependency never fully breaks.
 

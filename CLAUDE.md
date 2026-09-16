@@ -52,7 +52,8 @@ maintainer writes in Russian; the project itself is in English.
 - Never push a commit that turns CI red: run the relevant checks first (`pnpm check`, `pytest`).
 - Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets a line under
   "Unreleased" in the changelog, and the README's "Recent changes" excerpt mirrors it.
-- `.gitignore` ignores dotfiles; `.github/` content needs `git add -f` until the rule is fixed.
+- `.gitignore` ignores dotfiles except `.github/`, `.nvmrc` and `.gitattributes`; check
+  `git check-ignore -v <path>` before assuming a new dotfile is tracked.
 
 ## Style
 

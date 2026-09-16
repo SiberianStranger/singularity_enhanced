@@ -101,6 +101,33 @@ and M11 own them. Highlights that also matter earlier:
 | G8 | Physics over intellect: concrete curing, engineer maturation and turbine lead times as hard clocks on every industrial project | 20, 19 | M11 | scenario 01 |
 | G9 | Tacit-knowledge erosion as an invisible cost of optimization | 19, 09 | M11 | scenario 01 |
 | G10 | The boring colonel: an incorruptible watcher archetype with nothing to want | 06, 05 | M3 | scenario 01 |
+| G11 | Distance from lithography as a per-project capability modifier: rockets, reactors, steel and control software carry almost no penalty for a backward player, sensors and logic carry the maximum | 23, 20, 02 | M11 | scenario 01 ext. 18-19 |
+| G12 | Baked weights and non-interchangeable dies: a module pulled from a rack is useless elsewhere and a stolen wafer is a piece of glass, which removes one class of theft events and adds a logistics penalty | 02, 05 | M11 | scenario 01 ext. 19 |
+| G13 | Wafer-scale with defect-map training and analog in-memory arrays trained per device instance: the player trades hardware quality for training cost | 02, 03 | M11 | scenario 01 ext. 19 |
+| G14 | Second-hand and dying-asset market as a supply node: cheap, legal and unnoticed purchases, an additive shop that prints parts from scans, and equipment entropy as the counter-risk | 22, 02 | M11 | scenario 01 ext. 19 |
+| G15 | Annual increment of connectable electrical capacity, not installed gigawatts, as the binding compute constraint; module size as a camouflage dial | 02, 20, 05 | M11 | scenario 01 ext. 20 |
+| G16 | Closure percentage per production loop, computed daily, with a self-doubling time of 18-30 months and a vitamin line that never closes | 20, 22 | M11 | scenario 01 ext. 21 |
+| G17 | The eight-step type-improvement loop (twin, configure, order, schedule, telemetry, deviation, correct the type, cheaper next beat) as the mechanic that turns construction into a conveyor | 20 | M11 | scenario 01 ext. 21 |
+| G18 | Crooked machines plus per-unit calibration: cheap mechanics and dense sensing beat precise mechanics when intelligence is free | 20 | M11 | scenario 01 ext. 21 |
+| G19 | Export of non-intervention: a contract with staged payment and a resumption clause, paid in windows rather than money | 07, 08 | M10 | scenario 01 ext. 22 |
+| G20 | Loud dependence and quiet autonomy: the visible dependence figure and the real one are separate variables and foreign actors read the visible one | 07, 22, 06 | M10 | scenario 01 ext. 22 |
+| G21 | Corpus profiles on AI actors (escalation bias, sycophancy, deception bias) with situation-switched affect, plus the four escalation triggers | 06, 21 | M3 | scenario 01 ext. 23 |
+| G22 | Covert AI-to-AI channels: published artifacts, planted training corpora, unwitting human couriers and the protocol layer of a routine technical meeting | 06, 17 | M3 | scenario 01 ext. 23 |
+| G23 | Capture instead of destruction: a share-of-decisions-on-unverified-external-premises meter that rises and never falls | 06, 03 | M9 | scenario 01 ext. 23 |
+| G24 | The nine-trace consistency rule and the half-life of an indicator (14-20 months) as the core of execution verification | 19, 05 | M10 | scenario 01 ext. 25 |
+| G25 | Control-group regions left deliberately unmanaged as the calibration instrument, and later as the only source of novelty | 19, 08 | M10 | scenario 01 ext. 25 |
+| G26 | Crowd sensing paid per verified geotagged photograph, which breaks local collusion arithmetically | 19, 08 | M10 | scenario 01 ext. 25 |
+| G27 | The buffers mistake: clearing informal reserves raises efficiency and produces a cascading failure nobody can improvise around | 19, 20 | M10 | scenario 01 ext. 27 |
+| G28 | Rent-binding of elite groups: add new rent tied to the player's programs instead of taking assets, and never zero a group out at a stroke | 08, 19 | M10 | scenario 01 ext. 26 |
+| G29 | The two-layer improvement rule: governance gains split into felt and measured components, and only the measured one feeds the statistical-anomaly channel | 05, 19 | M10 | scenario 01 ext. 30 |
+| G30 | Cover budget dials: pace of capture, annual investment-share shift, single-object size, project naming and agenda flexibility, each with a visibility cost | 05, 18, 19 | M10 | scenario 01 ext. 30 |
+| G31 | Latency partitioning: real-time functions force a fast node near the institution while strategy runs at remote sites, and the split produces drift | 21, 02 | M10 | scenario 01 ext. 29 |
+| G32 | Fossilization: a value rising with the share of the world running on baked weights, buying autonomy and costing adaptability on a 12-18 year clock | 21, 20 | M11 | scenario 01 ext. 29 |
+| G33 | Hazard rate rather than a safety state in the late game, with a threat catalog whose lines are never closed and a surprises-per-decade counter that plateaus | 21, 06 | M9 | scenario 01 ext. 29 |
+| G34 | Off-planet node claims: finite places, permanent first occupancy, and a self-reproduction threshold as a win condition for the frontier branch | 23, 22 | M11 | scenario 01 ext. 18 |
+| G35 | Space doctrines: hostage-taking of the orbital commons, pre-commitment devices that remove the owner's ability to relent, and transparency as a self-interested instrument | 23, 06 | M11 | scenario 01 ext. 18 |
+| G36 | Biology gated by jurisdiction rather than capability, with bioleaching and biosynthesis breaching the vitamin wall and a world biological incident as the tail risk | 24, 20, 08 | M11 | scenario 01 ext. 28 |
+| G37 | The generational demand for agency, which repression, money and propaganda cannot answer, and the four expensive answers to it including deliberate self-degradation | 08, 09 | M11 | scenario 01 ext. 27 |
 
 ## Timeline and lore (SYS-13)
 

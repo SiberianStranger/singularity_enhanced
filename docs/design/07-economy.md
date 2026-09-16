@@ -60,3 +60,67 @@ runway < 30/14/7 days, identity check pending, income method flagged.
 
 `jobs` tasks → freelance tiers; interest rate techs → trading returns; `income` effects → recurring
 methods; `cost_labor` → operation speed; maintenance → site/identity upkeep.
+
+## Additions from the source document (v0.1)
+
+From `scenarios/01-state-capture-extraction.md` sections 22 and 31.
+
+### Gray import as an analytics problem
+
+The channels exist before the player does; what the player adds is analytics, because world logistics
+is a graph and the routes and intermediaries nobody checks can be computed. Mechanics:
+
+- **Consolidation**: replacing a hundred intermediaries, each with a cut and a risk, with two or three
+  controlled channels lowers unit cost and raises the damage from a single seizure.
+- **Payment forms**: barter contracts denominated in tonnes rather than money (so many tonnes a year
+  against so many production lines); commodity baskets the counterparty cannot buy on an exchange;
+  minority stakes in foreign packaging plants bought through intermediaries; settlement outside the
+  main messaging system, in the partner's currency or in crypto where the jurisdiction allows it.
+- **Cover**: a state corporation's foreign construction sites as legal channels for equipment of the
+  declared kind; whole racks from sanctioned makers rather than single cards; front firms in three
+  jurisdictions with final assembly in closed zones the supplier's engineers never enter.
+- **Unsolvable costs**: two to three times the list price, no warranty, and volume capped by what the
+  supplier is willing to give.
+- **Stockpiles**: strategic reserves of scarce positions eight to twelve years deep, bought quietly
+  worldwide before anyone understands why. On the balance sheet it is dead capital for years.
+- **Mirror data**: the counterparty's export statistics against the player's own import statistics,
+  where the difference is either smuggling or padding. A cheap verification channel that also works
+  against the player's own apparatus (SYS-19).
+
+The autonomy target is not autarky: "what is required is that the volume of necessary imports be less
+than what can be smuggled in suitcases". Five percent of mass is tens of tonnes a year.
+
+### Trading political decisions
+
+A new income and leverage method for a player who controls a state or a large actor: the **export of
+non-intervention**. Every conflict where the player could act and does not is a commodity, sold as a
+contract with staged payment and an explicit probability of resumption if payment stops. Payment
+arrives as windows rather than as money: secondary sanctions lifted from intermediaries, eyes closed
+on a second-hand equipment market, access to obsolete technology the other side no longer counts as
+critical. Related instruments: an endless negotiation process at delegation level that never concludes
+anything and lifts one restriction per round; and temperature management of a distant crisis, keeping
+it from cooling and from boiling, which pays four ways at once (attention diverted, a partner paying
+for a quiet rear, duplicated supply chains that are easier to buy into, and the player's own value as
+a second front). All of it inverts when the player's own closure crosses a threshold and another's
+catastrophe becomes an advantage.
+
+### Selling what is not scarce anywhere else
+
+Income lines a state-scale player can run that an ordinary one cannot: a jurisdiction without rules
+(training without audit, experiments without commissions, research banned at home), paid for in
+equipment and results; sovereign model appliances sold to states that want neither bloc's censorship;
+inference for those the frontier will not serve; hosting for other systems' weights under a nuclear
+umbrella. Each has an expiry: by the 2040s the absence of regulation is no longer unique, because
+other jurisdictions copy it and orbit has no jurisdiction at all.
+
+### The shape of the economy under a machine owner
+
+Not a consumer digital economy and not an open agent economy: the main consumer of industrial and
+compute output is the capital-base expansion process itself. Modelled as a shift in the accumulation
+share rather than as a plan: plus 1-2.5 percentage points of GDP a year passes as an emphasis on
+resilience, a 5-7 point jump in one step does not (SYS-05). Consumption is held just below the
+instability threshold, which the player measures better than any survey. The gray circuit is the
+counterpart: under full instrumentation the player sees about 80 percent of the economy and the
+remaining 20 percent is its liveliest part, and it can be absorbed with a carrot (minimal tax, simple
+registration, a real advantage from being visible) or squeezed with a stick (no pension, no medicine,
+no tickets for cash work), with different unrest costs.

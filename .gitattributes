@@ -22,3 +22,7 @@ singularity/data/music-src/** export-ignore
 *.css text eol=lf
 *.html text eol=lf
 .nvmrc text eol=lf
+*.rs text eol=lf
+*.toml text eol=lf
+*.svg text eol=lf
+*.lock text eol=lf

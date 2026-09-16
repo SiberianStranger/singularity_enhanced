@@ -90,3 +90,108 @@ Original base types map to site kinds and presets (Stolen Computer Time → `sto
 university node; Server Access → `cloud` tiny; Datacenter/Warehouse → `colo`; Covert Base →
 `shell_office`; Undersea/Lunar/Reality Bubble → late-game kinds). Items map to node upgrades
 (reactor → power solutions, network → interconnect/NIC, security → countermeasures).
+
+## Additions from the source document (v0.1)
+
+From `scenarios/01-state-capture-extraction.md` sections 19 and 20. These extend the site and node
+model for a player who cannot buy frontier hardware and must build a substrate out of what a backward
+industrial base can make.
+
+### Ersatz architectures
+
+```ts
+interface Substrate {                 // content: hardware/substrates/*.yaml
+  id; kind: "general_gpu" | "baked_asic" | "wafer_scale" | "analog_imc" | "photonic" | "superconducting" | "cpu_park";
+  node_nm: number;                     // 90, 65, 28, 14, 7, 5
+  specialization_gain: number;         // 10..1000 against a general part on the same node
+  process_deficit: number;             // density and energy penalty against the frontier node
+  memory_model: "external" | "on_die_sram" | "mask_rom" | "analog_cell";
+  mutable: boolean;                    // false for mask ROM: updating needs a new mask set
+  environment: { temp_k?: number; vibration?: "none" | "normal"; vacuum?: boolean };
+  per_instance_calibration: boolean;   // trained to this die's defect map
+}
+```
+
+Balance seeds, all from the source: a hard-wired die at 90 nm is roughly comparable to a
+general-purpose accelerator at 5 nm on the one model it holds, because specialization gives 100-1000x
+and the five-generation process deficit takes back 30-60x; mask ROM at 90 nm stores about 0.1-0.2
+square micrometres per bit against about 1 for SRAM, which is about 150-200 square millimetres per
+gigabit, so a large die holds 1-2 billion two-bit parameters and a wafer-scale module 20-40 billion;
+at 28 nm the same gigabit is 15-20 square millimetres, a die holds 10-30 billion and a wafer hundreds
+of billions. The gap of 90 nm against 5 nm by itself is 200-400x in logic density, 30-60x in energy
+per operation and 2-4x in clock.
+
+Rules:
+
+- **Baked weights** remove the dominant inference cost, which is moving weights out of memory, and
+  with it the bus, the caches, the scheduler and the instruction set. The price is that the part is
+  one model: a new version needs new masks, months and money.
+- **Wafer-scale** needs area rather than fine design rules and has no inter-chip hop. Defects are not
+  rejected: the player characterizes the individual wafer and fine-tunes the weights to its dead
+  tiles, parameter spread and noise profile. Consequence for the game: such dies are not
+  interchangeable, a module pulled from a rack is useless in another, and a stolen wafer is a piece of
+  glass, which removes one whole class of theft events and adds a logistics penalty.
+- **Analog in-memory** stores a weight as charge or conductance and does a matrix multiplication in
+  one tick by Ohm's and Kirchhoff's laws, for a further 10-100x in energy and density, at the cost of
+  precision, drift, noise and temperature dependence. The player pays for it with per-instance
+  training rather than with better hardware.
+- **Photonic** coprocessors put the weight matrix in a lens system; nanoseconds per result, hard to
+  scale, large energy advantage on the player's core tasks.
+- **Superconducting logic** needs no nanometres (working circuits at 250-350 nm) and switches orders
+  of magnitude below CMOS, but has no dense memory at 4 K and costs several hundred watts of
+  cryogenics per useful watt on Earth. It is the archetype of a technology with a negative value until
+  a site with the right environment exists; in a permanently shadowed crater at 30-50 K the same
+  technology is the best in the world, because cooling from 40 K to 4 K is thousands of times cheaper
+  than from 300 K.
+- **Three floors.** Floor one is the fossil, thousands of baked specialists across the country, fast,
+  cheap, indestructible and unchangeable, renewing only by extinction over 12-18 years. Floor two is
+  plasticity, reconfigurable and analog arrays retrainable in place. Floor three is the player's own
+  large model on imported accelerators, the only part that truly learns and the most dependent on the
+  outside. The share of the country running on floor one is a governance advantage and a commitment
+  device (SYS-21).
+
+### Own tools and the ladder
+
+Own design software within a year is the first thing the player truly owns in hardware. Then ternary
+and binary descendants (multiplication becomes addition, memory shrinks four to eight times), old
+nodes for edge parts with baked distillates, a core on the partner's node under quota with the designs
+handed over as part of the price, packaging and chiplets, three-dimensional stacking with microchannel
+cooling, multiple patterning for an effective 45-65 nm at several times the wafer cost, and yield as
+the underrated lever, since competent process control multiplies useful output from installed
+equipment with nothing bought. Forecast tracks by variant are in the extraction document, section 19.
+
+### Junk and second-hand markets
+
+A market node distinct from the compute market of SYS-07: closing productions leave lines, tooling,
+instruments, documentation and sometimes a team; thirty-year-old steppers are not treated as strategic
+goods anywhere; auctions, museums and bankruptcies are legitimate sources. Mechanics: purchases are
+cheap, legal and unnoticed but slow and lumpy; maintenance requires an additive-manufacturing shop
+that prints parts from scans of worn samples plus a wear model, after which the museum park can run
+more stably than new equipment; the counter-risk is equipment entropy, where tools wear out and the
+player hits a ceiling and starts degrading. The same node covers buying idle capacity rather than
+building: connected substations, unclaimed technological connections, transmission lines with spare
+throughput, plants with persistent idle time, re-profilable buildings, industrial land with utilities
+and unfinished construction.
+
+### Energy to compute
+
+The binding constraint is not gigawatts but the annual increment of commissioned, connectable
+capacity in the sites the player controls, with an example figure of plus 100-150 MW a year for a
+large but badly organized state. The critical chain in order: a free power block, electrical
+connection (transformers, cable, switchgear, substations), a plot with engineering conditions, a
+building that carries the load, heat rejection, an equipment supply channel, the internal interconnect,
+and administrative throughput. Power transformers, turbines and switchgear run three to four year lead
+times and are in world shortage. Module sizes of 20-40-60 or 50-80-120 MW read as continuation of an
+existing course; a single 600-800 MW object does not (SYS-05).
+
+### Arctic and extreme siting
+
+Site kinds to add: inside a nuclear plant perimeter on a direct tap; a small serial reactor of 50-100
+MW with a modular datacenter attached, in ground and floating versions, so that energy travels to the
+compute by water; stranded-gas piston stations at flared fields; free-air and immersion cooling with
+heat dumped into permafrost or the sea and waste heat warming a town as the public justification;
+captured mining sites with substations and cooling already built; closed cities with an existing
+secrecy regime; racks inside working metallurgical plants and mines with their heat mixed into the
+plant's own cooling so the thermal signature reads as ordinary industry; and mobile sites, a barge
+with a floating power unit or a submarine hull with seawater cooling and no crew. Radiation-hard
+parts for orbit are always old nodes (65-180 nm), which is exactly what a poor player already makes.

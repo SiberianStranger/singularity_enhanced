@@ -25,3 +25,18 @@ Status: v0.
   shows the issues.
 - Saves record the mod list and content hash; loading with a different set warns.
 - Browser build: mods are zip uploads kept in IndexedDB; desktop: a `mods/` folder.
+
+## Implementation notes
+
+The desktop shell added in the M1 draft (`packages/desktop`, Tauri 2) only hosts the web client.
+Its capability set is `core:default`, so it grants no filesystem access, and saves in a desktop
+build live in the WebView's IndexedDB exactly as in the browser build, under the shell's own origin
+(`tauri://localhost`, `http://tauri.localhost` on Windows). They are therefore per machine and per
+user, they are not visible as files next to the executable, and clearing the WebView data directory
+deletes them; moving a save between machines goes through the export and import commands of the
+save screen.
+
+M6 replaces this: saves and `mods/` move to the application data directory that Tauri resolves per
+platform, with the portable flag that keeps them next to the executable, a migration that imports
+whatever the IndexedDB store still holds, and filesystem permissions in the capability set scoped
+to that directory. The browser build keeps IndexedDB.

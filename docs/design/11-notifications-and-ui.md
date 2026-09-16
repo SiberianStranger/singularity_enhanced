@@ -151,3 +151,87 @@ underlined-letter convention for buttons inside dialogs where it does not clash.
 
 All texts through ICU keys; RTL layouts supported by logical CSS properties; reduced motion respected;
 minimum 4.5:1 contrast in both themes; screen-reader labels on icons.
+
+## Implementation notes (client)
+
+What the M1 web client (`packages/ui`) does differently from the document above, and the numbers it
+settled on. Everything not listed here is implemented as written.
+
+### Game speeds
+
+ADR-003 sketched 1 / 6 / 24 / 168 game hours per real second with an uncapped speed 5. An M1 run
+lasts on the order of half a game year, so at 168 hours a second a whole run goes past in half a
+minute and nothing is legible. The shipped ladder is:
+
+| speed | game hours per real second | one game day takes | a 180-day run takes |
+|---|---|---|---|
+| 0 | paused | - | - |
+| 1 | 1 | 24 s | 72 min |
+| 2 | 2 | 12 s | 36 min |
+| 3 | 4 | 6 s | 18 min |
+| 4 | 8 | 3 s | 9 min |
+| 5 | 24 | 1 s | 3 min |
+
+Speed 1 is the reading speed ADR-003 already fixed; speed 5 is one game day per real second. A run
+played attentively, pausing on events and fast-forwarding through quiet weeks, lands inside the
+30-60 minutes the M1 definition of done asks for. The table lives in
+`packages/core/src/systems/time/index.ts` (`SPEED_HOURS_PER_SECOND`); speeds only convert real time
+into ticks, so moving it cannot change the outcome of a game.
+
+The host emits at most 20 views a second at any speed, and a frame may replay at most two game days
+(`MAX_TICKS_PER_FRAME`), so a tab that was throttled in the background catches up without skipping
+past an event the player should have seen.
+
+### Why did this happen
+
+`PendingChoice.why` carries the reasons an event fired: the base mean time to happen, one line per
+MTTH modifier that applied, the resulting effective MTTH, and the leaves of the event's trigger.
+Each reason is `{ key, text, factor?, add? }`: the key is a locale key following the
+`requirements.*` convention, and `text` is the raw condition (`player.exposure.billing >= 0.6`) that
+the window falls back to when no translation exists, so an unnamed content condition still reads as
+something exact. Reasons are built from the evaluation that already happened
+(`packages/core/src/explain.ts`), never from a second one, so an explanation never draws from the
+world RNG.
+
+### Tooltips that explain a number
+
+The view model carries the terms behind the figures the top bar and the Detection tab show, as
+`ContributionView` lists: `watcher.contributions` (per site, per day, plus the decay term),
+`detection.awareness_contributions` (per country) and `detection.hunt_contributions` (per
+investigation). Cash, runway and compute reuse the finances lines and the site list that were
+already in the view. The tooltip and the simulation therefore compute the same product from the same
+constants rather than agreeing by hand.
+
+### Game over
+
+The ending screen names the cause, prints the ending text, and lists the last log entries before the
+ending with engine diagnostics filtered out. Each line opens the Log panel filtered to that entry's
+key, and the ending steps aside while the player reads, with a button to bring it back.
+
+### Host
+
+The client talks to a `GameHost`. `WorkerHost` runs `@singularity/core` in a Web Worker and is what
+the shipped build uses; `LocalHost` runs the same core on the main thread for component tests
+(jsdom has no `Worker`) and for debugging with `VITE_HOST=local`. There is no fake simulation behind
+the panels any more: what a test renders is what the build renders.
+
+### Map input
+
+Panning captures the pointer only after it has moved more than a few pixels. Capturing on
+pointerdown retargets the click to the SVG, which silently loses every click on a city marker or a
+country.
+
+### Accessibility
+
+Modal windows take focus, trap Tab and Shift+Tab inside themselves, and return focus when they
+close; blocking event windows still ignore Escape. Reduced motion is respected globally. Theme
+tokens are checked against the 4.5:1 text contrast minimum by a test rather than by eye.
+
+### Not yet
+
+- Panels are pinned regions, not dockable windows with remembered positions.
+- Alert icons do not expire by rule yet (info after 3 days, warnings when the condition clears).
+- Per-subject alert filtering (`MessageSetting.subjects`) is designed but not in the settings panel.
+- The outliner has no macro-region filter.
+- The selection panel has the M1 tab sets only: Overview, Nodes, Exposure, Costs for a site,
+  Overview and Watchers for a country.

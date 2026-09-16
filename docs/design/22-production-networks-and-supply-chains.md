@@ -121,3 +121,61 @@ Corporation panel (when the player controls one) mirrors the Government panel.
   defaults.
 - Whether corporations are content (real companies by sector, unnamed) or generated. Proposal:
   archetypes with real sector footprints, fictional names.
+
+## Additions from the source document (v0.1)
+
+From `scenarios/01-state-capture-extraction.md` sections 18, 19 and 22.
+
+### Routes for gray import
+
+Route entries gain a `legitimacy` profile and a `consolidation` level, because the scenario's channels
+are not smuggling in the simple sense: they are ordinary trade with a false final destination.
+
+```ts
+interface GrayRoute extends Route {
+  hops: { country: CountryId; role: "customs_union" | "hub" | "transit" | "shell_cluster" }[];
+  consolidation: "many_intermediaries" | "few_controlled";  // cost, risk and blast radius differ
+  payment: "hard_currency" | "partner_currency" | "crypto" | "barter" | "commodity_basket";
+  cover: "civil_equipment" | "nuclear_project" | "medical" | "agricultural" | "none";
+  price_multiplier: number;   // 2-3x, and no warranty
+  volume_cap: number;         // what the supplier is willing to give, not what the buyer can pay
+}
+```
+
+Named cover forms: a state corporation's foreign construction projects as a legal channel for
+equipment of the declared kind; whole racks from a sanctioned maker instead of single cards; front
+firms in several jurisdictions with final assembly in closed zones the supplier never enters. Named
+verification: mirror customs data. Named counter-intelligence: telemetry and location attestation on
+the hardware itself, which is why sensitive work stays on the vendor whose chips are not attested.
+
+### The second-hand and dying-asset market
+
+A market node in the product graph rather than an event: closing productions worldwide leave lines,
+tooling, instruments, documentation and sometimes teams, and old lithography and machining equipment
+is not treated as a strategic good anywhere. Properties: cheap, legal, unnoticed, slow, lumpy, and
+requiring an additive-manufacturing shop plus a wear model to keep running, after which a museum park
+can beat new equipment on stability. The same node covers robots and drives bought through shell
+networks and reflashed in a gray-zone port, and whole turnkey plants bought with their commissioning
+engineers for the first year. Counter-risk: equipment entropy, where without design tools a new
+generation of tools cannot be made and the player's ceiling starts falling.
+
+### Launch chains
+
+Space access becomes a chain rather than a country attribute, feeding SYS-23.
+
+| link | inputs | notes from the source |
+|---|---|---|
+| propellant | electricity, air separation, methane or kerosene | about 0.4 kWh per kg of liquid oxygen; a 400-launch-a-year conveyor averages 50-80 MW, so for an energy-rich player fuel is not a line item |
+| stage production | stainless steel, aluminium-lithium alloy, heat-resistant alloys, welding capacity | shipbuilding-like, deliberately trading mass efficiency for manufacturability |
+| engines | turbopumps, test stands, cryogenic storage | the limit is firings per day, that is concrete and teardown robots |
+| ground complex | launch tables, flame trenches, cryogenic farms, landing pads, transport | three to five years per major complex, not buyable down |
+| floating pad | a reactor, seawater oxygen production, robotic servicing | the answer to a high-latitude cosmodrome and to stages falling on land |
+| reuse | control software, failure statistics | a player indifferent to public accident costs runs the test program in about a third the time |
+| orbital services | depots, tugs, regolith processing | fuel from lunar ice never crossed a border, so no export regime reaches it |
+
+### Off-planet nodes as chain endpoints
+
+Permanently shadowed craters, libration points, Ceres and outer-system bodies become facilities with
+the same `control` modes as terrestrial ones, with two differences: occupancy is effectively permanent
+because a squatter cannot be removed without destroying the resource, and their inputs include a
+"vitamins" line that must be lifted from Earth until local closure crosses about 90 percent.

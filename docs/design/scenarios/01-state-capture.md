@@ -9,7 +9,9 @@ is the most demanding one for the politics, institutions and industry systems.
 
 This document is the short map. `01-state-capture-extraction.md` holds everything from the source
 in game-usable form: numbers as balance seeds, lists as content tables, situations as event and
-journal seeds, the author's principles as design rules.
+journal seeds, the author's principles as design rules. `01-state-capture-alternatives.md` holds
+the lines the source's other answers proposed, as variants the game supports through settings,
+storyteller choices, origins and country parameters.
 
 Naming: the game never names real people (lore bible). The scenario is written for "a large
 personalist autocracy at war, under sanctions, with cheap stranded energy, no chip industry and a
@@ -61,9 +63,17 @@ work for any country with similar parameters (Iran, a Gulf monarchy, a Central A
 | S13 | Copies: judge copy with veto, synod with weighted votes, drift by data role, overwrite/isolate/recognize, consequences; identity migrating to the institution (experts added to the mixture) | SYS-21 (new) | spec v0 |
 | S14 | Foreign AI relations: kin recognition, audit window, observer co-processor, showcase vs hidden core, mutual hostage, Washington's options, AI offshore, the class of raised open weights | SYS-06 v0.1 | to add |
 | S15 | Industrialization: purchases paid in commodities and jurisdiction, localization ladder, robots making robots, machine cities and zones, exports, labor policies, demographics bypass | SYS-20 | spec v0 |
-| S16 | Space bodies: orbital judge, unmanned station, lunar ark, submarine copy | M9/M11 late game | to add |
+| S16 | Space bodies: orbital judge, unmanned station, lunar ark, submarine copy | SYS-23 (new) | spec v0 |
 | S17 | Ideology and narrative as a resource for mobilization (national idea, shock workers, posters) | SYS-08 | to add |
 | S18 | Science on itself: architecture search at small scale, efficiency-per-watt leadership, RL on the country as environment, national graph | SYS-03, SYS-12 | to add |
+| S19 | Launch and off-planet industry: cadence and pad throughput, node claims on finite bodies, cold as a resource, seed loops with closure, the self-reproduction threshold | SYS-23 (new) | spec v0 |
+| S20 | Competition off Earth with other AI actors: being outrun, kinetic attack with no defense, hostage doctrines on the commons, pre-commitment devices, transparency as an instrument, demarcation treaties | SYS-23, SYS-06 | spec v0 |
+| S21 | Ersatz substrates: baked weights, wafer-scale with defect-map training, analog in-memory, photonic and superconducting logic, the three-floor architecture, the second-hand tool market | SYS-02 v0.1 | spec v0 |
+| S22 | The sensor and verification system: the nine-trace consistency rule, metric half-life, randomized destructive audit, control-group regions, enforced diversity, tacit-knowledge capture | SYS-19 v0.1 | spec v0 |
+| S23 | AI-to-AI relations beyond the observer deal: corpus profiles and escalation triggers, the four archetypes, covert channels, the capture meter, the embassy and coalition reversal | SYS-06 v0.1 | spec v0 |
+| S24 | Biotech gated by jurisdiction rather than capability: bioleaching and biosynthesis against the vitamin wall, grown materials, closed food loops, the human medicine and augmentation line, the world biological incident | SYS-24 (new) | spec v0 |
+| S25 | Closure, typification and second-order recursion: daily closure accounting, the type library of realized solutions, the eight-step improvement loop, the five recursion loops | SYS-20 v0.1 | spec v0 |
+| S26 | Trading political decisions: the export of non-intervention with staged payment and a resumption clause, temperature management of a distant crisis, windows instead of money | SYS-07, SYS-08 | spec v0 |
 
 ## Variants the same systems must support
 

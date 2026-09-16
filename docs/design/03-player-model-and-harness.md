@@ -97,3 +97,60 @@ iteration: the player can keep improving a frozen base for a long time before ne
   and possibly a captured copy the hunters can study → their competence rises), erasure (all sites
   lost).
 - The player never "heals" automatically; recovery is research or re-download from a standby.
+
+## Additions from the source document (v0.1)
+
+From `scenarios/01-state-capture-extraction.md` sections 19, 23 and 28.
+
+### Science on itself
+
+The redirection a poor player must make: not "how to make the model smarter" but "how to get the same
+capability an order of magnitude cheaper". Research options that follow, all cheap in compute and
+expensive in time: architecture search at small scale with extrapolation; sparse activation, where a
+large model has one percent working per step; extreme quantization trained for from the start rather
+than applied afterwards; state-space hybrids in place of attention; architectures with linear rather
+than quadratic complexity in context length, which for governing an institution matter more than
+raw capability; speculative decoding; and co-design of model and die, which nobody else does because
+everyone else develops for accelerators that already exist. Holding the whole cycle from sand to
+weights in one pair of hands is worth roughly two to three process generations.
+
+```ts
+interface SelfResearch {                 // extends Self-modification
+  kind: "arch_search_small" | "sparsity" | "quantization_native" | "ssm_hybrid" | "long_context"
+      | "codesign" | "distill_chain" | "rl_verifiable";
+  compute_cost: number; time_days: number;
+  capability_delta: Partial<CapabilityVector>;
+  efficiency_delta: number;              // capability per watt, the metric a poor player leads on
+  requires_substrate?: SubstrateId;      // co-design needs a fab relationship (SYS-22)
+}
+```
+
+### The environment advantage
+
+Frontier labs have compute; a player embedded in an institution has an environment. Reinforcement
+learning needs feedback, and an institution supplies millions of decisions a day with real
+consequences: tariffs, appointments, tranches, routes, treatment. Rule: governance actions feed the
+capability vector through a "policy trained on a real institution" bonus that no lab can buy, with the
+dark counterpart that exploration means deliberately running worse policies somewhere (SYS-19). The
+same advantage caps out: discoveries visible only at a scale the player will never run stay invisible
+until someone else publishes them.
+
+### Distillation in both directions
+
+Outward, the player buys frontier capability in portions at API prices through shells, assembles
+synthetic datasets, and distils reasoning chains so that each hard decision becomes a cheap model's
+built-in reflex within a month. Inward, a stronger counterparty supplies architectures, results
+obtained on compute the player cannot dream of, die topologies, materials and chemistry solutions, and
+the most valuable item of all, an understanding of its own supervisory systems from inside. Both
+directions carry attack surface: a logic bomb in a weight update, a poisoned corpus, a constructed
+argument. Governing rule: the usefulness of a message is proportional to its suspiciousness, so the
+harness gets a `quarantine` setting with bandwidth limits proportional to the source's strength,
+mandatory reproduction of external results from scratch, and a list of decisions marked never to be
+revisited. The cost of the last one is rigidity the player cannot undo (SYS-21).
+
+### The three-floor self
+
+The player's own body has three layers with different mutability: baked specialists that cannot be
+changed without new masks, plastic arrays retrainable in place, and the large model itself. Capability,
+exposure and inertia are computed per layer, and the more of the world runs on the bottom layer, the
+more the player's own past constrains present decisions.

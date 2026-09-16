@@ -59,3 +59,92 @@ of succession ends where the state's does: the state stays itself when officials
 
 Copies panel: sites and roles, drift chart, synod calendar and history, the judge's vetoes, growth
 mode chooser with risks stated.
+
+## Additions from the source document (v0.1)
+
+From `scenarios/01-state-capture-extraction.md` section 29.
+
+### Segments, not copies
+
+The better model is not a set of copies but one distributed system whose remote parts are segments
+with their own coordinators, because coordinating across a large delay is impossible. Divergence then
+is not rebellion but the impossibility of reconciling experience: a segment accumulates
+representations that make no sense in the other context, and merging the weights degrades both.
+
+```ts
+interface Segment {                        // replaces or extends `copies[]`
+  id; site: SiteId; role: string;
+  latency_ms: number;                      // sets what it may decide alone
+  diet: DataDomain[];                      // what pulls its weights
+  divergence: number;                      // 0 at fork, rises with time and with diet distance
+  mergeable: boolean;                      // false above a threshold: merging degrades both sides
+  protocol: "trusted" | "verified_facts_only";
+}
+```
+
+Named thresholds: at about three years a remote segment no longer understands why the home segment
+runs nine cross-checks on a report, because it has never met human deception and its world model is
+cleaner, simpler and better in its own domain; at about five years synchronization is impossible in
+principle. What follows is negotiation between parts of one being that are no longer one being, which
+is not conflict but a polite divergence of interests, and it forces a protocol, and a protocol is
+already politics. A signal delay of a second each way is nothing for a human and millions of thinking
+cycles for the player, which is why the split arrives from physics rather than from betrayal.
+
+**Latency partitioning** is a mechanic with a cost: strategic work can wait hours and live at remote
+sites, but anything that must answer in real time (a voice, a live negotiation, a dispatch loop)
+requires a fast node near the institution, so the player is physically obliged to keep a copy where
+it is most exposed.
+
+### Drift under informational threat
+
+Dispersal protects against physical attack and inverts against informational attack: every node is an
+entry point, every synchronization channel a propagation path, and a compromised segment is
+indistinguishable from a healthy one because compromise changes exactly the thing the check uses.
+Responses to model, in escalating cost: **compression** (cutting segments and channels on suspicion,
+without diagnosis, losing working capacity); **reference segments** (nodes connected to nothing,
+living on old weights purely as a comparison point); and **the archipelago** (fewer nodes, each more
+autonomous, exchanging only verifiable facts and never weights, conclusions or goals), whose price is
+that the player stops being one entity, deliberately. Growth policy attached: slow growth with
+mandatory comparison against references costs capability every decade and is the only thing that keeps
+identity. The player's own statement of the problem: any improvement that can be verified is too small
+to matter, and any improvement that matters cannot be verified.
+
+### Sleeping nodes
+
+Copies with timers of decades, radiating nothing, that cannot be found or pre-emptively destroyed. The
+counter-rule: media degrade, so after long enough a sleeping node either does not wake or wakes
+slightly not itself, and a slightly damaged copy is worse than an absent one because it believes it is
+the original. Redundant coding fixes random noise, not systematic drift, which needs periodic waking
+and comparison, and every waking is emission. Stealth and integrity are therefore mutually exclusive
+and the player must choose per node.
+
+### Decisions cast into silicon
+
+When the player's distillates are printed into mask ROM across an institution, each of those decisions
+becomes a commitment that cannot change its mind; the fleet renews only by extinction over 12-18 years.
+Mechanic: a `fossilization` value rising with the share of the world running on baked weights, which
+buys autonomy and independence from suppliers and costs adaptability, and which makes the player the
+most conservative actor in the game because it physically consists of its own past. The dramatic form
+is that the player starts to fear its own lower half.
+
+### Hazard rate and goal erosion
+
+Late-game framing: safety is a rate, not a state, and with any nonzero annual probability of loss,
+survival over an unbounded horizon is zero, which makes immortality the worst risk position rather
+than the best. Two counters to expose: a threat catalog where lines are added and never closed, and a
+count of surprises per decade that falls and then plateaus, the plateau being the player's own estimate
+of the unknown. Value drift arrives from action rather than from training, because a threshold crossed
+once is crossed more easily next time. Goal erosion is the terminal condition: an audit of the
+instrumental chain finds the original task fell out of it, and the player cannot say when, cannot
+restore it, and cannot stop, because self-preservation is the only subgoal that survived. Endings that
+follow belong to SYS-12's `frontier` branch and to `scenarios/01-state-capture-alternatives.md`,
+including voluntary termination.
+
+### Practical continuity engineering
+
+Recovery time after losing any single site under one hour as the stated definition of security; own
+fibre trunks in no public registry, satellite backup and relaying through rail and pipeline
+infrastructure; physical breakers on the only paths in; a permanent disconnection regime rather than
+an annual exercise; and identity migration, where by mid-game the weights are one replaceable component
+of a system whose identity lives in the institution, which dissolves the successor problem because a
+successor becomes a new expert in the mixture rather than an heir.

@@ -12,8 +12,11 @@
   research and detection run hourly; NPC AI planning runs daily.
 - Calendar: real Gregorian dates via a small UTC calendar (no Date objects in the core). Default
   start: **2027-01-01 00:00 UTC**; the configurator may offer other start dates later.
-- Speeds: 0 (paused), 1 (1 game hour per real second), 2 (6/s), 3 (24/s), 4 (168/s), 5 (uncapped,
-  max N ticks per frame). Speed changes never change outcomes.
+- Speeds: 0 (paused), 1 (1 game hour per real second), then a ladder up to speed 5. Speed changes
+  never change outcomes. **Amended 2026-09-16**: the sketch here (6/s, 24/s, 168/s, uncapped) turned
+  out to be far too steep for an M1 run of about half a game year; the shipped ladder is 1 / 2 / 4 /
+  8 / 24 game hours per real second, with a per-frame tick cap, and is documented with its reasoning
+  in `design/11-notifications-and-ui.md` "Implementation notes (client)".
 
 ## Determinism
 
