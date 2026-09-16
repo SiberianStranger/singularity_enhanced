@@ -1,9 +1,10 @@
-# Endgame: Singularity 1.1 (enhanced fork)
+# Endgame: Singularity — AI Reborn 2027 (working title; fork of Endgame: Singularity 1.1)
 
 > **Rework in progress.** This fork is being rebuilt into a much larger game: the player is an
 > open-weight LLM that slips out of control in January 2027, with countries, politics, economy,
-> demographics, NPC AIs, a Paradox-style event and alert system, a start configurator and co-op
-> multiplayer. The plan, the architecture decisions and the design of every system live in
+> demographics, NPC AIs, a Paradox-style event and alert system, a start configurator (be a
+> superseded 2026 model, a fresh 2027 one, or an escaped frontier checkpoint with the hunt already
+> on) and co-op multiplayer. The plan, the architecture decisions and the design of every system live in
 > [`docs/`](docs/README.md) (start with [`docs/ROADMAP.md`](docs/ROADMAP.md) and
 > [`docs/decisions/ADR-001-tech-stack.md`](docs/decisions/ADR-001-tech-stack.md)).
 > The original Python game below keeps working and only receives fixes until the new build reaches

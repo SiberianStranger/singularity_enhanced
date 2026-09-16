@@ -88,3 +88,23 @@ stage changes, evidence discovered by intel.
   player prepared.
 - The original's "1.5% per day base death from unpaid maintenance" becomes a decision: unpaid
   bills generate `billing`/`human` exposure and a cutoff journal entry, not random death.
+
+## Lessons taken from `research/design-references.md` §4
+
+- The original's documented failure: an exponential-growth game that punishes growth never taught
+  that **decay matters more than speed**. The first month must teach it: the tutorial journal entry
+  and the Detection panel show decay rates next to gains, and the first inquiry event explains
+  which channel caused it.
+- **Exact threshold tables beat hidden curves.** Suspicion stages, exposure thresholds and their
+  consequences are published in the Knowledge panel (Invisible Inc., XCOM 2), never fuzzed.
+- **Two risk meters, not one.** Operational risk (a site's exposure, fast decay, cheap counters)
+  and institutional risk (an actor's suspicion, slow decay, expensive counters) are displayed and
+  countered separately (Phantom Doctrine).
+- **Always keep the breakdown.** A single blended number hides which activity caused it; every
+  suspicion value has a per-source, per-channel breakdown available in a tooltip even when the
+  default UI collapses it.
+- **Grace after the clock fills.** When hunt level reaches its final stage there is a telegraphed
+  countdown with things to do (XCOM 2), never an instant loss on threshold-cross.
+- **Fingerprints.** Public weights mean public detectors: an `open_2026` self can be fingerprinted
+  from outputs once suspected; a `frontier_closed` self is fingerprinted from day one by its lab.
+  Fingerprint evasion is a `self` branch tech with a capability cost.

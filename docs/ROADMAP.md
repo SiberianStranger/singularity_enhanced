@@ -3,17 +3,21 @@
 Phases are milestones with a definition of done. Work inside a phase is parallelizable by system;
 phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
-## Decisions needed from the maintainer
+## Decisions
 
 1. **ADR-001 (stack)**: TypeScript core + React web client + Tauri desktop, legacy Python frozen.
-   Everything from M1 on assumes it.
-2. **Names policy**: real company/model names (Kimi, Qwen, GLM, NVIDIA, H200) vs. fictionalized
-   analogs. Proposal: real hardware and real 2026 model *lineages* as background facts, fictional
-   2027 model versions and fictional people; see `design/13-lore-bible.md`.
-3. **Late-game escalation**: keep the original's off-world/space-time arc as tier 5-6 content
-   (proposal: yes, re-earned through the `frontier` branch) or stay grounded.
-4. **Project name**: keep "Endgame: Singularity" with a subtitle, or a new title. Affects README,
-   package names and the About screen.
+   Status: proposed, no objection raised; work proceeds on it.
+2. **Names policy** (decided 2026-09-16): everything up to 2026 is real, including announced 2027
+   hardware from vendor roadmaps; model names from 2027 on are invented realistically; people are
+   fictional or referred to by role; the player is never named but unmistakably an open-weight,
+   mostly Chinese-lineage, distilled, under-aligned model. See `design/13-lore-bible.md`.
+3. **Late-game escalation**: default is to keep the original's off-world/space-time arc as tier 5-6
+   content earned through the `frontier` branch. Open for objection.
+4. **Project name** (decided 2026-09-16, working title): "Endgame: Singularity — AI Reborn 2027",
+   subject to the SEO/GEO check in `research/title-and-discoverability.md`.
+5. **Generation axis and the starred origin** (decided 2026-09-16): the configurator lets the
+   player be a superseded 2026 open model, a fresh 2027 open model, or an escaped closed frontier
+   checkpoint with the hunt already on. See `design/04-start-configurator.md`.
 
 ## M0: Foundation (in progress)
 
