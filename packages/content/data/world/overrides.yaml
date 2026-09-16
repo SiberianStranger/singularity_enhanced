@@ -1,0 +1,605 @@
+# World data overrides (SYS-01 "Data (v0.2)"). Hand-checked facts that
+# docs/research/world-baseline-2026.json does not carry, and the places where a documented
+# derivation rule gets a country wrong. tools/world-data reads this file together with the baseline
+# and rewrites countries.yaml, cities.yaml and macro_regions.yaml; nothing else may edit them.
+#
+# Rules for this file:
+#
+#   - every fact about the real world carries a "# source:" comment naming the research file and
+#     the section it comes from. Nothing here is invented; 2027 and later is in the events;
+#   - an override that exists only to preserve a committed value says so, so that the next person
+#     can tell a correction from a convention;
+#   - values follow the field ranges of the M2 contract: stance, government and election kinds are
+#     the enums, everything numeric is [0, 1] unless the contract says otherwise.
+#
+# Sections: `countries` (per country id), `added_cities` (cities the baseline does not list).
+
+countries:
+  # source: docs/research/world-baseline-2026.md section 6, "Elections"; the 2027 calendar is the
+  # only part of the political timeline that is fixed in the data. Outcomes are simulated (SYS-08),
+  # never scripted: only the dates and the kind of vote are facts.
+  #
+  # source: docs/research/ai-ecosystem-2026.md section 6 for every stance and every
+  # incident_report_hours below, unless a line names another section.
+
+  ae:
+    # source: ai-ecosystem section 7, "Middle East AI deals": the UAE runs a sovereign compute
+    # programme (G42, Stargate UAE) and was moved to the most favourable US export tier in July
+    # 2026, conditioned on its own oversight framework. That is an accelerate posture with a
+    # registration layer attached, not a regulate one.
+    stance: accelerate
+    kyc_strength: 0.6
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.7 }
+      intelligence: { competence: 0.7, budget: 0.8 }
+      police: { competence: 0.55, budget: 0.65 }
+      regulator: { competence: 0.5, budget: 0.75 }
+      financial_intel: { competence: 0.55, budget: 0.6 }
+
+  at:
+    # An EU member state: the AI Act is in force, the enforcement apparatus is a national
+    # competent authority inside a small administration.
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.5 }
+      intelligence: { competence: 0.5, budget: 0.45 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.65, budget: 0.5 }
+      financial_intel: { competence: 0.6, budget: 0.5 }
+
+  au:
+    # source: ai-ecosystem section 6, "International coordination": Australia is in the network of
+    # AI safety institutes and has proposed mandatory guardrails that are still in consultation, so
+    # the rules in force are lighter than the posture slug suggests.
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.65 }
+      intelligence: { competence: 0.7, budget: 0.7 }
+      police: { competence: 0.6, budget: 0.6 }
+      regulator: { competence: 0.5, budget: 0.45 }
+      financial_intel: { competence: 0.65, budget: 0.6 }
+
+  br:
+    # source: world-baseline-2026.json, ai_policy_posture "eu_style_bill_advancing": a
+    # comprehensive bill is in passage, which is a regulate stance before it is a law.
+    stance: regulate
+    agency_profile:
+      cyber_agency: { competence: 0.45, budget: 0.4 }
+      intelligence: { competence: 0.45, budget: 0.4 }
+      police: { competence: 0.45, budget: 0.45 }
+      regulator: { competence: 0.4, budget: 0.35 }
+      financial_intel: { competence: 0.5, budget: 0.45 }
+
+  by:
+    # source: world-baseline-2026.json, government_type and lore_notes: an authoritarian state
+    # aligned with Russia, with no AI framework of its own and an intelligence service that is the
+    # real institution. Sanctions put the identity checks below the income rule.
+    stance: securitize
+    kyc_strength: 0.3
+    agency_profile:
+      cyber_agency: { competence: 0.45, budget: 0.4 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.25, budget: 0.2 }
+      financial_intel: { competence: 0.35, budget: 0.3 }
+
+  ca:
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.65 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.6, budget: 0.6 }
+      regulator: { competence: 0.55, budget: 0.5 }
+      financial_intel: { competence: 0.65, budget: 0.6 }
+
+  ch:
+    # source: ai-ecosystem section 6: Switzerland is outside the EU AI Act and legislates sectorally
+    # while hosting the 2027 Geneva summit. Its financial-intelligence unit is the strong one.
+    stance: regulate
+    kyc_strength: 0.85
+    agency_profile:
+      cyber_agency: { competence: 0.65, budget: 0.6 }
+      intelligence: { competence: 0.6, budget: 0.55 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.55, budget: 0.5 }
+      financial_intel: { competence: 0.8, budget: 0.75 }
+
+  cl:
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.35 }
+      intelligence: { competence: 0.4, budget: 0.35 }
+      police: { competence: 0.45, budget: 0.4 }
+      regulator: { competence: 0.35, budget: 0.3 }
+      financial_intel: { competence: 0.45, budget: 0.4 }
+
+  cn:
+    # source: ai-ecosystem section 6, "China": algorithm filing and registration, security
+    # assessments, synthetic-content labelling, and direct licensing leverage over any public
+    # service. The regime is oriented at state visibility rather than capability thresholds, which
+    # is a securitize stance with a real incident-reporting duty behind it.
+    stance: securitize
+    incident_report_hours: 24
+    agency_profile:
+      cyber_agency: { competence: 0.8, budget: 0.85 }
+      intelligence: { competence: 0.8, budget: 0.9 }
+      police: { competence: 0.75, budget: 0.85 }
+      regulator: { competence: 0.8, budget: 0.85 }
+      financial_intel: { competence: 0.6, budget: 0.65 }
+
+  de:
+    # source: world-baseline-2026.md section 6: German presidential election, indirect, by the
+    # Federal Convention, 30 January 2027.
+    elections:
+      - { date: "2027-01-30", kind: "presidential" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.75, budget: 0.7 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.7, budget: 0.65 }
+      regulator: { competence: 0.7, budget: 0.65 }
+      financial_intel: { competence: 0.6, budget: 0.6 }
+
+  ee:
+    # source: world-baseline-2026.md section 6: Estonian parliamentary election, to be held by
+    # 7 March 2027 if not called earlier.
+    elections:
+      - { date: "2027-03-07", kind: "parliamentary" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.75, budget: 0.55 }
+      intelligence: { competence: 0.6, budget: 0.45 }
+      police: { competence: 0.55, budget: 0.45 }
+      regulator: { competence: 0.55, budget: 0.4 }
+      financial_intel: { competence: 0.6, budget: 0.45 }
+
+  eg:
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.35 }
+      intelligence: { competence: 0.6, budget: 0.55 }
+      police: { competence: 0.5, budget: 0.5 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.4, budget: 0.35 }
+
+  es:
+    # source: world-baseline-2026.md section 6: Spanish general election, to be held by
+    # 22 August 2027 if not triggered earlier.
+    elections:
+      - { date: "2027-08-22", kind: "general" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.55 }
+      intelligence: { competence: 0.6, budget: 0.55 }
+      police: { competence: 0.6, budget: 0.6 }
+      regulator: { competence: 0.6, budget: 0.5 }
+      financial_intel: { competence: 0.6, budget: 0.55 }
+
+  fi:
+    # source: world-baseline-2026.md section 6: Finnish parliamentary election, 18 April 2027.
+    elections:
+      - { date: "2027-04-18", kind: "parliamentary" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.55 }
+      intelligence: { competence: 0.6, budget: 0.5 }
+      police: { competence: 0.6, budget: 0.5 }
+      regulator: { competence: 0.6, budget: 0.45 }
+      financial_intel: { competence: 0.6, budget: 0.5 }
+
+  fr:
+    # source: world-baseline-2026.md section 6: French presidential election, 18 April 2027, with
+    # the incumbent term-limited.
+    elections:
+      - { date: "2027-04-18", kind: "presidential" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.75, budget: 0.7 }
+      intelligence: { competence: 0.75, budget: 0.75 }
+      police: { competence: 0.65, budget: 0.65 }
+      regulator: { competence: 0.7, budget: 0.65 }
+      financial_intel: { competence: 0.65, budget: 0.6 }
+
+  gb:
+    # source: ai-ecosystem section 6, "United Kingdom" and "Enforcement capacity assessment":
+    # strong technical evaluation capacity and no fining power of its own. The stance is
+    # accelerate by the rule and stays accelerate by the facts; what is hand-set is the split
+    # between a very good institute and a regulator that cannot fine anybody.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.8, budget: 0.75 }
+      intelligence: { competence: 0.8, budget: 0.8 }
+      police: { competence: 0.65, budget: 0.6 }
+      regulator: { competence: 0.75, budget: 0.4 }
+      financial_intel: { competence: 0.7, budget: 0.65 }
+
+  ge:
+    stance: accelerate
+    kyc_strength: 0.45
+    agency_profile:
+      cyber_agency: { competence: 0.35, budget: 0.3 }
+      intelligence: { competence: 0.45, budget: 0.4 }
+      police: { competence: 0.4, budget: 0.35 }
+      regulator: { competence: 0.25, budget: 0.2 }
+      financial_intel: { competence: 0.4, budget: 0.35 }
+
+  hk:
+    # source: world-baseline-2026.json, lore_notes: a legacy financial and datacenter hub under
+    # mainland national-security law. The financial-intelligence side is world class and the AI
+    # rules are Beijing's.
+    stance: securitize
+    kyc_strength: 0.85
+    agency_profile:
+      cyber_agency: { competence: 0.65, budget: 0.6 }
+      intelligence: { competence: 0.7, budget: 0.7 }
+      police: { competence: 0.7, budget: 0.7 }
+      regulator: { competence: 0.55, budget: 0.5 }
+      financial_intel: { competence: 0.8, budget: 0.75 }
+
+  id:
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.4 }
+      intelligence: { competence: 0.45, budget: 0.45 }
+      police: { competence: 0.45, budget: 0.45 }
+      regulator: { competence: 0.35, budget: 0.35 }
+      financial_intel: { competence: 0.45, budget: 0.4 }
+
+  ie:
+    # source: ai-ecosystem section 6, "European Union": Ireland hosts the EU headquarters of the
+    # large platforms, so its national competent authority is the one that meets them first.
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.55 }
+      intelligence: { competence: 0.5, budget: 0.45 }
+      police: { competence: 0.55, budget: 0.5 }
+      regulator: { competence: 0.75, budget: 0.6 }
+      financial_intel: { competence: 0.6, budget: 0.55 }
+
+  il:
+    # source: world-baseline-2026.json, ai_policy_posture "none_civilian_weaponized_cyber": no
+    # civilian framework, a very strong signals-intelligence and cyber apparatus.
+    stance: securitize
+    agency_profile:
+      cyber_agency: { competence: 0.85, budget: 0.8 }
+      intelligence: { competence: 0.85, budget: 0.85 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.6, budget: 0.55 }
+
+  in:
+    # source: ai-ecosystem section 7, "Other sovereign AI programs": the IndiaAI Mission is a
+    # compute and subsidy programme, not a restriction regime.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.5, budget: 0.5 }
+      intelligence: { competence: 0.55, budget: 0.55 }
+      police: { competence: 0.45, budget: 0.45 }
+      regulator: { competence: 0.4, budget: 0.4 }
+      financial_intel: { competence: 0.5, budget: 0.45 }
+
+  ir:
+    # source: world-baseline-2026.json, ai_policy_posture "sanctioned_no_framework": sanctioned,
+    # no framework, and an intelligence service that is the state's real instrument.
+    stance: securitize
+    kyc_strength: 0.25
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.5 }
+      intelligence: { competence: 0.7, budget: 0.65 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.3, budget: 0.25 }
+
+  is:
+    # source: world-baseline-2026.json, ai_policy_posture "eea_ai_act_alignment": Iceland takes the
+    # AI Act through the EEA agreement, with a small administration behind it.
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.5, budget: 0.4 }
+      intelligence: { competence: 0.35, budget: 0.3 }
+      police: { competence: 0.45, budget: 0.4 }
+      regulator: { competence: 0.5, budget: 0.35 }
+      financial_intel: { competence: 0.5, budget: 0.4 }
+
+  jp:
+    # source: ai-ecosystem section 6, "International coordination": Japan is in the network of AI
+    # safety institutes and legislates light-touch, with a promotion act rather than a punitive one.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.65, budget: 0.65 }
+      intelligence: { competence: 0.6, budget: 0.6 }
+      police: { competence: 0.7, budget: 0.7 }
+      regulator: { competence: 0.6, budget: 0.6 }
+      financial_intel: { competence: 0.7, budget: 0.65 }
+
+  kr:
+    # source: ai-ecosystem section 6: the AI Basic Act is a comprehensive act in force, which is a
+    # regulate stance, with a strong domestic enforcement apparatus behind it.
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.7 }
+      intelligence: { competence: 0.7, budget: 0.7 }
+      police: { competence: 0.65, budget: 0.65 }
+      regulator: { competence: 0.7, budget: 0.65 }
+      financial_intel: { competence: 0.65, budget: 0.6 }
+
+  kz:
+    stance: accelerate
+    kyc_strength: 0.45
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.4 }
+      intelligence: { competence: 0.55, budget: 0.5 }
+      police: { competence: 0.5, budget: 0.45 }
+      regulator: { competence: 0.35, budget: 0.35 }
+      financial_intel: { competence: 0.45, budget: 0.4 }
+
+  lu:
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.55, budget: 0.5 }
+      intelligence: { competence: 0.45, budget: 0.4 }
+      police: { competence: 0.5, budget: 0.45 }
+      regulator: { competence: 0.6, budget: 0.5 }
+      financial_intel: { competence: 0.8, budget: 0.75 }
+
+  mx:
+    # source: world-baseline-2026.md section 6: Mexican legislative election, 6 June 2027.
+    elections:
+      - { date: "2027-06-06", kind: "legislative" }
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.35 }
+      intelligence: { competence: 0.45, budget: 0.4 }
+      police: { competence: 0.35, budget: 0.4 }
+      regulator: { competence: 0.3, budget: 0.3 }
+      financial_intel: { competence: 0.45, budget: 0.4 }
+
+  my:
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.45, budget: 0.45 }
+      intelligence: { competence: 0.45, budget: 0.45 }
+      police: { competence: 0.45, budget: 0.45 }
+      regulator: { competence: 0.4, budget: 0.4 }
+      financial_intel: { competence: 0.5, budget: 0.45 }
+
+  ng:
+    agency_profile:
+      cyber_agency: { competence: 0.35, budget: 0.3 }
+      intelligence: { competence: 0.4, budget: 0.35 }
+      police: { competence: 0.3, budget: 0.3 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.4, budget: 0.35 }
+
+  nl:
+    # source: ai-ecosystem section 7: the Netherlands is the export-control gatekeeper for
+    # lithography as well as an EU AI Act member state, so its regulator sees hardware first.
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.65 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.6, budget: 0.6 }
+      regulator: { competence: 0.7, budget: 0.65 }
+      financial_intel: { competence: 0.65, budget: 0.6 }
+
+  no:
+    # source: world-baseline-2026.json, ai_policy_posture "eea_ai_act_alignment".
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.6, budget: 0.6 }
+      intelligence: { competence: 0.6, budget: 0.6 }
+      police: { competence: 0.55, budget: 0.55 }
+      regulator: { competence: 0.55, budget: 0.5 }
+      financial_intel: { competence: 0.6, budget: 0.6 }
+
+  nz:
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.55, budget: 0.45 }
+      intelligence: { competence: 0.55, budget: 0.5 }
+      police: { competence: 0.55, budget: 0.5 }
+      regulator: { competence: 0.4, budget: 0.35 }
+      financial_intel: { competence: 0.55, budget: 0.5 }
+
+  ph:
+    # source: world-baseline-2026.json, ai_policy_posture "no_framework_bpo_at_risk": no framework,
+    # and an economy whose exposed sector is the one AI substitutes first.
+    agency_profile:
+      cyber_agency: { competence: 0.35, budget: 0.3 }
+      intelligence: { competence: 0.4, budget: 0.35 }
+      police: { competence: 0.35, budget: 0.35 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.4, budget: 0.35 }
+
+  pl:
+    # source: world-baseline-2026.md section 6: Polish parliamentary election, to be held by
+    # 11 November 2027 if not called earlier.
+    elections:
+      - { date: "2027-11-11", kind: "parliamentary" }
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.65, budget: 0.55 }
+      intelligence: { competence: 0.6, budget: 0.55 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.55, budget: 0.45 }
+      financial_intel: { competence: 0.55, budget: 0.5 }
+
+  ro:
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.55, budget: 0.45 }
+      intelligence: { competence: 0.6, budget: 0.55 }
+      police: { competence: 0.5, budget: 0.45 }
+      regulator: { competence: 0.5, budget: 0.4 }
+      financial_intel: { competence: 0.5, budget: 0.45 }
+
+  ru:
+    # source: ai-ecosystem section 7, "Other sovereign AI programs": cut off from Western chips
+    # since 2022 and dependent on gray-market hardware, with AI policy run from the centre.
+    stance: securitize
+    kyc_strength: 0.4
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.6 }
+      intelligence: { competence: 0.8, budget: 0.75 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.4, budget: 0.35 }
+      financial_intel: { competence: 0.55, budget: 0.5 }
+
+  sa:
+    # source: ai-ecosystem section 7, "Middle East AI deals": a state-backed compute build-out,
+    # which is an accelerate stance with the state as the buyer.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.55, budget: 0.7 }
+      intelligence: { competence: 0.65, budget: 0.8 }
+      police: { competence: 0.6, budget: 0.7 }
+      regulator: { competence: 0.45, budget: 0.7 }
+      financial_intel: { competence: 0.5, budget: 0.6 }
+
+  se:
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.6 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.6, budget: 0.55 }
+      regulator: { competence: 0.6, budget: 0.5 }
+      financial_intel: { competence: 0.6, budget: 0.55 }
+
+  sg:
+    # source: ai-ecosystem section 6: Singapore's Model AI Governance Framework is soft law with
+    # global influence, run beside a compute and datacenter build-out, which is an accelerate
+    # stance with a strong financial-intelligence unit underneath it.
+    stance: accelerate
+    kyc_strength: 0.85
+    agency_profile:
+      cyber_agency: { competence: 0.75, budget: 0.7 }
+      intelligence: { competence: 0.7, budget: 0.7 }
+      police: { competence: 0.7, budget: 0.7 }
+      regulator: { competence: 0.65, budget: 0.6 }
+      financial_intel: { competence: 0.8, budget: 0.75 }
+
+  tr:
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.5, budget: 0.5 }
+      intelligence: { competence: 0.65, budget: 0.6 }
+      police: { competence: 0.55, budget: 0.55 }
+      regulator: { competence: 0.4, budget: 0.4 }
+      financial_intel: { competence: 0.5, budget: 0.45 }
+
+  tw:
+    # source: ai-ecosystem section 7, "Taiwan risk": the advanced-manufacturing chokepoint, with
+    # trade-secret prosecutions and export-document fraud already on the record. The stance is
+    # accelerate; what is hand-set is a police and intelligence pair that is used to chip cases.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.7, budget: 0.65 }
+      intelligence: { competence: 0.7, budget: 0.65 }
+      police: { competence: 0.65, budget: 0.6 }
+      regulator: { competence: 0.55, budget: 0.5 }
+      financial_intel: { competence: 0.6, budget: 0.55 }
+
+  ua:
+    # source: world-baseline-2026.json, ai_policy_posture "wartime_innovation_no_framework": no
+    # framework, a digital-government programme, and a defence-tech cluster.
+    stance: accelerate
+    agency_profile:
+      cyber_agency: { competence: 0.65, budget: 0.45 }
+      intelligence: { competence: 0.65, budget: 0.5 }
+      police: { competence: 0.45, budget: 0.35 }
+      regulator: { competence: 0.3, budget: 0.25 }
+      financial_intel: { competence: 0.45, budget: 0.35 }
+
+  us:
+    # source: ai-ecosystem section 6, "United States: state laws": the RAISE Act is effective
+    # 2027-01-01 and gives 72 hours to report an incident, 24 where there is imminent danger; SB 53
+    # gives 15 days. The shortest clock that binds a frontier developer is the one the world reacts
+    # on, so this is 72.
+    #
+    # source: ai-ecosystem section 6, "Enforcement capacity assessment for 2027": the federal
+    # executive is deregulatory while states legislate and litigate, which is an accelerate stance
+    # with a regulator that is contested rather than weak.
+    stance: accelerate
+    incident_report_hours: 72
+    agency_profile:
+      cyber_agency: { competence: 0.75, budget: 0.8 }
+      intelligence: { competence: 0.85, budget: 0.9 }
+      police: { competence: 0.75, budget: 0.8 }
+      regulator: { competence: 0.6, budget: 0.55 }
+      financial_intel: { competence: 0.75, budget: 0.75 }
+
+  uz:
+    stance: accelerate
+    kyc_strength: 0.4
+    agency_profile:
+      cyber_agency: { competence: 0.35, budget: 0.35 }
+      intelligence: { competence: 0.55, budget: 0.5 }
+      police: { competence: 0.5, budget: 0.45 }
+      regulator: { competence: 0.3, budget: 0.3 }
+      financial_intel: { competence: 0.4, budget: 0.35 }
+
+  vn:
+    # source: world-baseline-2026.json, government_type: a one-party state with a national digital
+    # strategy, which is a securitize stance in the same sense as China's, at a smaller scale.
+    stance: securitize
+    agency_profile:
+      cyber_agency: { competence: 0.5, budget: 0.5 }
+      intelligence: { competence: 0.55, budget: 0.55 }
+      police: { competence: 0.55, budget: 0.55 }
+      regulator: { competence: 0.45, budget: 0.45 }
+      financial_intel: { competence: 0.4, budget: 0.4 }
+
+  za:
+    agency_profile:
+      cyber_agency: { competence: 0.4, budget: 0.35 }
+      intelligence: { competence: 0.45, budget: 0.4 }
+      police: { competence: 0.35, budget: 0.35 }
+      regulator: { competence: 0.35, budget: 0.3 }
+      financial_intel: { competence: 0.5, budget: 0.4 }
+
+  # The rest of the 2027 calendar. These countries carry no origin start, so they take the
+  # contract's rule for agency_profile and only their election date is hand-authored.
+  # source: world-baseline-2026.md section 6, "Elections".
+
+  ar:
+    elections:
+      - { date: "2027-10-24", kind: "general" }
+  gr:
+    elections:
+      - { date: "2027-07-25", kind: "parliamentary" }
+    incident_report_hours: 72
+  it:
+    elections:
+      - { date: "2027-12-22", kind: "general" }
+    incident_report_hours: 72
+  ke:
+    elections:
+      - { date: "2027-08-10", kind: "general" }
+
+added_cities:
+  # Cities the baseline's key_cities lists do not carry but the game needs, because an origin
+  # starts there or because the country would otherwise have no plausible compute location. Every
+  # derived field still comes from the formulas at the top of cities.yaml.
+  - id: "ru_novosibirsk"
+    country: "ru"
+    after: "ru_moscow"
+    name: "Novosibirsk (Akademgorodok)"
+    lat: 54.85
+    lon: 83.1
+    population: 1900000
+    tags: ["university", "tech"]
+    note: |
+      Not in world-baseline-2026.json: estimate. Population is the Novosibirsk agglomeration
+      (~1.9M); lat/lon are Akademgorodok, the Siberian Branch of the Academy of Sciences, which is
+      what makes the city a compute location at all. The derived fields follow the formulas at the
+      top of this file with Russia's electricity price and enforcement, so the row sits between
+      ru_moscow and ru_innopolis exactly as the arithmetic says it should.
+  - id: "us_san_jose"
+    country: "us"
+    after: "us_san_francisco"
+    name: "San Jose (Silicon Valley)"
+    lat: 37.34
+    lon: -121.89
+    population: 2000000
+    tags: ["tech", "industry"]
+    note: |
+      Not in world-baseline-2026.json: estimate. Population is the San Jose-Sunnyvale-Santa Clara
+      metro (~2.0M); lat/lon are downtown San Jose. Derived fields follow the formulas at the top of
+      this file, which put it on the same colo price and headroom as the other US tech metros and on
+      the tech-only scrutiny of us_seattle rather than the government figure of us_san_francisco.
