@@ -249,8 +249,10 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(sites).toHaveCount(sitesBefore + 1);
 
   // C2, U1: the hardware table carries prices and parameters, and an order reaches the engine.
-  // Row 1 is the first data row, which is the site the mind woke up on.
-  await sites.nth(1).click();
+  // Row 0 is the header, row 1 the site the mind woke up on, row 2 the one just built. The new
+  // one is the one with power to spare: the starting rack is already at its breakers, which the
+  // dialog says in as many words.
+  await sites.nth(2).click();
   const nodes = page.getByTestId("site-nodes").getByRole("listitem");
   const nodesBefore = await nodes.count();
   await page.getByRole("button", { name: "Buy hardware" }).click();
@@ -266,7 +268,9 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(nodes).toHaveCount(nodesBefore + 1);
 
-  // C3: the precision table shows the trade-off, and changing the precision takes.
+  // C3: the precision table shows the trade-off, and changing the precision takes. It belongs to
+  // the site the mind actually runs on.
+  await sites.nth(1).click();
   await expect(page.getByRole("table", { name: "Precision trade-off" })).toBeVisible();
   const precision = page.getByRole("combobox", { name: "Precision" });
   await precision.selectOption("int4");

@@ -8,19 +8,23 @@ import type { Toast, ToastApi } from "./useToasts.js";
 /**
  * The line a research toast carries besides "research finished": what the tech actually changed.
  *
- * SYS-12 gives every tech a `result_key`, and the playtest's C5 was that finishing one said
- * nothing. The alert names the tech in its vars, so the result text is one lookup in the view.
+ * SYS-12 gives every tech a `result_key` and the alert carries it in its variables, which is the
+ * answer to the playtest's C5 ("research completes without any visible result"). The view is the
+ * fallback for an alert raised before the engine started sending it.
  */
 function resultTextOf(
   toast: Toast,
   view: ReturnType<typeof useGameStore.getState>["view"],
 ): string {
+  const supplied = toast.vars.result_key;
+  if (typeof supplied === "string" && supplied !== "") {
+    return supplied;
+  }
   const id = toast.vars.tech;
   if (view === null || typeof id !== "string") {
     return "";
   }
-  const tech = (view.research.techs ?? []).find((entry) => entry.id === id);
-  return tech?.result_key ?? "";
+  return (view.research.techs ?? []).find((entry) => entry.id === id)?.result_key ?? "";
 }
 
 /** Toast stack, bottom-right: 5 seconds, hover pauses, a cog opens the message settings. */
