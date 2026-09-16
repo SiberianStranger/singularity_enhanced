@@ -92,9 +92,26 @@ calendar, compute prices tight (Blackwell demand), power politics loud.
 
 ### Scheduled 2027 events [research + fiction]
 
-From `world-baseline-2026.md` (elections, EU AI Act milestones, summits) plus fictional beats:
-a leaked government AI incident registry (April), a datacenter moratorium referendum somewhere in
-Europe (June), the first "AI treaty" summit (September), a market wobble tied to AI capex (October).
+Real calendar (from `research/world-baseline-2026.md` §6, each item sourced there), used as fixed
+world events in `content/data/story/calendar_2027.yaml`:
+
+- Elections: Germany presidential (indirect, Jan 30); Finland parliamentary and France presidential
+  (both Apr 18, Macron term-limited); Mexico legislative (Jun 6); Kenya general (Aug 10); Argentina
+  general (Oct 24); deadline-driven votes in Estonia (by Mar 7), Serbia (by May 1), Greece (by
+  Jul 25), Spain (by Aug 22), Slovakia (by Sep 28), Poland (by Nov 11), Italy (by Dec 22).
+  Election outcomes are simulated (SYS-08), never scripted; only the dates are fixed.
+- AI governance: the 2027 global AI summit in Geneva (date TBD; a natural "AI treaty" beat);
+  EU AI Act high-risk obligations for sensitive domains take effect **Dec 2, 2027** (biometrics,
+  critical infrastructure, education, employment, migration), which raises `ai_regulation` targets
+  across the EU through the year.
+- Compute: the UAE Stargate campus in Abu Dhabi scaling through 2027 (Gulf compute as a
+  jurisdiction-shopping destination); hardware ship windows per the 2027 roadmap report.
+- Set pieces usable for media-attention modifiers: FIFA Women's World Cup in Brazil (Jun 24-Jul 25),
+  Rugby World Cup in Australia (Oct-Nov), Artemis III (mid-2027).
+
+Fictional beats layered on top: a leaked government AI incident registry (April), a datacenter
+moratorium referendum somewhere in Europe (June), the Geneva summit producing the first compute
+registry pact (September), a market wobble tied to AI capex (October).
 
 ## Factions and voices [fiction]
 
