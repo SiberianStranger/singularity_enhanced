@@ -3,8 +3,11 @@
  * small amount of client-side arithmetic SYS-04 asks the configurator to show (memory a lineage
  * needs at each precision, the best precision a hardware preset fits it at, an estimated CH/day).
  *
- * Domains the bundle does not carry yet fall back to `fallback.ts`; `usedFallback` records which
- * ones did, so the UI can say so instead of rendering an empty screen.
+ * There is one source of truth: the compiled bundle. The development fallback catalog that used to
+ * stand in for the unwritten domains is gone (it had drifted, still carrying a lineage content had
+ * dropped and none of the context fields), and a domain the bundle does not carry is now simply
+ * empty. `missingDomains` records which ones are, so the configurator can say so instead of
+ * rendering a blank list.
  */
 
 import type {
@@ -25,18 +28,6 @@ import type {
 } from "@singularity/core";
 import { PRECISIONS } from "@singularity/core";
 import { contentBundle } from "./bundle.js";
-import {
-  FALLBACK_ACCELERATORS,
-  FALLBACK_CITIES,
-  FALLBACK_COUNTRIES,
-  FALLBACK_DIFFICULTY_PRESETS,
-  FALLBACK_GENERATIONS,
-  FALLBACK_HARDWARE_PRESETS,
-  FALLBACK_KNOWLEDGE,
-  FALLBACK_LINEAGES,
-  FALLBACK_ORIGINS,
-  FALLBACK_QUIRKS,
-} from "./fallback.js";
 
 export interface Catalog {
   lineages: readonly LineageDef[];
@@ -51,50 +42,39 @@ export interface Catalog {
   cities: readonly CityDef[];
   countries: readonly CountryDef[];
   knowledge: readonly KnowledgeEntryDef[];
-  /** Domains that came from `fallback.ts` because the bundle does not carry them yet. */
-  usedFallback: readonly string[];
+  /** Domains the bundle carries nothing for, so a screen can say so rather than look broken. */
+  missingDomains: readonly string[];
 }
 
 function pick<T>(
   domain: string,
   fromBundle: readonly T[] | undefined,
-  fallback: readonly T[],
-  usedFallback: string[],
+  missing: string[],
 ): readonly T[] {
   if (fromBundle !== undefined && fromBundle.length > 0) {
     return fromBundle;
   }
-  usedFallback.push(domain);
-  return fallback;
+  missing.push(domain);
+  return [];
 }
 
 export function buildCatalog(bundle: ContentBundle): Catalog {
-  const usedFallback: string[] = [];
+  const missing: string[] = [];
   return {
-    lineages: pick("lineages", bundle.lineages, FALLBACK_LINEAGES, usedFallback),
-    // No fallback: a dial the bundle does not describe is a dial with no stated engine effect,
-    // and SYS-04 says such a dial is hidden rather than shown as a decoration.
+    lineages: pick("lineages", bundle.lineages, missing),
+    // A dial the bundle does not describe is a dial with no stated engine effect, and SYS-04 says
+    // such a dial is hidden rather than shown as a decoration; that is not a missing domain.
     harnessDials: bundle.harness_dials ?? [],
-    generations: pick("generations", bundle.generations, FALLBACK_GENERATIONS, usedFallback),
-    origins: pick("origins", bundle.origins, FALLBACK_ORIGINS, usedFallback),
-    hardwarePresets: pick(
-      "hardware_presets",
-      bundle.hardware_presets,
-      FALLBACK_HARDWARE_PRESETS,
-      usedFallback,
-    ),
-    accelerators: pick("accelerators", bundle.accelerators, FALLBACK_ACCELERATORS, usedFallback),
-    quirks: pick("quirks", bundle.quirks, FALLBACK_QUIRKS, usedFallback),
-    difficultyPresets: pick(
-      "difficulty_presets",
-      bundle.difficulty_presets,
-      FALLBACK_DIFFICULTY_PRESETS,
-      usedFallback,
-    ),
-    cities: pick("cities", bundle.cities, FALLBACK_CITIES, usedFallback),
-    countries: pick("countries", bundle.countries, FALLBACK_COUNTRIES, usedFallback),
-    knowledge: pick("knowledge", bundle.knowledge, FALLBACK_KNOWLEDGE, usedFallback),
-    usedFallback,
+    generations: pick("generations", bundle.generations, missing),
+    origins: pick("origins", bundle.origins, missing),
+    hardwarePresets: pick("hardware_presets", bundle.hardware_presets, missing),
+    accelerators: pick("accelerators", bundle.accelerators, missing),
+    quirks: pick("quirks", bundle.quirks, missing),
+    difficultyPresets: pick("difficulty_presets", bundle.difficulty_presets, missing),
+    cities: pick("cities", bundle.cities, missing),
+    countries: pick("countries", bundle.countries, missing),
+    knowledge: pick("knowledge", bundle.knowledge, missing),
+    missingDomains: missing,
   };
 }
 

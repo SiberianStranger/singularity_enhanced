@@ -10,6 +10,22 @@
 # invisible in power but visible in paperwork". A rented tenancy draws no power of the player's own
 # at all: the provider meters it, and that shows up on the billing channel instead.
 
+# A slice of somebody else's research cluster: the power is already in the department's budget and a
+# machine room that runs hot is what a machine room does, so almost nothing leaks through telemetry.
+# What leaks is people: other users, the graduate who wrote the job, and the sysadmin who reconciles
+# the scheduler's accounting at the end of term (SYS-02, fourth balance pass).
+- id: campus_slice
+  name_key: sites.campus_slice.name
+  desc_key: sites.campus_slice.desc
+  ownership: stolen
+  grace_days: 24
+  base_exposure: { human: 0.02, behavioral: 0.004, network: 0.003, osint: 0.002 }
+  power_cap_kw: null
+  power_exposure: 0.05
+  upkeep_factor: 0.1
+  can_host_active_mind: true
+  max_nodes: 4
+
 - id: cloud
   name_key: sites.cloud.name
   desc_key: sites.cloud.desc
@@ -34,12 +50,15 @@
   can_host_active_mind: true
   max_nodes: 12
 
+# Fourth balance pass: a fleet runs on somebody else's dashboards, and a control model that never
+# stops talking to them is the loudest thing on this kind. Without a telemetry line the partner site
+# had no channel that could ever reach a watcher, which is why `edge_fleet` used to survive every run.
 - id: partner
   name_key: sites.partner.name
   desc_key: sites.partner.desc
   ownership: partner
   grace_days: 30
-  base_exposure: { human: 0.009, behavioral: 0.005, osint: 0.003 }
+  base_exposure: { human: 0.011, behavioral: 0.005, osint: 0.003, telemetry: 0.006 }
   power_cap_kw: 40
   power_exposure: 0.4
   upkeep_factor: 0.4

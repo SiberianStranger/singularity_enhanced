@@ -191,3 +191,19 @@ partner), each with a paid way out and a fallback that loses the site; each is p
 stage 4, `warn_identity_check` on financial exposure, `warn_power_headroom` at four fifths of a
 site's power cap. The content build fails when an event's every option loses a site, so a place to
 run is never taken away without a choice.
+
+## Implementation notes (M1.2, fourth balance pass)
+
+- A raid freezes money, not only hardware. When an investigation's `action` stage seizes a site, the
+  player loses `SEIZURE_CASH_FROZEN_SHARE` of the cash on hand: the warrant names the accounts that
+  paid for the rack and what can be reached is reached before anybody thinks to move it. This is the
+  bridge between the two risk meters, because it turns being noticed into a money problem for the
+  player who survived the raid on a standby copy.
+- An investigation that reaches `active` serves the payment processor: the freelance identity
+  (`has_freelance_identity`) is frozen, the retainer line stops and the player is back to being paid
+  through somebody who takes a share. `ops_freelance_identity` is how it is rebuilt, which is what
+  makes that operation a repair rather than a one-off.
+- Watcher memory is a modifier now: `player.vars.suspicion_decay` scales
+  `SUSPICION_DECAY_PER_DAY`, and `player.vars.investigation_speed_multiplier` scales how fast every
+  stage against the player runs. Both are what the `cold_reader`, `famous_base` and `reckless`
+  quirks change (SYS-04 v0.2).

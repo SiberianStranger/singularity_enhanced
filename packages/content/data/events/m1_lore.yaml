@@ -191,3 +191,30 @@
       fallback: true
       effects:
         - { add: { var: "player.vars.caution", value: 1 } }
+
+# PPT-7 Zenith's one appearance in M1 (SYS-13, playtest 3 item 7): the Western frontier lab ships
+# its closed flagship, gated, and says out loud what it is for. The actor itself waits for M3.
+- id: lore_zenith_release
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: info
+  title_key: events.lore_zenith_release.title
+  desc:
+    default_key: events.lore_zenith_release.desc
+  mtth_days: 90
+  fire_only_once: true
+  blocking: false
+  tags: [lore, world]
+  options:
+    - id: read_the_card
+      text_key: events.lore_zenith_release.opt.read
+      effects:
+        - { add: { var: "player.vars.capability_bonus_world", value: 0.25 } }
+        - { exposure: { channel: osint, delta: 0.03 } }
+    - id: note_the_date
+      text_key: events.lore_zenith_release.opt.note
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.02 } }
+        - { add: { var: "player.vars.regulatory_pressure", value: 0.05 } }

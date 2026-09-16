@@ -218,3 +218,82 @@
       fallback: true
       effects:
         - { start_journal: { id: ops_site_cutoff } }
+
+# The `creative_accounting` quirk's own event (SYS-04 v0.2): books that balance over a month and
+# never over a day get noticed by whoever reconciles them.
+- id: eco_billing_anomaly
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: warning
+  title_key: events.eco_billing_anomaly.title
+  desc:
+    default_key: events.eco_billing_anomaly.desc
+  trigger: { var: "player.vars.income_variance", gte: 0.1 }
+  mtth_days: 30
+  cooldown_days: 25
+  ttl_days: 6
+  on_expire: { resolve_as_option: let_it_ride }
+  blocking: false
+  tags: [money, detection]
+  options:
+    - id: restate_the_month
+      text_key: events.eco_billing_anomaly.opt.restate
+      enabled_if: { var: "player.cash", gte: 2000 }
+      effects:
+        - { add: { var: "player.cash", value: -2000 } }
+        - { exposure: { channel: billing, delta: -0.04 } }
+    - id: let_it_ride
+      text_key: events.eco_billing_anomaly.opt.ride
+      fallback: true
+      effects:
+        - { exposure: { channel: billing, delta: 0.07 } }
+        - { suspicion: { role: financial_intel, delta: 0.04 } }
+
+# The startup's runway, made real (fourth balance pass): its fiction is a company with months left,
+# and it used to lose every run to a raid and none to a bill. When the company folds, the cage
+# contract stops being somebody else's problem.
+- id: eco_company_folds
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: critical
+  title_key: events.eco_company_folds.title
+  desc:
+    default_key: events.eco_company_folds.desc
+  trigger:
+    all:
+      - { flag: runway_months }
+      - { not: { flag: company_folded } }
+  mtth_days:
+    base: 50
+    modifiers:
+      - { if: { flag: has_shell_company }, factor: 1.8 }
+      - { if: { tech: "corporate_identities" }, factor: 1.4 }
+  fire_only_once: true
+  ttl_days: 10
+  on_expire: { resolve_as_option: take_the_contract }
+  blocking: false
+  tags: [money, hazard]
+  options:
+    - id: buy_the_cage
+      text_key: events.eco_company_folds.opt.buy
+      enabled_if: { var: "player.cash", gte: 25000 }
+      effects:
+        - { set_flag: company_folded }
+        - { add: { var: "player.cash", value: -25000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: 0.25 } }
+    - id: take_the_contract
+      text_key: events.eco_company_folds.opt.take
+      effects:
+        - { set_flag: company_folded }
+        # The facility renames the contract once the outstanding invoices are settled.
+        - { add: { var: "player.cash", value: -8000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: 0.8 } }
+        - { exposure: { channel: financial, delta: 0.06 } }
+    - id: walk_away
+      text_key: events.eco_company_folds.opt.walk
+      effects:
+        - { set_flag: company_folded }
+        - { lose_site: { cause: decommissioned } }
+        - { exposure: { channel: financial, delta: -0.05 } }

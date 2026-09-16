@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { catalog } from "../../content/catalog.js";
 import { useGameStore } from "../../store/gameStore.js";
+import { BuildLine } from "./parts/BuildLine.js";
 import { StepRail } from "./parts/StepRail.js";
 import { GenerationStep } from "./steps/GenerationStep.js";
 import { HardwareStep } from "./steps/HardwareStep.js";
@@ -66,19 +67,19 @@ export function ConfiguratorScreen(): ReactNode {
         <span className="font-mono text-xs text-muted">
           {t("config.step_of", { index: index + 1, total: STEP_IDS.length })}
         </span>
-        {catalog.usedFallback.length > 0 ? (
+        {catalog.missingDomains.length > 0 ? (
           <span className="border border-warn px-2 text-xs text-warn">
-            {t("config.fallback_notice")}
+            {t("config.missing_content", { domains: catalog.missingDomains.join(", ") })}
           </span>
         ) : null}
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(9rem,13rem)_minmax(0,1fr)]">
+      <div className="grid min-h-0 grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)]">
         <StepRail />
         {CONTENT[id]}
       </div>
 
-      <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-panel px-3 py-2">
+      <footer className="flex shrink-0 items-center gap-2 overflow-hidden border-t border-line bg-panel px-3 py-2">
         <Button hotkey="b" onClick={() => (index === 0 ? goTo("menu") : goToStep(index - 1))}>
           {index === 0 ? t("config.abandon") : t("common.back")}
         </Button>
@@ -93,7 +94,7 @@ export function ConfiguratorScreen(): ReactNode {
         >
           {t("config.reroll", { left: rerolls })}
         </Button>
-        <span className="flex-1" />
+        <BuildLine />
         {last ? (
           <Button
             variant="primary"

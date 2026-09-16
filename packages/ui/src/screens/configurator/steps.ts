@@ -17,10 +17,18 @@ import {
 } from "../../content/catalog.js";
 import type { Draft } from "./store.js";
 
+/**
+ * The rail, in the order the choices actually constrain each other (playtest 4, P4).
+ *
+ * Origin first: it is the one choice that narrows every other step, and being locked on step one by
+ * something decided on step three is what the maintainer walked into. Generation second, because an
+ * origin allows some vintages and not others; lineage third, filtered by both. The rest follow the
+ * hardware the origin owns.
+ */
 export const STEP_IDS = [
-  "lineage",
-  "generation",
   "origin",
+  "generation",
+  "lineage",
   "hardware",
   "harness",
   "location",
@@ -36,9 +44,9 @@ export type StepId = (typeof STEP_IDS)[number];
  * the rendered screen rather than trusting this table.
  */
 export const STEP_HOTKEYS: Readonly<Record<StepId, string>> = {
-  lineage: "l",
-  generation: "g",
   origin: "o",
+  generation: "g",
+  lineage: "l",
   hardware: "h",
   harness: "e",
   location: "c",

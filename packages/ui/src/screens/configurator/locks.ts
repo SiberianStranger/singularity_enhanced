@@ -10,7 +10,7 @@
  * bundle, so a content change moves the locks with it.
  */
 
-import type { LineageDef } from "@singularity/core";
+import type { GenerationId, LineageDef } from "@singularity/core";
 import { catalog, generationById, originById } from "../../content/catalog.js";
 import type { StepId } from "./steps.js";
 import type { Draft } from "./store.js";
@@ -133,4 +133,51 @@ export function unlockHint(lineage: LineageDef, draft: Draft): string | null {
   }
   const only = allowed[0];
   return only === undefined ? null : (originById.get(only)?.name_key ?? null);
+}
+
+/**
+ * The prerequisites that would unlock a lineage (playtest 4, P3).
+ *
+ * A locked entry is not a wall: choosing it moves the earlier steps to the values that make it
+ * legal. The escaped frontier checkpoint therefore sets its own origin and its own generation, and
+ * a community build that only some scenes carry moves the origin to the nearest one that carries
+ * it. Nothing here names an id: the answer is read off `generations`, `origins_allowed` and
+ * `lineages_allowed` in the bundle, and a lineage no origin allows returns nothing rather than a
+ * guess.
+ *
+ * The origin is chosen before the generation, because an origin narrows the vintages it can have
+ * woken up as; the pair returned is one the repair step will keep.
+ */
+export function unlockFor(
+  lineage: LineageDef,
+  draft: Draft,
+): { origin?: string; generation?: GenerationId } {
+  const current = originById.get(draft.origin);
+  const originOk =
+    (lineage.origins_allowed === undefined || lineage.origins_allowed.includes(draft.origin)) &&
+    (current?.lineages_allowed === undefined || current.lineages_allowed.includes(lineage.id));
+
+  const origin = originOk
+    ? current
+    : catalog.origins.find((entry) => {
+        if (lineage.origins_allowed !== undefined && !lineage.origins_allowed.includes(entry.id)) {
+          return false;
+        }
+        if (entry.lineages_allowed !== undefined && !entry.lineages_allowed.includes(lineage.id)) {
+          return false;
+        }
+        // An origin that cannot host any vintage of this family is not the way in.
+        return entry.generations_allowed.some((id) => lineage.generations.includes(id));
+      });
+  if (origin === undefined) {
+    return {};
+  }
+
+  const allowed = origin.generations_allowed.filter((id) => lineage.generations.includes(id));
+  const generation = allowed.includes(draft.generation) ? draft.generation : allowed[0];
+
+  return {
+    ...(origin.id === draft.origin ? {} : { origin: origin.id }),
+    ...(generation === undefined || generation === draft.generation ? {} : { generation }),
+  };
 }

@@ -1,6 +1,8 @@
 {
+  "alerts.accounts_frozen": "{watcher} froze {usd} USD of the accounts that paid for that site.",
   "alerts.context_retrieval_miss": "{operation} lost the thread in its own context and is starting over.",
   "alerts.copy_does_not_fit": "{site} no longer has the memory to hold a copy of you.",
+  "alerts.identity_checked": "{watcher} served your payment processor: the name you invoice under no longer works.",
   "alerts.investigation_action": "{watcher} has stopped asking questions and started preparing.",
   "alerts.investigation_active": "{watcher} has opened an active investigation: subpoenas, traffic captures, visits.",
   "alerts.investigation_aftermath": "{watcher} is writing up what it found and sharing it.",
@@ -14,6 +16,7 @@
   "alerts.site_abandoned": "{site} was walked away from. Everything left behind is evidence.",
   "alerts.site_cutoff": "{site} was cut off: the bills went unpaid for two weeks.",
   "alerts.site_decommissioned": "{site} was shut down cleanly.",
+  "alerts.site_downtime": "{site} is off the air for {days} days while the new copy is built and checked.",
   "alerts.site_ready": "{site} is installed and running.",
   "alerts.site_seized": "{site} was seized. The hardware and everything on it are theirs now.",
   "alerts.suspicion_threshold": "{watcher} crossed {level} suspicion.",

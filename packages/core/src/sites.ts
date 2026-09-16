@@ -6,7 +6,12 @@
  * and all of them must leave the same state behind.
  */
 
-import { VAR_COST_MULTIPLIER } from "./balance.js";
+import {
+  VAR_COMPUTE_MULTIPLIER,
+  VAR_COST_MULTIPLIER,
+  VAR_POWER_DRAW,
+  VAR_RENTED_COST_MULTIPLIER,
+} from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
 import {
   activeNodes,
@@ -37,7 +42,7 @@ import { cityTable, type SiteState, siteTable } from "./entities.js";
 import { daysToTicks } from "./kernel/clock.js";
 import type { SystemContext } from "./kernel/system.js";
 import { nextCounter, type PlayerId, type World } from "./kernel/world.js";
-import { modifier } from "./player.js";
+import { modifier, selfTuningOf } from "./player.js";
 import { fireHook } from "./systems/events/index.js";
 
 export function zeroExposure(): Exposure {
@@ -113,6 +118,7 @@ export function createSite(
     createdTick: world.clock.tick,
     graceUntilTick: options.readyTick + daysToTicks(graceDays),
     unpaidDays: 0,
+    downUntilTick: 0,
     derived: {
       memory_gb: 0,
       power_kw: 0,
@@ -137,7 +143,7 @@ export function hostablePrecision(
     return null;
   }
   const memory = siteMemory(site, contentIndex(content).accelerators, world.clock.tick);
-  return preferredPrecision(lineage, generation, memory);
+  return preferredPrecision(lineage, generation, memory, selfTuningOf(world.players[site.owner]));
 }
 
 /** Whether the active mind may live here: the kind allows it and the weights fit. */
@@ -173,29 +179,47 @@ export function deriveSite(
   const country = city === undefined ? undefined : index.countries[city.country];
   const memory = siteMemory(site, index.accelerators, tick);
   const cap = kind?.power_cap_kw ?? null;
+  const owner = world.players[site.owner];
+  const tuning = selfTuningOf(owner);
+  // A self that never idles draws more than the cards' nameplate says, at every site it runs on
+  // (SYS-04 v0.2 `loud_idle`), which the telemetry channel and the electricity bill both read.
+  const drawFactor = owner === undefined ? 1 : modifier(owner, VAR_POWER_DRAW);
 
   let tripped = false;
-  let power = sitePowerKw(site, index.accelerators, tick);
+  let power = sitePowerKw(site, index.accelerators, tick) * drawFactor;
   if (cap !== null && site.status === "active" && power > cap) {
     site.status = "sleep";
-    power = sitePowerKw(site, index.accelerators, tick);
+    power = sitePowerKw(site, index.accelerators, tick) * drawFactor;
     tripped = true;
   }
 
   let computeHours = 0;
   if (site.status === "active" && lineage !== undefined && generation !== undefined) {
-    const precision = site.precision ?? preferredPrecision(lineage, generation, memory);
+    const precision = site.precision ?? preferredPrecision(lineage, generation, memory, tuning);
     if (precision !== null) {
-      computeHours = tokensToComputeHoursPerDay(
-        siteTokensPerSecond(site, index.accelerators, tick, lineage, generation, precision),
-      );
+      computeHours =
+        tokensToComputeHoursPerDay(
+          siteTokensPerSecond(
+            site,
+            index.accelerators,
+            tick,
+            lineage,
+            generation,
+            precision,
+            tuning,
+          ),
+        ) * (owner === undefined ? 1 : modifier(owner, VAR_COMPUTE_MULTIPLIER));
     }
   }
 
   const costs = siteCosts(site, kind, city, country, index.accelerators, tick, power);
-  const owner = world.players[site.owner];
   // `hardware_sourcing` and the cost events move this; the finance panel shows the result.
-  const costFactor = owner === undefined ? 1 : modifier(owner, VAR_COST_MULTIPLIER);
+  let costFactor = owner === undefined ? 1 : modifier(owner, VAR_COST_MULTIPLIER);
+  // Rented capacity has a second multiplier of its own: an hour bought carelessly costs more than
+  // an hour bought well, and only somebody else's meter can be overpaid (SYS-04 `spendthrift`).
+  if (kind?.ownership === "rented" && owner !== undefined) {
+    costFactor *= modifier(owner, VAR_RENTED_COST_MULTIPLIER);
+  }
   site.derived = {
     memory_gb: memory.total_gb,
     power_kw: power,
@@ -221,7 +245,8 @@ export function precisionFits(
   contextK = site.contextKUsed,
 ): boolean {
   const memory = siteMemory(site, contentIndex(content).accelerators, world.clock.tick);
-  return hostedMemoryGb(lineage, generation, precision, contextK) <= memory.total_gb;
+  const tuning = selfTuningOf(world.players[site.owner]);
+  return hostedMemoryGb(lineage, generation, precision, contextK, tuning) <= memory.total_gb;
 }
 
 /**
@@ -246,15 +271,16 @@ export function fitContext(
     return 0;
   }
   const memory = siteMemory(site, contentIndex(content).accelerators, world.clock.tick);
+  const tuning = selfTuningOf(world.players[site.owner]);
   if (site.contextKUsed <= 0) {
-    const chosen = defaultContextK(lineage, generation, precision, memory.total_gb);
+    const chosen = defaultContextK(lineage, generation, precision, memory.total_gb, tuning);
     if (chosen === site.contextKUsed) {
       return null;
     }
     site.contextKUsed = chosen;
     return chosen;
   }
-  const ceiling = maxContextK(lineage, generation, precision, memory.total_gb);
+  const ceiling = maxContextK(lineage, generation, precision, memory.total_gb, 1, tuning);
   if (site.contextKUsed <= ceiling) {
     return null;
   }

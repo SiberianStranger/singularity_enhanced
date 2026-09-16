@@ -424,3 +424,134 @@ describe("the fixed regions stay put (U7, U8)", () => {
     expect(within(selection).getByRole("button", { name: "Expand" })).toBeInTheDocument();
   });
 });
+
+describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
+  /*
+   * jsdom has no layout, so the pixel measurement is the browser test ("the keyboard walks the
+   * configurator and nothing scrolls at 1366 by 768"). What is asserted here is the contract that
+   * makes it fit, because that is what gets widened by accident: the panel is bounded in rem
+   * rather than by its content, the tables use the short headers, and every figure is in the
+   * class that never wraps onto a second line.
+   */
+  it("bounds the panel rather than letting the table decide its width", async () => {
+    await play();
+    await openTab(/^Compute and sites$/);
+    const section = panel();
+    // 34rem is 544 px at the base size; the map keeps the rest of a 1366 px screen.
+    expect(section.className).toContain("sm:w-[34rem]");
+    expect(section.className).toContain("sm:max-w-[calc(100%-1rem)]");
+  });
+
+  it("keeps the sites table narrow and its numbers on one line", async () => {
+    await play();
+    const tab = await openTab(/^Compute and sites$/);
+    const sites = within(tab).getByRole("table", { name: "Sites" });
+    const headers = within(sites).getAllByRole("columnheader");
+    // Nine columns did not fit; the table carries the short forms of six.
+    expect(headers.length).toBeLessThanOrEqual(6);
+    for (const header of headers) {
+      expect(header.textContent?.length ?? 0).toBeLessThanOrEqual(12);
+    }
+
+    // Every figure is in the class `index.css` gives `white-space: nowrap` and tabular figures.
+    const numeric = within(sites)
+      .getAllByRole("cell")
+      .filter((cell) => /^[^A-Za-z]*\d/.test(cell.textContent ?? ""));
+    expect(numeric.length).toBeGreaterThan(0);
+    for (const cell of numeric) {
+      expect(cell.className, cell.textContent ?? "").toMatch(/font-mono|numeric/);
+    }
+  });
+
+  it("keeps the precision table's headers short too", async () => {
+    await play();
+    const tab = await openTab(/^Compute and sites$/);
+    const table = within(tab).getByRole("table", { name: "Precision trade-off" });
+    for (const header of within(table).getAllByRole("columnheader")) {
+      expect(header.textContent?.length ?? 0).toBeLessThanOrEqual(12);
+    }
+  });
+});
+
+describe("the log, the knowledge base and the world ledger are windows (R8, R9, R10)", () => {
+  it("has no tab for any of the three in the pinned panel", async () => {
+    await play();
+    for (const name of ["Log", "Knowledge", "World"]) {
+      expect(screen.queryByRole("tab", { name })).toBeNull();
+    }
+  });
+
+  it("opens the full log from the strip at the bottom of the map", async () => {
+    const live = await play();
+    // A week of play, answering whatever it raises, so the log has something in it.
+    for (let week = 0; week < 7; week += 1) {
+      live.advance(24);
+      for (const choice of live.view().pending.filter((entry) => entry.blocking)) {
+        const option = choice.options.find((entry) => entry.enabled);
+        if (option !== undefined) {
+          await useGameStore
+            .getState()
+            .send({ type: "resolve_event", instanceId: choice.instanceId, optionId: option.id });
+        }
+      }
+    }
+    expect(live.view().log.length).toBeGreaterThan(0);
+
+    const strip = await screen.findByTestId("log-strip");
+    // Two lines, as a Paradox log strip has: the cause and its effect, with their dates.
+    expect(strip.textContent).not.toBe("");
+    await userEvent.click(strip);
+    expect(useUiStore.getState().overlay).toBe("log");
+    const windows = await screen.findAllByRole("dialog");
+    expect(
+      windows.some((node) => within(node).queryByRole("heading", { name: "Log" }) !== null),
+    ).toBe(true);
+    useUiStore.getState().closeOverlay();
+  });
+
+  it("opens knowledge from the top-right corner and the ledger from the right edge", async () => {
+    await play();
+    await userEvent.click(screen.getByTestId("open-knowledge"));
+    expect(useUiStore.getState().overlay).toBe("knowledge");
+
+    await userEvent.click(screen.getByTestId("open-world"));
+    expect(useUiStore.getState().overlay).toBe("world");
+    // The map modes moved into the ledger, which is why the strip under the top bar is gone.
+    const ledger = await screen.findByRole("dialog");
+    expect(within(ledger).getByRole("tab", { name: "Map modes" })).toBeInTheDocument();
+    useUiStore.getState().closeOverlay();
+  });
+});
+
+describe("tables say what they are sorted by", () => {
+  it("underlines the active sort key and turns the arrow on a second click", async () => {
+    await play();
+    const tab = await openTab(/^Compute and sites$/);
+    const sites = within(tab).getByRole("table", { name: "Sites" });
+    const sortable = within(sites)
+      .getAllByRole("columnheader")
+      .map((header) => within(header).queryByRole("button"))
+      .filter((button): button is HTMLElement => button !== null);
+    expect(sortable.length, "the sites table has sortable columns").toBeGreaterThan(0);
+
+    const header = sortable[0] as HTMLElement;
+    expect(header.className).not.toContain("underline");
+
+    await userEvent.click(header);
+    expect(header.className).toContain("underline");
+    expect(header.closest("th")).toHaveAttribute("aria-sort", "ascending");
+    const ascending = header.textContent;
+
+    await userEvent.click(header);
+    expect(header.closest("th")).toHaveAttribute("aria-sort", "descending");
+    // The arrow is the direction; it is decoration next to the header's own words.
+    expect(header.textContent).not.toBe(ascending);
+
+    // And only one column claims it at a time.
+    if (sortable[1] !== undefined) {
+      await userEvent.click(sortable[1]);
+      expect(sortable[1].className).toContain("underline");
+      expect(header.className).not.toContain("underline");
+    }
+  });
+});

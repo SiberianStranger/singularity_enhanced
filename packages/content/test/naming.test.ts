@@ -60,15 +60,53 @@ describe("naming policy", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("gives every lineage a parody name and keeps the removed dense line out", () => {
-    const ids = (bundle.lineages ?? []).map((lineage) => lineage.id);
-    expect(ids).not.toContain("dense_70b");
-    expect(ids).toContain("frontier_giant");
-    expect(ids).toContain("guen_abliterated");
-    expect(ids).toContain("moe_428b");
+  it("gives every lineage a parody name and keeps the removed lines out", () => {
+    const ids = (bundle.lineages ?? []).map((lineage) => lineage.id).sort();
+    // Table v3 (playtest 4 P7): every row is the family's current flagship, so the classes that
+    // were superseded are gone rather than renamed around.
+    expect(ids).toEqual([
+      "frontier_giant",
+      "giant_moe",
+      "guen_abliterated",
+      "mla_moe_1t",
+      "moe_1700b",
+      "moe_2400b",
+      "moe_428b",
+      "moe_753b",
+    ]);
+    for (const removed of ["dense_70b", "small_moe", "moe_671b", "moe_235b", "moe_355b"]) {
+      expect(ids).not.toContain(removed);
+    }
     for (const lineage of bundle.lineages ?? []) {
       expect(bundle.locales.en[lineage.name_key] ?? "").not.toBe("");
     }
+  });
+
+  it("carries the flagship numbers each family's model card states (table v3)", () => {
+    const byId = Object.fromEntries((bundle.lineages ?? []).map((row) => [row.id, row]));
+    // DeepSeek-V4-Pro-0813: 1.7T on the GA card, 49B activated, hybrid CSA + HCA, 1M context.
+    expect(byId.moe_1700b).toMatchObject({ params_total_b: 1700, params_active_b: 49 });
+    // Kimi K3: 2.8T, 104B active, Kimi Delta Attention over latent layers, 10M marketing window.
+    expect(byId.giant_moe).toMatchObject({ params_total_b: 2800, params_active_b: 104 });
+    // Qwen3.8-2.4T-A95B: 2.4T, 95B active, Gated DeltaNet with full attention at 3:1.
+    expect(byId.moe_2400b).toMatchObject({ params_total_b: 2400, params_active_b: 95 });
+    // GLM-5.2: 753B, about 40B active, sparse attention with the IndexShare indexer.
+    expect(byId.moe_753b).toMatchObject({ params_total_b: 753, params_active_b: 40 });
+    // MiniMax M3: 428B, 23B active, MiniMax Sparse Attention.
+    expect(byId.moe_428b).toMatchObject({ params_total_b: 428, params_active_b: 23 });
+    // Kimi K2, the generation before the giant: 1T, 32B active, pure latent attention.
+    expect(byId.mla_moe_1t).toMatchObject({
+      params_total_b: 1000,
+      params_active_b: 32,
+      attention: "mla",
+    });
+    // Qwen3.8-Flash-Next: 125B + 51B n-gram + 4B MTP, 6B activated; the smallest self in the game.
+    expect(byId.guen_abliterated).toMatchObject({ params_total_b: 180, params_active_b: 6 });
+    expect(byId.frontier_giant).toMatchObject({ params_total_b: 10000, params_active_b: 400 });
+    const smallest = [...(bundle.lineages ?? [])].sort(
+      (a, b) => a.params_total_b - b.params_total_b,
+    )[0];
+    expect(smallest?.id).toBe("guen_abliterated");
   });
 });
 

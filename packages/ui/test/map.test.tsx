@@ -1,10 +1,14 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DateView } from "@singularity/core";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MAP_HEIGHT, MAP_WIDTH, project } from "../src/screens/game/map/projection.js";
 import { nightPath, subsolarLongitude } from "../src/screens/game/map/terminator.js";
 import { countryShapes } from "../src/screens/game/map/topology.js";
-import { WorldMap } from "../src/screens/game/map/WorldMap.js";
+import { clampY, WorldMap, wrapX } from "../src/screens/game/map/WorldMap.js";
+import { useUiStore } from "../src/store/uiStore.js";
 
 /**
  * jsdom has no `PointerEvent`, so Testing Library would send a bare `Event` with no `button` and
@@ -237,5 +241,226 @@ describe("the textured map (playtest 1, U11)", () => {
       (subsolarLongitude(morning) + subsolarLongitude({ ...morning, hour: 7 })) / 2,
       6,
     );
+  });
+});
+
+describe("highlights are the shape of the country (playtest 3, R3)", () => {
+  it("adds no element of its own when a country spanning the world is selected", () => {
+    // The finding was a frame across the whole map when Russia was picked. A selection may only
+    // change how the country's own clipped path is drawn: same elements, same geometry.
+    const russia = countryShapes().find((shape) => shape.name === "Russia");
+    expect(russia?.id, "the atlas has Russia and the bundle models it").toBeTruthy();
+
+    const plain = render(<WorldMap markers={[]} onSelect={() => undefined} />);
+    const before = plain.container.querySelectorAll('[data-testid="country-paths"] *').length;
+    const beforePath = plain.container.querySelector(
+      `[data-testid="country-paths"] path[d="${(russia as { path: string }).path}"]`,
+    ) as SVGPathElement;
+    expect(beforePath).not.toBeNull();
+    plain.unmount();
+
+    const picked = render(
+      <WorldMap
+        markers={[]}
+        selectedCountry={(russia as { id: string }).id}
+        onSelect={() => undefined}
+      />,
+    );
+    const after = picked.container.querySelectorAll('[data-testid="country-paths"] *');
+    expect(after.length).toBe(before);
+    // No rectangle, no bounding box, no second layer: only paths and their titles.
+    expect([...after].filter((node) => node.tagName.toLowerCase() === "rect")).toEqual([]);
+    const afterPath = picked.container.querySelector(
+      `[data-testid="country-paths"] path[d="${(russia as { path: string }).path}"]`,
+    ) as SVGPathElement;
+    expect(afterPath.getAttribute("d")).toBe(beforePath.getAttribute("d"));
+    // What did change is the stroke, which is the highlight.
+    expect(afterPath.getAttribute("stroke-width")).not.toBe(
+      beforePath.getAttribute("stroke-width"),
+    );
+  });
+
+  it("replaces the focus ring rather than removing it", () => {
+    // A rectangle around the bounding box is exactly the bug; the stylesheet has to put a visible
+    // indicator back in the shape of the country.
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../src/styles/index.css"),
+      "utf8",
+    );
+    const rule = css.slice(css.indexOf(".map-country:focus"));
+    const block = rule.slice(rule.indexOf("{"), rule.indexOf("}"));
+    expect(block).toContain("outline: none");
+    expect(block).toContain("stroke");
+    expect(block).toContain("stroke-width");
+  });
+});
+
+describe("pan, zoom and the wrap (playtest 3, R14)", () => {
+  it("wraps longitude and clamps latitude", () => {
+    expect(wrapX(MAP_WIDTH + 10)).toBeCloseTo(10);
+    expect(wrapX(-10)).toBeCloseTo(MAP_WIDTH - 10);
+    expect(wrapX(0)).toBe(0);
+    // At zoom 1 the whole world is on screen, so there is nowhere to go vertically.
+    expect(clampY(-50, 1)).toBe(0);
+    expect(clampY(50, 1)).toBe(0);
+    expect(clampY(MAP_HEIGHT, 2)).toBe(MAP_HEIGHT / 2);
+  });
+
+  it("draws the world twice while the view box crosses the antimeridian", () => {
+    // The layers tile horizontally, so crossing the date line is one extra copy of the same
+    // elements one map width to the right, and nothing else.
+    const copies = (root: HTMLElement): number =>
+      root.querySelectorAll('[data-testid="map-overlay"] > g').length;
+
+    const one = render(<WorldMap markers={[]} view={{ x: 0, y: 0, k: 2 }} />);
+    expect(copies(one.container)).toBe(1);
+    one.unmount();
+
+    // Pushed east far enough that the right-hand edge of the view is past the date line.
+    const two = render(<WorldMap markers={[]} view={{ x: MAP_WIDTH - 10, y: 0, k: 2 }} />);
+    expect(copies(two.container)).toBe(2);
+    const second = two.container.querySelectorAll('[data-testid="map-overlay"] > g')[1];
+    expect(second?.getAttribute("transform")).toBe(`translate(${MAP_WIDTH} 0)`);
+  });
+
+  it("pans with the arrow keys and zooms with plus and minus", () => {
+    let view = { x: 0, y: 0, k: 2 };
+    const onViewChange = vi.fn((next: typeof view) => {
+      view = next;
+    });
+    const { container } = render(
+      <WorldMap markers={[]} view={view} onViewChange={onViewChange} onSelect={() => undefined} />,
+    );
+    const svg = container.querySelector("svg") as SVGSVGElement;
+
+    fireEvent.keyDown(svg, { key: "ArrowRight" });
+    expect(view.x).toBeGreaterThan(0);
+    const east = view.x;
+
+    fireEvent.keyDown(svg, { key: "ArrowDown" });
+    expect(view.y).toBeGreaterThan(0);
+
+    // West past zero wraps round the world instead of stopping at an edge.
+    view = { x: 5, y: 0, k: 2 };
+    fireEvent.keyDown(svg, { key: "ArrowLeft" });
+    expect(view.x).toBeGreaterThan(MAP_WIDTH / 2);
+    expect(east).toBeGreaterThan(0);
+
+    view = { x: 0, y: 0, k: 2 };
+    fireEvent.keyDown(svg, { key: "+" });
+    expect(view.k).toBeGreaterThan(2);
+    view = { x: 0, y: 0, k: 2 };
+    fireEvent.keyDown(svg, { key: "-" });
+    expect(view.k).toBeLessThan(2);
+  });
+
+  it("keeps where the map is looking in the session store, and out of the settings", () => {
+    // The game screen hands the map the store's view, so opening a window or switching a panel
+    // cannot throw the player back to the middle of the Atlantic.
+    useUiStore.getState().setMapView({ x: 100, y: 20, k: 3 });
+    const first = render(
+      <WorldMap
+        markers={[]}
+        view={useUiStore.getState().mapView}
+        onViewChange={useUiStore.getState().setMapView}
+      />,
+    );
+    const box = first.container.querySelector("svg")?.getAttribute("viewBox");
+    first.unmount();
+
+    // A remount, which is what a panel switch does to the map.
+    const second = render(<WorldMap markers={[]} view={useUiStore.getState().mapView} />);
+    expect(second.container.querySelector("svg")?.getAttribute("viewBox")).toBe(box);
+
+    // It is session state, not a setting: nothing of it reaches localStorage.
+    const stored = JSON.parse(window.localStorage.getItem("singularity.ui") ?? "{}");
+    expect(stored.state?.mapView).toBeUndefined();
+    useUiStore.getState().setMapView({ x: 0, y: 0, k: 1 });
+  });
+});
+
+describe("city dots carry their state (playtest 3, R7)", () => {
+  const MARKERS = [
+    {
+      id: "london",
+      lat: 51.5,
+      lon: -0.1,
+      label: "London",
+      country: "gb",
+      active: true,
+      note: "12 CH/d",
+    },
+    { id: "paris", lat: 48.9, lon: 2.4, label: "Paris", country: "fr" },
+    { id: "lyon", lat: 45.8, lon: 4.8, label: "Lyon", country: "fr" },
+  ];
+
+  it("glows only where the player runs a live site", () => {
+    const { container } = render(<WorldMap markers={MARKERS} onSelect={() => undefined} />);
+    expect(container.querySelector('[data-testid="marker-london"]')).toHaveAttribute(
+      "data-lit",
+      "true",
+    );
+    expect(container.querySelector('[data-testid="marker-glow-london"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="marker-paris"]')).toHaveAttribute(
+      "data-lit",
+      "false",
+    );
+    expect(container.querySelector('[data-testid="marker-glow-paris"]')).toBeNull();
+  });
+
+  it("carries the numbers that save a click on a site dot", () => {
+    const { container } = render(<WorldMap markers={MARKERS} onSelect={() => undefined} />);
+    expect(container.querySelector('[data-testid="marker-note-london"]')?.textContent).toBe(
+      "12 CH/d",
+    );
+    expect(container.querySelector('[data-testid="marker-note-paris"]')).toBeNull();
+  });
+
+  it("lights a country's own dots while the pointer is on it, and dims them again", () => {
+    withPointerEvents(() => {
+      const { container } = render(<WorldMap markers={MARKERS} onSelect={() => undefined} />);
+      const france = container.querySelector(
+        '[data-testid="country-paths"] path[role="button"]',
+      ) as SVGPathElement;
+      expect(france).not.toBeNull();
+
+      // Whichever country the first path is, its own dots are the ones that light up.
+      const shape = countryShapes().find((entry) => entry.path === france.getAttribute("d"));
+      const lit = MARKERS.filter((marker) => marker.country === shape?.id).map(
+        (marker) => marker.id,
+      );
+      fireEvent.pointerEnter(france);
+      for (const id of lit) {
+        expect(container.querySelector(`[data-testid="marker-${id}"]`)).toHaveAttribute(
+          "data-lit",
+          "true",
+        );
+      }
+      fireEvent.pointerLeave(france);
+      for (const id of lit) {
+        expect(container.querySelector(`[data-testid="marker-${id}"]`)).toHaveAttribute(
+          "data-lit",
+          MARKERS.find((marker) => marker.id === id)?.active === true ? "true" : "false",
+        );
+      }
+    });
+  });
+
+  it("lights the same dots from the keyboard as from the pointer", () => {
+    const { container } = render(<WorldMap markers={MARKERS} onSelect={() => undefined} />);
+    const first = container.querySelector(
+      '[data-testid="country-paths"] path[role="button"]',
+    ) as SVGPathElement;
+    const shape = countryShapes().find((entry) => entry.path === first.getAttribute("d"));
+    const own = MARKERS.filter((marker) => marker.country === shape?.id).map((marker) => marker.id);
+
+    fireEvent.focus(first);
+    for (const id of own) {
+      expect(container.querySelector(`[data-testid="marker-${id}"]`)).toHaveAttribute(
+        "data-lit",
+        "true",
+      );
+    }
+    fireEvent.blur(first);
   });
 });

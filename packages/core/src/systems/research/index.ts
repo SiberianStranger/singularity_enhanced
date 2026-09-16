@@ -7,7 +7,7 @@
  * `on_tech_researched`, so content can hang events off any finished research.
  */
 
-import { RESEARCH_DANGER_EXPOSURE_PER_DAY } from "../../balance.js";
+import { RESEARCH_BRANCH_VAR_PREFIX, RESEARCH_DANGER_EXPOSURE_PER_DAY } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import { longHorizonCostFactor, longHorizonMultiplier, precisionAtLeast } from "../../derive.js";
 import type { ExposureChannel, TechDef } from "../../domain.js";
@@ -25,6 +25,7 @@ import {
   allocatableCompute,
   isAlive,
   lineageOf,
+  modifier,
   researchAllocated,
   researchEfficiencyOf,
   selfModifyAllowed,
@@ -150,7 +151,12 @@ function advanceTech(
 
   // What the self actually gets done with the hours it spent: a quantized copy plans worse and
   // executes worse, and a research run needs both (SYS-03, `RESEARCH_CAPABILITY_EXPONENT`).
-  const hours = (allocation / TICKS_PER_DAY) * researchEfficiencyOf(world, ctx.content, player);
+  // One branch can be the self's own subject (SYS-04 v0.2 `code_fiend`: the harness branch is the
+  // code it writes for itself), so the branch multiplier sits next to the efficiency one.
+  const hours =
+    (allocation / TICKS_PER_DAY) *
+    researchEfficiencyOf(world, ctx.content, player) *
+    modifier(player, `${RESEARCH_BRANCH_VAR_PREFIX}${def.branch}`);
   progress.compute_hours += hours;
 
   const cost = techCostFor(world, ctx.content, player, def);

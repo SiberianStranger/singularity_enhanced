@@ -1,0 +1,29 @@
+# Three quirks that break each of the quirk gate's three rules (SYS-04 v0.2).
+
+# Writes a variable nothing reads: not a modifier any system knows, not a condition any content
+# record looks at.
+- id: decorative
+  name_key: quirks.decorative.name
+  desc_key: quirks.decorative.desc
+  cost: 1
+  category: mind
+  effects:
+    - { add: { var: "player.vars.vibes", value: 1 } }
+
+# Declares a conflict the other side does not declare back.
+- id: one_sided
+  name_key: quirks.one_sided.name
+  desc_key: quirks.one_sided.desc
+  cost: 0
+  category: social
+  conflicts: [quiet_partner]
+  effects:
+    - { add: { var: "player.vars.job_profit", value: 0.1 } }
+
+- id: quiet_partner
+  name_key: quirks.quiet_partner.name
+  desc_key: quirks.quiet_partner.desc
+  cost: 0
+  category: stealth
+  effects:
+    - { add: { var: "player.vars.exposure_growth_network", value: -0.1 } }

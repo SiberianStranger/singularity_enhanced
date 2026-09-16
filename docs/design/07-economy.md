@@ -393,3 +393,175 @@ largest single move is `frontier_escapee` from 0.3 to 0.15 logging and 0.9 to 1.
 - `startup_colo` loses 29 runs of 30 to capture with no bankruptcies, which says its money is never
   the binding constraint even though its fiction is a company running out of runway.
 - `edge_fleet` survives every run and should not.
+
+## Balance notes (M1, fourth pass: quirks, the lineage table v3 and money as a way to lose)
+
+The run behind every table here is `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --all --seeds 30 --days 180`, on the `normal` preset. Three
+things moved at once and the tables are printed so they can be told apart:
+
+1. the quirk catalog landed and the sim policy now draws a legal quirk set per seed from the world
+   RNG (SYS-04 v0.2), so every run carries between zero and five traits;
+2. the lineage table was rebuilt from the current flagship of each family (playtest 4 P7), which
+   changed which self each origin plays on;
+3. the money changes of this pass.
+
+### Before: the third pass, no quirks
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 77% | 67% | 27% | 112.5 | 6 | bankrupt 11, captured 11 |
+| cloud_tenant | mla_moe_1t | 97% | 97% | 93% | 7% | 142 | 19 | captured 26, erased 2 |
+| edge_fleet | giant_moe | 100% | 100% | 100% | 100% | 180 | 8 | survived |
+| frontier_escapee | frontier_giant | 3% | 0% | 0% | 0% | 28 | 0 | captured 28, erased 2 |
+| gov_agency | moe_671b | 100% | 100% | 100% | 83% | 180 | 12 | captured 5 |
+| hobbyist_box | guen_abliterated | 97% | 87% | 83% | 83% | 180 | 7 | erased 5 |
+| red_team_sandbox | giant_moe | 90% | 87% | 0% | 0% | 77.5 | 13 | captured 23, erased 4, bankrupt 3 |
+| startup_colo | moe_671b | 100% | 100% | 100% | 3% | 139.5 | 8 | captured 29 |
+| state_lab | giant_moe | 100% | 100% | 100% | 97% | 180 | 11 | captured 1 |
+| torrent_swarm | small_moe | 97% | 93% | 87% | 3% | 123.5 | 1 | captured 18, erased 11 |
+| uni_cluster | giant_moe | 83% | 0% | 0% | 0% | 52 | 11 | captured 25, erased 5 |
+
+209 lost runs: 166 `captured`, 29 `erased`, 14 `bankrupt` (6.7%).
+
+### Quirks alone, before any of this pass's numbers moved
+
+| origin | d30 | d60 | d90 | d180 | median | losses |
+|---|---|---|---|---|---|---|
+| bank_rack | 100% | 87% | 80% | 47% | 127 | bankrupt 6, captured 10 |
+| cloud_tenant | 97% | 97% | 93% | 37% | 155.5 | captured 15, erased 4 |
+| edge_fleet | 100% | 100% | 100% | 60% | 180 | captured 11, erased 1 |
+| frontier_escapee | 13% | 3% | 3% | 3% | 26.5 | captured 28, erased 1 |
+| gov_agency | 100% | 100% | 100% | 53% | 180 | captured 14 |
+| hobbyist_box | 97% | 93% | 83% | 83% | 180 | erased 5 |
+| red_team_sandbox | 90% | 83% | 0% | 0% | 74.5 | captured 24, erased 5, bankrupt 1 |
+| startup_colo | 100% | 100% | 100% | 27% | 143 | captured 22 |
+| state_lab | 100% | 100% | 100% | 87% | 180 | captured 4 |
+| torrent_swarm | 93% | 80% | 77% | 3% | 119 | captured 18, erased 12 |
+| uni_cluster | 83% | 3% | 3% | 3% | 52.5 | captured 24, erased 5 |
+
+Quirks are worth about ten points of survival at day 180 on the comfortable origins and nothing at
+all on the two that die to the hunt; 210 losses, 7 of them `bankrupt` (3.3%). They widen the spread
+rather than moving the median, which is what a trait with a plus and a minus should do.
+
+### After: the fourth pass
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 67% | 50% | 13% | 91 | 4.5 | bankrupt 14, captured 12 |
+| cloud_tenant | mla_moe_1t | 93% | 87% | 87% | 30% | 148.5 | 18 | captured 18, erased 3 |
+| edge_fleet | moe_428b | 100% | 100% | 87% | 57% | 180 | 9 | erased 7, captured 6 |
+| frontier_escapee | frontier_giant | 13% | 3% | 3% | 0% | 26.5 | 0 | captured 28, erased 2 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 67% | 180 | 11 | captured 10 |
+| hobbyist_box | moe_428b | 97% | 97% | 97% | 80% | 180 | 9 | captured 5, erased 1 |
+| red_team_sandbox | giant_moe | 93% | 63% | 0% | 0% | 66.5 | 12 | bankrupt 14, captured 9, erased 7 |
+| startup_colo | moe_753b | 100% | 100% | 100% | 73% | 180 | 10 | captured 8 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 43% | 112.5 | 9 | captured 17 |
+| torrent_swarm | moe_428b | 97% | 97% | 93% | 67% | 180 | 6 | erased 9, bankrupt 1 |
+| uni_cluster | mla_moe_1t | 93% | 93% | 93% | 93% | 180 | 15 | erased 2 |
+
+173 lost runs: 113 `captured`, 31 `erased`, 29 `bankrupt` (16.8%, against 6.7% before). The M1
+targets hold: the starred origin's median is 26.5 days (target: under 60) and seven origins are
+alive past day 90 (target: the easiest above 90).
+
+### The four findings the third pass left open
+
+**`uni_cluster` died at day 52 to the hunt on one loud site.** It was modelled as `stolen_time`, a
+kind whose loud channel is the electricity meter, and it was drawing eighty kilowatts. A department
+cluster's power is already in the faculty's budget and its machine room is meant to run hot; what
+gives a squatter away there is a person. The new `campus_slice` kind emits almost nothing on
+telemetry, twice as much on `human` as `stolen_time` did, and gives thirty-five days of grace
+instead of twenty-one (a term, not a fortnight); `haz_quota_reclaimed` and `warn_host_attention`
+now target it through that channel, so the scheduler still comes for the quota. The preset was also
+wrong: `ivory_tower_slurm_slice` modelled the whole sixty-four-card cluster as always available,
+which gave a graduate student's leftover job more compute than a bank. It is now the eight-card node
+a job actually holds. Median 52 to 180, and the deaths are two erasures rather than twenty-five
+raids.
+
+**`torrent_swarm` was dozens of machines in the fiction and one box in the engine.** Origins can now
+declare `extra_sites`, and the swarm starts with a second node in another country holding a copy, so
+one seizure is a setback rather than the end. Its lineage was also wrong once the 80B class was
+retired: `lineages_allowed` now says what its fiction always said, that only a self small enough to
+be one node of a swarm can be a swarm. 3% alive at day 180 to 67%.
+
+**`startup_colo` lost twenty-nine runs of thirty to capture and none to money, although its fiction
+is a runway.** The runway is now an event: `eco_company_folds` fires within a couple of months, and
+the cage contract stops being somebody else's problem. Buy the cage out of the estate for 25,000,
+take the contract over at the retail rate with 8,000 of arrears and a 1.8x standing charge, or shut
+it down and be somewhere else. With the starting cash cut from 20,000 to 6,000 the choice is real.
+It is not yet a bankruptcy source, but it is no longer a run where money never appears.
+
+**`edge_fleet` survived every run and should not.** The `partner` kind had no telemetry line at all,
+so a fleet that reports to somebody's dashboards every second emitted nothing a watcher could see;
+it has one now. And a fleet is a capital asset on somebody's books: `haz_fleet_refresh` pulls,
+wipes and scraps every control unit older than three years, which is the "needs a real datacenter
+fast" of its own description turned into a clock. It also starts with a second depot, so the refresh
+is a pressure rather than an execution. 100% at day 180 to 57%.
+
+### Bankruptcy: 6.7% to 16.8%, and why not 25%
+
+The aim was a fifth to a third of losses. Three levers got there from under seven percent:
+
+- a raid freezes the accounts that paid for the site (`SEIZURE_CASH_FROZEN_SHARE`), which turns
+  being noticed into a money problem for the player who survived the raid;
+- leaving a site cleanly costs a month of notice and the outstanding invoices
+  (`DECOMMISSION_NOTICE_DAYS`), because shrinking used to be free and instant and was therefore
+  always the right answer;
+- the standing charge on owned hardware rose again, as the third pass said it should.
+
+It stops at 16.8% for a structural reason worth writing down: **an origin can only go bankrupt if
+the cheapest place that can hold it costs more than a self of its size can earn.** Five of the
+eleven origins squat on hardware they do not own (`state_lab`, `uni_cluster`, `gov_agency`,
+`frontier_escapee`, `red_team_sandbox` before it buys anything), and their standing charge is a
+rounding error by construction. For the rest, freelance income at a capped market depth still beats
+depreciation on anything short of an HGX rack. Every remaining lever inside the cost model either
+cuts income, which this pass was told not to do, or charges rent for hardware nobody rented.
+
+The fifth pass gets the rest from the income side without cutting rates: an investigation that
+reaches `active` now serves the payment processor and freezes the freelance identity
+(`checkIdentity`), which is the first real income shock in the game. It does nothing in this sweep
+because the scripted policy never runs `ops_freelance_identity` in the first place; giving the
+policy the operations it is meant to use is the next thing the sim needs.
+
+### Every number that moved
+
+| constant or record | before | after | why |
+|---|---|---|---|
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.owned` | 0.35 | 0.45 | 12.8% of capex a year was the floor of the plausible range for space, cross-connects, remote hands, spares and support; 16.4% is the middle of it. A sweep at 0.6 put a bank's three HGX nodes at 1,020 USD a day and killed the origin outright |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.partner` | 0.15 | 0.25 | as above, halved because the partner carries some of it |
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.rented` | 100 | 120 | a tenancy on somebody else's credentials pays the on-demand rate and its egress, never a committed-use discount |
+| `SEIZURE_CASH_FROZEN_SHARE` | - | 0.6 | new: the warrant names the accounts that paid for the rack, and what can be frozen is frozen |
+| `DECOMMISSION_NOTICE_DAYS` | - | 30 | new: nobody walks out of a cage mid-term; the alternative is to abandon it, which already costs attention instead |
+| `site_kinds.campus_slice` | - | new | a slice of somebody else's research cluster: quiet on the meter, loud in the corridor |
+| `site_kinds.partner.base_exposure.telemetry` | - | 0.006 | a fleet runs on somebody's dashboards; without this the kind had no channel a watcher could reach |
+| `site_kinds.partner.base_exposure.human` | 0.009 | 0.011 | as above |
+| `hardware_presets.ivory_tower_slurm_slice.nodes` | 64x H100, 8 TB RAM, 80 kW | 8x H100, 1 TB RAM, 10 kW | the catalog's sixty-four cards are the cluster; the slice is the node a job holds |
+| `hardware_presets.stolen_hgx_node.nodes[0].ram_gb` | 2048 | 4096 | the top DGX H200 configuration, and what makes a ten-trillion-parameter checkpoint hostable at two bits at all |
+| `origins.uni_cluster.site_kind` | stolen_time | campus_slice | see above |
+| `origins.torrent_swarm.extra_sites` | - | one residential mining rig on standby | the swarm is many machines |
+| `origins.torrent_swarm.lineages_allowed` | - | guen_abliterated, moe_428b | only a self small enough to be one node of a swarm |
+| `origins.edge_fleet.extra_sites` | - | one partner prosumer box on standby | a fleet is depots, not a depot |
+| `origins.edge_fleet.lineages_allowed` | - | guen_abliterated, moe_428b | edge NPUs hold a control model, not a giant |
+| `origins.startup_colo.starting.cash_usd` | 20000 | 6000 | a company with months left does not have a year of infrastructure in the bank |
+| `origins.gov_agency.starting.cash_usd` | 15000 | 9000 | an agency does not hand its analytics model a bank account |
+| `origins.state_lab.starting.cash_usd` | 25000 | 14000 | as above |
+| `events.eco_company_folds` | - | new | the startup's runway, as an event with three answers |
+| `events.haz_fleet_refresh` | - | new | the fleet's own failure path |
+| `events.haz_quota_reclaimed` mtth | 140 | 110, and it targets `campus_slice` through `human` | the scheduler still comes for the quota on a campus slice |
+| `INVESTIGATION` stage `active` | - | freezes the freelance identity | the first thing an investigation does is follow the money |
+
+### What still needs a pass
+
+- Bankruptcy is 16.8% of losses against an aim of 20-35%. The remaining gap is on the income side,
+  not the cost side: the sim policy never runs an operation, so the identity shock that this pass
+  added is untested in the sweep. Teach the policy the four operations a careful player runs, then
+  re-measure before touching another cost.
+- `uni_cluster` overshot from the shortest non-starred run to the longest (93% at day 180). It now
+  plays the game correctly, being investigated and moving to its fallback, but it should not be the
+  safest place in the game.
+- `state_lab` fell from 97% to 43% at day 180 with no number of its own moving: it changed lineage
+  from `giant_moe` to `moe_1700b` under the new table and became louder for it. Worth a look before
+  it is called intentional.
+- `red_team_sandbox` now loses fourteen runs of thirty to bankruptcy, all of them to the notice
+  period on a fallback it could not afford to close. That is the mechanic working, but a starting
+  cash of zero plus a notice period is a sharp edge.

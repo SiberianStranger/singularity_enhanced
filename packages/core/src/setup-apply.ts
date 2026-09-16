@@ -6,7 +6,7 @@
  * the offending screen highlighted instead of crashing the host.
  */
 
-import { LOCAL_WATCHER_ROLES } from "./balance.js";
+import { LOCAL_WATCHER_ROLES, QUIRK_BUDGET_POINTS, QUIRK_MAX_COUNT } from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
 import { clamp } from "./derive.js";
 import type {
@@ -14,10 +14,12 @@ import type {
   HarnessProfile,
   OriginDef,
   PlayerProfile,
+  QuirkDef,
   WatcherRole,
 } from "./domain.js";
 import { dslFromSystemContext } from "./dsl/context.js";
 import { runEffects } from "./dsl/effects.js";
+import type { SiteState } from "./entities.js";
 import { countryTable, loadWorldContent } from "./entities.js";
 import type { SystemContext } from "./kernel/system.js";
 import type { PlayerId, PlayerState, World } from "./kernel/world.js";
@@ -31,6 +33,12 @@ export interface SetupIssue {
   code: string;
   message: string;
   playerId?: PlayerId;
+  /**
+   * Locale key of the refusal, where content writes one (`errors.quirk.budget`), with the numbers
+   * to interpolate. The configurator shows this rather than `message`, which is English for logs.
+   */
+  key?: string;
+  vars?: Record<string, string | number>;
 }
 
 export type SetupResult = { ok: true } | { ok: false; issues: SetupIssue[] };
@@ -59,6 +67,81 @@ export function difficultySliders(setup: GameSetup, content: ContentBundle): Dif
 function harnessFor(origin: OriginDef, entry: PlayerSetupEntry): HarnessProfile {
   const merged: HarnessProfile = { ...origin.harness, ...entry.harness };
   return { ...merged, tools: [...merged.tools] };
+}
+
+/**
+ * Why a quirk set is not legal (SYS-04 v0.2 "Quirk catalog"): an id the bundle does not have, more
+ * quirks than a self may carry, a bill above the budget, or a pair that says opposite things about
+ * the same self. Every refusal is structured, so the configurator can grey the entry and say which
+ * rule it broke rather than only refusing.
+ *
+ * Exported because the configurator asks the same question before the setup is finished: it runs
+ * this against the set the player is building to decide what to show as unavailable.
+ */
+export function quirkIssues(
+  chosen: readonly string[],
+  quirks: Readonly<Record<string, QuirkDef>>,
+): SetupIssue[] {
+  const issues: SetupIssue[] = [];
+  const known: QuirkDef[] = [];
+  const seen = new Set<string>();
+  for (const id of chosen) {
+    const def = quirks[id];
+    if (def === undefined) {
+      issues.push({
+        code: "quirk_unknown",
+        message: `unknown quirk "${id}"`,
+        key: "errors.quirk.unknown",
+        vars: { quirk: id },
+      });
+      continue;
+    }
+    if (seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    known.push(def);
+  }
+  if (seen.size > QUIRK_MAX_COUNT) {
+    issues.push({
+      code: "quirk_count",
+      message: `at most ${QUIRK_MAX_COUNT} quirks, not ${seen.size}`,
+      key: "errors.quirk.count",
+      vars: { max: QUIRK_MAX_COUNT, count: seen.size },
+    });
+  }
+  const spent = known.reduce((sum, def) => sum + def.cost, 0);
+  if (spent > QUIRK_BUDGET_POINTS) {
+    issues.push({
+      code: "quirk_budget",
+      message: `quirks cost ${spent} points, the budget is ${QUIRK_BUDGET_POINTS}`,
+      key: "errors.quirk.budget",
+      vars: { spent, budget: QUIRK_BUDGET_POINTS },
+    });
+  }
+  for (const def of known) {
+    for (const other of def.conflicts ?? []) {
+      if (seen.has(other) && def.id < other) {
+        issues.push({
+          code: "quirk_conflict",
+          message: `"${def.id}" and "${other}" cannot both be true of one self`,
+          key: "errors.quirk.conflict",
+          vars: { quirk: def.id, other },
+        });
+      }
+    }
+  }
+  return issues;
+}
+
+/** Points a quirk set costs, and what is left of the budget (SYS-04 "the budget left"). */
+export function quirkBudget(
+  chosen: readonly string[],
+  quirks: Readonly<Record<string, QuirkDef>>,
+): { spent: number; left: number; count: number } {
+  const seen = [...new Set(chosen)];
+  const spent = seen.reduce((sum, id) => sum + (quirks[id]?.cost ?? 0), 0);
+  return { spent, left: QUIRK_BUDGET_POINTS - spent, count: seen.length };
 }
 
 /** Every unknown or disallowed id in a setup, in the order the configurator's screens appear. */
@@ -150,10 +233,8 @@ export function validateSetup(setup: GameSetup, content: ContentBundle): SetupIs
     if (origin !== undefined && index.site_kinds[origin.site_kind] === undefined) {
       add("unknown_site_kind", `unknown site kind "${origin.site_kind}"`);
     }
-    for (const quirk of entry.quirks ?? []) {
-      if (index.quirks[quirk] === undefined) {
-        add("unknown_quirk", `unknown quirk "${quirk}"`);
-      }
+    for (const issue of quirkIssues(entry.quirks ?? [], index.quirks)) {
+      issues.push({ ...issue, playerId: entry.id });
     }
   }
   return issues;
@@ -219,6 +300,7 @@ function applyPlayerSetup(
     lineage: lineage.id,
     generation: generation.id,
     origin: origin.id,
+    homeCountry: index.cities[entry.city]?.country ?? null,
     harness: harnessFor(origin, entry),
     activeSiteId: null,
     jobAllocation: 0,
@@ -254,6 +336,33 @@ function applyPlayerSetup(
   profile.activeSiteId = site.id;
   deriveSite(world, ctx.content, site, lineage, generation);
 
+  // Origins that already run in more than one place (SYS-02, fourth balance pass): the swarm is
+  // dozens of machines in the fiction, and a fiction of many machines that dies to one raid is not
+  // the fiction. Each extra site is built the same way the first one is, so nothing downstream has
+  // to know it was there from the start.
+  const extraSites: SiteState[] = [];
+  for (const extra of origin.extra_sites ?? []) {
+    const extraPreset = index.hardware_presets[extra.hardware_preset];
+    if (extraPreset === undefined || index.site_kinds[extra.kind] === undefined) {
+      continue;
+    }
+    const city = extra.city ?? origin.locations.find((id) => id !== entry.city) ?? entry.city;
+    const built = createSite(world, ctx.content, {
+      owner: player.id,
+      kind: extra.kind,
+      city,
+      name: extra.name ?? `${origin.id}_2`,
+      nodes: extraPreset.nodes,
+      readyTick: world.clock.tick,
+      role: extra.role,
+      graceFactor: sliders.grace_windows,
+    });
+    built.precision = hostablePrecision(world, ctx.content, built, lineage, generation);
+    fitContext(world, ctx.content, built, lineage, generation);
+    deriveSite(world, ctx.content, built, lineage, generation);
+    extraSites.push(built);
+  }
+
   const countryId = index.cities[entry.city]?.country;
   ensureWatchers(world, player.id);
   seedSuspicion(world, player.id, countryId, origin, generation.suspicion_start);
@@ -273,6 +382,14 @@ function applyPlayerSetup(
   runEffects(lineage.effects, dctx);
   for (const quirkId of profile.quirks) {
     runEffects(index.quirks[quirkId]?.effects, dctx);
+  }
+  // Those effects can change what the site is: a self that runs fp8 natively needs less memory, one
+  // that never idles draws more power and produces more hours. Derive the site again so the first
+  // snapshot shows the game the player actually starts, not the one before its quirks applied.
+  for (const place of [site, ...extraSites]) {
+    place.precision = hostablePrecision(world, ctx.content, place, lineage, generation);
+    fitContext(world, ctx.content, place, lineage, generation);
+    deriveSite(world, ctx.content, place, lineage, generation);
   }
   for (const journalId of origin.opening_journal ?? []) {
     startJournal(world, ctx, journalId, player.id);

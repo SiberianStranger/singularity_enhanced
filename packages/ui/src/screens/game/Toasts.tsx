@@ -49,7 +49,11 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
     >
       {/* Refused commands: the engine's own reason, so a button that cannot work says why (C7). */}
       {notices.map((notice) => (
-        <li key={notice.id} className="flex items-start gap-2 border border-crit bg-panel p-2">
+        <li
+          key={notice.id}
+          data-testid="refusal-notice"
+          className="flex items-start gap-2 border border-crit bg-panel p-2"
+        >
           <span className="text-crit">
             <SeverityIcon severity="critical" />
           </span>

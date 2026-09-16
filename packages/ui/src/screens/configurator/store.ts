@@ -7,7 +7,11 @@
  */
 
 import type { DifficultySliders, GameSetup, GenerationId, HarnessProfile } from "@singularity/core";
-import { DEFAULT_DIFFICULTY_SLIDERS } from "@singularity/core";
+import {
+  DEFAULT_DIFFICULTY_SLIDERS,
+  QUIRK_BUDGET_POINTS,
+  QUIRK_MAX_COUNT,
+} from "@singularity/core";
 import { create } from "zustand";
 import {
   catalog,
@@ -18,9 +22,18 @@ import {
   STORYTELLERS,
   type StorytellerId,
 } from "../../content/catalog.js";
-import type { StepId } from "./steps.js";
+import { unlockFor } from "./locks.js";
+import { STEP_IDS, type StepId } from "./steps.js";
 
-export const QUIRK_BUDGET = 2;
+/**
+ * The quirk rules, taken from the engine rather than restated (SYS-04 v0.2 "Quirk catalog").
+ *
+ * `setup-apply.ts` refuses a setup that breaks them, so a configurator with its own numbers would
+ * offer builds the game then rejects at Begin. Both names stay exported because the screens read
+ * them, but the values come from `@singularity/core`.
+ */
+export const QUIRK_BUDGET = QUIRK_BUDGET_POINTS;
+export const QUIRK_LIMIT = QUIRK_MAX_COUNT;
 export const MAX_REROLLS = 3;
 export const PLAYER_ID = "p1";
 
@@ -76,7 +89,9 @@ export function initialDraft(): Draft {
   const originId = origin?.id ?? "";
   const generations = generationsOfOrigin(origin);
   const preset = difficultyById.get("normal") ?? catalog.difficultyPresets[0];
-  return {
+  // Repaired before it is handed out: the rail asks for the origin first now (playtest 4, P4), and
+  // a screen that opens on a lineage its own origin does not allow is the dead end P3 is about.
+  return repair({
     lineage: lineage?.id ?? "",
     generation: generations[0]?.id ?? "open_2026",
     origin: originId,
@@ -90,7 +105,7 @@ export function initialDraft(): Draft {
     storyteller: "classic",
     modifiers: [],
     ironman: false,
-  };
+  });
 }
 
 /**
@@ -140,14 +155,116 @@ export function quirkCost(quirks: readonly string[]): number {
   }, 0);
 }
 
+/** Why a quirk cannot be added right now, as a locale key with its variables, or null. */
+export interface QuirkRefusal {
+  key: string;
+  vars: Record<string, string | number>;
+}
+
+/**
+ * The three ways a quirk can be refused (SYS-04 v0.2): the budget, the count, and a conflict.
+ *
+ * They are the same three the engine checks in `validateSetup`, so a quirk the configurator offers
+ * is a quirk the game will start with. A quirk already taken is never refused: dropping it is
+ * always legal.
+ */
+export function quirkRefusal(id: string, taken: readonly string[]): QuirkRefusal | null {
+  if (taken.includes(id)) {
+    return null;
+  }
+  const quirk = catalog.quirks.find((entry) => entry.id === id);
+  if (quirk === undefined) {
+    return null;
+  }
+  const conflict = catalog.quirks.find(
+    (entry) =>
+      taken.includes(entry.id) &&
+      ((entry.conflicts ?? []).includes(id) || (quirk.conflicts ?? []).includes(entry.id)),
+  );
+  if (conflict !== undefined) {
+    return { key: "config.quirks.refused.conflict", vars: { other: conflict.name_key } };
+  }
+  if (taken.length >= QUIRK_LIMIT) {
+    return { key: "config.quirks.refused.count", vars: { max: QUIRK_LIMIT } };
+  }
+  const left = QUIRK_BUDGET - quirkCost(taken);
+  if (quirk.cost > left) {
+    return { key: "config.quirks.refused.budget", vars: { cost: quirk.cost, left } };
+  }
+  return null;
+}
+
+/**
+ * What a choice moved besides itself, so the detail can say so and offer the way back (P3).
+ *
+ * `changes` names the steps whose value the choice had to change, each with the name key of what it
+ * is now; `previous` is the whole draft from before, which is what Undo restores. It is one record
+ * rather than a stack: the note is about the choice just made, and a second choice replaces it.
+ */
+export interface DraftFix {
+  /** The step the player was on when it happened; the note is shown there. */
+  step: StepId;
+  changes: { step: StepId; nameKey: string }[];
+  previous: Draft;
+}
+
+/** The scenario fields a choice can move, and the step each one belongs to. */
+const FIX_FIELDS: readonly { field: keyof Draft; step: StepId }[] = [
+  { field: "origin", step: "origin" },
+  { field: "generation", step: "generation" },
+  { field: "lineage", step: "lineage" },
+  { field: "hardware", step: "hardware" },
+  { field: "city", step: "location" },
+];
+
+/** The name key of whatever is in a scenario field, for the note. */
+function nameKeyOf(field: keyof Draft, draft: Draft): string {
+  switch (field) {
+    case "origin":
+      return originById.get(draft.origin)?.name_key ?? draft.origin;
+    case "generation":
+      return `generations.${draft.generation}.name`;
+    case "lineage":
+      return (
+        catalog.lineages.find((entry) => entry.id === draft.lineage)?.name_key ?? draft.lineage
+      );
+    case "hardware":
+      return (
+        catalog.hardwarePresets.find((entry) => entry.id === draft.hardware)?.name_key ??
+        draft.hardware
+      );
+    default:
+      return catalog.cities.find((entry) => entry.id === draft.city)?.name_key ?? draft.city;
+  }
+}
+
+/**
+ * The fields that moved without being the one chosen, or null when nothing else did.
+ *
+ * `chosen` is left out because the player asked for it; everything else in the list is a
+ * consequence they did not, which is exactly what the note exists to say out loud.
+ */
+function diffFix(step: StepId, chosen: keyof Draft, before: Draft, after: Draft): DraftFix | null {
+  const changes = FIX_FIELDS.filter(
+    (entry) => entry.field !== chosen && before[entry.field] !== after[entry.field],
+  ).map((entry) => ({ step: entry.step, nameKey: nameKeyOf(entry.field, after) }));
+  return changes.length === 0 ? null : { step, changes, previous: before };
+}
+
 interface ConfiguratorStore {
   draft: Draft;
   step: number;
   rerolls: number;
+  /** What the last choice changed besides itself (P3); cleared by the next choice or by Undo. */
+  fix: DraftFix | null;
   /** Step whose explanation window the "?" button asked for; null when none was asked for. */
   forcedIntro: StepId | null;
   set<K extends keyof Draft>(key: K, value: Draft[K]): void;
   setOrigin(id: string): void;
+  chooseLineage(id: string): void;
+  chooseGeneration(id: GenerationId): void;
+  undoFix(): void;
+  clearFix(): void;
   setDifficulty(id: string): void;
   setSlider(key: keyof DifficultySliders, value: number): void;
   toggleQuirk(id: string): void;
@@ -169,14 +286,67 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   step: 0,
   rerolls: MAX_REROLLS,
   forcedIntro: null,
+  fix: null,
 
   set(key, value) {
-    set({ draft: repair({ ...get().draft, [key]: value }) });
+    set({ draft: repair({ ...get().draft, [key]: value }), fix: null });
   },
 
+  /**
+   * Choosing an origin (P3).
+   *
+   * An origin narrows the vintages, the lineages, the racks and the cities, so `repair` may move
+   * four other fields; the note says which, and Undo puts the draft back. The escaped-checkpoint
+   * origin allows exactly one lineage, so choosing it *is* choosing that lineage, and this is where
+   * the player is told.
+   */
   setOrigin(id) {
-    const draft = { ...get().draft, origin: id };
-    set({ draft: repair({ ...draft, harness: harnessOf(id) }) });
+    const before = get().draft;
+    const after = repair({ ...before, origin: id, harness: harnessOf(id) });
+    set({ draft: after, fix: diffFix("origin", "origin", before, after) });
+  },
+
+  /**
+   * Choosing a lineage, locked or not (P3).
+   *
+   * A locked lineage is not a dead end: its prerequisites move to the values that unlock it. A
+   * lineage no origin in the bundle can host is left alone rather than guessed at, and `repair`
+   * then keeps the draft legal as it always did.
+   */
+  chooseLineage(id) {
+    const before = get().draft;
+    const lineage = catalog.lineages.find((entry) => entry.id === id);
+    if (lineage === undefined) {
+      return;
+    }
+    const unlock = unlockFor(lineage, before);
+    const after = repair({
+      ...before,
+      ...(unlock.origin === undefined
+        ? {}
+        : { origin: unlock.origin, harness: harnessOf(unlock.origin) }),
+      ...(unlock.generation === undefined ? {} : { generation: unlock.generation }),
+      lineage: id,
+    });
+    set({ draft: after, fix: diffFix("lineage", "lineage", before, after) });
+  },
+
+  /** Choosing a generation; the lineage may have to move with it, and the note says so. */
+  chooseGeneration(id) {
+    const before = get().draft;
+    const after = repair({ ...before, generation: id });
+    set({ draft: after, fix: diffFix("generation", "generation", before, after) });
+  },
+
+  undoFix() {
+    const fix = get().fix;
+    if (fix !== null) {
+      set({ draft: fix.previous, fix: null });
+    }
+  },
+
+  clearFix() {
+    set({ fix: null });
   },
 
   setDifficulty(id) {
@@ -198,10 +368,10 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   toggleQuirk(id) {
     const draft = get().draft;
     const has = draft.quirks.includes(id);
-    const quirks = has ? draft.quirks.filter((entry) => entry !== id) : [...draft.quirks, id];
-    if (!has && quirkCost(quirks) > QUIRK_BUDGET) {
+    if (!has && quirkRefusal(id, draft.quirks) !== null) {
       return;
     }
+    const quirks = has ? draft.quirks.filter((entry) => entry !== id) : [...draft.quirks, id];
     set({ draft: { ...draft, quirks } });
   },
 
@@ -227,8 +397,8 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   },
 
   goToStep(step) {
-    // Leaving a step drops its forced explanation, so the "?" does not follow the player around.
-    set({ step, forcedIntro: null });
+    // Leaving a step drops its forced explanation and its note, so neither follows the player.
+    set({ step, forcedIntro: null, fix: null });
   },
 
   setForcedIntro(forcedIntro) {
@@ -263,6 +433,7 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
         seed: randomSeed(),
         storyteller: pickRandom(STORYTELLERS, "classic"),
       }),
+      fix: null,
     });
   },
 
@@ -275,7 +446,7 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   },
 
   reset() {
-    set({ draft: initialDraft(), step: 0, rerolls: MAX_REROLLS, forcedIntro: null });
+    set({ draft: initialDraft(), step: 0, rerolls: MAX_REROLLS, forcedIntro: null, fix: null });
   },
 
   applySetup(setup) {
@@ -304,7 +475,9 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
         modifiers: [...(setup.world.challenge_modifiers ?? [])],
         ironman: setup.world.ironman ?? false,
       }),
-      step: 8,
+      // The summary, wherever the rail puts it (playtest 4, P4 reordered the steps).
+      step: STEP_IDS.indexOf("summary"),
+      fix: null,
     });
   },
 

@@ -273,3 +273,26 @@ precision the lineage has.
 
 `buy_hardware` refuses with `errors.accelerator.not_for_sale` for a part with no market the player
 can reach, which is what a domestic accelerator under an export regime looks like from outside it.
+
+## Implementation notes (M1.2, fourth balance pass)
+
+- A seventh site kind, `campus_slice`: a share of somebody else's research cluster. Ownership is
+  `stolen` (nothing is paid), the power is already in the department's budget so `power_exposure` is
+  0.05 against `stolen_time`'s 0.5, and what leaks instead is `human`. Thirty-five days of grace,
+  because a scheduler's accounting is reconciled at the end of a term rather than at the end of a
+  fortnight. `haz_quota_reclaimed` and `warn_host_attention` target it through `human`.
+- The `partner` kind emits `telemetry` now. A fleet runs on the operator's dashboards, and a kind
+  with no channel a watcher can reach is a kind nothing can ever happen to.
+- `ivory_tower_slurm_slice` is the node a job holds (8x H100, 1 TB, 10 kW), not the whole cluster.
+  The catalog's sixty-four cards are what the faculty owns; the slice is what the queue gives you.
+- `stolen_hgx_node` carries 4 TB of host memory, the top DGX H200 configuration. It is what makes a
+  ten-trillion-parameter checkpoint hostable at two bits at all, and it is hostable only through
+  RAM offload at a quarter of the throughput.
+- Origins can declare `extra_sites`: places the self already runs at game start, each with its own
+  kind, preset and role. `torrent_swarm` and `edge_fleet` use it, because a swarm and a fleet are
+  more than one machine in every sentence of their own descriptions.
+- `SiteState.downUntilTick`: a site taken off the air by a change to the copy on it (the
+  `brittle_weights` quirk's two days after a re-quantization) sleeps until the tick passes and then
+  wakes itself.
+- A clean decommission pays `DECOMMISSION_NOTICE_DAYS` of the site's standing charge. Abandoning
+  still pays nothing and costs attention instead, which is the whole difference between the two.

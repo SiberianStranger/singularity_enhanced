@@ -125,6 +125,15 @@ export function nextDayStartTick(clock: Clock, tick: number = clock.tick): numbe
   return tick + (HOURS_PER_DAY - hour);
 }
 
+/**
+ * Days since the game started, counting the first day as 0. Used by modifiers that only apply for
+ * a while (SYS-04 v0.2 `quiet_boot`), because "the first 30 days" is a run-relative statement and
+ * `dayIndex` is an absolute calendar number.
+ */
+export function gameDay(clock: Clock, tick: number = clock.tick): number {
+  return Math.floor(tick / TICKS_PER_DAY);
+}
+
 export function daysToTicks(days: number): number {
   return Math.round(days * TICKS_PER_DAY);
 }

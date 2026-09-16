@@ -11,6 +11,7 @@ import {
   originById,
   quirkById,
 } from "../../../content/catalog.js";
+import { bundleKey } from "../../../content/strings.js";
 import { StepLayout } from "../parts/StepLayout.js";
 import { decodeSetup, encodeSetup, rateDraft } from "../rating.js";
 import { useConfigurator } from "../store.js";
@@ -124,6 +125,12 @@ export function SummaryStep(): ReactNode {
               {t("config.summary.challenge_value", { value: rating.value })}
             </p>
             <p className="text-sm text-muted">{t(rating.labelKey)}</p>
+            {/* What the number is, written by content rather than by the client. */}
+            <p className="prose mt-1 text-muted" data-testid="challenge-explainer">
+              {t(bundleKey("configurator.meaning.challenge", "config.summary.challenge_hint"), {
+                rating: rating.value,
+              })}
+            </p>
           </div>
           <div>
             <h4 className="text-xs uppercase tracking-wide text-muted">

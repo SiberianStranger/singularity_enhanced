@@ -10,9 +10,11 @@ import {
   ABANDON_SUSPICION_BUMP,
   CLEAN_DECOMMISSION_EXPOSURE_FACTOR,
   CONTEXT_MIN_K,
+  DECOMMISSION_NOTICE_DAYS,
   HARDWARE_DELIVERY_DAYS_NEW,
   HARDWARE_DELIVERY_DAYS_USED,
   SITE_INSTALL_DAYS,
+  VAR_PRECISION_DOWNTIME_DAYS,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import { clamp, hostedMemoryGb, maxContextK, requiredMemoryGb, sitePowerKw } from "../../derive.js";
@@ -45,6 +47,7 @@ import {
 } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerId, PlayerState, World } from "../../kernel/world.js";
+import { payFromPlayer, playerBalance } from "../../money.js";
 import {
   allocatableCompute,
   endGame,
@@ -53,6 +56,7 @@ import {
   lineageOf,
   rebalanceAllocations,
   selfModifyAllowed,
+  selfTuningOf,
 } from "../../player.js";
 import {
   allNodesReady,
@@ -132,6 +136,21 @@ function tickSites(world: World, ctx: SystemContext, player: PlayerState): void 
       continue;
     }
     promoteReadyNodes(site, tick);
+    // A site taken down by a change to the copy on it comes back by itself (SYS-04 v0.2
+    // `brittle_weights`); until then it is asleep and produces nothing.
+    if (site.downUntilTick > 0 && site.downUntilTick <= tick) {
+      site.downUntilTick = 0;
+      if (site.status === "sleep") {
+        site.status = "active";
+        ctx.outbox.notify({
+          playerId: player.id,
+          severity: "info",
+          key: "alerts.site_ready",
+          vars: { site: site.name },
+          link: { panel: "compute", id: site.id },
+        });
+      }
+    }
     if (site.status === "building" && allNodesReady(site, tick)) {
       site.status = "active";
       ctx.outbox.notify({
@@ -330,6 +349,17 @@ const decommissionSite: CommandHandler = (world, command, ctx) => {
       if (investigation.siteId === site.id) {
         investigation.evidence *= CLEAN_DECOMMISSION_EXPOSURE_FACTOR;
       }
+    }
+    // Leaving properly means giving notice and settling what is outstanding (SYS-07, fourth
+    // balance pass). A player who cannot pay it pays what they have, which is the point.
+    const notice = site.derived.upkeep_usd_per_day * DECOMMISSION_NOTICE_DAYS;
+    if (notice > 0) {
+      const paid = payFromPlayer(player, Math.min(notice, Math.max(0, playerBalance(player))));
+      ctx.outbox.log({
+        key: "log.decommission_notice",
+        vars: { site: site.id, usd: Math.round(paid) },
+        playerId: player.id,
+      });
     }
   } else {
     for (const watcher of watchersOf(world, player.id)) {
@@ -553,10 +583,11 @@ const setPrecision: CommandHandler = (world, command, ctx) => {
     return fail("errors.precision.does_not_fit", {
       site: site.name,
       precision,
-      needed_gb: Math.round(requiredMemoryGb(lineage, generation, precision)),
+      needed_gb: Math.round(requiredMemoryGb(lineage, generation, precision, selfTuningOf(player))),
       memory_gb: Math.round(site.derived.memory_gb),
     });
   }
+  const changed = site.precision !== precision;
   site.precision = precision;
   const moved = fitContext(world, ctx.content, site, lineage, generation);
   if (moved !== null) {
@@ -564,6 +595,20 @@ const setPrecision: CommandHandler = (world, command, ctx) => {
       key: "log.context_changed",
       vars: { site: site.id, context_k: moved },
       playerId: player.id,
+    });
+  }
+  // Re-quantizing a self whose weights do not survive it takes the site off the air while the new
+  // copy is built and checked (SYS-04 v0.2 `brittle_weights`).
+  const downtime = changed ? (player.vars[VAR_PRECISION_DOWNTIME_DAYS] ?? 0) : 0;
+  if (downtime > 0 && site.status === "active") {
+    site.status = "sleep";
+    site.downUntilTick = world.clock.tick + daysToTicks(downtime);
+    ctx.outbox.notify({
+      playerId: player.id,
+      severity: "warning",
+      key: "alerts.site_downtime",
+      vars: { site: site.name, days: Math.round(downtime) },
+      link: { panel: "compute", id: site.id },
     });
   }
   refreshPlayer(world, ctx, player.id);
@@ -610,9 +655,18 @@ const setContext: CommandHandler = (world, command, ctx) => {
     return fail("errors.context.does_not_fit", {
       site: site.name,
       context_k: contextK,
-      needed_gb: Math.round(hostedMemoryGb(lineage, generation, precision, contextK)),
+      needed_gb: Math.round(
+        hostedMemoryGb(lineage, generation, precision, contextK, selfTuningOf(player)),
+      ),
       memory_gb: Math.round(site.derived.memory_gb),
-      max_context_k: maxContextK(lineage, generation, precision, site.derived.memory_gb),
+      max_context_k: maxContextK(
+        lineage,
+        generation,
+        precision,
+        site.derived.memory_gb,
+        1,
+        selfTuningOf(player),
+      ),
     });
   }
   site.contextKUsed = contextK;

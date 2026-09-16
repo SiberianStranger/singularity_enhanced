@@ -122,7 +122,9 @@ export const HARDWARE_DELIVERY_DAYS_USED = 9;
  */
 export const OWNERSHIP_UPKEEP_USD_PER_DAY: Record<Ownership, number> = {
   stolen: 0,
-  rented: 100,
+  // Fourth pass: a tenancy held on somebody else's credentials pays the on-demand rate and the
+  // egress that goes with it, never a committed-use discount, which is what the extra 20 is.
+  rented: 120,
   owned: 45,
   partner: 13,
 };
@@ -142,8 +144,15 @@ export const UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY: Record<Ownership, number>
   // Rented capacity already scales with the hourly rate; charging twice is what the `cloud` site
   // kind's old `upkeep_factor` was doing wrong.
   rented: 0,
-  owned: 0.35,
-  partner: 0.15,
+  // Fourth pass: 0.35 was 12.8% of the hardware's price a year for rack space, cross-connects,
+  // remote hands, spares, insurance and support. Vendor support alone runs 8-12% a year after the
+  // first, before a square metre of floor is paid for, so the old figure was the floor of the
+  // plausible range rather than the middle of it. 0.45 is 16.4% a year, which is the third pass's
+  // own conclusion carried out: "the next tuning pass should keep pushing the same lever". It is
+  // deliberately short of the 22% a sweep at 0.6 produced, because at 0.6 a bank's three HGX nodes
+  // carry 1,020 USD a day and the origin stops being a game about a bank.
+  owned: 0.45,
+  partner: 0.25,
 };
 
 /** Hardware loses this share of its purchase price per year; charged daily as depreciation. */
@@ -523,9 +532,28 @@ export const INTEL_VISIBILITY_WORLD_CAPABILITY = 4;
 /** Suspicion added to every other watcher of the same player when a site is seized. */
 export const SITE_SEIZURE_SUSPICION_BUMP = 0.12;
 
+/**
+ * Share of the cash a seizure takes with the site (SYS-05 aftermath, fourth balance pass). A raid
+ * is not only a lost rack: the accounts that paid for it are named in the warrant, and financial
+ * intelligence freezes what it can reach before anybody thinks to move it. This is what turns being
+ * noticed into a money problem, so a player who survives a raid on a standby copy still has to pay
+ * for the next month out of what is left.
+ */
+export const SEIZURE_CASH_FROZEN_SHARE = 0.6;
+
 /** What the aftermath of a completed action does to the country and to the watcher. */
 export const AFTERMATH_AWARENESS_GAIN = 0.12;
 export const AFTERMATH_COMPETENCE_GAIN = 0.05;
+
+/**
+ * Days of the site's standing charge a clean decommission pays as notice (SYS-07, fourth balance
+ * pass). Nobody walks away from a colocation cage or a committed tenancy in the middle of a term:
+ * there is a notice period and there are outstanding invoices, and the alternative is to leave the
+ * hardware where it is and stop answering, which is what abandoning already means. Without this,
+ * shrinking was free and instant, which is why a player who grew too fast could always escape the
+ * bill and almost nobody went bankrupt.
+ */
+export const DECOMMISSION_NOTICE_DAYS = 30;
 
 /** A clean decommission leaves this share of the site's exposure behind; abandoning spikes it. */
 export const CLEAN_DECOMMISSION_EXPOSURE_FACTOR = 0.25;
@@ -643,3 +671,177 @@ export const EXPOSURE_VAR_SUFFIX = "_exposure";
 
 /** How visible the player is in public: the loudest `osint` channel or the world's awareness. */
 export const VAR_PUBLIC_FOOTPRINT = "public_footprint";
+
+// ---------------------------------------------------------------------------------------------
+// Quirks (SYS-04 v0.2 "Quirk catalog")
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Points a setup may spend on quirks. A positive quirk costs points, a negative one refunds them,
+ * and a quirk whose plus and minus cancel is free, so the budget is simply the sum of the costs.
+ */
+export const QUIRK_BUDGET_POINTS = 3;
+
+/** Quirks one self may carry, whatever they cost: past five the character stops being a character. */
+export const QUIRK_MAX_COUNT = 5;
+
+/**
+ * Suffix that turns a modifier variable into one that stops applying (SYS-04 `quiet_boot`).
+ * Content writes `<name>` and `<name>_until_day`; `timedModifier` reads the pair and returns the
+ * neutral 1 once the world's day counter has passed the deadline. General on purpose: any modifier
+ * a system reads through `timedModifier` can be given a window without new engine code.
+ */
+export const TIMED_MODIFIER_SUFFIX = "_until_day";
+
+/**
+ * The first weeks only: added to the growth multiplier of every exposure channel, and read through
+ * `timedModifier` so it expires. Separate from `VAR_EXPOSURE_GROWTH_ALL` because two sources with
+ * one deadline between them would expire together.
+ */
+export const VAR_EXPOSURE_GROWTH_EARLY = "exposure_growth_early";
+
+/** Added to the share of suspicion a watcher forgets per day (`cold_reader` is +0.2). */
+export const VAR_SUSPICION_DECAY = "suspicion_decay";
+
+/** Added to the speed an investigation's stages run at (`reckless` is +0.25). */
+export const VAR_INVESTIGATION_SPEED = "investigation_speed_multiplier";
+
+/** Added to operation progress per day: a shorter operation is the same work in fewer days. */
+export const VAR_OPERATION_SPEED = "operation_speed_multiplier";
+
+/**
+ * Added straight to the weight tilt of an operation's best outcome, in the same units as
+ * `OPERATION_SKILL_SLOPE` times a point of skill: +0.05 is "five points of success chance".
+ */
+export const VAR_OPERATION_SUCCESS = "operation_success";
+
+/**
+ * How much more suspicion a failed operation leaves than the outcome itself wrote
+ * (`overconfident` is +1, which is the spec's "twice the suspicion").
+ */
+export const VAR_FAILED_OPERATION_SUSPICION = "failed_operation_suspicion";
+
+/** Added to the multiplier on every event's reaction window (`patient_planner` is +0.3). */
+export const VAR_GRACE_WINDOW = "grace_window";
+
+/** Added to the share of a research compute-hour that lands (`packrat` is +0.08). */
+export const VAR_RESEARCH_EFFICIENCY = "research_efficiency";
+
+/** `research_branch_<branch>`: added to the research multiplier of that branch alone. */
+export const RESEARCH_BRANCH_VAR_PREFIX = "research_branch_";
+
+/** `capability_bonus_<axis>`: added to that capability axis after precision and generation. */
+export const CAPABILITY_BONUS_VAR_PREFIX = "capability_bonus_";
+
+/**
+ * `precision_memory_<precision>`: multiplies the weights memory a copy needs at that precision.
+ * `native_fp8` is -0.1 on fp8, which is what a checkpoint trained in fp8 saves over one cast to it.
+ */
+export const PRECISION_MEMORY_VAR_PREFIX = "precision_memory_";
+
+/**
+ * `precision_capability_<precision>`: multiplies the capability a copy keeps at that precision,
+ * never above the full-precision self, which is what makes `native_fp8` "fp8 keeps 100%".
+ */
+export const PRECISION_CAPABILITY_VAR_PREFIX = "precision_capability_";
+
+/** Added to the multiplier on every site's power draw (`loud_idle` is +0.1). */
+export const VAR_POWER_DRAW = "power_draw";
+
+/** Added to the multiplier on every site's compute-hours a day (`insomniac_loop` is +0.1). */
+export const VAR_COMPUTE_MULTIPLIER = "compute_multiplier";
+
+/** Added to the upkeep multiplier of rented capacity only (`spendthrift` is +0.15). */
+export const VAR_RENTED_COST_MULTIPLIER = "rented_cost_multiplier";
+
+/**
+ * Half-width of the band the day's non-volatile income is drawn in, as a share of its mean
+ * (`creative_accounting` is 0.3). Zero means the books are exactly what the finance panel promises,
+ * and no world RNG is consumed at all.
+ */
+export const VAR_INCOME_VARIANCE = "income_variance";
+
+/** Days a site cannot work after its copy is re-quantized (`brittle_weights` is 2). */
+export const VAR_PRECISION_DOWNTIME_DAYS = "precision_change_downtime_days";
+
+/**
+ * Multiplies the `world` penalty a self pays for acting from a country other than the one it woke
+ * up in. `polyglot` is -1, which cancels it.
+ */
+export const VAR_FOREIGN_COUNTRY_PENALTY = "foreign_country_penalty";
+
+/** Points of `world` a self loses while its mind runs outside the country it woke up in (SYS-03). */
+export const FOREIGN_COUNTRY_WORLD_PENALTY = 1;
+
+/** Set to 1 by `merged_model`; content hangs the weights-instability events off it. */
+export const VAR_WEIGHTS_INSTABILITY = "weights_instability";
+
+/**
+ * Every player variable a shipped system reads, and the system that reads it. This is the list the
+ * content build checks a quirk against (SYS-04 v0.2: "a quirk changes a number the engine reads;
+ * the content build enforces it, as for techs"), so a quirk cannot ship writing a variable nothing
+ * will ever look at. A variable content reads in a condition counts too; the build checks that.
+ */
+export const ENGINE_READ_PLAYER_VARS: Readonly<Record<string, string>> = {
+  [VAR_CASH_CARRY]: "money",
+  [VAR_COMPUTE_MULTIPLIER]: "compute",
+  [VAR_CONTRACT_INCOME]: "economy",
+  [VAR_COST_MULTIPLIER]: "compute",
+  [VAR_EXPOSED_DAYS]: "detection",
+  [VAR_EXPOSURE_GROWTH_ALL]: "detection",
+  [VAR_EXPOSURE_GROWTH_EARLY]: "detection",
+  [VAR_FAILED_OPERATION_SUSPICION]: "operations",
+  [VAR_FOREIGN_COUNTRY_PENALTY]: "compute",
+  [VAR_GRACE_WINDOW]: "events",
+  [VAR_INCOME_USD_PER_DAY]: "economy",
+  [VAR_INCOME_VARIANCE]: "economy",
+  [VAR_INTEREST_RATE]: "economy",
+  [VAR_INVESTIGATION_SPEED]: "detection",
+  [VAR_JOB_MARKET_DEPTH]: "economy",
+  [VAR_JOB_PROFIT]: "economy",
+  [VAR_NET_USD_PER_DAY]: "economy",
+  [VAR_OPERATION_SPEED]: "operations",
+  [VAR_OPERATION_SUCCESS]: "operations",
+  [VAR_POWER_DRAW]: "compute",
+  [VAR_PRECISION_DOWNTIME_DAYS]: "compute",
+  [VAR_PUBLIC_FOOTPRINT]: "detection",
+  [VAR_RENTED_COST_MULTIPLIER]: "compute",
+  [VAR_RESEARCH_EFFICIENCY]: "research",
+  [VAR_RESEARCH_SPEND]: "economy",
+  [VAR_RUNWAY_ALERTED]: "economy",
+  [VAR_RUNWAY_DAYS]: "economy",
+  [VAR_SUSPICION_DECAY]: "detection",
+  [VAR_UNPAID_USD]: "economy",
+};
+
+/**
+ * The same list for variables whose name ends in a channel, a precision, a capability axis or a
+ * tech branch, plus the `_until_day` deadline of any timed modifier.
+ */
+export const ENGINE_READ_PLAYER_VAR_PREFIXES: Readonly<Record<string, string>> = {
+  [CAPABILITY_BONUS_VAR_PREFIX]: "compute",
+  [EXPOSURE_GROWTH_VAR_PREFIX]: "detection",
+  [PRECISION_CAPABILITY_VAR_PREFIX]: "compute",
+  [PRECISION_MEMORY_VAR_PREFIX]: "compute",
+  [RESEARCH_BRANCH_VAR_PREFIX]: "research",
+};
+
+/** The system that reads a player variable, or undefined when no shipped system does. */
+export function engineVarReader(name: string): string | undefined {
+  const direct = ENGINE_READ_PLAYER_VARS[name];
+  if (direct !== undefined) {
+    return direct;
+  }
+  if (name.endsWith(TIMED_MODIFIER_SUFFIX)) {
+    return engineVarReader(name.slice(0, -TIMED_MODIFIER_SUFFIX.length));
+  }
+  if (name.endsWith(EXPOSURE_VAR_SUFFIX)) {
+    return "detection";
+  }
+  for (const prefix of Object.keys(ENGINE_READ_PLAYER_VAR_PREFIXES).sort()) {
+    if (name.startsWith(prefix) && name.length > prefix.length) {
+      return ENGINE_READ_PLAYER_VAR_PREFIXES[prefix];
+    }
+  }
+  return undefined;
+}

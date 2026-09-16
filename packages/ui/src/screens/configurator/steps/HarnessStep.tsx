@@ -166,6 +166,8 @@ export function HarnessStep(): ReactNode {
         level?.effects,
         def?.effect_key,
         lock === null ? undefined : lock.key,
+        // Where the dial stands right now, so the effect line can end "Right now: ...".
+        level === undefined ? valueText(harness, dial, t) : t(level.label_key),
       )}
     >
       {lock === null ? null : <LockNote lock={lock} />}

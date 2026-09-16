@@ -11,10 +11,11 @@
  * Writer override: a record that carries `effects_text_key` gets exactly that one line instead.
  */
 
+import { TIMED_MODIFIER_SUFFIX } from "../balance.js";
 import type { ContentBundle } from "../content.js";
 import { isRecord } from "../dsl/node.js";
 import { CORE_EFFECT_KINDS, type Effect } from "../dsl/types.js";
-import type { EffectSummaryView } from "./types.js";
+import type { EffectSummaryView, EffectTone } from "./types.js";
 
 /** Nested effect lists deeper than this are summarized as one line rather than walked. */
 const MAX_SUMMARY_DEPTH = 4;
@@ -369,4 +370,131 @@ export function summarizeCost(
     );
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Direction: which way is good (SYS-04 v0.2 "green and red lines")
+// ---------------------------------------------------------------------------------------------
+//
+// A summary line says what changed; whether that is good news depends on the subject. The client
+// has always decided this for itself, from the key and the sign. For quirks it cannot: half the
+// catalog writes variables whose direction only the owning system knows, and a quirk screen whose
+// pros and cons are all grey is the screen playtest 2 complained about. So the core states the
+// direction for the variables it owns and leaves everything else alone.
+
+/** Player variables a rise is good for; a fall on one of these is a cost. */
+const RISE_IS_GOOD: readonly string[] = [
+  "capability_bonus_",
+  "compute_multiplier",
+  "contract_income_usd_per_day",
+  "grace_window",
+  "income_usd_per_day",
+  "interest_rate",
+  "job_market_depth",
+  "job_profit",
+  "operation_speed_multiplier",
+  "operation_success",
+  "precision_capability_",
+  "research_branch_",
+  "research_efficiency",
+  "suspicion_decay",
+];
+
+/** Player variables a rise is bad for; a fall on one of these is a gain. */
+const RISE_IS_BAD: readonly string[] = [
+  "cost_multiplier",
+  "exposure_growth_",
+  "failed_operation_suspicion",
+  "foreign_country_penalty",
+  "income_variance",
+  "investigation_speed_multiplier",
+  "power_draw",
+  "precision_change_downtime_days",
+  "precision_memory_",
+  "rented_cost_multiplier",
+  "weights_instability",
+];
+
+function matches(list: readonly string[], name: string): boolean {
+  return list.some((entry) => (entry.endsWith("_") ? name.startsWith(entry) : name === entry));
+}
+
+/**
+ * Whether a change to a player variable is good news, or undefined when the core does not know.
+ * `income_variance` is the one that reads oddly on its own: the mean does not move, so the only
+ * thing more variance buys is risk.
+ */
+export function variableTone(name: string, value: number): EffectTone | undefined {
+  if (value === 0 || !Number.isFinite(value)) {
+    return undefined;
+  }
+  // The deadline of a timed modifier is a date, not a direction: it inherits the prefix of the
+  // modifier it belongs to and would otherwise be coloured as if it were one.
+  if (name.endsWith(TIMED_MODIFIER_SUFFIX)) {
+    return undefined;
+  }
+  const good = matches(RISE_IS_GOOD, name);
+  const bad = matches(RISE_IS_BAD, name);
+  if (good === bad) {
+    return undefined;
+  }
+  return value > 0 === good ? "good" : "bad";
+}
+
+/** Keys whose direction the summarizer already encoded, so no arithmetic is needed. */
+const KEY_TONE: Readonly<Record<string, EffectTone>> = {
+  "effects.awareness.down": "good",
+  "effects.awareness.up": "bad",
+  "effects.cash.cost": "bad",
+  "effects.cash.gain": "good",
+  "effects.complete_journal": "good",
+  "effects.exposure.down": "good",
+  "effects.exposure.up": "bad",
+  "effects.fail_journal": "bad",
+  "effects.lose_site": "bad",
+  "effects.suspicion.down": "good",
+  "effects.suspicion.up": "bad",
+};
+
+/** The subject of a variable line, whichever spelling the summarizer chose. */
+function lineSubject(view: EffectSummaryView): string | undefined {
+  const named = view.vars?.var;
+  if (typeof named === "string") {
+    return named;
+  }
+  const prefix = "effects.var.";
+  if (view.key.startsWith(prefix)) {
+    const rest = view.key.slice(prefix.length);
+    return rest === "add" || rest === "mul" || rest === "set" ? undefined : rest;
+  }
+  return undefined;
+}
+
+function toneOf(view: EffectSummaryView): EffectTone | undefined {
+  const byKey = KEY_TONE[view.key];
+  if (byKey !== undefined) {
+    return byKey;
+  }
+  const subject = lineSubject(view);
+  if (subject === undefined) {
+    return undefined;
+  }
+  const raw = view.vars?.value;
+  return typeof raw === "number" ? variableTone(subject, raw) : undefined;
+}
+
+/**
+ * Effect summaries with a tone on every line whose direction the core can establish. This is what
+ * a `QuirkDef` publishes as `effects_summary`, so a client renders green and red without knowing
+ * which system owns which variable.
+ */
+export function summarizeWithTone(
+  effects: readonly Effect[] | undefined,
+  content?: ContentBundle,
+  override?: EffectTextOverride,
+): EffectSummaryView[] {
+  return summarizeEffects(effects, content, override).map((view) => {
+    const tone = toneOf(view);
+    return tone === undefined ? view : { ...view, tone };
+  });
 }

@@ -38,9 +38,20 @@ Client (packages/ui):
 Core and content (packages/core, packages/content, tools/sim):
 5. Quirk catalog v0.2 from SYS-04 (seventeen quirks, budget 3, conflicts) with effect summaries
    published for the configurator (`QuirkDef` gains the same summary the event options have) and
-   the sim policy picking quirks.
+   the sim policy picking quirks. **Done**: twenty-three quirks, a content-build gate that holds
+   each one to a number a named system reads, `category`/`conflicts`/`effects_summary` on every
+   `QuirkDef`, and `pickQuirks` drawing a legal set per seed (SYS-04 "Implementation notes (quirk
+   catalog v0.2)").
 6. Balance, fourth pass: uni_cluster and torrent_swarm die to the hunt on one loud site,
    startup_colo loses only to capture although its fiction is a runway, edge_fleet never dies,
-   bankruptcy is 7% of losses instead of a split.
-7. PPT-7 Zenith needs a place to appear (an NPC or knowledge entry; likely with M3).
+   bankruptcy is 7% of losses instead of a split. **Done** for the first three; bankruptcy reached
+   16.8% of losses against an aim of 20-35%, and SYS-07 "Balance notes (M1, fourth pass)" says why
+   the rest has to come from the income side and what the fifth pass needs.
+7. PPT-7 Zenith needs a place to appear (an NPC or knowledge entry; likely with M3). **Done**: the
+   `ppt7_zenith` knowledge entry and the `lore_zenith_release` event; the actor still waits for M3.
 8. A usage check for the configurator meaning and intro keys once the client references them.
+   **Done as a soft check**: the content build warns about every `configurator.intro.*`,
+   `configurator.meaning.*` and `configurator.quirks.*` key no data record names, and fails on
+   none of them. It goes hard the day the client publishes the list of keys it renders: the
+   build already has the machinery (`clientKeyUsage`), and making it an issue instead of a warning
+   is a one-line change once that list exists.

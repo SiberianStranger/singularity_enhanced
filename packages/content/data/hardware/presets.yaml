@@ -87,10 +87,14 @@
   name_key: hardware.preset.ivory_tower_slurm_slice.name
   desc_key: hardware.preset.ivory_tower_slurm_slice.desc
   drawback_key: hardware.preset.ivory_tower_slurm_slice.drawback
+  # The catalog's sixty-four cards are the cluster; the slice is the node a job actually holds
+  # (hardware-catalog-2026 Part F: "queued share of 64x H100 ... unpredictable availability"). The
+  # whole cluster was modelled as always available, which gave a graduate student's leftover job
+  # more compute than a bank and an income nothing in the game could threaten (fourth balance pass).
   nodes:
-    - { accelerator: nvidia_h100_sxm5, count: 64, ram_gb: 8192, interconnect: nvlink }
+    - { accelerator: nvidia_h100_sxm5, count: 8, ram_gb: 1024, interconnect: nvlink }
   cost_usd: 0
-  power_kw: 80
+  power_kw: 10
   class: very_high
 
 - id: mining_rig_ascendant
@@ -148,8 +152,13 @@
   name_key: hardware.preset.stolen_hgx_node.name
   desc_key: hardware.preset.stolen_hgx_node.desc
   drawback_key: hardware.preset.stolen_hgx_node.drawback
+  # 4 TB of host memory is the top DGX H200 configuration (2 TB is the standard build), and it is
+  # what makes the escaped checkpoint hostable at all: at ten trillion parameters a two-bit copy is
+  # 2,000 GB before the fresh-architecture factor and 2,600 after it, which is more than the eight
+  # cards hold. The rest comes out of RAM at a quarter of the throughput, which is the crisis
+  # SYS-03 describes rather than a difficulty setting (lineage table v3, playtest 4 P7).
   nodes:
-    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 2048, interconnect: nvlink }
+    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 4096, interconnect: nvlink }
   cost_usd: 550000
   power_kw: 10
   class: very_high

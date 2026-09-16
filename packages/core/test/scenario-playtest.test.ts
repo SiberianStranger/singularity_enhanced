@@ -423,10 +423,18 @@ describe("playtest 1: the institute cluster", () => {
     expect(grown.income_sources[1]?.unlocked_by).toBe("operations.ops_freelance_identity.name");
     expect(grown.income_sources[2]?.usd_per_day).toBeCloseTo(25, 6);
 
-    const before = game.snapshot("p1").resources.cash_usd;
-    game.tick(24);
-    // The trading line is drawn from the world RNG, so the day lands somewhere around its mean.
-    expect(game.snapshot("p1").resources.cash_usd).not.toBe(before);
+    // The trading line is drawn from the world RNG, so no two days land on the same number. Read
+    // through the balance rather than the whole dollars on hand: a day whose net result is less
+    // than a dollar waits in `cash_carry`, which is exactly what the cent-level draw produces.
+    const balance = (): number => (player?.cash ?? 0) + (player?.vars.cash_carry ?? 0);
+    const days: number[] = [];
+    let previous = balance();
+    for (let day = 0; day < 4; day += 1) {
+      game.tick(24);
+      days.push(balance() - previous);
+      previous = balance();
+    }
+    expect(new Set(days).size).toBe(days.length);
   });
 
   it("writes every refusal to the player's log, so nothing fails silently", () => {

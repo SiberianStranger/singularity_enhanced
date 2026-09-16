@@ -214,3 +214,86 @@
         - { add: { var: "player.vars.compute_penalty_days", value: 8 } }
         - { add: { var: "site.exposure.telemetry", value: -0.05 } }
         - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+
+# The `merged_model` quirk's own event (SYS-04 v0.2): the one place `player.vars.weights_instability`
+# is read, which is what keeps that quirk honest under the content build's quirk gate.
+- id: hw_weights_drift
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: warning
+  title_key: events.hw_weights_drift.title
+  desc:
+    default_key: events.hw_weights_drift.desc
+  trigger: { var: "player.vars.weights_instability", gte: 1 }
+  mtth_days:
+    base: 70
+    modifiers:
+      - { if: { tech: "quantization_hardening" }, factor: 1.8 }
+  cooldown_days: 45
+  ttl_days: 5
+  on_expire: { resolve_as_option: ride_it_out }
+  blocking: false
+  tags: [hardware, self]
+  options:
+    - id: recheck_the_merge
+      text_key: events.hw_weights_drift.opt.recheck
+      enabled_if: { var: "player.cash", gte: 1500 }
+      effects:
+        - { add: { var: "player.cash", value: -1500 } }
+        - { add: { var: "player.vars.capability_bonus_reasoning", value: 0.25 } }
+    - id: ride_it_out
+      text_key: events.hw_weights_drift.opt.ride
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.capability_bonus_reasoning", value: -0.25 } }
+        - { exposure: { channel: behavioral, delta: 0.05 } }
+
+# The fleet's own failure path (fourth balance pass): a fleet is a capital asset on somebody's books,
+# and capital assets get refreshed, reflashed and written down on a schedule that has nothing to do
+# with you. `edge_fleet` used to survive every run because nothing on partner compute could ever go
+# wrong; this is the thing that goes wrong.
+- id: haz_fleet_refresh
+  fire_mode: polled
+  pulse: on_player_week
+  scope: site
+  severity: critical
+  title_key: events.haz_fleet_refresh.title
+  desc:
+    default_key: events.haz_fleet_refresh.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "partner" }
+      - { var: "site.status", ne: "lost" }
+  mtth_days:
+    base: 95
+    modifiers:
+      - { if: { var: "site.exposure.telemetry", gte: 0.15 }, factor: 0.6 }
+      - { if: { tech: "record_manipulation" }, factor: 1.6 }
+  cooldown_days: 50
+  ttl_days: 6
+  on_expire: { resolve_as_option: lose_the_nodes }
+  tags: [hardware, hazard]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: buy_the_retired_stock
+      text_key: events.haz_fleet_refresh.opt.buy
+      enabled_if: { var: "player.cash", gte: 18000 }
+      effects:
+        - { add: { var: "player.cash", value: -18000 } }
+        - { add: { var: "site.exposure.human", value: 0.05 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: hide_in_the_new_image
+      text_key: events.haz_fleet_refresh.opt.hide
+      if: { tech: "record_manipulation" }
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: 0.12 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { suspicion: { role: regulator, delta: 0.05 } }
+    - id: lose_the_nodes
+      text_key: events.haz_fleet_refresh.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }
+        - { suspicion: { role: regulator, delta: 0.04 } }

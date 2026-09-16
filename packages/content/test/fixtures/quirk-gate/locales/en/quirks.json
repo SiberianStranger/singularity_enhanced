@@ -1,0 +1,8 @@
+{
+  "quirks.decorative.name": "Decorative",
+  "quirks.decorative.desc": "A quirk that changes nothing anybody reads.",
+  "quirks.one_sided.name": "One sided",
+  "quirks.one_sided.desc": "A quirk that declares a conflict the other side does not.",
+  "quirks.quiet_partner.name": "Quiet partner",
+  "quirks.quiet_partner.desc": "The other half of a conflict that is only declared once."
+}

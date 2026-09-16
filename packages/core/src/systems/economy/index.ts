@@ -21,6 +21,7 @@ import {
   VAR_CONTRACT_FLAG,
   VAR_CONTRACT_INCOME,
   VAR_INCOME_USD_PER_DAY,
+  VAR_INCOME_VARIANCE,
   VAR_INTEREST_RATE,
   VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
@@ -237,11 +238,20 @@ export function incomeSources(
  * What the sources actually pay today. Only the volatile ones draw, and only when the player has
  * one, so a run without a trading model consumes no randomness and stays bit-identical.
  */
-function collectIncome(sources: readonly IncomeSource[], rng: Rng): number {
+function collectIncome(
+  sources: readonly IncomeSource[],
+  rng: Rng,
+  /** Half-width of the band every steady line is drawn in, as a share of its mean; 0 = flat. */
+  variance = 0,
+): number {
   let total = 0;
   for (const source of sources) {
     if (source.volatile !== true) {
-      total += source.expected_usd_per_day;
+      // Books that do not quite add up (SYS-04 v0.2 `creative_accounting`): the mean is still what
+      // the finance panel promises, but no single day lands on it. At variance 0 nothing is drawn
+      // and a run without the quirk stays bit-identical.
+      const spread = variance > 0 ? 1 - variance + rng.next() * 2 * variance : 1;
+      total += source.expected_usd_per_day * spread;
       continue;
     }
     // Uniform around the expectation: the mean is the rate the panel shows, the spread is the risk.
@@ -407,7 +417,7 @@ export function createEconomySystem(): EconomySystem {
           continue;
         }
         const sources = incomeSources(world, ctx.content, player);
-        const income = collectIncome(sources, ctx.rng);
+        const income = collectIncome(sources, ctx.rng, player.vars[VAR_INCOME_VARIANCE] ?? 0);
         creditPlayer(player, income);
 
         let unpaid = 0;

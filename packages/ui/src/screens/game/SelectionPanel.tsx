@@ -2,6 +2,7 @@ import { EXPOSURE_CHANNELS, type PlayerView } from "@singularity/core";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { Frame } from "../../components/Frame.js";
 import { CloseIcon } from "../../components/Icon.js";
 import { Bar } from "../../components/Meter.js";
 import { cityById, countryById } from "../../content/catalog.js";
@@ -262,37 +263,46 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   }
 
   return (
-    <section
-      aria-label={t("selection.title")}
+    <Frame
+      // The accessible name stays "Selection" whatever is selected, so a test and a screen reader
+      // can find the panel; what it is showing is the heading inside it.
+      title={t("selection.title")}
       // Measured against the map region rather than against the window, so the panel cannot run
       // off the bottom of a short screen (playtest 1, U8); the body scrolls inside it, and at
       // phone width it becomes a sheet across the bottom instead of a floating card.
-      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 flex flex-col gap-2 border border-line bg-panel/97 p-2 sm:end-auto sm:w-80 ${
+      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 bg-panel/97 sm:end-auto sm:w-80 ${
         collapsed ? "" : "max-h-[calc(100%-1rem)]"
       }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="truncate text-sm font-semibold text-fg">{title}</h2>
-        <span className="flex items-center gap-1">
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-2 p-2"
+      actions={
+        <>
           <Button
             variant="ghost"
+            className="text-accentfg"
             aria-expanded={!collapsed}
             aria-label={collapsed ? t("selection.expand") : t("selection.collapse")}
             onClick={() => setCollapsed(!collapsed)}
           >
             {collapsed ? t("selection.expand") : t("selection.collapse")}
           </Button>
-          <Button variant="ghost" aria-label={t("common.close")} onClick={() => select(null)}>
+          <Button
+            variant="ghost"
+            className="text-accentfg"
+            aria-label={t("common.close")}
+            onClick={() => select(null)}
+          >
             <CloseIcon />
           </Button>
-        </span>
-      </div>
+        </>
+      }
+    >
+      <h3 className="truncate text-sm font-semibold text-fg">{title}</h3>
       {collapsed ? null : (
         <>
           <TabStrip tabs={tabs} active={tab} onSelect={setTab} />
           <div className="min-h-0 flex-1 overflow-auto">{body}</div>
         </>
       )}
-    </section>
+    </Frame>
   );
 }

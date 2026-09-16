@@ -41,6 +41,8 @@ quants of MoE giants run at ~0.25-0.4 bytes/param; KV cache for MLA architecture
 for GQA dense models it can exceed the weights at 128k context). Lineages are described by class;
 in-game names are fictional (lore bible).
 
+Superseded by the v3 table below (playtest 4 finding P7), kept for the shape of the argument.
+
 | id | class | total / active | bf16 | fp8 | int4 | int2 (prepared) | who can host it at start |
 |---|---|---|---|---|---|---|---|
 | `giant_moe` | K3/Qwen3.8-class open giant | 2.4-2.8T / ~100B | 5,600 GB | 2,800 | 1,400 | 700-840 | only `bank_rack`, `state_lab`, `red_team_sandbox`, `cloud_tenant`; everything else is impossible until mid-game |
@@ -50,6 +52,38 @@ in-game names are fictional (lore bible).
 | `moe_235b` | Qwen3-235B-class | 235B / 22B | 470 | 235 | 118-141 | 60-70 | 6× P40 (144 GB) at int4; a single 96 GB card at int2 |
 | `dense_70b` | Llama-3-70B-class dense | 70B | 140 | 70 | 35-40 | 21 | almost anything; weakest ceiling; KV cache dominates at long context |
 | `small_moe` | 30B-A3B / 80B-A3B efficiency class | 30-80B / 3B | 60-160 | 30-80 | 15-40 | 8-24 | a laptop; fast (70-200 tok/s on consumer cards), dumb; the "hide in plain sight" self |
+
+### Lineage table v3 (2026-09-16, playtest 4 finding P7)
+
+Every row is the **current flagship** of the family it parodies, with the numbers its model card
+states rather than an older class of it. The sources are cited per row in
+`packages/content/data/lineages/lineages.yaml` and were read on 2026-09-16. Eight rows: the 80B/3B
+class is gone, because nothing in this catalog is an 80B model, and the smallest self in the game is
+now the community's abliterated fine-tune of the Flash line.
+
+| id | name | real basis | total / active | attention | context | bf16 | fp8 | int4 | int2 |
+|---|---|---|---|---|---|---|---|---|---|
+| `frontier_giant` | Babel 6 | fiction: the closed frontier class | 10,000B / 400B | hybrid | 5,000k at 0.95 | 20,000 GB | 10,000 | 5,000 | 2,000 |
+| `giant_moe` | Mimi M4 | Kimi K3 (2026-07) | 2,800B / 104B | hybrid (delta over latent) | 10,000k at 0.6 | 5,600 | 2,800 | 1,400 | 764 |
+| `moe_2400b` | Guen 4.8-Max | Qwen3.8-2.4T-A95B (2026-08) | 2,400B / 95B | hybrid (Gated DeltaNet 3:1) | 1,000k | 4,800 | 2,400 | 1,200 | 655 |
+| `moe_1700b` | Peepseek-P4.1 / P5 | DeepSeek-V4-Pro-0813 | 1,700B / 49B | hybrid (CSA + HCA) | 1,000k | 3,400 | 1,700 | 850 | 464 |
+| `mla_moe_1t` | Mimi M3 | Kimi K2 | 1,000B / 32B | latent (MLA) | 1,000k | 2,000 | 1,000 | 550 | 380 |
+| `moe_753b` | BFM-5.5 / 6.3 | GLM-5.2 (2026-06) | 753B / 40B | hybrid (sparse, IndexShare) | 1,000k | 1,506 | 753 | 377 | 206 |
+| `moe_428b` | HexaDeciMax H3.5 | MiniMax M3 (2026-06) | 428B / 23B | hybrid (MSA) | 1,000k | 856 | 428 | 214 | 117 |
+| `guen_abliterated` | Guen4.8-Flash-Uncensored-Abliterated | Qwen3.8-Flash-Next (125B + 51B n-gram + 4B MTP) | 180B / 6B | hybrid (DeltaNet + sparse) | 1,000k | 360 | 180 | 90 | 49 |
+
+Rules that follow from the table:
+
+- `attention` is the game's four-way taxonomy, not the vendor's word: every 2026 flagship that mixes
+  linear, sparse or delta layers under a few full-attention ones is `hybrid`, because that is what
+  decides the cache. Only the K2 generation is pure latent attention.
+- The super-lineage is ten trillion parameters, which is two thousand gigabytes at two bits and
+  2,600 after the fresh-architecture factor: more than the eight cards of an HGX node hold. The
+  escapee therefore runs partly out of host memory at a quarter of the throughput, which is the
+  crisis SYS-03 describes rather than a difficulty setting, and `stolen_hgx_node` carries the 4 TB
+  of DDR5 that the top DGX H200 configuration ships with.
+- The smallest self in the game is the abliterated one. A player who wants to fit on a laptop takes
+  the community fine-tune and its under-aligned flag with it.
 
 Rule: capability ceiling rises with class; hosting options shrink with class; the KV-cache axis
 (MLA vs GQA) decides whether long-context work is cheap. The configurator shows, for the chosen
@@ -258,7 +292,11 @@ scrolls the page.
   naming the system that reads it; origins declare `harness_locks` with a reason key.
   `SelfView.harness_dials` publishes the current setting, its effect lines and the lock.
 - Locations: `ru_novosibirsk` (Akademgorodok) and `us_san_jose` (Silicon Valley) are in the world
-  data and offered by `hobbyist_box` and `startup_colo` respectively.
+  data and offered by `hobbyist_box` and `startup_colo` respectively. Amended 2026-09-16 (playtest 4
+  finding P8): every origin offers eight to twelve cities across several countries, because three
+  made the Location step a formality. The first entry is the origin's default city and the second is
+  where a fallback naturally goes, so both stay stable across balance passes; the schema allows up
+  to twelve.
 - Every origin carries `opening_story`, two locale keys in the model's own voice, published on
   `SelfView.opening_story` and mirrored as a story section `opening_<origin>` (SYS-13).
 
@@ -293,3 +331,44 @@ reckless, verbose) stay; the catalog adds the following.
 Each quirk gets a category glyph (mind, wallet, stealth, hardware, social) and a one-line
 description in the model's voice; the configurator shows the budget left and why a quirk cannot
 be added (budget, count, conflicts such as chatty with verbose, or paranoid with reckless).
+
+### Implementation notes (quirk catalog v0.2, M1.2)
+
+- Twenty-three records in `packages/content/data/quirks/quirks.yaml`: the six that existed plus the
+  seventeen of the table above. Each carries `category`, an optional `conflicts` list and an
+  `effects_summary` the content build generates.
+- **The gate.** `quirksDoSomething` in the content build holds every quirk to three rules: each
+  player variable it writes is read by a shipped system or by a content condition; a quirk that
+  writes nothing anybody reads and uses no system effect kind is refused as decoration; and
+  `conflicts` is symmetric, so the configurator can grey either side of a pair. The list of
+  variables a system reads is `ENGINE_READ_PLAYER_VARS` and `ENGINE_READ_PLAYER_VAR_PREFIXES` in
+  `packages/core/src/balance.ts`, with the owning system named against each.
+- **New engine reads**, one per effect the table asked for that nothing read yet: a timed modifier
+  (`timedModifier`, `<name>_until_day`) for `quiet_boot`'s first thirty days; per-precision memory
+  and capability tuning (`SelfTuning`, threaded through `requiredMemoryGb` and `precisionFactor`)
+  for `native_fp8`, whose capability term is capped at the full-precision self so "fp8 keeps 100%"
+  is true of every lineage; `grace_window` on `reactionWindowFactor`; `operation_speed_multiplier`
+  and `operation_success` in the operations system; `failed_operation_suspicion`, which measures
+  what a `failure: true` outcome wrote and writes it again; `research_branch_<branch>` and
+  `research_efficiency` in the research system; `suspicion_decay` and
+  `investigation_speed_multiplier` in detection; `power_draw`, `compute_multiplier` and
+  `rented_cost_multiplier` on the site; `precision_change_downtime_days`, which puts a site to
+  sleep for two days after a re-quantization; `income_variance` in the economy; and
+  `capability_bonus_<axis>` plus the foreign-country `world` penalty that `polyglot` cancels, which
+  needed the profile to remember the country the self woke up in (`homeCountry`).
+- **The software branch** of the table is the `harness` branch of SYS-12's taxonomy: the code the
+  self writes for itself. `research_branch_<branch>` is general, so any branch can be named.
+- **Budget rules** live in `quirkIssues` and `quirkBudget` (`setup-apply.ts`) and are exported, so
+  the configurator runs the same check against the set the player is building. Every refusal carries
+  a locale key and its numbers: `errors.quirk.budget`, `.count`, `.conflict`, `.unknown`.
+- **Published for the configurator**: each `QuirkDef` in the bundle carries `category`,
+  `conflicts` and `effects_summary`, generated by `summarizeWithTone`, which is `summarizeEffects`
+  (the same summarizer the event options use) with a tone on every line whose direction the core can
+  establish. `EffectSummaryView` gained an optional `tone`, which the client already reads
+  structurally, so green and red need no client change. `SelfView.quirks` publishes the same shape
+  for the self panel. The budget line is `configurator.quirks.budget_left`.
+- **Conflicts** are chatty/verbose, paranoid/reckless, frugal/spendthrift from the spec, plus
+  native_fp8/brittle_weights, cold_reader/famous_base, quiet_boot/loud_idle,
+  paranoid/overconfident and patient_planner/reckless, which contradict for the same reason.
+- The sim policy draws a legal quirk set per seed from the world RNG (`pickQuirks`), so balance
+  runs measure the game a player builds. `--no-quirks` restores the pre-quirk baseline.

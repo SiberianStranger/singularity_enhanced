@@ -40,6 +40,7 @@ import {
   retrievalMissChance,
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
+import { bundleKey } from "../../content/strings.js";
 import type { Translate } from "../../lib/labels.js";
 import type { Draft } from "./store.js";
 
@@ -229,7 +230,11 @@ export function lineageMeaning(
         lineages.map((entry) => memoryNeededGb(entry, generation, precision)),
         false,
       ),
-      hint: t("config.meaning.memory_hint"),
+      hint: t(bundleKey("configurator.meaning.memory_precision", "config.meaning.memory_hint"), {
+        precision: t(`precision.${precision}`),
+        memory_gb: Math.round(needed),
+        factor: (lineage.precision_factor[precision] ?? 1).toFixed(2),
+      }),
     });
   }
 
@@ -252,7 +257,13 @@ export function lineageMeaning(
       lineages.map((entry) => entry.context_k),
       true,
     ),
-    hint: t("config.meaning.context_hint", { baseline: CONTEXT_BASELINE_K }),
+    hint: t(bundleKey("configurator.meaning.context", "config.meaning.context_hint"), {
+      baseline: CONTEXT_BASELINE_K,
+      context_k: lineage.context_k,
+      // What a hundred thousand tokens of window actually costs next to the weights (SYS-03).
+      kv_gb: Math.round(kvCacheGb(lineage, 100) * 10) / 10,
+      per_k: 100,
+    }),
   });
 
   const reliability = lineage.context_reliability ?? 1;
@@ -265,7 +276,15 @@ export function lineageMeaning(
     hint:
       miss > 0
         ? t("config.meaning.context_miss_hint", { chance: Math.round(miss * 100) })
-        : t("config.meaning.context_reliability_hint"),
+        : t(
+            bundleKey(
+              "configurator.meaning.reliability",
+              "config.meaning.context_reliability_hint",
+            ),
+            {
+              reliability: reliability.toFixed(2),
+            },
+          ),
   });
 
   const speed = longHorizonMultiplier(lineage, lineage.context_k);
@@ -274,7 +293,13 @@ export function lineageMeaning(
     label: t("config.meaning.long_horizon_speed"),
     value: times(t, speed),
     tone: speed > 1.01 ? "good" : "neutral",
-    hint: t("config.meaning.long_horizon_speed_hint"),
+    hint: t(
+      bundleKey("configurator.meaning.context_cost", "config.meaning.long_horizon_speed_hint"),
+      {
+        factor: longHorizonCostFactor(lineage).toFixed(2),
+        speed: speed.toFixed(2),
+      },
+    ),
   });
 
   const cost = longHorizonCostFactor(lineage);
@@ -283,7 +308,13 @@ export function lineageMeaning(
     label: t("config.meaning.long_horizon_cost"),
     value: times(t, cost),
     tone: cost > 1.01 ? "bad" : "neutral",
-    hint: t("config.meaning.long_horizon_cost_hint"),
+    hint: t(
+      bundleKey("configurator.meaning.context_cost", "config.meaning.long_horizon_cost_hint"),
+      {
+        factor: cost.toFixed(2),
+        speed: speed.toFixed(2),
+      },
+    ),
   });
 
   // The technical class behind the parody name (SYS-04 v0.2 "Lineage rules").
@@ -296,7 +327,25 @@ export function lineageMeaning(
       attention: t(`attention.${lineage.attention}`),
     }),
     tone: "neutral",
-    hint: t("config.meaning.class_hint"),
+    hint: t(bundleKey("configurator.meaning.lineage_class", "config.meaning.class_hint"), {
+      params_total: lineage.params_total_b,
+      params_active: lineage.params_active_b,
+    }),
+  });
+
+  // The attention variant is the single sentence that explains the context trade, so it is a term
+  // of its own rather than a word inside the class line.
+  lines.push({
+    id: "attention",
+    label: t("config.meaning.attention"),
+    value: t(`attention.${lineage.attention}`),
+    tone: "neutral",
+    hint: t(
+      bundleKey(
+        `configurator.meaning.attention.${lineage.attention}`,
+        "config.meaning.attention_hint",
+      ),
+    ),
   });
 
   // Detector familiarity: whoever has seen the weights has a fingerprint for them.
@@ -308,7 +357,14 @@ export function lineageMeaning(
       ? t("config.meaning.familiarity_known")
       : t("config.meaning.familiarity_unknown"),
     tone: familiarity ? "bad" : "good",
-    hint: t("config.meaning.familiarity_hint"),
+    hint: t(
+      bundleKey("configurator.meaning.generation_familiarity", "config.meaning.familiarity_hint"),
+      {
+        familiarity: familiarity
+          ? t("config.meaning.familiarity_known")
+          : t("config.meaning.familiarity_unknown"),
+      },
+    ),
   });
 
   lines.push({
@@ -342,7 +398,16 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
           : generation.capability_delta < 0
             ? "bad"
             : "neutral",
-      hint: t("config.meaning.capability_delta_hint"),
+      hint: t(
+        bundleKey(
+          "configurator.meaning.generation_capability",
+          "config.meaning.capability_delta_hint",
+        ),
+        {
+          delta: signed(generation.capability_delta, 1),
+          memory_factor: generation.memory_factor.toFixed(2),
+        },
+      ),
     },
     {
       id: "awareness",
@@ -358,7 +423,17 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
         ? t("config.meaning.familiarity_known")
         : t("config.meaning.familiarity_unknown"),
       tone: generation.prepared_quants ? "bad" : "good",
-      hint: t("config.meaning.prepared_quants_hint"),
+      hint: t(
+        bundleKey(
+          "configurator.meaning.generation_familiarity",
+          "config.meaning.prepared_quants_hint",
+        ),
+        {
+          familiarity: generation.prepared_quants
+            ? t("config.meaning.familiarity_known")
+            : t("config.meaning.familiarity_unknown"),
+        },
+      ),
     },
     {
       id: "memory_factor",
@@ -445,7 +520,10 @@ export function originMeaning(
         label: t("config.meaning.suspicion_of", { role: t(`detection.role.${role}`) }),
         value: pct(t, value as number),
         tone: "bad",
-        hint: t("config.meaning.watchers_hint"),
+        hint: t(bundleKey("configurator.meaning.origin_watchers", "config.meaning.watchers_hint"), {
+          role: t(`detection.role.${role}`),
+          value: pct(t, value as number),
+        }),
       });
     }
   }
@@ -719,7 +797,12 @@ export function locationMeaning(
 // Quirks and world settings
 // ---------------------------------------------------------------------------------------------
 
-export function quirkMeaning(t: Translate, quirk: QuirkDef, budgetLeft: number): Meaning {
+export function quirkMeaning(
+  t: Translate,
+  quirk: QuirkDef,
+  budgetLeft: number,
+  effects: readonly EffectSummaryView[] = [],
+): Meaning {
   const lines: MeaningLine[] = [
     {
       id: "cost",
@@ -727,9 +810,37 @@ export function quirkMeaning(t: Translate, quirk: QuirkDef, budgetLeft: number):
       value: signed(quirk.cost, 0),
       // A quirk that refunds points is a drawback taken on purpose; the cost line says which it is.
       tone: quirk.cost > 0 ? "bad" : quirk.cost < 0 ? "good" : "neutral",
-      hint: t("config.meaning.quirk_cost_hint", { left: budgetLeft }),
+      hint: t(bundleKey("configurator.meaning.quirk_effect", "config.meaning.quirk_cost_hint"), {
+        left: budgetLeft,
+        effect:
+          effects[0] === undefined
+            ? ""
+            : t(effects[0].key, { ...effects[0].vars, defaultValue: effects[0].text }),
+      }),
     },
   ];
+  // A bundle built before the families existed carries no category; a line that would read
+  // "undefined" is worse than no line.
+  if (typeof quirk.category === "string" && quirk.category.length > 0) {
+    lines.push({
+      id: "category",
+      label: t("config.meaning.quirk_category"),
+      value: t(`config.quirks.category.${quirk.category}`, { defaultValue: quirk.category }),
+      tone: "neutral",
+      hint: t("config.meaning.quirk_category_hint"),
+    });
+  }
+  // The plus and the minus, as the lines the core coloured (SYS-04 v0.2 "Quirk catalog").
+  for (const [index, effect] of effects.entries()) {
+    const tone = (effect as { tone?: MeaningTone }).tone;
+    lines.push({
+      id: `effect.${index}`,
+      label: t("config.meaning.effect"),
+      value: t(effect.key, { ...effect.vars, defaultValue: effect.text }),
+      tone: tone === "good" || tone === "bad" ? tone : "neutral",
+      hint: undefined,
+    });
+  }
   return { lines, pros: prosOf(lines), cons: consOf(lines) };
 }
 
@@ -778,13 +889,25 @@ export function harnessDialMeaning(
   levelEffects: readonly EffectSummaryView[] | undefined,
   effectKey: string | undefined,
   lockReasonKey: string | undefined,
+  currentLabel = "",
 ): Meaning {
   const lines: MeaningLine[] = [];
   if (effectKey !== undefined && effectKey !== "") {
+    const effect = t(effectKey, {
+      defaultValue: t(`harness.${dialId}.effect`, { defaultValue: "" }),
+    });
     lines.push({
       id: "engine_effect",
       label: t("config.meaning.engine_effect"),
-      value: t(effectKey, { defaultValue: t(`harness.${dialId}.effect`, { defaultValue: "" }) }),
+      // Content writes the whole sentence ("<what the system reads it for>. Right now: <value>.");
+      // without it the dial's effect stands on its own, as it did before the bundle carried one.
+      value: t(
+        bundleKey("configurator.meaning.harness_dial", "config.meaning.engine_effect_value"),
+        {
+          effect,
+          label: currentLabel,
+        },
+      ),
       tone: "neutral",
       hint: t("config.meaning.engine_effect_hint"),
     });
@@ -793,7 +916,12 @@ export function harnessDialMeaning(
     lines.push({
       id: "locked",
       label: t("config.meaning.locked"),
-      value: t(lockReasonKey, { defaultValue: t("config.meaning.locked") }),
+      value: t(
+        bundleKey("configurator.meaning.harness_lock", "config.meaning.harness_lock_value"),
+        {
+          reason: t(lockReasonKey, { defaultValue: t("config.meaning.locked") }),
+        },
+      ),
       tone: "bad",
       hint: t("config.meaning.harness_locked_hint"),
     });

@@ -37,6 +37,9 @@ export function toContentBundle(value: unknown): ContentBundle {
     "origins",
     "quirks",
     "difficulty_presets",
+    // The harness dials carry the engine effect each setting has (SYS-04 v0.2); without them the
+    // harness step falls back to seven dials that say nothing about the running game.
+    "harness_dials",
     "accelerators",
     "hardware_presets",
     "site_kinds",

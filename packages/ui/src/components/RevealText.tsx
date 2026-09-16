@@ -107,7 +107,15 @@ export function RevealText({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [captureKeys, done, complete]);
 
-  const wasDone = useRef(done);
+  /*
+   * `onDone` fires on the edge into "done", including the very first render.
+   *
+   * Seeding this with `done` looked tidier and was wrong: under reduced motion, and for an
+   * `instant` text, the paragraph is complete on its first frame, the edge never arrives and a
+   * window waiting for it never learns that its text is on screen. The opening then refused to
+   * turn its page from the keyboard for exactly the players who had asked for less motion (R12).
+   */
+  const wasDone = useRef(false);
   useEffect(() => {
     if (done && !wasDone.current) {
       onDone?.();

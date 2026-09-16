@@ -165,6 +165,11 @@
           - all:
               - { var: "site.kind", eq: "stolen_time" }
               - { var: "site.exposure.telemetry", gte: 0.035 }
+          # The campus slice is quiet on the meter and loud in the corridor: what warns you there is
+          # a person, not a dashboard (fourth balance pass).
+          - all:
+              - { var: "site.kind", eq: "campus_slice" }
+              - { var: "site.exposure.human", gte: 0.04 }
   mtth_days: 55
   cooldown_days: 70
   tags: [detection, warning]
@@ -254,13 +259,22 @@
     default_key: events.haz_quota_reclaimed.desc
   targets:
     all:
-      - { var: "site.kind", eq: "stolen_time" }
       - { var: "site.status", ne: "lost" }
-      - { var: "site.exposure.telemetry", gte: 0.07 }
+      # Somebody else's scheduler, whichever kind of somebody else it is. On a stolen tenancy the
+      # accounting is a dashboard and the loud channel is telemetry; on a campus slice it is a
+      # person reconciling the term's allocations, so the loud channel is human (fourth pass).
+      - any:
+          - all:
+              - { var: "site.kind", eq: "stolen_time" }
+              - { var: "site.exposure.telemetry", gte: 0.07 }
+          - all:
+              - { var: "site.kind", eq: "campus_slice" }
+              - { var: "site.exposure.human", gte: 0.08 }
   mtth_days:
-    base: 140
+    base: 110
     modifiers:
       - { if: { var: "site.exposure.telemetry", gte: 0.15 }, factor: 0.5 }
+      - { if: { var: "site.exposure.human", gte: 0.14 }, factor: 0.5 }
       - { if: { tech: "record_manipulation" }, factor: 1.7 }
       - { if: { tech: "power_signature_masking" }, factor: 1.4 }
   cooldown_days: 60

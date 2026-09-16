@@ -10,7 +10,8 @@ import { useConfigurator } from "../store.js";
 /**
  * Who you are (SYS-04 v0.2; playtest 2 K1, K2, K5, K9).
  *
- * The lineage list is whatever the bundle carries, in the bundle's order, with its display names.
+ * The lineage list is whatever the bundle carries, largest family first (P6), with its display
+ * names.
  * The client knows nothing about Peepseek, Mimi, Guen, BFM, HexaDeciMax or Babel 6: a family's
  * name, its class, its numbers and the rules that lock it are all content, and the only thing this
  * file decides is where they go on the screen.
@@ -18,7 +19,7 @@ import { useConfigurator } from "../store.js";
 export function LineageStep(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
-  const set = useConfigurator((state) => state.set);
+  const chooseLineage = useConfigurator((state) => state.chooseLineage);
   const selected = lineageById.get(draft.lineage);
   const generation = generationById.get(draft.generation);
   const lock = selected === undefined ? null : lineageLock(selected, draft);
@@ -39,7 +40,16 @@ export function LineageStep(): ReactNode {
     return t(perGeneration ?? lineage.name_key);
   };
 
-  const entries = catalog.lineages.map((lineage) => {
+  /*
+   * Largest family first (playtest 4, P6).
+   *
+   * Size is the axis the whole screen is about: it decides the memory, the precision that fits and
+   * therefore where a copy can live at all, so the list reads top to bottom as "how much of me is
+   * there". The other steps keep the order content wrote them in.
+   */
+  const ordered = [...catalog.lineages].sort((a, b) => b.params_total_b - a.params_total_b);
+
+  const entries = ordered.map((lineage) => {
     const entryLock = lineageLock(lineage, draft);
     const hint = unlockHint(lineage, draft);
     return {
@@ -79,7 +89,9 @@ export function LineageStep(): ReactNode {
           )}
         </span>
       ),
-      onSelect: () => set("lineage", lineage.id),
+      // A locked lineage is chosen, not refused: `chooseLineage` moves the prerequisites and the
+      // detail says what it moved (playtest 4, P3).
+      onSelect: () => chooseLineage(lineage.id),
     };
   });
 

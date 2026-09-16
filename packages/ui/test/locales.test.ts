@@ -4,7 +4,6 @@ import { IntlMessageFormat } from "intl-messageformat";
 import { describe, expect, it } from "vitest";
 import { contentBundle } from "../src/content/bundle.js";
 import uiEn from "../src/locales/en.json";
-import fallbackEn from "../src/locales/en-fallback.json";
 
 function sourceFiles(directory: string, out: string[] = []): string[] {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -18,11 +17,7 @@ function sourceFiles(directory: string, out: string[] = []): string[] {
   return out;
 }
 
-const known = new Set([
-  ...Object.keys(uiEn),
-  ...Object.keys(fallbackEn),
-  ...Object.keys(contentBundle.locales.en),
-]);
+const known = new Set([...Object.keys(uiEn), ...Object.keys(contentBundle.locales.en)]);
 
 describe("locale resources", () => {
   it("resolves every static t() key used in the client", () => {
@@ -41,7 +36,7 @@ describe("locale resources", () => {
 
   it("parses every English message as ICU", () => {
     const broken: string[] = [];
-    for (const [key, message] of Object.entries({ ...uiEn, ...fallbackEn })) {
+    for (const [key, message] of Object.entries(uiEn)) {
       try {
         new IntlMessageFormat(message, "en");
       } catch (error) {

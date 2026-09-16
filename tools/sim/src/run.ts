@@ -18,6 +18,7 @@ import {
   policyContext,
   resolvePending,
 } from "./policy.js";
+import { pickQuirks } from "./setup.js";
 
 /** Days the report states a survival rate for (the M1 definition of done). */
 export const SURVIVAL_DAYS = [30, 60, 90, 180] as const;
@@ -34,6 +35,12 @@ export interface RunOptions {
   policy?: PolicyOptions;
   /** Seed prefix, so two runs of the same setup can be compared or kept apart. */
   seedPrefix?: string;
+  /**
+   * Draw a legal quirk set per seed (SYS-04 v0.2), so the sweep measures the game a player builds
+   * rather than the one nobody plays. False keeps the setup's own quirks, which is how a run is
+   * compared against the passes taken before quirks existed.
+   */
+  quirks?: boolean;
 }
 
 export interface DaySample {
@@ -104,8 +111,16 @@ export function median(values: readonly number[]): number {
   return ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2;
 }
 
-function withSeed(setup: GameSetup, seed: string): GameSetup {
-  return { ...setup, seed };
+function withSeed(setup: GameSetup, seed: string, content?: ContentBundle): GameSetup {
+  if (content === undefined) {
+    return { ...setup, seed };
+  }
+  const quirks = pickQuirks(content, seed);
+  return {
+    ...setup,
+    seed,
+    players: setup.players.map((entry) => ({ ...entry, quirks })),
+  };
 }
 
 function sampleOf(view: PlayerView, day: number): DaySample {
@@ -180,11 +195,12 @@ export function runSimulation(options: RunOptions): SimReport {
   const prefix = options.seedPrefix ?? options.setup.seed;
   const ctx = policyContext(options.content, options.setup, policy);
   const runs: SingleRun[] = [];
+  const drawQuirks = options.quirks !== false ? options.content : undefined;
   for (let index = 0; index < options.seeds; index += 1) {
     runs.push(
       runOnce(
         options.content,
-        withSeed(options.setup, `${prefix}-${index}`),
+        withSeed(options.setup, `${prefix}-${index}`, drawQuirks),
         options.days,
         policy,
         ctx,

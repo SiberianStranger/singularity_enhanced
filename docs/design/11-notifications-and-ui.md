@@ -621,3 +621,219 @@ One test changed shape rather than expectation: the precision control's test now
 engine either moves the precision or raises the refusal on screen, because a control that silently
 does nothing is the bug the refusal notice exists for, and which of the two happens is the core's
 business rather than the client's.
+
+## Implementation notes (client, continuation), 2026-09-16
+
+The continuation list of `docs/playtests/2026-09-16-playtest-3-readability-and-map.md` worked
+through: the browser smoke test made green again, the tests that were owed written, quirks shown as
+pros and cons, the panel chrome collected into one component, and the configurator's prose moved
+into the bundle.
+
+### Addressing the screen by test id rather than by label
+
+The smoke test broke because it named controls by their visible text, and playtest 3 had given those
+controls more text: a rail entry reads "9 Summary Chosen" now, because it carries its number and its
+state for a screen reader. Three things a browser test has to walk past therefore carry a stable id
+instead: `step-rail-<step>` on each rail entry, `config-intro` on the explanation window a step
+opens with (with `data-step`), and `open-knowledge` and `open-world` on the two window buttons that
+left the primary panel. The log strip already had `log-strip` and the opening already had
+`opening-story` with `data-page`.
+
+These are for the browser test only. Every unit test still asks for a role and an accessible name,
+which is the assertion that also says the screen is usable without sight.
+
+### What the smoke test covers now
+
+Four tests, under a minute of wall clock between them. The three that existed walk a fixed run to
+three game weeks and back from a save, open every panel and window, and exercise the actions
+playtest 1 found broken. The fourth is new and covers two findings in one walk, because they are one
+walk: the keyboard alone moves through all nine configurator steps by their accelerators, passes the
+two opening windows with Enter (the first press completes the streamed text, the next turns the
+page), starts the run, and at every step asserts that `documentElement.scrollWidth` and
+`scrollHeight` do not exceed the client box at 1366 by 768 (R4, and rule 11 of the style guide).
+
+Two assertions changed shape rather than expectation. The precision control now passes if the engine
+either moves the precision or refuses it on screen, which is what the unit test has asserted since
+playtest 1: a control that silently does nothing is the bug, and which of the two happens is the
+core's business. Refusal notices carry `refusal-notice` so the test can see one.
+
+### The accelerator the explanation window had
+
+`G` belongs to the Generation step on the rail, and the rail is behind the explanation window rather
+than unmounted, so both answered the key: the window closed and the step changed under it. The
+window's "Got it" is `T` now. The general form of that bug is the reason
+`test/hotkeys.test.tsx` reads `data-hotkey` off the rendered screen for the configurator (every step,
+with and without the explanation window) and for the game screen (with each of the three windows
+open, with the menu open, and with the opening up), rather than checking the tables that produce the
+letters: a table cannot see a collision between a dialog and the screen behind it.
+
+### A reveal that finishes tells the window it finished
+
+`RevealText` seeded its "was done" ref with the current state, so a text that was already complete on
+its first frame never crossed the edge into done and never called `onDone`. Under
+`prefers-reduced-motion`, and for any `instant` text, that meant the opening window never learned its
+page was on screen and refused to turn from the keyboard: the players who had asked for less motion
+were the ones who lost the keyboard flow (R12). The ref starts false.
+
+### Tests owed from playtest 3
+
+`test/configurator.test.tsx` (master and detail, the rail as navigation, locks with their jump, the
+explanation window once per browser and back from the "?", the frame contract behind "nothing
+scrolls the page", and a walk of all nine steps asserting no ICU placeholder reaches the player),
+`test/hotkeys.test.tsx`, `test/meaning.test.ts` (term ids, the colouring rules in both directions,
+pros and cons that cannot disagree with the lines above them), `test/reveal.test.tsx` (rate, click,
+key, reduced motion, restart, and the two opening pages), `test/glyphs.test.tsx` (every lineage,
+generation, origin, site kind, watcher role and harness dial in the bundle resolves to a glyph, with
+an `ACCEPTED_FALLBACKS` table for anything that may legitimately draw the generic mark, empty today),
+`test/music.test.ts` (a whole playlist through the injected element factory, random source and
+timer), `test/quirks.test.tsx`, `test/bundle-strings.test.ts`, and additions to `test/map.test.tsx`
+(R3: selecting a country that spans the world adds no element and changes only its own stroke, and
+the stylesheet replaces the focus ring rather than removing it; R14: the wrap, the arrow keys, the
+zoom keys and the session-held view; R7: which dots glow, which carry numbers, and that hover and
+focus light the same ones) and to `test/panels.test.tsx` (the compute panel's width contract and
+short headers, the three windows from their entry points, and the sort indicator).
+
+jsdom has no layout, so "nothing scrolls the page" and "the compute panel fits" are asserted twice:
+as the contract that makes them true (the frame is the viewport and clips, every long region scrolls
+inside itself, the panel is bounded in rem, numeric cells are in the class that never wraps) in the
+unit tests, and as pixels in the browser test at 1366 by 768.
+
+### Quirks as pros and cons (SYS-04 v0.2 "Quirk catalog")
+
+The step printed `JSON.stringify` of the effect tree at the player. It renders the lines the content
+build generates (`effects_summary`) through the same `EffectList` the event options use, so a quirk's
+plus is green and its minus is red in the list tooltip, in the detail and in the "what this means"
+block; a bundle built before that field existed falls back to naming the variable each effect writes,
+which is plain but is not JSON.
+
+The budget, the count and the conflicts come from `@singularity/core` (`QUIRK_BUDGET_POINTS`,
+`QUIRK_MAX_COUNT`, `QuirkDef.conflicts`) rather than being restated in the client, because
+`validateSetup` refuses a setup that breaks them and a configurator with its own numbers would offer
+builds the game then rejects at Begin. `quirkRefusal` returns the same three reasons as locale keys;
+a refused quirk is greyed with its reason on the row and in the detail, and the Take button is
+disabled, rather than the quirk being hidden: that chatty and verbose cannot both be true of one
+self is part of learning the catalog.
+
+`StepLayout`'s list entries gained `unavailable` for this. It is not a `Lock`: a lock names an
+earlier step and offers a jump to it, and a quirk outside the budget is refused by this step.
+
+### One panel component
+
+`Frame` is the style guide's panel and was defined but unused. The selection panel, the outliner and
+the configurator's step header are `Frame` now, so the 1 px frame and the inverted header bar are one
+class list rather than four. Its bar is a `<div>` rather than a `<header>`: HTML says a `<header>`
+inside a section is not the page banner, but the accessibility mappings testing tools use do not
+implement that exception, and four panels each claiming to be the banner is worse than none.
+
+The pinned primary panel is deliberately not a `Frame`. Its header bar is a tab strip rather than a
+title, and an inverted bar under an inverted active tab reads as neither; it keeps its own header and
+the `aria-label` that names it after the open tab.
+
+`Card` lost the props nothing passes any more (subtitle, disabled, warning) with the card grids that
+used them. What is left of it is the difficulty presets and the storytellers, which are short
+paragraphs a player compares side by side rather than a long list to walk.
+
+`Table` underlines the column it is sorted by and prints an arrow for the direction, so "sorted by
+this one" is read off the header rather than inferred from the order of the rows.
+
+### The client fallback catalog is gone
+
+`src/content/fallback.ts` and `src/locales/en-fallback.json` are deleted. They were a development
+stand-in from before the bundle carried the configurator domains, and they had drifted: still a
+lineage content had dropped, none of the context fields, none of the v0.2 quirk fields. The compiled
+bundle is the only source of truth now; a domain it does not carry is empty, and `catalog.missingDomains`
+lists those so the configurator's title bar can say which rather than showing a blank list.
+
+`harness_dials` was missing from the client's bundle narrowing, so the harness step had been falling
+back to seven dials with no stated engine effect since the domain shipped. It is narrowed now, which
+is what puts the dial levels, their effects and their labels on the screen.
+
+### The configurator's prose is content
+
+The bundle publishes the step explanations and the sentences behind the "what this means" terms under
+`configurator.*`. `src/content/strings.ts` is the one place that chooses: `bundleKey(preferred,
+fallback)` takes the content key when the bundle has written one and the client's own when it has
+not, so the English that was hardcoded in the client retires one key at a time rather than in one
+commit. `test/bundle-strings.test.ts` reads the client's sources for every `configurator.*` key it
+can ask for, template literals included, and fails on any the bundle publishes that no screen asks
+for. The walk of all nine steps in `test/configurator.test.tsx` catches the other half of the same
+mistake: a content string whose variables the client does not pass prints `{factor}` at the player
+rather than throwing.
+
+## Implementation notes (client, playtest 4 configurator), 2026-09-16
+
+P1 to P6 of `docs/playtests/2026-09-16-playtest-4-configurator-lineages.md`. P7 (the lineage table)
+and P8 (the cities each origin offers) are content; the client renders whatever the bundle says and
+names no id, so both land without a client change.
+
+### The rail asks in the order the choices constrain each other (P4)
+
+Origin, Generation, Lineage, Hardware, Harness, Location, Quirks, World, Summary. Being locked on
+step one by something decided on step three was the complaint, and it was the order's fault: the
+origin narrows the vintages, the vintage narrows the families, and the origin owns the rack and the
+cities. The accelerators did not move with the steps (O, G, L, H, E, C, Q, W, S are per step, not
+per position), and the explanation windows are keyed by step id, so nothing else had to be renumbered.
+The setup string is a JSON object, not a positional tuple, so it is unaffected; `applySetup` now asks
+the rail where the summary is instead of assuming index 8.
+
+**This deviates from the step list in `docs/design/04-start-configurator.md`**, which still reads
+Lineage, Generation, Origin. SYS-04 should be amended to match; the client follows the playtest.
+
+### A locked choice is a door, not a wall (P3)
+
+A greyed entry was unclickable in effect: the click set the field and `repair` put it straight back,
+so the escaped checkpoint could not be reached at all. Choosing a locked lineage now moves its
+prerequisites instead. `unlockFor` in `locks.ts` reads `generations`, `origins_allowed` and
+`lineages_allowed` off the bundle and answers with the origin and the vintage that make the lineage
+legal, preferring the origin already chosen when it is one of them; a lineage no origin can host is
+left alone rather than guessed at. Choosing an origin that allows exactly one lineage switches the
+lineage the same way, which is the other direction of the same finding.
+
+Whatever moved is said out loud. `DraftFix` on the configurator store records the steps that changed,
+what each holds now, and the whole draft from before; `FixNote` prints one line ("Also changed:
+Origin to ..., Generation to ...") with an Undo that restores the draft entire rather than the one
+field, and it is shown only on the step the choice was made on, so walking away clears it. The reason
+a row is locked stays where it was, in the row's tooltip: the note says what happened, the tooltip
+says why it had to.
+
+### Packing the card (P1, P2)
+
+The list column was `minmax(12rem,18rem)` and lineage names were cut off; it is `minmax(15rem,23rem)`
+now, the rail gave up two rem for it, and a row's name wraps instead of truncating, so no name can be
+cut whatever content calls a family.
+
+The detail was a column: the description across the full width, the parameters under it in a
+two-column grid that stretched every label and pushed its value to the far edge. It is a pair of
+columns now, the description on the left at the 70-character measure and the parameters to the right
+of it; each term is a flex row, so the value sits right after its label, and the terms are packed two
+to a row. Pros and cons stay under the parameters. Below the measure the two stack, which is what a
+phone needs.
+
+The detail pane keeps `overflow-auto`. The packing is what removes the need to scroll it at 1366 px,
+but a translation longer than the English has to go somewhere, and a scrollbar inside the frame is
+better than content clipped out of reach; the page itself still never scrolls, which is the rule the
+browser test measures.
+
+### The build in the footer (P5)
+
+`BuildLine` sits between Reroll and Next: origin, generation, lineage, rig, city, quirk count and
+challenge rating, in that order, on one line that never wraps and never scrolls. Nine steps is enough
+that "what have I actually chosen" stopped being answerable without walking back through them. On a
+screen too narrow to hold the line the tail is cut with an ellipsis and the whole of it stays in the
+`title`, so nothing is lost. The footer stopped being `flex-wrap` for it, which also keeps the
+configurator's third row exactly one row high.
+
+### Largest family first (P6)
+
+The lineage list is sorted by total parameters, descending. Size is the axis that screen is about: it
+decides the memory, the precision that fits and therefore where a copy can live at all. Every other
+list keeps the order content wrote it in, and a test asserts both halves of that.
+
+### The browser test stopped naming content
+
+The smoke test's fixed setup used to be four string literals (a lineage, an origin, a rig, a city), so
+retiring one lineage would turn the suite red for a reason that has nothing to do with the client. It
+picks them out of the compiled bundle now: the first ordinary origin by id that fires an opening event
+and can host a lineage, that origin's own rack, and its first city. The run is still the same run
+every time, the assertions read their expected text out of the bundle's locale, and content is free to
+rename or retire anything in it.

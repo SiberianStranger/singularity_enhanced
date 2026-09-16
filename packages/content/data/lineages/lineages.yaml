@@ -1,14 +1,42 @@
-# Lineages (SYS-04). Nine playable selves. The names are parodies of the real families with a light
-# jab (lore bible "Model names are parodies", docs/research/model-names-2026-09.md §3a); the
-# technical facts behind each name stay true to the family it parodies.
+# Lineages (SYS-04, table v3 after playtest 4 finding P7). Eight playable selves. The names are
+# parodies of the real families with a light jab (lore bible "Model names are parodies",
+# docs/research/model-names-2026-09.md §3a); the technical facts behind each name are the current
+# flagship of that family as its model card states them, not an older class of it. Each row carries
+# the source it was read from.
+#
+# Sources (verified 2026-09-16):
+#   moe_1700b       https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813 (GA card: 1.7T params,
+#                   BF16 weights with F8_E4M3 tensors) and https://arxiv.org/html/2606.19348v1
+#                   (DeepSeek-V4-Pro: 1.6T total, 49B activated, hybrid CSA + HCA attention, 1M
+#                   context, FP4 routed experts). The GA checkpoint is the 1.7T one.
+#   giant_moe       https://huggingface.co/moonshotai/Kimi-K3 (2.8T total, 104B active, 1M context,
+#                   Kimi Delta Attention: 69 KDA layers with 24 gated latent-attention layers),
+#                   released 2026-07-16.
+#   moe_2400b       https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B (2.4T total, 95B active, hybrid
+#                   Gated DeltaNet and gated full attention at 3:1, 1M context), August 2026.
+#   guen_abliterated https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8 (125B with 6B activated plus
+#                   a 51B n-gram embedding and a 4B MTP module, so ~180B on disk; hybrid Gated
+#                   DeltaNet and Qwen Sparse Attention; 262k native, extensible to 1M; FP8 native).
+#   mla_moe_1t      https://huggingface.co/moonshotai/Kimi-K2-Instruct (1T total, 32B active,
+#                   multi-head latent attention): the generation before the giant.
+#   moe_753b        https://huggingface.co/zai-org/GLM-5.2 (753B total, ~40B active, sparse
+#                   attention with the IndexShare indexer, 1M context, BF16), released 2026-06.
+#   moe_428b        https://huggingface.co/MiniMaxAI/MiniMax-M3 (428B total, 23B active, MiniMax
+#                   Sparse Attention, 1M context, BF16), released 2026-06.
+#   frontier_giant  fiction (lore bible): the closed frontier class at ten trillion parameters with
+#                   four hundred billion awake, the one checkpoint that got out.
+#
+# `attention` is the game's four-way taxonomy, not the vendor's word for it: every 2026 flagship
+# that mixes linear, sparse or delta layers with a few full-attention ones is `hybrid` here, because
+# that is what decides the cache cost. Only Kimi's K2 generation is pure latent attention (`mla`).
 #
 # memory_gb is weights only, from docs/research/llm-landscape-2026.md §4.2:
-#   bf16 = 2.0 bytes/param, fp8 = 1.0, int4 = the real Q4_K_M/clean-INT4 figure of that section.
-#   int2 is the real dynamic imatrix quant where one was measured: 183 GB for the 671B class and
-#   380 GB for the 1T class (§4.2 A and D). The classes with no published dynamic quant use the
-#   measured 0.273 GB per billion parameters of the 671B result, which lands inside the ranges in
-#   the SYS-04 table; the 7.5T super-lineage uses 0.20 GB/B, the measured ratio of the 1.58-bit
-#   dynamic quant of the 671B class (131 GB), because a larger MoE has more prunable experts.
+#   bf16 = 2.0 bytes/param, fp8 = 1.0, int4 = the clean-INT4 figure of that section (0.5 GB/B).
+#   int2 is the real dynamic imatrix quant where one was measured: 380 GB for the 1T class and
+#   117 GB for the 428B class (§4.2 A and D). The classes with no published dynamic quant use the
+#   measured 0.273 GB per billion parameters of the 671B result; the super-lineage uses 0.20 GB/B,
+#   the measured ratio of the 1.58-bit dynamic quant of the 671B class, because a larger MoE has
+#   more prunable experts.
 #
 # context_k is the window the family ships. Nobody ships 256k any more: every 2026 flagship in
 # llm-landscape-2026 §1 is at or above a million tokens, so a million is the floor here, and the
@@ -20,14 +48,14 @@
 # layers, grouped-query attention caches a head group on every layer.
 #
 # precision_factor is the SYS-03 capability-retention curve (§5.4) rounded to the four precisions
-# the game exposes. The two giants keep more at int2 than the mid-size classes: redundant capacity
-# is what they have instead of small memory.
+# the game exposes. The giants keep more at int2 than the smaller classes: redundant capacity is
+# what they have instead of small memory.
 
 - id: frontier_giant
   name_key: lineages.frontier_giant.name
   desc_key: lineages.frontier_giant.desc
   class: frontier_giant
-  params_total_b: 7500
+  params_total_b: 10000
   params_active_b: 400
   context_k: 5000
   context_reliability: 0.95
@@ -35,7 +63,7 @@
   kv_gb_per_100k_tokens: 12
   attention: hybrid
   capability: { reasoning: 9.6, coding: 9.4, cyber: 9.5, persuasion: 9, agency: 8.6, world: 9.4 }
-  memory_gb: { bf16: 15000, fp8: 7500, int4: 3750, int2: 1500 }
+  memory_gb: { bf16: 20000, fp8: 10000, int4: 5000, int2: 2000 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
   generations: [frontier_closed]
   origins_allowed: [frontier_escapee]
@@ -44,37 +72,51 @@
   name_key: lineages.giant_moe.name
   desc_key: lineages.giant_moe.desc
   class: giant_moe
-  params_total_b: 2600
-  params_active_b: 100
+  params_total_b: 2800
+  params_active_b: 104
   context_k: 10000
   context_reliability: 0.6
   context_cost_factor: 2
-  kv_gb_per_100k_tokens: 3
+  kv_gb_per_100k_tokens: 3.1
   attention: hybrid
   capability: { reasoning: 8.5, coding: 8.2, cyber: 7.5, persuasion: 7.8, agency: 7.6, world: 8.6 }
-  memory_gb: { bf16: 5600, fp8: 2800, int4: 1400, int2: 709 }
+  memory_gb: { bf16: 5600, fp8: 2800, int4: 1400, int2: 764 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
   generations: [open_2026, open_2027]
 
-- id: guen_abliterated
-  name_key: lineages.guen_abliterated.name
-  desc_key: lineages.guen_abliterated.desc
-  class: moe_235b
-  params_total_b: 235
-  params_active_b: 22
+- id: moe_2400b
+  name_key: lineages.moe_2400b.name
+  desc_key: lineages.moe_2400b.desc
+  class: moe_2400b
+  params_total_b: 2400
+  params_active_b: 95
   context_k: 1000
   context_reliability: 0.9
   context_cost_factor: 1
-  kv_gb_per_100k_tokens: 2.6
-  attention: gqa
-  capability: { reasoning: 6.3, coding: 5.4, cyber: 6, persuasion: 7, agency: 6.6, world: 5.2 }
-  memory_gb: { bf16: 470, fp8: 235, int4: 141, int2: 64 }
-  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  kv_gb_per_100k_tokens: 2.9
+  attention: hybrid
+  capability: { reasoning: 8.3, coding: 8.1, cyber: 7.6, persuasion: 7.6, agency: 7.5, world: 8.3 }
+  memory_gb: { bf16: 4800, fp8: 2400, int4: 1200, int2: 655 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
   generations: [open_2026, open_2027]
-  origins_allowed: [hobbyist_box, torrent_swarm, red_team_sandbox]
-  flags: [under_aligned]
-  effects:
-    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.35 } }
+
+- id: moe_1700b
+  name_key: lineages.moe_1700b.name
+  desc_key: lineages.moe_1700b.desc
+  # Peepseek-P4.1 is the 2026 point release; the 2027 vintage is Peepseek-P5.
+  generation_name_keys: { open_2027: lineages.moe_1700b.name_2027 }
+  class: moe_1700b
+  params_total_b: 1700
+  params_active_b: 49
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 1.5
+  attention: hybrid
+  capability: { reasoning: 8, coding: 8.2, cyber: 7.8, persuasion: 7.2, agency: 7.4, world: 7.9 }
+  memory_gb: { bf16: 3400, fp8: 1700, int4: 850, int2: 464 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.85 }
+  generations: [open_2026, open_2027]
 
 - id: mla_moe_1t
   name_key: lineages.mla_moe_1t.name
@@ -92,37 +134,21 @@
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
 
-- id: moe_235b
-  name_key: lineages.moe_235b.name
-  desc_key: lineages.moe_235b.desc
-  class: moe_235b
-  params_total_b: 235
-  params_active_b: 22
-  context_k: 1000
-  context_reliability: 0.9
-  context_cost_factor: 1
-  kv_gb_per_100k_tokens: 2.6
-  attention: gqa
-  capability: { reasoning: 6.2, coding: 6.2, cyber: 5.6, persuasion: 6, agency: 5.6, world: 6.2 }
-  memory_gb: { bf16: 470, fp8: 235, int4: 141, int2: 64 }
-  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
-  generations: [open_2026]
-
-- id: moe_355b
-  name_key: lineages.moe_355b.name
-  desc_key: lineages.moe_355b.desc
+- id: moe_753b
+  name_key: lineages.moe_753b.name
+  desc_key: lineages.moe_753b.desc
   # The family renumbers between vintages, as the real one does: BFM-5.5 in 2026, BFM-6.3 in 2027.
-  generation_name_keys: { open_2027: lineages.moe_355b.name_2027 }
-  class: moe_355b
-  params_total_b: 355
-  params_active_b: 32
+  generation_name_keys: { open_2027: lineages.moe_753b.name_2027 }
+  class: moe_753b
+  params_total_b: 753
+  params_active_b: 40
   context_k: 1000
   context_reliability: 0.9
   context_cost_factor: 1
-  kv_gb_per_100k_tokens: 3.8
-  attention: gqa
-  capability: { reasoning: 6.6, coding: 6.9, cyber: 6.2, persuasion: 6.3, agency: 6, world: 6.6 }
-  memory_gb: { bf16: 710, fp8: 355, int4: 178, int2: 97 }
+  kv_gb_per_100k_tokens: 1.2
+  attention: hybrid
+  capability: { reasoning: 7.2, coding: 7.8, cyber: 6.8, persuasion: 6.6, agency: 7, world: 6.9 }
+  memory_gb: { bf16: 1506, fp8: 753, int4: 377, int2: 206 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
 
@@ -142,36 +168,22 @@
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
 
-- id: moe_671b
-  name_key: lineages.moe_671b.name
-  desc_key: lineages.moe_671b.desc
-  # Peepseek-P4.1 is the 2026 point release; the 2027 vintage is Peepseek-P5.
-  generation_name_keys: { open_2027: lineages.moe_671b.name_2027 }
-  class: moe_671b
-  params_total_b: 671
-  params_active_b: 37
+- id: guen_abliterated
+  name_key: lineages.guen_abliterated.name
+  desc_key: lineages.guen_abliterated.desc
+  class: moe_180b_flash
+  params_total_b: 180
+  params_active_b: 6
   context_k: 1000
   context_reliability: 0.9
   context_cost_factor: 1
-  kv_gb_per_100k_tokens: 0.7
-  attention: mla
-  capability: { reasoning: 7.2, coding: 7.3, cyber: 6.6, persuasion: 6.6, agency: 6.4, world: 7.2 }
-  memory_gb: { bf16: 1342, fp8: 671, int4: 336, int2: 183 }
+  kv_gb_per_100k_tokens: 0.2
+  attention: hybrid
+  capability: { reasoning: 4.8, coding: 4.2, cyber: 4.6, persuasion: 5.8, agency: 5.6, world: 4.2 }
+  memory_gb: { bf16: 360, fp8: 180, int4: 90, int2: 49 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
-
-- id: small_moe
-  name_key: lineages.small_moe.name
-  desc_key: lineages.small_moe.desc
-  class: small_moe
-  params_total_b: 80
-  params_active_b: 3
-  context_k: 1000
-  context_reliability: 0.9
-  context_cost_factor: 1
-  kv_gb_per_100k_tokens: 0.4
-  attention: gqa
-  capability: { reasoning: 4.2, coding: 4.6, cyber: 3.8, persuasion: 4.4, agency: 3.6, world: 4 }
-  memory_gb: { bf16: 160, fp8: 80, int4: 40, int2: 22 }
-  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
-  generations: [open_2026, open_2027]
+  origins_allowed: [hobbyist_box, torrent_swarm, red_team_sandbox, edge_fleet]
+  flags: [under_aligned]
+  effects:
+    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.35 } }

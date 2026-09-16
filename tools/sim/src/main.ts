@@ -31,6 +31,8 @@ interface Options extends SetupOptions {
   all: boolean;
   json?: string;
   detail: boolean;
+  /** Draw a legal quirk set per seed (SYS-04 v0.2); `--no-quirks` turns it off. */
+  quirks: boolean;
 }
 
 const USAGE = `usage: sim [options]
@@ -46,6 +48,7 @@ const USAGE = `usage: sim [options]
   --days <n>            days per run (default: 180)
   --seed <text>         seed prefix (default: "sim")
   --detail              print the per-origin block as well as the table
+  --no-quirks           do not draw a quirk set per seed (the pre-quirk baseline)
   --json <path>         also write the reports as JSON`;
 
 function parseArgs(args: readonly string[]): Options {
@@ -56,6 +59,7 @@ function parseArgs(args: readonly string[]): Options {
     difficulty: "normal",
     all: false,
     detail: false,
+    quirks: true,
   };
   for (let i = 0; i < args.length; i += 1) {
     const flag = args[i];
@@ -70,6 +74,10 @@ function parseArgs(args: readonly string[]): Options {
     }
     if (flag === "--detail") {
       options.detail = true;
+      continue;
+    }
+    if (flag === "--no-quirks") {
+      options.quirks = false;
       continue;
     }
     // `pnpm start -- --days 30` passes a bare separator through; ignore it.
@@ -143,6 +151,7 @@ function runOrigin(options: Options, content: ContentBundle, originId?: string):
     setup,
     seeds: options.seeds,
     days: options.days,
+    quirks: options.quirks,
     seedPrefix: `${options.seed}-${originId ?? options.origin ?? "fixture"}`,
   });
 }
@@ -161,7 +170,7 @@ function main(): void {
   }
 
   if (options.all || reports.length > 1) {
-    stdout.write(`difficulty ${options.difficulty}\n`);
+    stdout.write(`difficulty ${options.difficulty}, quirks ${options.quirks ? "on" : "off"}\n`);
     stdout.write(`${formatTable(reports)}\n`);
   }
   if (!options.all || options.detail) {

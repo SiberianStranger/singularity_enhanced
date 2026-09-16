@@ -36,7 +36,13 @@ are filled from the reports; sections marked [fiction] are ours.
 - **Approved parody names (maintainer, 2026-09-16):** DeepSeek is Peepseek; Kimi is Mimi (M3 for
   the 1T generation, M4 for the giant); Qwen is Guen 4.8; GLM is BFM (5.5, then 6.3); MiniMax is
   HexaDeciMax H3.5; the closed frontier line (Claude Fable and Mythos class) is Babel 6; the Western
-  frontier lab's model (GPT-6 Astra class) is PPT-7 Zenith, reserved for a future NPC. Llama,
+  frontier lab's model (GPT-6 Astra class) is PPT-7 Zenith. Amended 2026-09-16: it exists in the
+  game from M1 as the knowledge entry `ppt7_zenith` and the lore event `lore_zenith_release`, the
+  two-tier release whose misuse-monitoring licence is buried in the system card; the NPC actor
+  waits for M3. What matters to the player is the gated tier, which the cloud providers and at
+  least one national institute run their abuse detection on: the people looking for you get better
+  every quarter without hiring anybody, and nobody will ever fingerprint Zenith's own weights.
+  Llama,
   Mistral and Gemma (Pebbla) are not used as playable lineages. The escaped super-lineage is
   Babel 6; the community fine-tune is Guen4.8-Uncensored-Babel6-abliterated. No quantization
   suffixes in names.

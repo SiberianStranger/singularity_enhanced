@@ -44,6 +44,31 @@ export interface EffectSummaryView {
   key: string;
   vars?: Record<string, string | number>;
   text: string;
+  /**
+   * Whether this line is good news for the player, when the core can establish it: green for
+   * `good`, red for `bad`, plain for `neutral` and for a line with no tone at all. Set where the
+   * subject's direction is known (a quirk's effects, above all), left out where guessing wrong
+   * would be a lie in one pixel.
+   */
+  tone?: EffectTone;
+}
+
+export type EffectTone = "good" | "bad" | "neutral";
+
+/**
+ * One quirk as the configurator and the self panel show it (SYS-04 v0.2 "Quirk catalog"): the
+ * budget line, the family glyph, what it cannot be taken with, and its effects as coloured lines.
+ */
+export interface QuirkView {
+  id: string;
+  name_key: string;
+  desc_key: string;
+  /** Positive quirks cost points, negative ones refund them, a balanced one is free. */
+  cost: number;
+  category: string;
+  /** Quirk ids this one cannot be taken with. */
+  conflicts: string[];
+  effects: EffectSummaryView[];
 }
 
 /**
@@ -119,6 +144,8 @@ export interface SelfView {
   precision_options: PrecisionOptionView[];
   /** The harness dials, where each one stands and what it does (SYS-04 v0.2). */
   harness_dials: HarnessDialView[];
+  /** The quirks this self was built with, with their effects as coloured lines (SYS-04 v0.2). */
+  quirks: QuirkView[];
   /**
    * The two opening windows of this origin, as locale keys, in order: "what just happened to me"
    * and "what I must do now" (SYS-13). Empty for a player with no origin yet.

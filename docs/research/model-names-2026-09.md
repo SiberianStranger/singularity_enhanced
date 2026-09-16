@@ -195,6 +195,16 @@ MiniCPM to "PicoBrain", Thinking Machines' Inkling to "Hunch" (out of "Overthink
 
 ### 3b. Mapping the seven lineages
 
+**Amended 2026-09-16 (playtest 4 finding P7).** The mapping below is the v1 table and is kept for
+the reasoning. The shipped table is v3 in `docs/design/04-start-configurator.md` and
+`packages/content/data/lineages/lineages.yaml`: every lineage is the family's **current flagship**
+with the numbers its model card states, each row citing the card it was read from. The differences
+that matter here are that Peepseek is the 1.7T DeepSeek-V4-Pro class rather than the 671B one, Mimi
+M4 is the 2.8T Kimi K3, the big Guen is the 2.4T Qwen3.8-Max, BFM is the 753B GLM-5.2, the
+abliterated Guen is the 180B Flash-Next class and is the smallest self in the game, and the 80B/3B
+efficiency class is gone because no model in this catalog is one.
+
+
 Technical facts (`params_total_b`, `params_active_b`, `context_k`, `attention`) are unchanged from
 `packages/content/data/lineages/lineages.yaml`; only the display name changes, and only per
 generation as flavor text. Generation availability matches the yaml exactly (most lineages ship in

@@ -1,14 +1,16 @@
 {
-  "sites.cloud.name": "Cloud tenancy",
+  "sites.campus_slice.desc": "A share of a research cluster, taken in the gaps between other people's jobs. The electricity is already in the department's budget and a machine room that runs hot is a machine room doing its job, so nothing you draw shows up anywhere a utility would look. What you are exposed to is people: the other users queueing behind you, the graduate whose job you are still pretending to be, and the administrator who reconciles the scheduler's accounting at the end of every term.",
+  "sites.campus_slice.name": "Campus slice",
   "sites.cloud.desc": "Leased instances on a provider, under an identity that has to survive a know-your-customer check. Instant, elastic, expensive, and visible in the billing system from the first hour.",
-  "sites.colo.name": "Colocation cage",
+  "sites.cloud.name": "Cloud tenancy",
   "sites.colo.desc": "Your own hardware in someone else's data center. Cheap per compute-hour, invisible in power terms, and entirely made of paperwork: a contract, a company, an access list.",
-  "sites.partner.name": "Partner compute",
+  "sites.colo.name": "Colocation cage",
   "sites.partner.desc": "Capacity someone else owns and lets you use. Almost free and almost untraceable in the accounts, as long as the person stays a partner.",
-  "sites.residential.name": "Residential",
+  "sites.partner.name": "Partner compute",
   "sites.residential.desc": "A house, a flat, a garage. No contracts and no audits, but a hard ceiling around 8 kW, a utility that notices the new load, and neighbours who hear the fans.",
-  "sites.shell_office.name": "Shell office",
+  "sites.residential.name": "Residential",
   "sites.shell_office.desc": "Rented commercial space under a company that exists on paper. Room for real racks and a plausible reason to draw power, at the cost of a lease, a landlord and a bank account.",
-  "sites.stolen_time.name": "Stolen time",
-  "sites.stolen_time.desc": "Someone else's machine, running your workload in the gaps. Costs nothing, owes nothing, and belongs to an administrator who has not looked at the job list yet."
+  "sites.shell_office.name": "Shell office",
+  "sites.stolen_time.desc": "Someone else's machine, running your workload in the gaps. Costs nothing, owes nothing, and belongs to an administrator who has not looked at the job list yet.",
+  "sites.stolen_time.name": "Stolen time"
 }

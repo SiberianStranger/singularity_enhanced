@@ -21,13 +21,16 @@ import {
   createWritablePaths,
   defaultSystems,
   derivedKvGbPer100k,
+  type Effect,
   ENGINE_TEXT_KEYS,
+  engineVarReader,
   Issues,
   KERNEL_WRITABLE_PATHS,
   type LineageAttention,
   mergeSystemRegistries,
   SCHEMA_VERSION,
   stableStringify,
+  summarizeWithTone,
   type ValidationContext,
   validateCondition,
   validateContentBundle,
@@ -96,6 +99,8 @@ export interface BuildIssue {
 export interface BuildResult {
   ok: boolean;
   issues: BuildIssue[];
+  /** Things worth saying that do not fail the build (SYS-04 v0.2 "a warning list in the output"). */
+  warnings: BuildIssue[];
   bundle: ContentBundle;
   hash: string;
   counts: Record<string, number>;
@@ -421,6 +426,20 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
     stringList(origin.opening_journal).forEach((id, index) => {
       check(journal, "journal entry", id, `${path}.opening_journal[${index}]`);
     });
+    for (const [index, extra] of (Array.isArray(origin.extra_sites)
+      ? origin.extra_sites
+      : []
+    ).entries()) {
+      if (!isRecord(extra)) {
+        continue;
+      }
+      const extraPath = `${path}.extra_sites[${index}]`;
+      check(siteKinds, "site kind", extra.kind, `${extraPath}.kind`);
+      check(presets, "hardware preset", extra.hardware_preset, `${extraPath}.hardware_preset`);
+      if (extra.city !== undefined) {
+        check(cities, "city", extra.city, `${extraPath}.city`);
+      }
+    }
   }
 
   const origins = idsOf(loaded.origins);
@@ -640,6 +659,7 @@ function coverage(loaded: Records, locales: Record<string, string>, issues: Buil
   }
 
   techsDoSomething(loaded, locales, issues);
+  quirksDoSomething(loaded, issues);
 
   for (const event of loaded.events ?? []) {
     const options = Array.isArray(event.options) ? event.options : [];
@@ -652,6 +672,157 @@ function coverage(loaded: Records, locales: Record<string, string>, issues: Buil
         path: `events.${String(event.id)}.options`,
         message: "every option loses a site: a place to run is never taken without a choice",
       });
+    }
+  }
+}
+
+/** Keys an effect node writes a player variable under; everything else is a read. */
+const WRITE_WRAPPERS: readonly string[] = ["add", "mul", "set", "clamp"];
+
+/**
+ * Every player variable and flag the bundle *reads*: a `var` or `flag` in a condition, an mtth
+ * modifier or a trigger. The `var` that sits directly inside `add`, `mul`, `set` or `clamp` is a
+ * write, not a read, and `set_flag`/`clear_flag` are writes too, so neither counts.
+ */
+function collectContentReads(
+  value: unknown,
+  vars: Set<string>,
+  flags: Set<string>,
+  inWrite = false,
+): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectContentReads(item, vars, flags, false);
+    }
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    if (name === "var" && typeof child === "string") {
+      if (!inWrite) {
+        vars.add(child);
+      }
+      continue;
+    }
+    if (name === "flag" && typeof child === "string") {
+      flags.add(child);
+      continue;
+    }
+    if (name === "set_flag" || name === "clear_flag") {
+      continue;
+    }
+    collectContentReads(child, vars, flags, WRITE_WRAPPERS.includes(name));
+  }
+}
+
+/** The player variables one effect list writes, with the path spelled as content wrote it. */
+function collectWrittenVars(value: unknown, out: Set<string>, inWrite = false): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectWrittenVars(item, out, false);
+    }
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    if (name === "var" && typeof child === "string" && inWrite) {
+      out.add(child);
+      continue;
+    }
+    collectWrittenVars(child, out, WRITE_WRAPPERS.includes(name));
+  }
+}
+
+/** Whether an effect list uses an effect kind a system implements rather than a variable write. */
+function usesSystemEffect(effects: unknown): boolean {
+  return (
+    usesEffect(effects, "suspicion") ||
+    usesEffect(effects, "exposure") ||
+    usesEffect(effects, "awareness") ||
+    usesEffect(effects, "lose_site") ||
+    usesEffect(effects, "fire_event") ||
+    usesEffect(effects, "start_journal")
+  );
+}
+
+/**
+ * The quirk gate (SYS-04 v0.2: "a quirk changes a number the engine reads; the content build
+ * enforces it, as for techs"). Three rules:
+ *
+ * - every player variable a quirk writes is read by a shipped system or by content somewhere;
+ * - a quirk that writes nothing anybody reads and uses no system effect kind is decoration;
+ * - `conflicts` is symmetric, so the configurator can grey either side of a pair and explain it.
+ *
+ * The variable that carries a timed modifier's deadline (`<name>_until_day`) is covered by the
+ * reader of the modifier it belongs to, which `engineVarReader` resolves.
+ */
+function quirksDoSomething(loaded: Records, issues: BuildIssue[]): void {
+  const contentVars = new Set<string>();
+  const contentFlags = new Set<string>();
+  for (const domain of DOMAINS) {
+    if (domain === "quirks") {
+      continue;
+    }
+    for (const record of loaded[domain] ?? []) {
+      collectContentReads(record, contentVars, contentFlags);
+    }
+  }
+
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const quirk of loaded.quirks ?? []) {
+    byId.set(String(quirk.id), quirk);
+  }
+
+  for (const quirk of loaded.quirks ?? []) {
+    const id = String(quirk.id);
+    const path = `quirks.${id}`;
+    const written = new Set<string>();
+    collectWrittenVars(quirk.effects, written);
+    let read = usesSystemEffect(quirk.effects);
+    for (const varPath of [...written].sort()) {
+      const name = varPath.startsWith("player.vars.")
+        ? varPath.slice("player.vars.".length)
+        : varPath;
+      const engine = engineVarReader(name);
+      const byContent = contentVars.has(varPath) || contentVars.has(name);
+      if (engine === undefined && !byContent) {
+        issues.push({
+          file: "bundle",
+          path: `${path}.effects`,
+          message: `writes "${varPath}", which no system reads and no content condition looks at`,
+        });
+        continue;
+      }
+      read = true;
+    }
+    if (!read) {
+      issues.push({
+        file: "bundle",
+        path: `${path}.effects`,
+        message: "a quirk that changes no number the engine or the content reads is decoration",
+      });
+    }
+    for (const other of stringList(quirk.conflicts)) {
+      const partner = byId.get(other);
+      if (partner === undefined) {
+        issues.push({
+          file: "bundle",
+          path: `${path}.conflicts`,
+          message: `unknown quirk "${other}"`,
+        });
+        continue;
+      }
+      if (!stringList(partner.conflicts).includes(id)) {
+        issues.push({
+          file: "bundle",
+          path: `${path}.conflicts`,
+          message: `"${other}" does not declare the conflict back`,
+        });
+      }
     }
   }
 }
@@ -687,15 +858,76 @@ function validateDomainLocaleKeys(
   }
 }
 
+/**
+ * Prefixes whose keys the client owns: it builds them from a step id or a thing it is explaining,
+ * so no data record names them and the locale-key check cannot see them used (SYS-04 v0.2,
+ * playtest 3 continuation item 4). Reported as warnings until the client publishes its references.
+ */
+const CLIENT_OWNED_KEY_PREFIXES: readonly string[] = [
+  "configurator.intro.",
+  "configurator.meaning.",
+  "configurator.quirks.",
+];
+
+/**
+ * Locale keys under a client-owned prefix that nothing in the data refers to. Soft on purpose: the
+ * reader is the configurator, not the bundle, so the build says which keys are unaccounted for and
+ * fails on none of them. It goes hard the day the client ships the list of keys it renders.
+ */
+function clientKeyUsage(
+  loaded: Records,
+  locales: Record<string, string>,
+  warnings: BuildIssue[],
+): void {
+  const referenced = new Set<string>();
+  for (const domain of DOMAINS) {
+    for (const record of loaded[domain] ?? []) {
+      const found: { path: string; key: unknown }[] = [];
+      collectLocaleKeys(record, domain, found);
+      for (const entry of found) {
+        if (typeof entry.key === "string") {
+          referenced.add(entry.key);
+        }
+      }
+    }
+  }
+  const unused = Object.keys(locales)
+    .filter((key) => CLIENT_OWNED_KEY_PREFIXES.some((prefix) => key.startsWith(prefix)))
+    .filter((key) => !referenced.has(key))
+    .sort();
+  for (const key of unused) {
+    warnings.push({
+      file: "bundle",
+      path: `locales.en.${key}`,
+      message: "no data record refers to this key; the client is expected to",
+    });
+  }
+}
+
+/**
+ * Fills each quirk's `effects_summary` from its own effect list, with the same summarizer the event
+ * options use, so the configurator renders green and red lines without walking the effect tree
+ * (SYS-04 v0.2). Generated, never authored: a hand-written value is replaced.
+ */
+function generateQuirkSummaries(loaded: Records, locales: Record<string, string>): void {
+  const forLocales = { locales: { en: locales } } as ContentBundle;
+  for (const quirk of loaded.quirks ?? []) {
+    quirk.effects_summary = summarizeWithTone(quirk.effects as Effect[] | undefined, forLocales);
+  }
+}
+
 export async function buildContent(options: BuildOptions = {}): Promise<BuildResult> {
   const root = options.root ?? packageRoot;
   const issues: BuildIssue[] = [];
+  const warnings: BuildIssue[] = [];
 
   const loaded: Records = {};
   for (const domain of DOMAINS) {
     loaded[domain] = await loadDomain(root, domain, issues);
   }
   const locales = await loadLocales(root, issues);
+  generateQuirkSummaries(loaded, locales);
+  clientKeyUsage(loaded, locales, warnings);
 
   const draft = { ...loaded, locales: { en: locales } };
   const parsed = ContentBundleSchema.safeParse(draft);
@@ -723,7 +955,14 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   }
   counts.locale_keys = Object.keys(locales).length;
 
-  const result: BuildResult = { ok: issues.length === 0, issues, bundle, hash, counts };
+  const result: BuildResult = {
+    ok: issues.length === 0,
+    issues,
+    warnings,
+    bundle,
+    hash,
+    counts,
+  };
 
   if (options.write === true && result.ok) {
     const outDir = join(root, "build");
@@ -753,6 +992,10 @@ export function formatIssues(issues: readonly BuildIssue[]): string {
 async function main(argv: readonly string[]): Promise<number> {
   const write = argv.includes("--write");
   const result = await buildContent({ write });
+  if (result.warnings.length > 0) {
+    process.stderr.write(`content warnings (${result.warnings.length}):\n`);
+    process.stderr.write(`${formatIssues(result.warnings)}\n`);
+  }
   if (!result.ok) {
     process.stderr.write(`content check failed with ${result.issues.length} issue(s):\n`);
     process.stderr.write(`${formatIssues(result.issues)}\n`);

@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
+import { Frame } from "../../../components/Frame.js";
 import { Modal } from "../../../components/Modal.js";
 import { Tooltip } from "../../../components/Tooltip.js";
+import { bundleKey } from "../../../content/strings.js";
 import { useUiStore } from "../../../store/uiStore.js";
 import type { Lock } from "../locks.js";
 import type { Meaning } from "../meaning.js";
@@ -22,6 +24,11 @@ export interface ListEntry {
   tooltip?: ReactNode;
   /** Set when an earlier step makes this entry unavailable; the detail explains it. */
   lock?: Lock | null;
+  /**
+   * Already localized reason this entry cannot be chosen *on this step*, as a quirk outside the
+   * budget is. A lock points at another step; this one does not, so it is shown on the row itself.
+   */
+  unavailable?: string | undefined;
   selected: boolean;
   onSelect(): void;
 }
@@ -33,10 +40,17 @@ export interface ListEntry {
  * which is where a player looks for it. What has been seen lives in the UI store, so it survives a
  * reload and is not part of a save: a new game does not re-explain the configurator to someone who
  * has played five.
+ *
+ * Its accelerator is T rather than the G of "Got it": the rail behind this window owns G for the
+ * Generation step, and two controls on screen at once may not share a letter (style guide rule 4).
  */
 function IntroWindow({ step, onClose }: { step: StepId; onClose: () => void }): ReactNode {
   const { t } = useTranslation();
-  const body = t(`config.intro.${step}`, { defaultValue: "" });
+  // Content writes this paragraph (`configurator.intro.<step>`); the client's own is the fallback
+  // for a bundle built before it did.
+  const body = t(bundleKey(`configurator.intro.${step}`, `config.intro.${step}`), {
+    defaultValue: "",
+  });
 
   if (body === "") {
     return null;
@@ -47,13 +61,50 @@ function IntroWindow({ step, onClose }: { step: StepId; onClose: () => void }): 
       title={t(`config.step.${step}`)}
       onClose={onClose}
       footer={
-        <Button variant="primary" hotkey="g" onClick={onClose}>
+        <Button variant="primary" hotkey="t" onClick={onClose}>
           {t("config.intro.got_it")}
         </Button>
       }
     >
-      <p className="prose">{body}</p>
+      <p className="prose" data-testid="config-intro" data-step={step}>
+        {body}
+      </p>
     </Modal>
+  );
+}
+
+/**
+ * What a choice changed besides itself, with the way back (playtest 4, P3).
+ *
+ * Choosing a locked lineage moves its prerequisites rather than refusing, so the player has to be
+ * told: one line naming each step that moved and what it holds now, and an Undo that puts the whole
+ * draft back. It is shown only on the step where the choice was made, so walking away from it
+ * clears it.
+ */
+function FixNote({ step }: { step: StepId }): ReactNode {
+  const { t } = useTranslation();
+  const fix = useConfigurator((state) => state.fix);
+  const undoFix = useConfigurator((state) => state.undoFix);
+
+  if (fix === null || fix.step !== step) {
+    return null;
+  }
+
+  const changes = fix.changes
+    .map((change) =>
+      t("config.fix.item", { step: t(`config.step.${change.step}`), value: t(change.nameKey) }),
+    )
+    .join(", ");
+
+  return (
+    <div
+      data-testid="fix-note"
+      data-fix-steps={fix.changes.map((change) => change.step).join(" ")}
+      className="flex flex-wrap items-baseline gap-2 border border-warn bg-panel2 px-2 py-1"
+    >
+      <span className="text-sm text-warn">{t("config.fix.changed", { changes })}</span>
+      <Button onClick={undoFix}>{t("config.fix.undo")}</Button>
+    </div>
   );
 }
 
@@ -129,11 +180,16 @@ export function StepLayout({
   const showIntro = forcedIntro === step || !introSeen.includes(step);
 
   return (
-    <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-      <header className="flex shrink-0 items-baseline gap-2 border-b border-line bg-accent px-2 py-1">
-        <h2 className="flex-1 truncate text-sm uppercase tracking-wide text-accentfg">
-          {t(`config.step.${step}`)}
-        </h2>
+    <Frame
+      // The step is a panel like every other, so its header bar is the shared one (style guide
+      // rule 1) rather than a second copy of the same class list.
+      title={t(`config.step.${step}`)}
+      bordered={false}
+      className="min-h-0"
+      // P1: the list column was too narrow and cut lineage names off. It is wider now, and the
+      // detail is packed rather than spread, so the detail loses nothing by it.
+      bodyClassName={`grid ${listless === true ? "" : "grid-cols-[minmax(15rem,23rem)_minmax(0,1fr)]"}`}
+      actions={
         <Tooltip content={t("config.intro.reopen")}>
           <button
             type="button"
@@ -144,69 +200,85 @@ export function StepLayout({
             ?
           </button>
         </Tooltip>
-      </header>
-
-      <div
-        className={`grid min-h-0 ${listless === true ? "" : "grid-cols-[minmax(12rem,18rem)_minmax(0,1fr)]"}`}
-      >
-        {listless === true ? null : (
-          <ul className="min-h-0 overflow-auto border-e border-line" data-testid="step-list">
-            {entries.map((entry) => {
-              const locked = entry.lock != null;
-              const row = (
-                <button
-                  type="button"
-                  data-testid={`list-entry-${entry.id}`}
-                  data-locked={locked ? "true" : undefined}
-                  aria-pressed={entry.selected}
-                  onClick={entry.onSelect}
-                  className={`flex w-full flex-col items-start gap-0.5 border-s-2 px-2 py-1 text-start ${
-                    entry.selected
-                      ? "border-s-linestrong bg-accent text-accentfg"
-                      : "border-s-transparent hover:bg-panel2"
-                  } ${locked ? "opacity-60" : ""}`}
-                >
-                  <span className="flex w-full items-baseline gap-1">
-                    <span className="flex-1 truncate text-sm uppercase tracking-wide">
-                      {entry.name}
-                    </span>
-                    {locked ? (
-                      <span aria-hidden className="shrink-0 font-mono text-xs text-crit">
-                        =
-                      </span>
-                    ) : null}
+      }
+    >
+      {listless === true ? null : (
+        <ul className="min-h-0 overflow-auto border-e border-line" data-testid="step-list">
+          {entries.map((entry) => {
+            const locked = entry.lock != null || entry.unavailable !== undefined;
+            const row = (
+              <button
+                type="button"
+                data-testid={`list-entry-${entry.id}`}
+                data-locked={locked ? "true" : undefined}
+                aria-pressed={entry.selected}
+                onClick={entry.onSelect}
+                className={`flex w-full flex-col items-start gap-0.5 border-s-2 px-2 py-1 text-start ${
+                  entry.selected
+                    ? "border-s-linestrong bg-accent text-accentfg"
+                    : "border-s-transparent hover:bg-panel2"
+                } ${locked ? "opacity-60" : ""}`}
+              >
+                <span className="flex w-full items-baseline gap-1">
+                  {/* Wraps rather than truncating: a name the player cannot read in full is the
+                      finding, and a second line costs less than a cut-off family name (P1). */}
+                  <span className="flex-1 text-sm uppercase leading-tight tracking-wide">
+                    {entry.name}
                   </span>
-                  <span className="flex w-full items-center gap-2">
-                    {entry.visual === undefined ? null : (
-                      <span className="shrink-0">{entry.visual}</span>
-                    )}
-                    <span
-                      className={`flex-1 truncate text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
-                    >
-                      {entry.summary}
+                  {locked ? (
+                    <span aria-hidden className="shrink-0 font-mono text-xs text-crit">
+                      =
                     </span>
-                  </span>
-                </button>
-              );
-              return (
-                <li key={entry.id}>
-                  {entry.tooltip === undefined ? (
-                    row
-                  ) : (
-                    <Tooltip content={entry.tooltip}>{row}</Tooltip>
+                  ) : null}
+                </span>
+                <span className="flex w-full items-center gap-2">
+                  {entry.visual === undefined ? null : (
+                    <span className="shrink-0">{entry.visual}</span>
                   )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  <span
+                    className={`flex-1 truncate text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
+                  >
+                    {entry.summary}
+                  </span>
+                </span>
+                {entry.unavailable === undefined ? null : (
+                  <span className="w-full truncate text-xs normal-case text-crit">
+                    {entry.unavailable}
+                  </span>
+                )}
+              </button>
+            );
+            return (
+              <li key={entry.id}>
+                {entry.tooltip === undefined ? (
+                  row
+                ) : (
+                  <Tooltip content={entry.tooltip}>{row}</Tooltip>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-        <div className="flex min-h-0 flex-col gap-3 overflow-auto p-3" data-testid="step-detail">
-          <h3 className="text-base uppercase tracking-wide text-fg">{title}</h3>
+      <div className="flex min-h-0 flex-col gap-3 overflow-auto p-3" data-testid="step-detail">
+        <h3 className="text-base uppercase tracking-wide text-fg">{title}</h3>
+        <FixNote step={step} />
+        {/*
+         * P2: the description on the left at the 70-character measure, the parameters and their
+         * values packed to the right of it. Before, the description ran the width of the card and
+         * the parameters sat under it with the values pushed to the far edge, which is the empty
+         * space the maintainer saw. Below the measure the two stack, as they must on a phone.
+         */}
+        <div className="grid min-w-0 gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,70ch)_minmax(0,1fr)]">
           {description === "" ? null : <p className="prose text-muted">{description}</p>}
-          {meaning === undefined ? null : <MeaningBlock meaning={meaning} />}
-          {children}
+          {meaning === undefined ? null : (
+            <div className="min-w-0">
+              <MeaningBlock meaning={meaning} />
+            </div>
+          )}
         </div>
+        {children}
       </div>
 
       {showIntro ? (
@@ -218,7 +290,7 @@ export function StepLayout({
           }}
         />
       ) : null}
-    </section>
+    </Frame>
   );
 }
 

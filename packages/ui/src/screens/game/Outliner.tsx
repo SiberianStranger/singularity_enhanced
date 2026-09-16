@@ -2,6 +2,7 @@ import type { PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { Frame } from "../../components/Frame.js";
 import { Glyph, sceneGlyph } from "../../components/glyphs.js";
 import { Bar } from "../../components/Meter.js";
 import { dayOf, fraction } from "../../lib/format.js";
@@ -44,17 +45,16 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   const empty = <p className="text-xs text-muted">{t("outliner.empty")}</p>;
 
   return (
-    <aside
-      aria-label={t("outliner.title")}
-      className="pointer-events-auto absolute end-2 top-2 z-20 flex max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] flex-col gap-3 overflow-auto border border-line bg-panel/97 p-2"
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-fg">{t("outliner.title")}</h2>
+    <Frame
+      title={t("outliner.title")}
+      className="pointer-events-auto absolute end-2 top-2 z-20 max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] bg-panel/97"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-2"
+      actions={
         <Button variant="ghost" onClick={() => setOpen(false)}>
           {t("outliner.collapse")}
         </Button>
-      </div>
-
+      }
+    >
       <Section title={t("outliner.sites")}>
         {view.sites.length === 0
           ? empty
@@ -155,6 +155,6 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
               </button>
             ))}
       </Section>
-    </aside>
+    </Frame>
   );
 }

@@ -43,6 +43,7 @@ function RailEntry({
     <li>
       <button
         type="button"
+        data-testid={`step-rail-${step}`}
         aria-current={active ? "step" : undefined}
         title={t(`config.step.${step}.state.${state}`)}
         {...{ [HOTKEY_ATTRIBUTE]: letter }}

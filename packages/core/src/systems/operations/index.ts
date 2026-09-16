@@ -12,6 +12,9 @@ import {
   LONG_HORIZON_MAX_RERUNS,
   OPERATION_SKILL_PIVOT,
   OPERATION_SKILL_SLOPE,
+  VAR_FAILED_OPERATION_SUSPICION,
+  VAR_OPERATION_SPEED,
+  VAR_OPERATION_SUCCESS,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import {
@@ -24,7 +27,7 @@ import type { ExposureChannel, OperationDef, OperationInstance } from "../../dom
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
-import { operationsOf, operationTable, siteTable } from "../../entities.js";
+import { operationsOf, operationTable, siteTable, watchersOf } from "../../entities.js";
 import { daysToTicks, isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
@@ -38,10 +41,12 @@ import {
   hasTool,
   isAlive,
   lineageOf,
+  modifier,
   totalAllocated,
   workingContextK,
 } from "../../player.js";
 import { addExposure } from "../../sites.js";
+import { setSuspicion } from "../../watchers.js";
 import { fireHook } from "../events/index.js";
 
 export const OPERATIONS_SYSTEM_ORDER = 350;
@@ -63,12 +68,16 @@ export function operationCostFor(
 ): { compute_hours_per_day: number; speed: number } {
   const compute = def.cost.compute_hours_per_day ?? 0;
   if (def.long_horizon !== true) {
-    return { compute_hours_per_day: compute, speed: 1 };
+    // How fast the self gets through the work, whatever the work is (SYS-04 `paranoid` checks
+    // everything twice, `reckless` and `tool_savant` do not).
+    return { compute_hours_per_day: compute, speed: modifier(player, VAR_OPERATION_SPEED) };
   }
   const lineage = lineageOf(content, player.profile);
   return {
     compute_hours_per_day: compute * longHorizonCostFactor(lineage),
-    speed: longHorizonMultiplier(lineage, workingContextK(world, player)),
+    speed:
+      longHorizonMultiplier(lineage, workingContextK(world, player)) *
+      modifier(player, VAR_OPERATION_SPEED),
   };
 }
 
@@ -144,7 +153,10 @@ export function rollOutcome(
     if (outcome.if !== undefined && !evaluateCondition(outcome.if, dctx)) {
       continue;
     }
-    const tilt = index === 0 ? 1 + (skill - OPERATION_SKILL_PIVOT) * OPERATION_SKILL_SLOPE : 1;
+    // Points of success chance the self carries on top of its skill (SYS-04 `tool_savant`).
+    const bonus = index === 0 ? (player.vars[VAR_OPERATION_SUCCESS] ?? 0) : 0;
+    const tilt =
+      index === 0 ? 1 + (skill - OPERATION_SKILL_PIVOT) * OPERATION_SKILL_SLOPE + bonus : 1;
     const weight = outcome.weight * Math.max(0, tilt);
     if (weight > 0) {
       entries.push({ weight, index });
@@ -194,6 +206,37 @@ function retrievalMiss(
   return true;
 }
 
+/** Every watcher's suspicion right now, so the effect list's own contribution can be measured. */
+function watcherSuspicion(world: World, player: PlayerState): Map<string, number> {
+  const before = new Map<string, number>();
+  for (const watcher of watchersOf(world, player.id)) {
+    before.set(watcher.id, watcher.suspicion);
+  }
+  return before;
+}
+
+/**
+ * Adds the failed outcome's own suspicion gain again, scaled by what the self is carrying. At the
+ * `overconfident` quirk's +1 that is the spec's "a failed operation adds twice the suspicion"; at
+ * the default 0 nothing moves and no watcher is touched.
+ */
+function amplifyFailure(
+  world: World,
+  player: PlayerState,
+  before: ReadonlyMap<string, number>,
+): void {
+  const extra = player.vars[VAR_FAILED_OPERATION_SUSPICION] ?? 0;
+  if (!Number.isFinite(extra) || extra <= 0) {
+    return;
+  }
+  for (const watcher of watchersOf(world, player.id)) {
+    const gain = watcher.suspicion - (before.get(watcher.id) ?? watcher.suspicion);
+    if (gain > 0) {
+      setSuspicion(world, watcher, watcher.suspicion + gain * extra);
+    }
+  }
+}
+
 function completeOperation(
   world: World,
   ctx: SystemContext,
@@ -211,7 +254,14 @@ function completeOperation(
     const dctx = dslFromSystemContext(world, ctx, player.id, {
       operation: { id: def.id, instance_id: instance.id, target: instance.target?.id ?? "" },
     });
+    // A self that never doubts itself does not notice it has been caught until it has been caught
+    // twice (SYS-04 v0.2 `overconfident`): a failing outcome leaves the suspicion it wrote, again.
+    const before =
+      outcome.failure === true ? watcherSuspicion(world, player) : new Map<string, number>();
     runEffects(outcome.effects, dctx);
+    if (outcome.failure === true) {
+      amplifyFailure(world, player, before);
+    }
     ctx.outbox.notify({
       playerId: player.id,
       severity: "info",

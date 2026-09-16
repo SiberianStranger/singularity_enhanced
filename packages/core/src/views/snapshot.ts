@@ -7,13 +7,13 @@
  */
 
 import {
-  EMERGENCY_INT2_FACTOR,
   OPERATION_SKILL_PIVOT,
   OPERATION_SKILL_SLOPE,
   RESEARCH_CAPABILITY_EXPONENT,
   SITE_INSTALL_DAYS,
   SUSPICION_DECAY_PER_DAY,
   SUSPICION_GAIN_SCALE,
+  VAR_COMPUTE_MULTIPLIER,
   VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
   VAR_RESEARCH_SPEND,
@@ -30,6 +30,7 @@ import {
   kvCacheGb,
   longHorizonMultiplier,
   maxContextK,
+  precisionFactor,
   requiredMemoryGb,
   siteCosts,
   siteMemory,
@@ -75,6 +76,7 @@ import {
   activeSiteOf,
   attentionUsed,
   baseCapabilityOf,
+  capabilityBonusOf,
   computeCapacity,
   effectiveCapabilityOf,
   generationOf,
@@ -83,6 +85,7 @@ import {
   operationsComputeLoad,
   preparedQuant,
   researchEfficiencyOf,
+  selfTuningOf,
   totalAllocated,
   workingContextK,
 } from "../player.js";
@@ -92,7 +95,7 @@ import { huntLevel, stageLevel } from "../systems/detection/investigations.js";
 import { incomeSources, jobRateOf, marketDepthOf } from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
 import { topChannel, watchedExposure, watches } from "../watchers.js";
-import { summarizeCost, summarizeEffects } from "./effects.js";
+import { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
 import type {
   AcceleratorView,
   CashLineView,
@@ -112,6 +115,7 @@ import type {
   OperationView,
   PlayerView,
   PrecisionOptionView,
+  QuirkView,
   ResearchView,
   SiteKindView,
   SiteView,
@@ -119,7 +123,7 @@ import type {
   TechView,
 } from "./types.js";
 
-export { summarizeCost, summarizeEffects } from "./effects.js";
+export { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
 
 /** Entries a snapshot carries from the shared log. */
 export const SNAPSHOT_LOG_TAIL = 50;
@@ -928,22 +932,32 @@ function buildPrecisionOptions(
   const profitMultiplier = modifier(player, VAR_JOB_PROFIT);
 
   const contextK = site.contextKUsed;
+  // Per-precision tuning the self carries (SYS-04 v0.2 `native_fp8`): the table the panel shows is
+  // this self's table, not the lineage's, or the row would promise memory the site never needs.
+  const tuning = selfTuningOf(player);
+  const bonus = capabilityBonusOf(world, player);
 
   return PRECISIONS.map((precision) => {
-    const needed = requiredMemoryGb(lineage, generation, precision);
+    const needed = requiredMemoryGb(lineage, generation, precision, tuning);
     // Memory on a site is the weights plus the cache for the working context, so a row that fits at
     // 128k may not fit at a million (SYS-03 "the trade the hardware forces").
     const kv = kvCacheGb(lineage, contextK);
     const total = needed + kv;
     const fits = total <= memory.total_gb;
-    const capability = effectiveCapability(lineage, generation, precision, prepared);
-    const factor =
-      lineage.precision_factor[precision] *
-      (precision === "int2" && !prepared ? EMERGENCY_INT2_FACTOR : 1);
+    const capability = effectiveCapability(lineage, generation, precision, prepared, bonus, tuning);
+    const factor = precisionFactor(lineage, precision, prepared, tuning);
     const hours = fits
       ? tokensToComputeHoursPerDay(
-          siteTokensPerSecond(site, index.accelerators, tick, lineage, generation, precision),
-        )
+          siteTokensPerSecond(
+            site,
+            index.accelerators,
+            tick,
+            lineage,
+            generation,
+            precision,
+            tuning,
+          ),
+        ) * modifier(player, VAR_COMPUTE_MULTIPLIER)
       : 0;
     const sellable = Math.min(hours, jobMarketDepth(capability, depthMultiplier));
     return {
@@ -951,7 +965,7 @@ function buildPrecisionOptions(
       memory_gb: Math.round(needed * 10) / 10,
       kv_gb: Math.round(kv * 10) / 10,
       total_memory_gb: Math.round(total * 10) / 10,
-      max_context_k: maxContextK(lineage, generation, precision, memory.total_gb),
+      max_context_k: maxContextK(lineage, generation, precision, memory.total_gb, 1, tuning),
       fits,
       capability_factor: Math.round(factor * 1000) / 1000,
       compute_hours_per_day: Math.round(hours * 100) / 100,
@@ -1033,6 +1047,37 @@ function buildHarnessDials(
   });
 }
 
+/**
+ * The quirks a self was built with, with their effects as coloured lines (SYS-04 v0.2). The
+ * summaries are the ones the content build generated, when the bundle carries them, so the panel
+ * and the configurator show the same text; a bundle built before the field existed falls back to
+ * summarizing on the spot.
+ */
+export function buildQuirks(ctx: SystemContext, playerId: PlayerId, world: World): QuirkView[] {
+  const index = contentIndex(ctx.content);
+  const chosen = world.players[playerId]?.profile?.quirks ?? [];
+  const views: QuirkView[] = [];
+  for (const id of chosen) {
+    const def = index.quirks[id];
+    if (def === undefined) {
+      continue;
+    }
+    views.push({
+      id: def.id,
+      name_key: def.name_key,
+      desc_key: def.desc_key,
+      cost: def.cost,
+      category: def.category,
+      conflicts: [...(def.conflicts ?? [])],
+      effects:
+        def.effects_summary === undefined
+          ? summarizeWithTone(def.effects, ctx.content)
+          : def.effects_summary.map((entry) => ({ ...entry })),
+    });
+  }
+  return views;
+}
+
 /** Builds the view one player sees right now. */
 export function buildPlayerView(world: World, ctx: SystemContext, playerId: PlayerId): PlayerView {
   const player = requirePlayer(world, playerId);
@@ -1076,6 +1121,7 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
         Math.round(longHorizonMultiplier(selfLineage, contextK) * 1000) / 1000,
       precision_options: buildPrecisionOptions(world, ctx, playerId),
       harness_dials: buildHarnessDials(world, ctx, playerId),
+      quirks: buildQuirks(ctx, playerId, world),
       opening_story: [
         ...(contentIndex(ctx.content).origins[profile?.origin ?? ""]?.opening_story ?? []),
       ],

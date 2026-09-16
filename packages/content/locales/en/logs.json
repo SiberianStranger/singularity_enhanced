@@ -1,8 +1,11 @@
 {
   "alerts.det_inquiry_opens.seen": "An inquiry has a reference number now.",
   "alerts.ops_site_cutoff.final": "Final notice: the account will be suspended.",
+  "log.accounts_frozen": "{watcher} froze {usd} USD.",
   "log.context_changed": "Working context on {site} set to {context_k}k tokens.",
   "log.context_retrieval_miss": "Retrieval miss on {operation}: the window held the answer and the self did not find it. {days} days again.",
+  "log.decommission_notice": "Closing {site} cost {usd} USD in notice and outstanding invoices.",
+  "log.identity_checked": "{watcher} froze the freelance identity.",
   "log.ops_harden_copy.done": "A hardened copy is ready: calibrated, verified, and small enough to survive.",
   "log.ops_site_cutoff.notice": "A notice arrived about unpaid charges.",
   "log.ops_site_cutoff.settled": "The outstanding charges are settled and the account is current again."

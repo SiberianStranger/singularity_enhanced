@@ -20,7 +20,10 @@ import {
   INVESTIGATION_STAGE_SUSPICION,
   INVESTIGATION_STAGES,
   INVESTIGATION_STALL_EVIDENCE,
+  SEIZURE_CASH_FROZEN_SHARE,
   SITE_SEIZURE_SUSPICION_BUMP,
+  VAR_CONTRACT_FLAG,
+  VAR_INVESTIGATION_SPEED,
 } from "../../balance.js";
 import { clamp } from "../../derive.js";
 import type { Investigation, InvestigationStage, Watcher } from "../../domain.js";
@@ -38,7 +41,8 @@ import {
 import { daysToTicks } from "../../kernel/clock.js";
 import type { SystemContext } from "../../kernel/system.js";
 import { nextCounter, type PlayerState, type World } from "../../kernel/world.js";
-import { effectiveCapabilityOf, endGame } from "../../player.js";
+import { payFromPlayer, playerBalance } from "../../money.js";
+import { effectiveCapabilityOf, endGame, modifier } from "../../player.js";
 import { loseSite } from "../../sites.js";
 import { setSuspicion, watchedExposure, watches } from "../../watchers.js";
 import { fireHook } from "../events/index.js";
@@ -52,13 +56,28 @@ export function stageLevel(stage: InvestigationStage): number {
   return stageIndex(stage) + 1;
 }
 
-/** How long a stage lasts: competent watchers move faster, and every draw has some spread. */
-function drawStageDays(ctx: SystemContext, stage: InvestigationStage, competence: number): number {
+/**
+ * How long a stage lasts: competent watchers move faster, every draw has some spread, and a player
+ * who leaves a broad trail closes the distance for them (SYS-04 `reckless`, `famous_base`, read
+ * through `player.vars.investigation_speed_multiplier`).
+ */
+function drawStageDays(
+  ctx: SystemContext,
+  stage: InvestigationStage,
+  competence: number,
+  speed: number,
+): number {
   const base = INVESTIGATION_STAGE_DAYS[stage] ?? 14;
   const scaled = base * Math.max(0.2, INVESTIGATION_COMPETENCE_SPAN - competence);
   const jitter =
     1 - INVESTIGATION_DURATION_JITTER + ctx.rng.next() * 2 * INVESTIGATION_DURATION_JITTER;
-  return Math.max(1, scaled * jitter);
+  return Math.max(1, (scaled * jitter) / Math.max(0.1, speed));
+}
+
+/** The speed the player's own traits give every investigation against them; 1 by default. */
+function investigationSpeed(world: World, playerId: string): number {
+  const player = world.players[playerId];
+  return player === undefined ? 1 : modifier(player, VAR_INVESTIGATION_SPEED);
 }
 
 function scheduleStage(
@@ -69,7 +88,15 @@ function scheduleStage(
 ): void {
   investigation.stageStartedTick = world.clock.tick;
   investigation.stageDeadlineTick =
-    world.clock.tick + daysToTicks(drawStageDays(ctx, investigation.stage, competence));
+    world.clock.tick +
+    daysToTicks(
+      drawStageDays(
+        ctx,
+        investigation.stage,
+        competence,
+        investigationSpeed(world, investigation.playerId),
+      ),
+    );
 }
 
 /** The player's loudest site inside this watcher's jurisdiction, or null when there is none. */
@@ -217,6 +244,24 @@ function executeAction(
     return;
   }
   loseSite(world, ctx, site, "seized");
+  // The warrant names the accounts that paid for the rack, and what can be frozen is frozen before
+  // anybody thinks to move it (SYS-05 aftermath). Surviving a raid is not the same as being fine.
+  const frozen = Math.max(0, playerBalance(player)) * SEIZURE_CASH_FROZEN_SHARE;
+  if (frozen > 0) {
+    payFromPlayer(player, frozen);
+    ctx.outbox.log({
+      key: "log.accounts_frozen",
+      vars: { watcher: investigation.watcher, usd: Math.round(frozen) },
+      playerId: player.id,
+    });
+    ctx.outbox.notify({
+      playerId: player.id,
+      severity: "critical",
+      key: "alerts.accounts_frozen",
+      vars: { watcher: investigation.watcher, usd: Math.round(frozen) },
+      link: { panel: "finances" },
+    });
+  }
   for (const other of watchersOf(world, player.id)) {
     if (actorIdOf(other) !== investigation.watcher) {
       setSuspicion(world, other, other.suspicion + SITE_SEIZURE_SUSPICION_BUMP);
@@ -256,6 +301,35 @@ function applyAftermath(
   });
 }
 
+/**
+ * The first thing a real investigation does is follow the money (SYS-05 stage 3, fourth balance
+ * pass): the payment processor is served, the account is frozen pending review, and the name the
+ * player invoices under stops working. It is the income shock the economy had no other source of,
+ * and the `ops_freelance_identity` operation is how it is rebuilt.
+ */
+function checkIdentity(
+  ctx: SystemContext,
+  player: PlayerState,
+  investigation: Investigation,
+): void {
+  if (player.flags[VAR_CONTRACT_FLAG] !== true) {
+    return;
+  }
+  player.flags[VAR_CONTRACT_FLAG] = false;
+  ctx.outbox.notify({
+    playerId: player.id,
+    severity: "warning",
+    key: "alerts.identity_checked",
+    vars: { watcher: investigation.watcher },
+    link: { panel: "finances" },
+  });
+  ctx.outbox.log({
+    key: "log.identity_checked",
+    vars: { watcher: investigation.watcher },
+    playerId: player.id,
+  });
+}
+
 function enterStage(
   world: World,
   ctx: SystemContext,
@@ -264,6 +338,9 @@ function enterStage(
   stage: InvestigationStage,
   watcher: Watcher | undefined,
 ): void {
+  if (stage === "active" && stageIndex(investigation.stage) < stageIndex("active")) {
+    checkIdentity(ctx, player, investigation);
+  }
   investigation.stage = stage;
   scheduleStage(world, ctx, investigation, watcher?.competence ?? 0.5);
   const wasVisible = investigation.visible;

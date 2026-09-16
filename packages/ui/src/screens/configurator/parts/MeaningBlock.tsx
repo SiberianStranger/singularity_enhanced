@@ -30,10 +30,20 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
         <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
           {t("config.meaning.title")}
         </h4>
-        <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
+        {/*
+         * P2: the value sits right after its label, and the terms are packed into two columns.
+         * The old two-column grid stretched every label to the full width and pushed its value to
+         * the far edge, which put an inch of nothing between "Coding" and "7.2".
+         */}
+        <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
           {meaning.lines.map((line) => (
-            <div key={line.id} className="contents" data-line={line.id} data-tone={line.tone}>
-              <dt className="truncate text-sm text-muted">
+            <div
+              key={line.id}
+              className="flex min-w-0 items-baseline gap-2"
+              data-line={line.id}
+              data-tone={line.tone}
+            >
+              <dt className="min-w-0 truncate text-sm text-muted">
                 {line.hint === undefined || line.hint === "" ? (
                   line.label
                 ) : (
@@ -42,7 +52,7 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
                   </Tooltip>
                 )}
               </dt>
-              <dd className={`text-end text-sm ${TONE_CLASS[line.tone]}`}>{line.value}</dd>
+              <dd className={`truncate text-sm ${TONE_CLASS[line.tone]}`}>{line.value}</dd>
             </div>
           ))}
         </dl>

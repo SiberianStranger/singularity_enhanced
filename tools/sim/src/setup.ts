@@ -9,8 +9,11 @@ import type { ContentBundle, GameSetup, OriginDef } from "@singularity/core";
 import {
   CAPABILITY_AXES,
   contentIndex,
+  createRng,
   effectiveCapability,
   preferredPrecision,
+  QUIRK_MAX_COUNT,
+  quirkIssues,
   siteMemory,
   siteTokensPerSecond,
   tokensToComputeHoursPerDay,
@@ -73,14 +76,51 @@ export function defaultLineage(
     );
     const mean =
       CAPABILITY_AXES.reduce((sum, axis) => sum + capability[axis], 0) / CAPABILITY_AXES.length;
-    return [{ id: lineage.id, compute, mean }];
+    const resident =
+      memory.accelerator_gb >= lineage.memory_gb[precision] * generationDef.memory_factor;
+    return [{ id: lineage.id, compute, mean, resident }];
   });
-  const usable = scored.filter((entry) => entry.compute >= MIN_USABLE_COMPUTE_HOURS);
-  const pool = usable.length > 0 ? usable : scored;
+  // A copy that lives on the cards beats one crawling through host RAM at a quarter of the
+  // throughput, however much cleverer the bigger one is; the summary screen shows compute-hours a
+  // day next to the capability vector and this is how a new player reads that pair. Without this a
+  // swarm of mini-PCs picks a 2.8T self it can barely turn over, which nobody would do.
+  const resident = scored.filter((entry) => entry.resident);
+  const fitting = resident.length > 0 ? resident : scored;
+  const usable = fitting.filter((entry) => entry.compute >= MIN_USABLE_COMPUTE_HOURS);
+  const pool = usable.length > 0 ? usable : fitting;
   const ranked = [...pool].sort(
     (a, b) => b.mean - a.mean || b.compute - a.compute || a.id.localeCompare(b.id),
   );
   return ranked[0]?.id ?? candidates[0]?.id ?? "";
+}
+
+/**
+ * A legal quirk set for one seed (SYS-04 v0.2 "Quirk catalog"), drawn from the same generator the
+ * world uses so a balance run with quirks is as reproducible as one without.
+ *
+ * A new player does not optimize their quirks any more than they optimize their research: they take
+ * a handful that sound like the character they want and live with the bill. So the draw is a target
+ * size and then a shuffled walk, keeping every quirk that still fits the budget, the count and the
+ * conflicts. A target of zero is legal and gives the sweep its control runs.
+ */
+export function pickQuirks(content: ContentBundle, seed: string): string[] {
+  const quirks = contentIndex(content).quirks;
+  const ids = Object.keys(quirks).sort();
+  if (ids.length === 0) {
+    return [];
+  }
+  const rng = createRng(`${seed}/quirks`);
+  const target = rng.int(QUIRK_MAX_COUNT + 1);
+  const chosen: string[] = [];
+  for (const id of rng.shuffle(ids)) {
+    if (chosen.length >= target) {
+      break;
+    }
+    if (quirkIssues([...chosen, id], quirks).length === 0) {
+      chosen.push(id);
+    }
+  }
+  return chosen.sort();
 }
 
 /** The knobs the CLI can override on the setup a run starts from. */

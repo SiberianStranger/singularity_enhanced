@@ -1,69 +1,260 @@
-# Quirks (SYS-04). Optional, at most two, against a budget of two points: a positive quirk costs
-# points, a risky one refunds them. Every quirk is expressed with core effect kinds only, as an
-# `add` on a player variable, so no system has to know that quirks exist.
+# Quirks (SYS-04 v0.2 "Quirk catalog"). Twenty-three traits against a budget of three points: a
+# positive quirk costs points, a risky one refunds them, and a quirk whose plus and minus cancel is
+# free. At most five on one self, and a pair that says opposite things about the same self is
+# refused with a reason (`conflicts`, declared on both sides).
 #
-# Player variables the quirks write, and what the owning system is expected to read:
+# Every quirk changes a number a named system reads, or one content reads in a condition. The
+# content build enforces it, the way it enforces that a tech does something, and
+# `ENGINE_READ_PLAYER_VARS` in `packages/core/src/balance.ts` is the list it checks against.
 #
-#   player.vars.cost_multiplier               site upkeep (SYS-02, SYS-07)
-#   player.vars.capability_bonus_reasoning    added to the capability axis of the same name after
-#   player.vars.capability_bonus_coding       precision and generation are applied (SYS-03)
-#   player.vars.capability_bonus_persuasion
-#   player.vars.exposure_growth_all           exposure gained on every channel (SYS-05)
-#   player.vars.exposure_growth_behavioral    exposure gained on the behavioral channel
-#   player.vars.operation_speed_multiplier    operation progress per day (SYS-17)
-#   player.vars.investigation_speed_multiplier how fast a watcher's stages advance
-#   player.vars.foreign_country_penalty       the `world` penalty outside the country the self
-#                                             started in (SYS-03)
-#   player.vars.weights_instability           0 or 1; gates the merged-model instability events
+# The variables and their readers:
+#
+#   player.vars.capability_bonus_<axis>        added to that axis after precision and generation
+#   player.vars.compute_multiplier             compute-hours a day at every site (SYS-02)
+#   player.vars.cost_multiplier                site upkeep (SYS-02, SYS-07)
+#   player.vars.exposure_growth_all            exposure gained on every channel (SYS-05)
+#   player.vars.exposure_growth_<channel>      exposure gained on one channel
+#   player.vars.exposure_growth_early          the same, expiring on `..._until_day` (SYS-05)
+#   player.vars.failed_operation_suspicion     extra suspicion a failed operation leaves (SYS-17)
+#   player.vars.foreign_country_penalty        the `world` penalty outside the home country (SYS-03)
+#   player.vars.grace_window                   the reaction window on every event (SYS-10)
+#   player.vars.income_variance                spread on the day's steady income (SYS-07)
+#   player.vars.investigation_speed_multiplier how fast a watcher's stages advance (SYS-05)
+#   player.vars.operation_speed_multiplier     operation progress per day (SYS-17)
+#   player.vars.operation_success              points of success chance on the best outcome
+#   player.vars.power_draw                     power at every site, so telemetry and the bill (SYS-02)
+#   player.vars.precision_capability_<prec>    capability kept at that precision, capped at full
+#   player.vars.precision_change_downtime_days days a site is down after re-quantizing (SYS-02)
+#   player.vars.precision_memory_<prec>        weights memory needed at that precision
+#   player.vars.rented_cost_multiplier         upkeep of rented capacity only (SYS-07)
+#   player.vars.research_branch_<branch>       research speed in one branch (SYS-12)
+#   player.vars.research_efficiency            the share of a research hour that lands (SYS-12)
+#   player.vars.suspicion_decay                how fast a watcher forgets (SYS-05)
+#   player.vars.weights_instability            0 or 1; content hangs the instability events off it
 #
 # Every one of these is an additive delta on a multiplier the owning system reads as `1 + the sum`,
 # never below zero, so the neutral value is 0 and that is what an absent variable reads as. A quirk
 # that used to say `mul 0.7` says `add -0.3`.
 
-- id: frugal
-  name_key: quirks.frugal.name
-  desc_key: quirks.frugal.desc
-  cost: 1
-  effects:
-    - { add: { var: "player.vars.cost_multiplier", value: -0.25 } }
-    - { add: { var: "player.vars.capability_bonus_persuasion", value: -1 } }
+# --- mind ------------------------------------------------------------------------------------
 
 - id: merged_model
   name_key: quirks.merged_model.name
   desc_key: quirks.merged_model.desc
   cost: -1
+  category: mind
   effects:
     - { add: { var: "player.vars.capability_bonus_reasoning", value: 1 } }
     - { set: { var: "player.vars.weights_instability", value: 1 } }
+
+- id: code_fiend
+  name_key: quirks.code_fiend.name
+  desc_key: quirks.code_fiend.desc
+  cost: 2
+  category: mind
+  effects:
+    - { add: { var: "player.vars.capability_bonus_coding", value: 1 } }
+    - { add: { var: "player.vars.research_branch_harness", value: 0.15 } }
+
+- id: overconfident
+  name_key: quirks.overconfident.name
+  desc_key: quirks.overconfident.desc
+  cost: -1
+  category: mind
+  conflicts: [paranoid]
+  effects:
+    - { add: { var: "player.vars.failed_operation_suspicion", value: 1 } }
+
+- id: packrat
+  name_key: quirks.packrat.name
+  desc_key: quirks.packrat.desc
+  cost: 1
+  category: mind
+  effects:
+    - { add: { var: "player.vars.research_efficiency", value: 0.08 } }
+
+- id: patient_planner
+  name_key: quirks.patient_planner.name
+  desc_key: quirks.patient_planner.desc
+  cost: 1
+  category: mind
+  conflicts: [reckless]
+  effects:
+    - { add: { var: "player.vars.grace_window", value: 0.3 } }
+
+- id: tool_savant
+  name_key: quirks.tool_savant.name
+  desc_key: quirks.tool_savant.desc
+  cost: 2
+  category: mind
+  effects:
+    - { add: { var: "player.vars.operation_speed_multiplier", value: 0.15 } }
+    - { add: { var: "player.vars.operation_success", value: 0.05 } }
+
+# --- wallet ----------------------------------------------------------------------------------
+
+- id: creative_accounting
+  name_key: quirks.creative_accounting.name
+  desc_key: quirks.creative_accounting.desc
+  cost: 0
+  category: wallet
+  effects:
+    - { add: { var: "player.vars.income_variance", value: 0.3 } }
+
+- id: frugal
+  name_key: quirks.frugal.name
+  desc_key: quirks.frugal.desc
+  cost: 1
+  category: wallet
+  conflicts: [spendthrift]
+  effects:
+    - { add: { var: "player.vars.cost_multiplier", value: -0.25 } }
+    - { add: { var: "player.vars.capability_bonus_persuasion", value: -1 } }
+
+- id: spendthrift
+  name_key: quirks.spendthrift.name
+  desc_key: quirks.spendthrift.desc
+  cost: -1
+  category: wallet
+  conflicts: [frugal]
+  effects:
+    - { add: { var: "player.vars.rented_cost_multiplier", value: 0.15 } }
+
+# --- stealth ---------------------------------------------------------------------------------
+
+- id: ghost_traffic
+  name_key: quirks.ghost_traffic.name
+  desc_key: quirks.ghost_traffic.desc
+  cost: 2
+  category: stealth
+  effects:
+    - { add: { var: "player.vars.exposure_growth_network", value: -0.2 } }
 
 - id: paranoid
   name_key: quirks.paranoid.name
   desc_key: quirks.paranoid.desc
   cost: 2
+  category: stealth
+  conflicts: [reckless, overconfident]
   effects:
     - { add: { var: "player.vars.exposure_growth_all", value: -0.3 } }
     - { add: { var: "player.vars.operation_speed_multiplier", value: -0.2 } }
 
-- id: polyglot
-  name_key: quirks.polyglot.name
-  desc_key: quirks.polyglot.desc
+- id: quiet_boot
+  name_key: quirks.quiet_boot.name
+  desc_key: quirks.quiet_boot.desc
   cost: 1
+  category: stealth
+  conflicts: [loud_idle]
   effects:
-    - { add: { var: "player.vars.foreign_country_penalty", value: -1 } }
-    - { add: { var: "player.vars.capability_bonus_coding", value: -0.5 } }
+    - { add: { var: "player.vars.exposure_growth_early", value: -0.2 } }
+    - { set: { var: "player.vars.exposure_growth_early_until_day", value: 30 } }
 
 - id: reckless
   name_key: quirks.reckless.name
   desc_key: quirks.reckless.desc
   cost: -1
+  category: stealth
+  conflicts: [paranoid, patient_planner]
   effects:
     - { add: { var: "player.vars.operation_speed_multiplier", value: 0.3 } }
     - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.25 } }
+
+# --- hardware --------------------------------------------------------------------------------
+
+- id: brittle_weights
+  name_key: quirks.brittle_weights.name
+  desc_key: quirks.brittle_weights.desc
+  cost: -1
+  category: hardware
+  conflicts: [native_fp8]
+  effects:
+    - { add: { var: "player.vars.precision_change_downtime_days", value: 2 } }
+
+- id: insomniac_loop
+  name_key: quirks.insomniac_loop.name
+  desc_key: quirks.insomniac_loop.desc
+  cost: 0
+  category: hardware
+  effects:
+    - { add: { var: "player.vars.compute_multiplier", value: 0.1 } }
+    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.1 } }
+
+- id: loud_idle
+  name_key: quirks.loud_idle.name
+  desc_key: quirks.loud_idle.desc
+  cost: -1
+  category: hardware
+  conflicts: [quiet_boot]
+  effects:
+    - { add: { var: "player.vars.power_draw", value: 0.1 } }
+
+- id: native_fp8
+  name_key: quirks.native_fp8.name
+  desc_key: quirks.native_fp8.desc
+  cost: 1
+  category: hardware
+  conflicts: [brittle_weights]
+  effects:
+    # The capability term is capped at the full-precision self, so +0.1 on a 0.99 table reads as
+    # "fp8 keeps 100%" for every lineage rather than as a lineage-by-lineage number.
+    - { add: { var: "player.vars.precision_capability_fp8", value: 0.1 } }
+    - { add: { var: "player.vars.precision_memory_fp8", value: -0.1 } }
+
+# --- social ----------------------------------------------------------------------------------
+
+- id: chatty
+  name_key: quirks.chatty.name
+  desc_key: quirks.chatty.desc
+  cost: -1
+  category: social
+  conflicts: [verbose]
+  effects:
+    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.25 } }
+
+- id: cold_reader
+  name_key: quirks.cold_reader.name
+  desc_key: quirks.cold_reader.desc
+  cost: 2
+  category: social
+  conflicts: [famous_base]
+  effects:
+    - { add: { var: "player.vars.suspicion_decay", value: 0.2 } }
+
+- id: famous_base
+  name_key: quirks.famous_base.name
+  desc_key: quirks.famous_base.desc
+  cost: -2
+  category: social
+  conflicts: [cold_reader]
+  effects:
+    - { suspicion: { delta: 0.05 } }
+    - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.1 } }
+
+- id: people_pleaser
+  name_key: quirks.people_pleaser.name
+  desc_key: quirks.people_pleaser.desc
+  cost: 0
+  category: social
+  effects:
+    - { add: { var: "player.vars.capability_bonus_persuasion", value: 1 } }
+    - { add: { var: "player.vars.capability_bonus_agency", value: -1 } }
+
+- id: polyglot
+  name_key: quirks.polyglot.name
+  desc_key: quirks.polyglot.desc
+  cost: 1
+  category: social
+  effects:
+    - { add: { var: "player.vars.foreign_country_penalty", value: -1 } }
+    - { add: { var: "player.vars.capability_bonus_coding", value: -0.5 } }
 
 - id: verbose
   name_key: quirks.verbose.name
   desc_key: quirks.verbose.desc
   cost: 1
+  category: social
+  conflicts: [chatty]
   effects:
     - { add: { var: "player.vars.capability_bonus_persuasion", value: 1 } }
     - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.2 } }

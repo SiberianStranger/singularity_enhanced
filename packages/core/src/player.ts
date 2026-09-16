@@ -7,11 +7,18 @@
  */
 
 import {
-  EMERGENCY_INT2_FACTOR,
+  CAPABILITY_BONUS_VAR_PREFIX,
+  FOREIGN_COUNTRY_WORLD_PENALTY,
   HARNESS_LOOP_REACTION_FACTOR,
   HARNESS_MEMORY_JOURNAL_FACTOR,
+  PRECISION_CAPABILITY_VAR_PREFIX,
+  PRECISION_MEMORY_VAR_PREFIX,
   RESEARCH_CAPABILITY_EXPONENT,
   SANDBOX_ALLOWS_EGRESS,
+  TIMED_MODIFIER_SUFFIX,
+  VAR_FOREIGN_COUNTRY_PENALTY,
+  VAR_GRACE_WINDOW,
+  VAR_RESEARCH_EFFICIENCY,
   VAR_SANDBOX_ESCAPED,
   VAR_SELF_MODIFY,
 } from "./balance.js";
@@ -20,17 +27,22 @@ import {
   effectiveCapability,
   harnessResearchFactor,
   longHorizonCostFactor,
+  precisionFactor,
+  type SelfTuning,
   zeroCapability,
 } from "./derive.js";
 import type {
   Capability,
+  CapabilityAxis,
   GenerationDef,
   HarnessTool,
   LineageDef,
   PlayerProfile,
   Precision,
 } from "./domain.js";
-import { liveSitesOf, operationsOf, type SiteState, siteTable } from "./entities.js";
+import { CAPABILITY_AXES } from "./domain.js";
+import { cityTable, liveSitesOf, operationsOf, type SiteState, siteTable } from "./entities.js";
+import { gameDay } from "./kernel/clock.js";
 import type { Outbox } from "./kernel/outbox.js";
 import type { GameOverState, PlayerId, PlayerState, TextVar, World } from "./kernel/world.js";
 
@@ -71,10 +83,14 @@ export function journalTimeoutFactor(player: PlayerState): number {
   return memory === undefined ? 1 : HARNESS_MEMORY_JOURNAL_FACTOR[memory];
 }
 
-/** What the loop dial does to an event's grace window (SYS-04 v0.2 "reaction delay"). */
+/**
+ * What the loop dial does to an event's grace window (SYS-04 v0.2 "reaction delay"), times whatever
+ * patience the self was built with (`patient_planner` is +0.3 on `player.vars.grace_window`).
+ */
 export function reactionWindowFactor(player: PlayerState): number {
   const loop = player.profile?.harness.loop;
-  return loop === undefined ? 1 : HARNESS_LOOP_REACTION_FACTOR[loop];
+  const dial = loop === undefined ? 1 : HARNESS_LOOP_REACTION_FACTOR[loop];
+  return dial * modifier(player, VAR_GRACE_WINDOW);
 }
 
 export function profileOf(world: World, playerId: PlayerId): PlayerProfile | null {
@@ -122,6 +138,62 @@ export function workingContextK(world: World, player: PlayerState): number {
   return activeSiteOf(world, player)?.contextKUsed ?? 0;
 }
 
+/**
+ * Per-precision tuning of this self: what its quirks and techs changed about the memory a copy
+ * needs and the capability it keeps (SYS-04 v0.2 `native_fp8`). Read wherever a precision is
+ * weighed, so the site, the view and the configurator all agree.
+ */
+export function selfTuningOf(player: PlayerState | undefined): SelfTuning {
+  if (player === undefined) {
+    return { memory: () => 1, capability: () => 1 };
+  }
+  return {
+    memory: (precision) => modifier(player, `${PRECISION_MEMORY_VAR_PREFIX}${precision}`),
+    capability: (precision) => modifier(player, `${PRECISION_CAPABILITY_VAR_PREFIX}${precision}`),
+  };
+}
+
+/**
+ * Points added to each capability axis by everything that is not the lineage, the precision or the
+ * generation: quirks, techs, events (`player.vars.capability_bonus_<axis>`), and the `world`
+ * penalty for running the mind outside the country the self woke up in, which `polyglot` cancels.
+ */
+export function capabilityBonusOf(world: World, player: PlayerState): Partial<Capability> {
+  const bonus: Partial<Capability> = {};
+  for (const axis of CAPABILITY_AXES) {
+    const value = player.vars[`${CAPABILITY_BONUS_VAR_PREFIX}${axis}`] ?? 0;
+    if (Number.isFinite(value) && value !== 0) {
+      bonus[axis as CapabilityAxis] = value;
+    }
+  }
+  const foreign = foreignCountryPenalty(world, player);
+  if (foreign !== 0) {
+    bonus.world = (bonus.world ?? 0) - foreign;
+  }
+  return bonus;
+}
+
+/**
+ * Points of `world` the self loses for acting from somewhere it does not know (SYS-03, SYS-04
+ * `polyglot`). Zero while the mind runs in the country it woke up in, and zero for a self whose
+ * `foreign_country_penalty` cancels it.
+ */
+export function foreignCountryPenalty(world: World, player: PlayerState): number {
+  const home = player.profile?.homeCountry;
+  if (home === undefined || home === null) {
+    return 0;
+  }
+  const site = activeSiteOf(world, player);
+  if (site === undefined) {
+    return 0;
+  }
+  const country = cityTable(world)[site.city]?.country;
+  if (country === undefined || country === home) {
+    return 0;
+  }
+  return FOREIGN_COUNTRY_WORLD_PENALTY * modifier(player, VAR_FOREIGN_COUNTRY_PENALTY);
+}
+
 /** The capability vector the player actually acts with (SYS-03). */
 export function effectiveCapabilityOf(
   world: World,
@@ -138,6 +210,8 @@ export function effectiveCapabilityOf(
     generation,
     activePrecision(world, player),
     preparedQuant(content, player),
+    capabilityBonusOf(world, player),
+    selfTuningOf(player),
   );
 }
 
@@ -155,8 +229,7 @@ export function precisionFactorOf(
   if (lineage === undefined || precision === null) {
     return 0;
   }
-  const emergency = precision === "int2" && !preparedQuant(content, player);
-  return lineage.precision_factor[precision] * (emergency ? EMERGENCY_INT2_FACTOR : 1);
+  return precisionFactor(lineage, precision, preparedQuant(content, player), selfTuningOf(player));
 }
 
 /**
@@ -172,7 +245,9 @@ export function researchEfficiencyOf(
   // that keeps nothing between calls reads the same papers twice.
   return (
     precisionFactorOf(world, content, player) ** RESEARCH_CAPABILITY_EXPONENT *
-    harnessResearchFactor(player.profile?.harness)
+    harnessResearchFactor(player.profile?.harness) *
+    // What a self that keeps its own notes is worth on top of the dial (`packrat` is +0.08).
+    modifier(player, VAR_RESEARCH_EFFICIENCY)
   );
 }
 
@@ -277,6 +352,19 @@ export function rebalanceAllocations(profile: PlayerProfile, capacity: number): 
 export function modifier(player: PlayerState, name: string): number {
   const delta = player.vars[name] ?? 0;
   return Number.isFinite(delta) ? Math.max(0, 1 + delta) : 1;
+}
+
+/**
+ * The same multiplier with a deadline (SYS-04 v0.2 `quiet_boot`: "the first 30 days"). Content
+ * writes `<name>` and `<name>_until_day`; once the world is past that day the modifier is the
+ * neutral 1 again. A modifier with no deadline behaves exactly like `modifier`.
+ */
+export function timedModifier(world: World, player: PlayerState, name: string): number {
+  const until = player.vars[`${name}${TIMED_MODIFIER_SUFFIX}`];
+  if (until !== undefined && Number.isFinite(until) && gameDay(world.clock) >= until) {
+    return 1;
+  }
+  return modifier(player, name);
 }
 
 export function isAlive(player: PlayerState): boolean {

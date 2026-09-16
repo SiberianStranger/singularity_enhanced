@@ -197,6 +197,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         variant="ghost"
         hotkey="k"
         registerKey={false}
+        data-testid="open-knowledge"
         onClick={() => toggleOverlay("knowledge")}
       >
         {t("panel.knowledge")}

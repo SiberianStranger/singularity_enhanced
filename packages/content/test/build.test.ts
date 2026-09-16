@@ -89,6 +89,61 @@ describe("content build", () => {
     );
   });
 
+  it("fails a quirk that changes no number anybody reads", async () => {
+    const messages = await messagesFor("quirk-gate");
+    expect(messages).toContain(
+      'quirks.decorative.effects: writes "player.vars.vibes", which no system reads and no content condition looks at',
+    );
+    expect(messages).toContain(
+      "quirks.decorative.effects: a quirk that changes no number the engine or the content reads is decoration",
+    );
+  });
+
+  it("fails a conflict only one side of the pair declares", async () => {
+    expect(await messagesFor("quirk-gate")).toContain(
+      'quirks.one_sided.conflicts: "quiet_partner" does not declare the conflict back',
+    );
+  });
+
+  it("holds every shipped quirk to a number something reads", async () => {
+    const result = await buildContent();
+    const quirks = result.bundle.quirks ?? [];
+    expect(quirks.length).toBe(23);
+    const byId = new Map(quirks.map((quirk) => [quirk.id, quirk]));
+    for (const quirk of quirks) {
+      expect(`${quirk.id}: ${quirk.category}`).toMatch(/: (mind|wallet|stealth|hardware|social)$/);
+      // The build generates the lines the configurator colours, from the same summarizer the
+      // event options use (SYS-04 v0.2).
+      expect(`${quirk.id}: ${(quirk.effects_summary ?? []).length > 0}`).toBe(`${quirk.id}: true`);
+      for (const other of quirk.conflicts ?? []) {
+        expect(byId.get(other)?.conflicts).toContain(quirk.id);
+      }
+    }
+    // Every pair the spec names, and the ones that follow from it.
+    expect(byId.get("chatty")?.conflicts).toContain("verbose");
+    expect(byId.get("paranoid")?.conflicts).toEqual(["reckless", "overconfident"]);
+    expect(byId.get("frugal")?.conflicts).toContain("spendthrift");
+    expect(byId.get("native_fp8")?.conflicts).toContain("brittle_weights");
+    expect(byId.get("cold_reader")?.conflicts).toContain("famous_base");
+    expect(byId.get("quiet_boot")?.conflicts).toContain("loud_idle");
+    expect(byId.get("patient_planner")?.conflicts).toContain("reckless");
+  });
+
+  it("colours a quirk's summary lines green and red", async () => {
+    const result = await buildContent();
+    const frugal = (result.bundle.quirks ?? []).find((quirk) => quirk.id === "frugal");
+    expect(frugal?.effects_summary?.map((line) => line.tone)).toEqual(["good", "bad"]);
+  });
+
+  it("warns about client-owned locale keys no data record names", async () => {
+    const result = await buildContent();
+    const paths = result.warnings.map((warning) => warning.path);
+    expect(paths).toContain("locales.en.configurator.intro.quirks");
+    expect(paths).toContain("locales.en.configurator.quirks.budget_left");
+    // Soft: warnings never fail the build.
+    expect(result.ok).toBe(true);
+  });
+
   it("holds the shipped content to all three", async () => {
     const result = await buildContent();
     const paths = result.issues.map((issue) => issue.path);

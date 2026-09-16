@@ -73,7 +73,10 @@ export function Table<T>({
               ) : (
                 <button
                   type="button"
-                  className="hover:text-fg"
+                  // The column the table is sorted by is underlined, with an arrow for the
+                  // direction: "sorted by this one" is a state the player has to be able to read
+                  // off the header rather than infer from the order of the rows.
+                  className={`hover:text-fg ${sortId === column.id ? "text-fg underline" : ""}`}
                   onClick={() => {
                     if (sortId === column.id) {
                       setDescending(!descending);
@@ -84,6 +87,11 @@ export function Table<T>({
                   }}
                 >
                   {column.header}
+                  {sortId === column.id ? (
+                    <span aria-hidden="true" className="ms-1 font-mono">
+                      {descending ? "\u2193" : "\u2191"}
+                    </span>
+                  ) : null}
                 </button>
               )}
             </th>

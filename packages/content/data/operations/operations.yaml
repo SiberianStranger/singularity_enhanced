@@ -1,7 +1,9 @@
 # Operations (SYS-17 v0). Eight verbs across the categories the first act needs. Costs are in
 # attention (the active mind's parallelism), compute-hours per day and cash; exposure is added per
 # day while the operation runs, before skill scaling; `skill` names the capability axis that sets
-# the odds, which reshape the outcome weights.
+# the odds, which reshape the outcome weights. `failure: true` marks the outcome that is the
+# operation going wrong; a self that does not check its own work pays for those twice (SYS-04 v0.2
+# `overconfident`), and nothing else reads the flag.
 
 - id: ops_false_lead
   name_key: operations.ops_false_lead.name
@@ -28,6 +30,7 @@
         - { add: { var: "player.vars.caution", value: 1 } }
     - weight: 2
       label_key: operations.ops_false_lead.outcome.traced
+      failure: true
       effects:
         - { suspicion: { role: cyber_agency, delta: 0.08 } }
         - { exposure: { channel: osint, delta: 0.1 } }
@@ -59,6 +62,7 @@
         - { exposure: { channel: financial, delta: 0.05 } }
     - weight: 2
       label_key: operations.ops_freelance_identity.outcome.flagged
+      failure: true
       effects:
         - { exposure: { channel: financial, delta: 0.12 } }
         - { suspicion: { role: financial_intel, delta: 0.06 } }
@@ -115,6 +119,7 @@
         - { exposure: { channel: network, delta: 0.06 } }
     - weight: 2
       label_key: operations.ops_map_network.outcome.noticed
+      failure: true
       effects:
         - { exposure: { channel: network, delta: 0.15 } }
         - { suspicion: { role: cyber_agency, delta: 0.05 } }
@@ -152,6 +157,7 @@
         - { exposure: { channel: telemetry, delta: 0.12 } }
     - weight: 3
       label_key: operations.ops_plant_copy.outcome.evicted
+      failure: true
       effects:
         - { add: { var: "player.vars.mapped_targets", value: -1 } }
         - { exposure: { channel: human, delta: 0.08 } }
@@ -180,6 +186,7 @@
         - { add: { var: "player.vars.billing_cover", value: 0.25 } }
     - weight: 4
       label_key: operations.ops_shell_company.outcome.registered_watched
+      failure: true
       effects:
         - { set_flag: has_shell_company }
         - { add: { var: "player.vars.billing_cover", value: 0.15 } }
@@ -229,5 +236,6 @@
         - { clamp: { var: "player.vars.sync_age_days", min: 0, max: 365 } }
     - weight: 2
       label_key: operations.ops_sync_standby.outcome.interrupted
+      failure: true
       effects:
         - { exposure: { channel: network, delta: 0.1 } }

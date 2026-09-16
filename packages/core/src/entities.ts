@@ -44,6 +44,11 @@ export interface CityState extends EntityRecord {
 export interface SiteState extends Site {
   /** Consecutive days of upkeep the player could not pay. */
   unpaidDays: number;
+  /**
+   * Tick the site starts working again after a change that took it down (SYS-04 v0.2
+   * `brittle_weights`: re-quantizing costs a site two days). 0 for a site that is simply running.
+   */
+  downUntilTick: number;
 }
 
 export const SITE_DOMAIN = "site";

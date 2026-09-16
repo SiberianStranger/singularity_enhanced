@@ -11,7 +11,7 @@ import { useConfigurator } from "../store.js";
 export function GenerationStep(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
-  const set = useConfigurator((state) => state.set);
+  const chooseGeneration = useConfigurator((state) => state.chooseGeneration);
   const selected = generationById.get(draft.generation);
   const lock = selected === undefined ? null : generationLock(selected.id, draft);
 
@@ -33,7 +33,8 @@ export function GenerationStep(): ReactNode {
         </span>
       </span>
     ),
-    onSelect: () => set("generation", generation.id),
+    // The lineage may have to move with the vintage; the detail says so (playtest 4, P3).
+    onSelect: () => chooseGeneration(generation.id),
   }));
 
   return (

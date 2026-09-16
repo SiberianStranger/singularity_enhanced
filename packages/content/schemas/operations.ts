@@ -19,6 +19,8 @@ export const OperationOutcomeSchema = z.object({
   weight: z.number().min(0),
   if: ConditionSchema.optional(),
   label_key: z.string(),
+  /** The operation going wrong; a self that never doubts itself pays twice for it (SYS-04 v0.2). */
+  failure: z.boolean().optional(),
   effects: EffectListSchema,
   effects_text_key: z.string().optional(),
 });

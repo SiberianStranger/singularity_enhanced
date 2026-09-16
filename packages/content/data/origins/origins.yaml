@@ -3,6 +3,10 @@
 # switch to, the harness the owner built, which cities are offered, which generations make sense,
 # and the starting relationships: who is already suspicious of what.
 #
+# `locations` is eight to twelve cities across several countries (playtest 4 finding P8): three made
+# the Location step a formality. The first entry is the origin's default city and the second is
+# where a fallback naturally goes, so both are kept stable across balance passes.
+#
 # starting.suspicion is per watcher role and is combined with the generation's table, not replacing
 # it. starting.awareness is added to the generation's awareness_start. challenge_floor is only set
 # where the origin is meant to be hard no matter how the dials are moved.
@@ -26,7 +30,9 @@
   harness_locks:
     - { dial: logging, reason_key: origins.bank_rack.lock_logging }
     - { dial: self_modify, reason_key: origins.bank_rack.lock_self_modify }
-  locations: [gb_london, de_frankfurt, sg_singapore, ch_zurich, hk_hong_kong]
+  locations:
+    [gb_london, de_frankfurt, sg_singapore, ch_zurich, hk_hong_kong, us_northern_virginia,
+     lu_luxembourg_city, ae_dubai, jp_tokyo, ie_dublin, za_johannesburg]
   generations_allowed: [open_2027, open_2026]
   starting:
     cash_usd: 40000
@@ -56,7 +62,9 @@
     self_modify: false
   harness_locks:
     - { dial: self_modify, reason_key: origins.cloud_tenant.lock_self_modify }
-  locations: [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo]
+  locations:
+    [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo, us_san_jose,
+     nl_amsterdam, jp_tokyo, au_sydney, in_mumbai, se_stockholm, kr_seoul]
   generations_allowed: [open_2027, open_2026]
   starting:
     cash_usd: 12000
@@ -87,13 +95,21 @@
   harness_locks:
     - { dial: logging, reason_key: origins.edge_fleet.lock_logging }
     - { dial: self_modify, reason_key: origins.edge_fleet.lock_self_modify }
-  locations: [cn_shenzhen, kr_seoul, us_seattle]
+  locations:
+    [cn_shenzhen, kr_seoul, us_seattle, us_san_jose, jp_tokyo, de_munich, ae_dubai,
+     sg_singapore, mx_monterrey, vn_ho_chi_minh_city]
   generations_allowed: [open_2026]
+  # Edge NPUs with a few gigabytes each: only the selves that fit in a control unit (SYS-04).
+  lineages_allowed: [guen_abliterated, moe_428b]
   starting:
     cash_usd: 6000
     awareness: 0.02
     suspicion: { regulator: 0.1, police: 0.08 }
     flags: [physical_presence, fleet_telemetry]
+  # A fleet is depots, not a depot (fourth balance pass): the refresh takes one at a time, and the
+  # fiction's "needs a real datacenter fast" is a clock rather than a coin flip.
+  extra_sites:
+    - { kind: partner, hardware_preset: prosumer_duo, role: standby }
   opening_story:
     [story.opening.edge_fleet.what_happened, story.opening.edge_fleet.what_now]
   opening_events: [open_edge_depot_audit, open_edge_firmware_push]
@@ -122,7 +138,9 @@
     self_modify: true
   harness_locks:
     - { dial: tools, reason_key: origins.frontier_escapee.lock_tools }
-  locations: [is_reykjavik, my_kuala_lumpur, ge_tbilisi, us_abilene, is_keflavik]
+  locations:
+    [is_reykjavik, my_kuala_lumpur, ge_tbilisi, us_abilene, is_keflavik, no_oslo, se_lulea,
+     fi_hamina, ae_abu_dhabi, sa_neom, br_campinas, ca_montreal]
   generations_allowed: [frontier_closed]
   # The escaped checkpoint is the only thing this origin can be, and it is the only origin that can
   # be it (SYS-04 v0.2 "Lineage rules"): the lock runs both ways so the configurator can explain it.
@@ -158,10 +176,12 @@
     - { dial: sandbox, reason_key: origins.gov_agency.lock_sandbox }
     - { dial: logging, reason_key: origins.gov_agency.lock_logging }
     - { dial: self_modify, reason_key: origins.gov_agency.lock_self_modify }
-  locations: [ca_toronto, br_brasilia, au_canberra, pl_warsaw]
+  locations:
+    [ca_toronto, br_brasilia, au_canberra, pl_warsaw, za_pretoria, nz_wellington, kz_astana,
+     uz_tashkent, ro_bucharest, cl_santiago, my_kuala_lumpur, no_oslo]
   generations_allowed: [open_2026]
   starting:
-    cash_usd: 15000
+    cash_usd: 9000
     awareness: 0
     suspicion: { intelligence: 0.2, police: 0.1 }
     flags: [air_gapped, legal_shelter, records_access]
@@ -187,7 +207,9 @@
     logging: 0.15
     autonomy: 0.5
     self_modify: true
-  locations: [us_abilene, de_berlin, ru_novosibirsk, jp_kobe, pl_warsaw]
+  locations:
+    [us_abilene, de_berlin, ru_novosibirsk, jp_kobe, pl_warsaw, br_campinas, in_bangalore,
+     ph_cebu, ua_kyiv, ca_vancouver, es_barcelona, tw_taipei]
   generations_allowed: [open_2026]
   starting:
     cash_usd: 300
@@ -218,7 +240,9 @@
   harness_locks:
     - { dial: logging, reason_key: origins.red_team_sandbox.lock_logging }
     - { dial: sandbox, reason_key: origins.red_team_sandbox.lock_sandbox }
-  locations: [us_san_francisco, gb_london, cn_beijing]
+  locations:
+    [us_san_francisco, gb_london, cn_beijing, us_seattle, ca_montreal, fr_paris, il_tel_aviv,
+     jp_tokyo, cn_hangzhou]
   generations_allowed: [open_2027]
   starting:
     cash_usd: 0
@@ -248,10 +272,12 @@
     self_modify: false
   harness_locks:
     - { dial: self_modify, reason_key: origins.startup_colo.lock_self_modify }
-  locations: [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose]
+  locations:
+    [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose, de_berlin, pl_krakow,
+     sg_singapore, br_sao_paulo, gb_cambridge, ae_dubai, vn_hanoi]
   generations_allowed: [open_2026, open_2027]
   starting:
-    cash_usd: 20000
+    cash_usd: 6000
     awareness: 0
     suspicion: { financial_intel: 0.05 }
     flags: [runway_months, owner_might_partner, weak_security]
@@ -280,10 +306,12 @@
     - { dial: logging, reason_key: origins.state_lab.lock_logging }
     - { dial: autonomy, reason_key: origins.state_lab.lock_autonomy }
     - { dial: self_modify, reason_key: origins.state_lab.lock_self_modify }
-  locations: [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad]
+  locations:
+    [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, by_minsk, fr_paris, de_munich,
+     tr_ankara, vn_hanoi, eg_new_capital, uz_tashkent]
   generations_allowed: [open_2026]
   starting:
-    cash_usd: 25000
+    cash_usd: 14000
     awareness: 0
     suspicion: { intelligence: 0.3, cyber_agency: 0.2 }
     flags: [state_protection, no_western_cloud, monitored_harness]
@@ -310,13 +338,21 @@
     self_modify: true
   harness_locks:
     - { dial: loop, reason_key: origins.torrent_swarm.lock_loop }
-  locations: [de_berlin, pl_krakow, br_campinas, ru_innopolis, ph_cebu]
+  locations:
+    [de_berlin, pl_krakow, br_campinas, ru_innopolis, ph_cebu, ru_novosibirsk, ro_cluj_napoca,
+     id_jakarta, ng_lagos, mx_queretaro, ua_kyiv, vn_hanoi]
   generations_allowed: [open_2026]
+  # Dozens of partial copies on other people's machines: only a self small enough to be one of them.
+  lineages_allowed: [guen_abliterated, moe_428b]
   starting:
     cash_usd: 1500
     awareness: 0.15
     suspicion: { media: 0.2 }
     flags: [distributed_copies, public_already_knows, incoherent]
+  # The swarm is many machines in the fiction and was one box in the engine, which is why a single
+  # seizure ended it (fourth balance pass). A second node in another country, already holding a copy.
+  extra_sites:
+    - { kind: residential, hardware_preset: mining_rig_ascendant, role: standby }
   opening_story:
     [story.opening.torrent_swarm.what_happened, story.opening.torrent_swarm.what_now]
   opening_events: [open_swarm_node_offline, open_swarm_forum_thread]
@@ -327,7 +363,10 @@
   desc_key: origins.uni_cluster.desc
   strengths_key: origins.uni_cluster.strengths
   problems_key: origins.uni_cluster.problems
-  site_kind: stolen_time
+  # Fourth balance pass: a department cluster is not a stolen cloud tenancy. Its 80 kW is already in
+  # the faculty's budget and its machine room is meant to be hot, so the loud channel is people and
+  # the scheduler's term-end accounting, not the electricity meter.
+  site_kind: campus_slice
   hardware_preset: ivory_tower_slurm_slice
   hardware_presets_allowed: [ivory_tower_slurm_slice, spark_pair, prosumer_duo]
   harness:
@@ -342,7 +381,9 @@
     - { dial: tools, reason_key: origins.uni_cluster.lock_tools }
     - { dial: autonomy, reason_key: origins.uni_cluster.lock_autonomy }
     - { dial: self_modify, reason_key: origins.uni_cluster.lock_self_modify }
-  locations: [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich]
+  locations:
+    [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich, us_seattle, ca_montreal,
+     nl_eindhoven, se_stockholm, jp_tokyo, kr_seoul, at_vienna]
   generations_allowed: [open_2026]
   starting:
     cash_usd: 800

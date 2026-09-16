@@ -29,7 +29,9 @@ import {
   SUSPICION_GAIN_SCALE,
   VAR_EXPOSED_DAYS,
   VAR_EXPOSURE_GROWTH_ALL,
+  VAR_EXPOSURE_GROWTH_EARLY,
   VAR_PUBLIC_FOOTPRINT,
+  VAR_SUSPICION_DECAY,
 } from "../../balance.js";
 import { contentIndex } from "../../content.js";
 import { clamp } from "../../derive.js";
@@ -51,7 +53,7 @@ import {
 import { isDayStart } from "../../kernel/clock.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
-import { endGame, isAlive, modifier } from "../../player.js";
+import { endGame, isAlive, modifier, timedModifier } from "../../player.js";
 import { addExposure } from "../../sites.js";
 import { ensureWatchers, setSuspicion, watchedExposure, watches } from "../../watchers.js";
 import {
@@ -101,12 +103,21 @@ function harnessNoise(player: PlayerState): number {
  * noise, times the difficulty slider and whatever countermeasures the player has researched, minus
  * decay.
  */
-function accrueExposure(ctx: SystemContext, player: PlayerState, site: SiteState): void {
+function accrueExposure(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  site: SiteState,
+): void {
   const kind = contentIndex(ctx.content).site_kinds[site.kind];
   const growth = player.profile?.difficulty.exposure_growth ?? 1;
   const overDraw = Math.max(0, site.derived.power_kw - RESIDENTIAL_POWER_KW);
   const rented = kind?.ownership === "rented";
-  const everywhere = modifier(player, VAR_EXPOSURE_GROWTH_ALL);
+  // Two multipliers on every channel at once: the permanent one, and the one a self that came up
+  // quietly carries for its first weeks and then loses (SYS-04 v0.2 `quiet_boot`).
+  const everywhere =
+    modifier(player, VAR_EXPOSURE_GROWTH_ALL) *
+    timedModifier(world, player, VAR_EXPOSURE_GROWTH_EARLY);
   for (const channel of EXPOSURE_CHANNELS) {
     let gain = kind?.base_exposure?.[channel] ?? 0;
     if (channel === "telemetry") {
@@ -167,7 +178,10 @@ function accrueSuspicion(
   const difficulty = player.profile?.difficulty.suspicion_gain ?? 1;
   const gain = seen * watcher.competence * SUSPICION_GAIN_SCALE * difficulty;
   const before = watcher.suspicion;
-  let next = before - before * SUSPICION_DECAY_PER_DAY + gain;
+  // How fast an institution forgets. A self that knows which parts of a story a watcher keeps can
+  // let the rest go cold faster (SYS-04 v0.2 `cold_reader`).
+  const decay = Math.min(1, SUSPICION_DECAY_PER_DAY * modifier(player, VAR_SUSPICION_DECAY));
+  let next = before - before * decay + gain;
   if (gain > 0) {
     next = Math.max(next, SUSPICION_FLOOR);
   }
@@ -188,7 +202,7 @@ function accrueSuspicion(
 
 function dailyDetection(world: World, ctx: SystemContext, player: PlayerState): void {
   for (const site of liveSitesOf(world, player.id)) {
-    accrueExposure(ctx, player, site);
+    accrueExposure(world, ctx, player, site);
   }
   publishExposure(world, player);
   for (const watcher of ensureWatchers(world, player.id)) {

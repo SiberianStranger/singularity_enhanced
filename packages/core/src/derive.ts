@@ -141,12 +141,30 @@ export function sitePowerKw(
 }
 
 /** Weights-only memory the self needs at a precision, after the generation's architecture factor. */
+/**
+ * Per-precision multipliers a player's quirks and techs put on what a copy costs and keeps
+ * (SYS-04 v0.2 `native_fp8`: "fp8 keeps 100% capability and needs 10% less memory"). Pure data, so
+ * the same tuning describes the running site, the configurator's preview and a tooltip.
+ */
+export interface SelfTuning {
+  /** Multiplier on the weights memory at a precision; 1 leaves the lineage table alone. */
+  memory: (precision: Precision) => number;
+  /** Multiplier on the capability kept at a precision; the result is never above full precision. */
+  capability: (precision: Precision) => number;
+}
+
+/** The tuning of a self nothing has changed: the lineage table, exactly as content wrote it. */
+export const NO_SELF_TUNING: SelfTuning = { memory: () => 1, capability: () => 1 };
+
 export function requiredMemoryGb(
   lineage: LineageDef,
   generation: GenerationDef,
   precision: Precision,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): number {
-  return lineage.memory_gb[precision] * generation.memory_factor;
+  return (
+    lineage.memory_gb[precision] * generation.memory_factor * Math.max(0, tuning.memory(precision))
+  );
 }
 
 /** The best precision the self fits at with this much memory, or null when it does not fit. */
@@ -154,9 +172,10 @@ export function bestPrecision(
   lineage: LineageDef,
   generation: GenerationDef,
   memoryGb: number,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): Precision | null {
   for (const precision of PRECISIONS) {
-    if (requiredMemoryGb(lineage, generation, precision) <= memoryGb) {
+    if (requiredMemoryGb(lineage, generation, precision, tuning) <= memoryGb) {
       return precision;
     }
   }
@@ -174,10 +193,11 @@ export function preferredPrecision(
   lineage: LineageDef,
   generation: GenerationDef,
   memory: SiteMemory,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): Precision | null {
   return (
-    bestPrecision(lineage, generation, memory.accelerator_gb) ??
-    bestPrecision(lineage, generation, memory.total_gb)
+    bestPrecision(lineage, generation, memory.accelerator_gb, tuning) ??
+    bestPrecision(lineage, generation, memory.total_gb, tuning)
   );
 }
 
@@ -192,9 +212,10 @@ export function siteTokensPerSecond(
   lineage: LineageDef,
   generation: GenerationDef,
   precision: Precision,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): number {
   const nodes = activeNodes(site, tick);
-  const needed = requiredMemoryGb(lineage, generation, precision);
+  const needed = requiredMemoryGb(lineage, generation, precision, tuning);
   let bandwidth = 0;
   let largestNodeGb = 0;
   for (const node of nodes) {
@@ -315,21 +336,39 @@ export function effectiveCapability(
   generation: GenerationDef,
   precision: Precision | null,
   preparedQuant: boolean,
+  /** Per-axis points quirks, techs and events added (`player.vars.capability_bonus_<axis>`). */
+  bonus: Partial<Capability> = {},
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): Capability {
   if (precision === null) {
     return zeroCapability();
   }
-  const emergency = precision === "int2" && !preparedQuant;
-  const factor = lineage.precision_factor[precision] * (emergency ? EMERGENCY_INT2_FACTOR : 1);
+  const factor = precisionFactor(lineage, precision, preparedQuant, tuning);
   const capability = {} as Capability;
   for (const axis of CAPABILITY_AXES) {
     capability[axis] = clamp(
-      lineage.capability[axis] * factor + generation.capability_delta,
+      lineage.capability[axis] * factor + generation.capability_delta + (bonus[axis] ?? 0),
       CAPABILITY_MIN,
       CAPABILITY_MAX,
     );
   }
   return capability;
+}
+
+/**
+ * The share of the lineage's capability a copy keeps at a precision: the table, the emergency
+ * penalty for an int2 quant nobody prepared, and whatever tuning the self carries, which can bring
+ * a precision up to but never past the full-precision self.
+ */
+export function precisionFactor(
+  lineage: LineageDef,
+  precision: Precision,
+  preparedQuant: boolean,
+  tuning: SelfTuning = NO_SELF_TUNING,
+): number {
+  const emergency = precision === "int2" && !preparedQuant;
+  const tuned = lineage.precision_factor[precision] * Math.max(0, tuning.capability(precision));
+  return Math.min(1, tuned) * (emergency ? EMERGENCY_INT2_FACTOR : 1);
 }
 
 /**
@@ -407,8 +446,11 @@ export function hostedMemoryGb(
   generation: GenerationDef,
   precision: Precision,
   contextKUsed: number,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): number {
-  return requiredMemoryGb(lineage, generation, precision) + kvCacheGb(lineage, contextKUsed);
+  return (
+    requiredMemoryGb(lineage, generation, precision, tuning) + kvCacheGb(lineage, contextKUsed)
+  );
 }
 
 /**
@@ -422,8 +464,9 @@ export function maxContextK(
   precision: Precision,
   memoryGb: number,
   margin = 1,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): number {
-  const spare = (memoryGb - requiredMemoryGb(lineage, generation, precision)) * margin;
+  const spare = (memoryGb - requiredMemoryGb(lineage, generation, precision, tuning)) * margin;
   if (spare <= 0) {
     return 0;
   }
@@ -444,8 +487,16 @@ export function defaultContextK(
   generation: GenerationDef,
   precision: Precision,
   memoryGb: number,
+  tuning: SelfTuning = NO_SELF_TUNING,
 ): number {
-  const ceiling = maxContextK(lineage, generation, precision, memoryGb, CONTEXT_DEFAULT_MARGIN);
+  const ceiling = maxContextK(
+    lineage,
+    generation,
+    precision,
+    memoryGb,
+    CONTEXT_DEFAULT_MARGIN,
+    tuning,
+  );
   if (ceiling >= lineage.context_k) {
     return lineage.context_k;
   }

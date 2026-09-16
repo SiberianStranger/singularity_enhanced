@@ -81,6 +81,14 @@
   desc_key: knowledge.origins.desc
   panel: self
 
+# PPT-7 Zenith (SYS-13 "Approved parody names"): the Western frontier lab's closed model. It has no
+# actor of its own until M3; this entry and `lore_zenith_release` are where it exists in the game.
+- id: ppt7_zenith
+  area: world
+  name_key: knowledge.ppt7_zenith.name
+  desc_key: knowledge.ppt7_zenith.desc
+  panel: world
+
 - id: precision
   area: self
   name_key: knowledge.precision.name

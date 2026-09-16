@@ -193,6 +193,7 @@ export function GameScreen(): ReactNode {
               variant="default"
               hotkey="w"
               registerKey={false}
+              data-testid="open-world"
               onClick={() => toggleOverlay("world")}
             >
               {t("panel.world")}
