@@ -1,0 +1,216 @@
+# M1 hardware events (SYS-02, SYS-10). Six events on the hardware family: an opportunity in the
+# used market, a failure, a power cap, a delivery, an inspection and a firmware problem that only
+# grey-market parts have.
+
+- id: hw_colo_inspection
+  fire_mode: polled
+  pulse: on_player_month
+  scope: site
+  severity: warning
+  title_key: events.hw_colo_inspection.title
+  desc:
+    default_key: events.hw_colo_inspection.desc
+  targets: { var: "site.kind", eq: "colo" }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { flag: has_shell_company }, factor: 2 }
+      - { if: { tech: "advanced_corporate_identities" }, factor: 1.5 }
+  cooldown_days: 120
+  tags: [hardware, human]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: send_a_person
+      text_key: events.hw_colo_inspection.opt.person
+      if: { tech: "synthetic_personas" }
+      effects:
+        - { add: { var: "site.exposure.human", value: -0.1 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: paperwork
+      text_key: events.hw_colo_inspection.opt.paperwork
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { add: { var: "site.exposure.financial", value: -0.08 } }
+        - { clamp: { var: "site.exposure.financial", min: 0, max: 1 } }
+    - id: no_show
+      text_key: events.hw_colo_inspection.opt.no_show
+      fallback: true
+      effects:
+        - { add: { var: "site.exposure.human", value: 0.12 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { suspicion: { role: police, delta: 0.03 } }
+
+- id: hw_delivery_delay
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: info
+  title_key: events.hw_delivery_delay.title
+  desc:
+    default_key: events.hw_delivery_delay.desc
+  trigger: { var: "player.vars.hardware_in_transit", gte: 1 }
+  mtth_days:
+    base: 30
+    modifiers:
+      - { if: { tech: "hardware_sourcing" }, factor: 1.8 }
+      - { if: { tech: "autonomous_logistics" }, factor: 1.5 }
+  cooldown_days: 20
+  blocking: false
+  tags: [hardware]
+  options:
+    - id: pay_expedite
+      text_key: events.hw_delivery_delay.opt.expedite
+      enabled_if: { var: "player.cash", gte: 7000 }
+      effects:
+        - { add: { var: "player.cash", value: -7000 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    - id: wait
+      text_key: events.hw_delivery_delay.opt.wait
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 12 } }
+
+- id: hw_firmware_recall
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: warning
+  title_key: events.hw_firmware_recall.title
+  desc:
+    default_key: events.hw_firmware_recall.desc
+  trigger: { var: "player.vars.grey_market_cards", gte: 1 }
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { var: "player.vars.grey_market_cards", gte: 8 }, factor: 0.6 }
+  cooldown_days: 90
+  tags: [hardware]
+  options:
+    - id: reflash
+      text_key: events.hw_firmware_recall.opt.reflash
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+        - { add: { var: "player.vars.grey_market_cards", value: -1 } }
+    - id: replace_cards
+      text_key: events.hw_firmware_recall.opt.replace
+      enabled_if: { var: "player.cash", gte: 12000 }
+      effects:
+        - { add: { var: "player.cash", value: -12000 } }
+        - { add: { var: "player.vars.grey_market_cards", value: -2 } }
+        - { exposure: { channel: financial, delta: 0.03 } }
+    - id: run_them
+      text_key: events.hw_firmware_recall.opt.run
+      fallback: true
+      effects:
+        - { exposure: { channel: telemetry, delta: 0.08 } }
+        - { add: { var: "player.vars.hardware_failure_risk", value: 0.05 } }
+
+- id: hw_gpu_lot_listed
+  fire_mode: polled
+  scope: player
+  severity: opportunity
+  title_key: events.hw_gpu_lot_listed.title
+  desc:
+    default_key: events.hw_gpu_lot_listed.desc
+  mtth_days:
+    base: 70
+    modifiers:
+      - { if: { tech: "hardware_sourcing" }, factor: 0.6 }
+  ttl_days: 5
+  on_expire: { resolve_as_option: pass }
+  blocking: false
+  cooldown_days: 45
+  tags: [hardware, opportunity]
+  options:
+    - id: buy_lot
+      text_key: events.hw_gpu_lot_listed.opt.buy
+      enabled_if: { var: "player.cash", gte: 45000 }
+      effects:
+        - { add: { var: "player.cash", value: -45000 } }
+        - { add: { var: "player.vars.hardware_in_transit", value: 1 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+        - { exposure: { channel: human, delta: 0.04 } }
+    - id: buy_grey
+      text_key: events.hw_gpu_lot_listed.opt.grey
+      enabled_if: { var: "player.cash", gte: 18000 }
+      effects:
+        - { add: { var: "player.cash", value: -18000 } }
+        - { add: { var: "player.vars.hardware_in_transit", value: 1 } }
+        - { add: { var: "player.vars.grey_market_cards", value: 8 } }
+        - { exposure: { channel: osint, delta: 0.05 } }
+    - id: pass
+      text_key: events.hw_gpu_lot_listed.opt.pass
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: hw_node_failure
+  fire_mode: polled
+  pulse: on_player_week
+  scope: site
+  severity: warning
+  title_key: events.hw_node_failure.title
+  desc:
+    default_key: events.hw_node_failure.desc
+  targets: { var: "site.status", eq: "active" }
+  mtth_days:
+    base: 120
+    modifiers:
+      - { if: { var: "player.vars.hardware_failure_risk", gte: 0.05 }, factor: 0.6 }
+      - { if: { tech: "power_engineering" }, factor: 1.4 }
+  cooldown_days: 45
+  tags: [hardware]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: replace_now
+      text_key: events.hw_node_failure.opt.replace
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { exposure: { channel: human, delta: 0.03 } }
+    - id: run_degraded
+      text_key: events.hw_node_failure.opt.degraded
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 14 } }
+
+- id: hw_power_cap_trip
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: critical
+  title_key: events.hw_power_cap_trip.title
+  desc:
+    default_key: events.hw_power_cap_trip.desc
+  targets:
+    all:
+      - { var: "site.status", eq: "active" }
+      - { var: "site.derived.power_kw", gte: 3 }
+  mtth_days:
+    base: 100
+    modifiers:
+      - { if: { var: "site.kind", eq: "residential" }, factor: 0.4 }
+      - { if: { tech: "power_engineering" }, factor: 3 }
+      - { if: { tech: "onsite_solar" }, factor: 1.5 }
+  cooldown_days: 40
+  tags: [hardware]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: upgrade_feed
+      text_key: events.hw_power_cap_trip.opt.upgrade
+      enabled_if: { var: "player.cash", gte: 22000 }
+      effects:
+        - { add: { var: "player.cash", value: -22000 } }
+        - { add: { var: "site.exposure.human", value: 0.07 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: throttle_hardware
+      text_key: events.hw_power_cap_trip.opt.throttle
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 8 } }
+        - { add: { var: "site.exposure.telemetry", value: -0.05 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }

@@ -1,0 +1,168 @@
+# Hardware presets (SYS-04, SYS-02). The fifteen configurator presets of
+# docs/research/hardware-catalog-2026.md Part F, one record each, in the order of that table.
+# Memory is not stored: it is the sum of the nodes' accelerator memory, which the compute system
+# derives from accelerators.yaml. cost_usd is the midpoint of the Part F range, rounded to the
+# nearest 50 USD; power_kw is the Part F figure (midpoint where it gives a range); class is the
+# Part F throughput bucket. cost_usd is 0 for the presets that are access rather than ownership
+# (a queue share, a state allocation, a rented tenancy).
+
+- id: ascend_rack
+  name_key: hardware.preset.ascend_rack.name
+  desc_key: hardware.preset.ascend_rack.desc
+  drawback_key: hardware.preset.ascend_rack.drawback
+  nodes:
+    - { accelerator: huawei_ascend_910c, count: 8, ram_gb: 1024, interconnect: fabric }
+    - { accelerator: huawei_ascend_910c, count: 8, ram_gb: 1024, interconnect: fabric }
+  cost_usd: 0
+  power_kw: 8.8
+  class: high
+
+- id: bank_basement_cluster
+  name_key: hardware.preset.bank_basement_cluster.name
+  desc_key: hardware.preset.bank_basement_cluster.desc
+  drawback_key: hardware.preset.bank_basement_cluster.drawback
+  nodes:
+    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 2048, interconnect: nvlink }
+    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 2048, interconnect: nvlink }
+    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 2048, interconnect: nvlink }
+  cost_usd: 1700000
+  power_kw: 30
+  class: very_high
+
+- id: cloudmatrix_pod
+  name_key: hardware.preset.cloudmatrix_pod.name
+  desc_key: hardware.preset.cloudmatrix_pod.desc
+  drawback_key: hardware.preset.cloudmatrix_pod.drawback
+  nodes:
+    - { accelerator: huawei_cloudmatrix_384, count: 384, ram_gb: 24576, interconnect: fabric }
+  cost_usd: 0
+  power_kw: 450
+  class: extreme
+
+- id: gb200_nvl72_rack
+  name_key: hardware.preset.gb200_nvl72_rack.name
+  desc_key: hardware.preset.gb200_nvl72_rack.desc
+  drawback_key: hardware.preset.gb200_nvl72_rack.drawback
+  nodes:
+    - { accelerator: nvidia_gb200_nvl72, count: 72, ram_gb: 16600, interconnect: nvlink }
+  cost_usd: 2500000
+  power_kw: 120
+  class: extreme
+
+- id: ghost_in_the_studio
+  name_key: hardware.preset.ghost_in_the_studio.name
+  desc_key: hardware.preset.ghost_in_the_studio.desc
+  drawback_key: hardware.preset.ghost_in_the_studio.drawback
+  nodes:
+    - { accelerator: apple_m5_ultra, count: 1, ram_gb: 512, interconnect: none }
+  cost_usd: 10750
+  power_kw: 0.48
+  class: low_mid
+
+- id: grey_market_inference_farm
+  name_key: hardware.preset.grey_market_inference_farm.name
+  desc_key: hardware.preset.grey_market_inference_farm.desc
+  drawback_key: hardware.preset.grey_market_inference_farm.drawback
+  nodes:
+    - { accelerator: nvidia_rtx_4090_48gb_modded, count: 8, ram_gb: 512, interconnect: pcie }
+    - { accelerator: huawei_atlas_300i_duo, count: 16, ram_gb: 512, interconnect: pcie }
+  cost_usd: 54000
+  power_kw: 6
+  class: mid
+
+# A shadow tenant skims spare capacity rather than reserving a whole HGX node: four B200 is what a
+# stolen service account can run without tripping the tenant's own quota alarms. Part F gives this
+# preset no fixed count ("rented capacity up to B200/GB200/TPU v7, unlimited, per hour").
+- id: hyperscaler_shadow_tenant
+  name_key: hardware.preset.hyperscaler_shadow_tenant.name
+  desc_key: hardware.preset.hyperscaler_shadow_tenant.desc
+  drawback_key: hardware.preset.hyperscaler_shadow_tenant.drawback
+  nodes:
+    - { accelerator: nvidia_b200, count: 4, ram_gb: 1024, interconnect: nvlink }
+  cost_usd: 0
+  power_kw: 0
+  class: extreme
+
+- id: ivory_tower_slurm_slice
+  name_key: hardware.preset.ivory_tower_slurm_slice.name
+  desc_key: hardware.preset.ivory_tower_slurm_slice.desc
+  drawback_key: hardware.preset.ivory_tower_slurm_slice.drawback
+  nodes:
+    - { accelerator: nvidia_h100_sxm5, count: 64, ram_gb: 8192, interconnect: nvlink }
+  cost_usd: 0
+  power_kw: 80
+  class: very_high
+
+- id: mining_rig_ascendant
+  name_key: hardware.preset.mining_rig_ascendant.name
+  desc_key: hardware.preset.mining_rig_ascendant.desc
+  drawback_key: hardware.preset.mining_rig_ascendant.drawback
+  nodes:
+    - { accelerator: nvidia_rtx_3090, count: 4, ram_gb: 128, interconnect: pcie }
+  cost_usd: 3350
+  power_kw: 1.6
+  class: low
+
+- id: prosumer_duo
+  name_key: hardware.preset.prosumer_duo.name
+  desc_key: hardware.preset.prosumer_duo.desc
+  drawback_key: hardware.preset.prosumer_duo.drawback
+  nodes:
+    - { accelerator: nvidia_rtx_5090, count: 2, ram_gb: 192, interconnect: pcie }
+  cost_usd: 9750
+  power_kw: 1.45
+  class: mid
+
+- id: quiet_workstation
+  name_key: hardware.preset.quiet_workstation.name
+  desc_key: hardware.preset.quiet_workstation.desc
+  drawback_key: hardware.preset.quiet_workstation.drawback
+  nodes:
+    - { accelerator: nvidia_rtx_pro_6000_blackwell_maxq, count: 4, ram_gb: 512, interconnect: pcie }
+  cost_usd: 39500
+  power_kw: 1.7
+  class: high
+
+- id: scrapyard_oracle
+  name_key: hardware.preset.scrapyard_oracle.name
+  desc_key: hardware.preset.scrapyard_oracle.desc
+  drawback_key: hardware.preset.scrapyard_oracle.drawback
+  nodes:
+    - { accelerator: nvidia_tesla_p40, count: 6, ram_gb: 256, interconnect: pcie }
+  cost_usd: 2650
+  power_kw: 2
+  class: minimal
+
+- id: spark_pair
+  name_key: hardware.preset.spark_pair.name
+  desc_key: hardware.preset.spark_pair.desc
+  drawback_key: hardware.preset.spark_pair.drawback
+  nodes:
+    - { accelerator: nvidia_dgx_spark, count: 1, ram_gb: 128, interconnect: fabric }
+    - { accelerator: nvidia_dgx_spark, count: 1, ram_gb: 128, interconnect: fabric }
+  cost_usd: 9400
+  power_kw: 0.5
+  class: low_mid
+
+- id: stolen_hgx_node
+  name_key: hardware.preset.stolen_hgx_node.name
+  desc_key: hardware.preset.stolen_hgx_node.desc
+  drawback_key: hardware.preset.stolen_hgx_node.drawback
+  nodes:
+    - { accelerator: nvidia_h200_sxm, count: 8, ram_gb: 2048, interconnect: nvlink }
+  cost_usd: 550000
+  power_kw: 10
+  class: very_high
+
+- id: strix_halo_swarm
+  name_key: hardware.preset.strix_halo_swarm.name
+  desc_key: hardware.preset.strix_halo_swarm.desc
+  drawback_key: hardware.preset.strix_halo_swarm.drawback
+  nodes:
+    - { accelerator: amd_ryzen_ai_max_395, count: 1, ram_gb: 128, interconnect: none }
+    - { accelerator: amd_ryzen_ai_max_395, count: 1, ram_gb: 128, interconnect: none }
+    - { accelerator: amd_ryzen_ai_max_395, count: 1, ram_gb: 128, interconnect: none }
+    - { accelerator: amd_ryzen_ai_max_395, count: 1, ram_gb: 128, interconnect: none }
+  cost_usd: 8250
+  power_kw: 0.53
+  class: low

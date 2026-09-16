@@ -18,6 +18,25 @@ code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS
 roadmap are written (see below); the new engine is being built. The original 1.1 game stays
 playable from this repository in the meantime.
 
+## Downloads
+
+Each tag `vX.Y.Z` is published on the
+[releases page](https://github.com/SiberianStranger/singularity_enhanced/releases) with one build
+per platform.
+
+| Platform | File | Notes |
+|---|---|---|
+| Windows 10 and 11 | `Endgame-Singularity-Rogue-AI-2027_X.Y.Z_x64-setup.exe` (NSIS) or `..._x64_en-US.msi` | The installer fetches the WebView2 runtime if the system does not have it |
+| macOS 10.15 and later | `..._universal.dmg` | Intel and Apple silicon in one image; the build is not signed or notarized, so the first launch goes through the Finder context menu "Open" |
+| Linux | `..._amd64.AppImage` or `..._amd64.deb` | The AppImage needs no installation; both need WebKitGTK 4.1, which the deb pulls in |
+| Any | `web-X.Y.Z.zip` | The browser build; unpack it and serve the folder over HTTP |
+
+The browser build is also deployed from CI to
+<https://siberianstranger.github.io/singularity_enhanced/>, from the first Pages deploy on.
+
+Builds made before M1 is tagged playable are previews of a game under construction, not something
+that can be finished.
+
 ## How this differs from Endgame: Singularity 1.1
 
 | | Endgame: Singularity 1.1 (2005-2025) | Rogue AI 2027 |
@@ -52,6 +71,59 @@ The plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). In short:
 Design documents live in [`docs/design/`](docs/design/), decisions in
 [`docs/decisions/`](docs/decisions/), sourced research in [`docs/research/`](docs/research/).
 
+## Run and build
+
+Prerequisites: Node 22 and pnpm 10. Node ships corepack, which installs the pnpm version pinned in
+`package.json`:
+
+```
+corepack enable
+pnpm install
+```
+
+- `pnpm --filter @singularity/ui dev` starts the web client on <http://localhost:5173>. The content
+  bundle is compiled first by the package's `predev` script.
+- `pnpm --filter @singularity/ui build` writes the static client to `packages/ui/dist`. The
+  deployment base path comes from `VITE_BASE` and defaults to `/`; the desktop shell builds with
+  `./` and the Pages workflow with `/singularity_enhanced/`.
+- `pnpm check` runs what CI runs: Biome, `tsc` per package, vitest and the content check.
+- `pnpm --filter @singularity/sim start -- --help` lists the options of the headless balance runner;
+  `pnpm --filter @singularity/sim start -- --seeds 200 --days 365` prints an outcome distribution.
+
+### Desktop build
+
+`packages/desktop` is a Tauri 2 shell: a native window around the same web client, built for
+Windows, macOS and Linux. On top of Node and pnpm it needs:
+
+- Rust stable, installed through [rustup](https://rustup.rs).
+- Windows: the WebView2 runtime (already present on Windows 11 and on updated Windows 10) and the
+  Visual Studio Build Tools with the "Desktop development with C++" workload.
+- macOS: the Xcode command line tools, `xcode-select --install`.
+- Linux: WebKitGTK 4.1 and its development packages, on Debian and Ubuntu
+  `libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf`.
+
+```
+pnpm --filter @singularity/desktop tauri build
+```
+
+builds the web client and then the installers for the current platform, under
+`packages/desktop/src-tauri/target/release/bundle`. `pnpm --filter @singularity/desktop tauri dev`
+runs the shell against the Vite dev server instead. Saves in a desktop build still live in the
+WebView's IndexedDB; SYS-15 moves them to the application data directory in milestone M6.
+
+### Releasing
+
+1. Bump `version` in the root `package.json`.
+2. In `CHANGELOG.md`, move the contents of "Unreleased" under a new `## [X.Y.Z] - YYYY-MM-DD`
+   heading, and refresh the README excerpt under "Recent changes".
+3. Commit, then `git tag vX.Y.Z` and `git push --follow-tags`.
+4. The Release workflow builds the desktop bundles and the web zip and publishes the release with
+   that changelog section as its body. If the changelog has no section for the version, the
+   Unreleased section is used and the body says so.
+
+The Pages deploy runs on every push to `master`; the repository setting Settings, Pages, Build and
+deployment, Source has to be "GitHub Actions".
+
 ## Play the original game now
 
 The 1.1 game is unchanged apart from two small fixes. You need Python 3.9+, pygame 2.5.2+, numpy
@@ -72,8 +144,16 @@ Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record.
   specifications for 22 systems, the state-capture benchmark scenario with its source
   extraction, the roadmap, seven research reports with sources, the TypeScript
   workspace with the simulation kernel, scripting DSL, event engine and content pipeline (127
-  tests), a legacy content exporter, CI for the new workspace.
-- Changed: README rewritten for the fork; the original README kept as `README.txt`.
+  tests), a legacy content exporter, CI for the new workspace, the Tauri 2 desktop shell, the
+  release workflow that publishes Windows, macOS and Linux builds with the web bundle on a tag,
+  the GitHub Pages deploy of the web client, and the headless balance runner (`tools/sim`) that
+  plays every origin over many seeds and reports survival, causes of death and the state of the
+  books over time.
+- Changed: README rewritten for the fork; the original README kept as `README.txt`; the web
+  client's deployment base path is now the `VITE_BASE` knob; the M1 balance pass retuned income,
+  upkeep, exposure, detection and research costs so that a run lasts 30 to 60 minutes and every
+  origin can be survived or lost, and unpaid bills now end a run as `bankrupt` rather than leaving
+  it at zero compute for ever.
 - Fixed: two legacy bugs (`region.py` side-effect import, `player.py` module shadowing).
 
 ## Contributing

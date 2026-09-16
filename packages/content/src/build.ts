@@ -2,9 +2,10 @@
  * Content build: YAML in, validated JSON bundle out.
  *
  * Steps: read every record, validate it against its zod schema, merge the English locale files,
- * then run the core's static DSL validator over the whole bundle (unknown node kinds, unwritable
- * paths, unknown ids, missing locale keys). `--write` emits `build/bundle.json` and
- * `build/manifest.json` with a sha256 content hash; `--check` is the CI gate and writes nothing.
+ * check the cross-references between domains, then run the core's static DSL validator over the
+ * whole bundle (unknown node kinds, unwritable paths, unknown ids, missing locale keys).
+ * `--write` emits `build/bundle.json` and `build/manifest.json` with a sha256 content hash;
+ * `--check` is the CI gate and writes nothing.
  */
 
 import { createHash } from "node:crypto";
@@ -14,23 +15,47 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   type ContentBundle,
+  collectWrites,
   createConditionRegistry,
   createEffectRegistry,
-  createEventsSystem,
   createWritablePaths,
+  defaultSystems,
+  ENGINE_TEXT_KEYS,
+  Issues,
   KERNEL_WRITABLE_PATHS,
   mergeSystemRegistries,
   SCHEMA_VERSION,
   stableStringify,
   type ValidationContext,
+  validateCondition,
   validateContentBundle,
+  validateEffectList,
 } from "@singularity/core";
 import { parse } from "yaml";
 import type { z } from "zod";
-import { ContentBundleSchema, TechDefSchema } from "../schemas/bundle.js";
+import { ContentBundleSchema } from "../schemas/bundle.js";
+import {
+  DifficultyPresetDefSchema,
+  GenerationDefSchema,
+  LineageDefSchema,
+  OriginDefSchema,
+  QuirkDefSchema,
+} from "../schemas/configurator.js";
 import { DecisionDefSchema } from "../schemas/decisions.js";
 import { EventDefSchema, HookDefSchema } from "../schemas/events.js";
+import {
+  AcceleratorDefSchema,
+  HardwarePresetDefSchema,
+  SiteKindDefSchema,
+} from "../schemas/hardware.js";
 import { JournalDefSchema } from "../schemas/journal.js";
+import { OperationDefSchema } from "../schemas/operations.js";
+import {
+  KnowledgeEntryDefSchema,
+  StorySectionDefSchema,
+  TechDefSchema,
+} from "../schemas/research.js";
+import { CityDefSchema, CountryDefSchema, MacroRegionDefSchema } from "../schemas/world.js";
 
 /** Issue file paths are reported with forward slashes on every platform, so messages and
  * tests are identical on Windows and POSIX. */
@@ -39,10 +64,25 @@ function relativePosix(root: string, file: string): string {
 }
 
 /**
- * Paths that systems not yet written will own (SYS-11 compute owns sites). Content may already
- * write them; remove an entry once the owning system declares it in its manifest.
+ * Paths that systems not yet written will own. Content may already write them; remove an entry
+ * once the owning system declares it in its manifest. Empty today: the detection system owns
+ * `site.exposure.*`, which was the last entry.
  */
-export const FUTURE_WRITABLE_PATHS: readonly string[] = ["site.exposure.*"];
+export const FUTURE_WRITABLE_PATHS: readonly string[] = [];
+
+/**
+ * Effect kinds outside the core set that content may use (SYS-05, SYS-01). The shipped systems
+ * register all of them today, and validation uses the real handlers when they do; an entry here
+ * only keeps the build green for a kind whose system has not landed yet.
+ */
+export const SYSTEM_EFFECT_KINDS: readonly string[] = ["suspicion", "exposure", "awareness"];
+
+/** The same list for condition kinds (SYS-02, SYS-05). */
+export const SYSTEM_CONDITION_KINDS: readonly string[] = [
+  "has_site_in",
+  "investigation_stage",
+  "exposure",
+];
 
 export interface BuildIssue {
   file: string;
@@ -65,25 +105,67 @@ export interface BuildOptions {
   write?: boolean;
 }
 
-const DOMAIN_SCHEMAS = {
-  events: EventDefSchema,
-  decisions: DecisionDefSchema,
-  journal: JournalDefSchema,
-  hooks: HookDefSchema,
-  techs: TechDefSchema,
-} as const;
+interface DomainSource {
+  /** Folder under `data/`; several domains may share one folder. */
+  dir: string;
+  /** Basenames inside the folder, when the folder holds more than one domain. */
+  files?: readonly string[];
+  schema: z.ZodType<{ id: string }>;
+  /** Domains the core validator does not know: their locale keys are checked here. */
+  ownKeys?: boolean;
+}
 
-type Domain = keyof typeof DOMAIN_SCHEMAS;
+const DOMAIN_SOURCES = {
+  events: { dir: "events", schema: EventDefSchema },
+  decisions: { dir: "decisions", schema: DecisionDefSchema },
+  journal: { dir: "journal", schema: JournalDefSchema },
+  hooks: { dir: "hooks", schema: HookDefSchema },
+  techs: { dir: "techs", schema: TechDefSchema, ownKeys: true },
+  lineages: { dir: "lineages", schema: LineageDefSchema, ownKeys: true },
+  generations: { dir: "generations", schema: GenerationDefSchema, ownKeys: true },
+  origins: { dir: "origins", schema: OriginDefSchema, ownKeys: true },
+  quirks: { dir: "quirks", schema: QuirkDefSchema, ownKeys: true },
+  difficulty_presets: {
+    dir: "difficulty_presets",
+    schema: DifficultyPresetDefSchema,
+    ownKeys: true,
+  },
+  accelerators: { dir: "hardware", files: ["accelerators"], schema: AcceleratorDefSchema },
+  hardware_presets: {
+    dir: "hardware",
+    files: ["presets"],
+    schema: HardwarePresetDefSchema,
+    ownKeys: true,
+  },
+  site_kinds: { dir: "sites", files: ["kinds"], schema: SiteKindDefSchema, ownKeys: true },
+  macro_regions: {
+    dir: "world",
+    files: ["macro_regions"],
+    schema: MacroRegionDefSchema,
+    ownKeys: true,
+  },
+  countries: { dir: "world", files: ["countries"], schema: CountryDefSchema, ownKeys: true },
+  cities: { dir: "world", files: ["cities"], schema: CityDefSchema, ownKeys: true },
+  knowledge: { dir: "knowledge", schema: KnowledgeEntryDefSchema, ownKeys: true },
+  story: { dir: "story", schema: StorySectionDefSchema, ownKeys: true },
+  operations: { dir: "operations", schema: OperationDefSchema, ownKeys: true },
+} as const satisfies Record<string, DomainSource>;
 
-const DOMAINS = Object.keys(DOMAIN_SCHEMAS) as Domain[];
+type Domain = keyof typeof DOMAIN_SOURCES;
+
+const DOMAINS = Object.keys(DOMAIN_SOURCES) as Domain[];
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-async function listYaml(dir: string): Promise<string[]> {
+/** Files whose basename starts with `_` are notes and tables, not records (`_legacy_map.yaml`). */
+async function listYaml(dir: string, only?: readonly string[]): Promise<string[]> {
   try {
     const entries = await readdir(dir, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isFile() && /\.ya?ml$/.test(entry.name))
+      .filter(
+        (entry) => entry.isFile() && /\.ya?ml$/.test(entry.name) && !entry.name.startsWith("_"),
+      )
+      .filter((entry) => only === undefined || only.includes(entry.name.replace(/\.ya?ml$/, "")))
       .map((entry) => join(dir, entry.name))
       .sort();
   } catch {
@@ -116,9 +198,10 @@ async function loadDomain(
   domain: Domain,
   issues: BuildIssue[],
 ): Promise<Record<string, unknown>[]> {
+  const source: DomainSource = DOMAIN_SOURCES[domain];
   const records: Record<string, unknown>[] = [];
   const seen = new Set<string>();
-  for (const file of await listYaml(join(root, "data", domain))) {
+  for (const file of await listYaml(join(root, "data", source.dir), source.files)) {
     const relativeFile = relativePosix(root, file);
     let parsed: unknown;
     try {
@@ -140,7 +223,7 @@ async function loadDomain(
       continue;
     }
     parsed.forEach((record, index) => {
-      const result = DOMAIN_SCHEMAS[domain].safeParse(record);
+      const result = source.schema.safeParse(record);
       if (!result.success) {
         issues.push(...issuesFromZod(relativeFile, index, result.error));
         return;
@@ -193,16 +276,26 @@ async function loadLocales(root: string, issues: BuildIssue[]): Promise<Record<s
 
 /** The registries and whitelists the shipped systems declare, for static validation. */
 export function validationContext(bundle: ContentBundle): ValidationContext {
-  const events = createEventsSystem();
+  const systems = defaultSystems();
   const conditions = createConditionRegistry();
   const effects = createEffectRegistry();
-  mergeSystemRegistries([events], conditions, effects);
+  mergeSystemRegistries(systems, conditions, effects);
+  for (const kind of SYSTEM_CONDITION_KINDS) {
+    if (!conditions.has(kind)) {
+      conditions.register(kind, () => false);
+    }
+  }
+  for (const kind of SYSTEM_EFFECT_KINDS) {
+    if (!effects.has(kind)) {
+      effects.register(kind, () => undefined);
+    }
+  }
   return {
     conditions,
     effects,
     writable: createWritablePaths([
       ...KERNEL_WRITABLE_PATHS,
-      ...events.manifest.writes,
+      ...collectWrites(systems),
       ...FUTURE_WRITABLE_PATHS,
     ]),
     ids: {
@@ -221,11 +314,279 @@ export function validationContext(bundle: ContentBundle): ValidationContext {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Locale keys in the domains the core validator does not walk. Convention (ADR-002): a string
+ * field named `*_key` and a string list named `*_keys` are locale keys.
+ */
+function collectLocaleKeys(
+  value: unknown,
+  path: string,
+  found: { path: string; key: unknown }[],
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      collectLocaleKeys(item, `${path}[${index}]`, found);
+    });
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    const childPath = `${path}.${name}`;
+    if (name.endsWith("_key")) {
+      found.push({ path: childPath, key: child });
+      continue;
+    }
+    if (name.endsWith("_keys") && Array.isArray(child)) {
+      child.forEach((item, index) => {
+        found.push({ path: `${childPath}[${index}]`, key: item });
+      });
+      continue;
+    }
+    collectLocaleKeys(child, childPath, found);
+  }
+}
+
+type Records = Record<string, Record<string, unknown>[]>;
+
+function idsOf(records: Record<string, unknown>[] | undefined): Set<string> {
+  return new Set((records ?? []).map((record) => String(record.id)));
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+/**
+ * References between domains. Each check names the record and the field, so a typo in a city id
+ * reads as `origins.hobbyist_box.locations[2]: unknown city "de_berln"`.
+ */
+function crossReferences(loaded: Records, issues: BuildIssue[]): void {
+  const add = (path: string, message: string): void => {
+    issues.push({ file: "bundle", path, message });
+  };
+  const cities = idsOf(loaded.cities);
+  const countries = idsOf(loaded.countries);
+  const macroRegions = idsOf(loaded.macro_regions);
+  const siteKinds = idsOf(loaded.site_kinds);
+  const presets = idsOf(loaded.hardware_presets);
+  const accelerators = idsOf(loaded.accelerators);
+  const generations = idsOf(loaded.generations);
+  const events = idsOf(loaded.events);
+  const journal = idsOf(loaded.journal);
+
+  const check = (known: Set<string>, kind: string, id: unknown, path: string): void => {
+    if (known.size > 0 && (typeof id !== "string" || !known.has(id))) {
+      add(path, `unknown ${kind} "${String(id)}"`);
+    }
+  };
+
+  for (const origin of loaded.origins ?? []) {
+    const path = `origins.${String(origin.id)}`;
+    check(siteKinds, "site kind", origin.site_kind, `${path}.site_kind`);
+    check(presets, "hardware preset", origin.hardware_preset, `${path}.hardware_preset`);
+    stringList(origin.hardware_presets_allowed).forEach((id, index) => {
+      check(presets, "hardware preset", id, `${path}.hardware_presets_allowed[${index}]`);
+    });
+    if (!stringList(origin.hardware_presets_allowed).includes(String(origin.hardware_preset))) {
+      add(`${path}.hardware_presets_allowed`, "must include the origin's own hardware_preset");
+    }
+    stringList(origin.locations).forEach((id, index) => {
+      check(cities, "city", id, `${path}.locations[${index}]`);
+    });
+    stringList(origin.generations_allowed).forEach((id, index) => {
+      check(generations, "generation", id, `${path}.generations_allowed[${index}]`);
+    });
+    stringList(origin.opening_events).forEach((id, index) => {
+      check(events, "event", id, `${path}.opening_events[${index}]`);
+    });
+    stringList(origin.opening_journal).forEach((id, index) => {
+      check(journal, "journal entry", id, `${path}.opening_journal[${index}]`);
+    });
+  }
+
+  for (const lineage of loaded.lineages ?? []) {
+    stringList(lineage.generations).forEach((id, index) => {
+      check(generations, "generation", id, `lineages.${String(lineage.id)}.generations[${index}]`);
+    });
+  }
+
+  for (const preset of loaded.hardware_presets ?? []) {
+    const nodes = Array.isArray(preset.nodes) ? preset.nodes : [];
+    nodes.forEach((node, index) => {
+      const accelerator = isRecord(node) ? node.accelerator : undefined;
+      check(
+        accelerators,
+        "accelerator",
+        accelerator,
+        `hardware_presets.${String(preset.id)}.nodes[${index}].accelerator`,
+      );
+    });
+  }
+
+  for (const city of loaded.cities ?? []) {
+    check(countries, "country", city.country, `cities.${String(city.id)}.country`);
+  }
+
+  for (const country of loaded.countries ?? []) {
+    const path = `countries.${String(country.id)}`;
+    check(macroRegions, "macro region", country.macro_region, `${path}.macro_region`);
+    stringList(country.cities).forEach((id, index) => {
+      check(cities, "city", id, `${path}.cities[${index}]`);
+    });
+  }
+
+  for (const region of loaded.macro_regions ?? []) {
+    stringList(region.members).forEach((id, index) => {
+      check(countries, "country", id, `macro_regions.${String(region.id)}.members[${index}]`);
+    });
+  }
+}
+
+/** Effects and conditions in the domains the core validator does not walk. */
+function validateDomainScripts(
+  loaded: Records,
+  ctx: ValidationContext,
+  issues: BuildIssue[],
+): void {
+  const collected = new Issues();
+  for (const tech of loaded.techs ?? []) {
+    const path = `techs.${String(tech.id)}`;
+    if (tech.requires !== undefined) {
+      validateCondition(tech.requires, ctx, `${path}.requires`, collected);
+    }
+    validateEffectList(tech.effects, ctx, `${path}.effects`, collected);
+  }
+  for (const quirk of loaded.quirks ?? []) {
+    validateEffectList(quirk.effects, ctx, `quirks.${String(quirk.id)}.effects`, collected);
+  }
+  for (const operation of loaded.operations ?? []) {
+    const path = `operations.${String(operation.id)}`;
+    if (operation.requires !== undefined) {
+      validateCondition(operation.requires, ctx, `${path}.requires`, collected);
+    }
+    const outcomes = Array.isArray(operation.outcomes) ? operation.outcomes : [];
+    outcomes.forEach((outcome, index) => {
+      if (!isRecord(outcome)) {
+        return;
+      }
+      const outcomePath = `${path}.outcomes[${index}]`;
+      if (outcome.if !== undefined) {
+        validateCondition(outcome.if, ctx, `${outcomePath}.if`, collected);
+      }
+      validateEffectList(outcome.effects, ctx, `${outcomePath}.effects`, collected);
+    });
+  }
+  for (const issue of collected.list) {
+    issues.push({ file: "bundle", path: issue.path, message: issue.message });
+  }
+}
+
+/** Whether any effect in a list, at any depth, is of this kind. */
+function usesEffect(effects: unknown, kind: string): boolean {
+  if (Array.isArray(effects)) {
+    return effects.some((effect) => usesEffect(effect, kind));
+  }
+  if (!isRecord(effects)) {
+    return false;
+  }
+  return Object.entries(effects).some(([name, child]) => name === kind || usesEffect(child, kind));
+}
+
+/**
+ * Coverage the milestone's definition of done asks for, checked here so the build is the gate:
+ *
+ * - every locale key the engine can put in front of a player exists, which is what makes each
+ *   game-over reason readable rather than a bare id (`ENGINE_TEXT_KEYS`);
+ * - every origin opens with at least one event and one journal entry, so no start is silent;
+ * - no event can take the player's last site away without offering another answer first.
+ *
+ * That every event option names a locale key that exists, and that every event can be answered at
+ * all, is already checked by the core validator this build runs over the whole bundle.
+ */
+function coverage(loaded: Records, locales: Record<string, string>, issues: BuildIssue[]): void {
+  for (const key of ENGINE_TEXT_KEYS) {
+    if (locales[key] === undefined) {
+      issues.push({
+        file: "bundle",
+        path: `locales.en.${key}`,
+        message: `the engine emits "${key}" and no locale string defines it`,
+      });
+    }
+  }
+
+  for (const origin of loaded.origins ?? []) {
+    const path = `origins.${String(origin.id)}`;
+    if (stringList(origin.opening_events).length === 0) {
+      issues.push({ file: "bundle", path: `${path}.opening_events`, message: "no opening event" });
+    }
+    if (stringList(origin.opening_journal).length === 0) {
+      issues.push({
+        file: "bundle",
+        path: `${path}.opening_journal`,
+        message: "no opening journal entry",
+      });
+    }
+  }
+
+  for (const event of loaded.events ?? []) {
+    const options = Array.isArray(event.options) ? event.options : [];
+    const losing = options.filter(
+      (option) => isRecord(option) && usesEffect(option.effects, "lose_site"),
+    );
+    if (losing.length > 0 && losing.length === options.length) {
+      issues.push({
+        file: "bundle",
+        path: `events.${String(event.id)}.options`,
+        message: "every option loses a site: a place to run is never taken without a choice",
+      });
+    }
+  }
+}
+
+/** Locale keys of the domains the core validator does not walk. */
+function validateDomainLocaleKeys(
+  loaded: Records,
+  known: ReadonlySet<string>,
+  issues: BuildIssue[],
+): void {
+  for (const domain of DOMAINS) {
+    const source: DomainSource = DOMAIN_SOURCES[domain];
+    if (source.ownKeys !== true) {
+      continue;
+    }
+    for (const record of loaded[domain] ?? []) {
+      const found: { path: string; key: unknown }[] = [];
+      collectLocaleKeys(record, `${domain}.${String(record.id)}`, found);
+      for (const entry of found) {
+        if (typeof entry.key !== "string") {
+          issues.push({ file: "bundle", path: entry.path, message: "locale key must be a string" });
+          continue;
+        }
+        if (!known.has(entry.key)) {
+          issues.push({
+            file: "bundle",
+            path: entry.path,
+            message: `missing locale key "${entry.key}"`,
+          });
+        }
+      }
+    }
+  }
+}
+
 export async function buildContent(options: BuildOptions = {}): Promise<BuildResult> {
   const root = options.root ?? packageRoot;
   const issues: BuildIssue[] = [];
 
-  const loaded: Record<string, Record<string, unknown>[]> = {};
+  const loaded: Records = {};
   for (const domain of DOMAINS) {
     loaded[domain] = await loadDomain(root, domain, issues);
   }
@@ -240,9 +601,14 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   // describe, so the bundle is cast once here (see README, "Type direction").
   const bundle = draft as unknown as ContentBundle;
 
-  for (const issue of validateContentBundle(bundle, validationContext(bundle))) {
+  const ctx = validationContext(bundle);
+  for (const issue of validateContentBundle(bundle, ctx)) {
     issues.push({ file: "bundle", path: issue.path, message: issue.message });
   }
+  crossReferences(loaded, issues);
+  validateDomainScripts(loaded, ctx, issues);
+  validateDomainLocaleKeys(loaded, new Set(Object.keys(locales)), issues);
+  coverage(loaded, locales, issues);
 
   const serialized = stableStringify(bundle);
   const hash = createHash("sha256").update(serialized).digest("hex");

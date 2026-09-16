@@ -1,0 +1,12 @@
+- id: nvidia_rtx_5090
+  vendor: NVIDIA
+  name: GeForce RTX 5090
+  memory_gb: 32
+  memory_bandwidth_gbs: 1792
+  tflops_fp16: 210
+  tdp_w: 575
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 3900
+  price_usd_used: null
+  availability: [retail]
+  cloud_usd_per_hour: null

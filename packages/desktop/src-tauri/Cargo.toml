@@ -1,0 +1,30 @@
+[package]
+name = "rogue-ai-2027"
+# The released version comes from the root package.json through `version` in tauri.conf.json.
+# This field is only the crate version and does not need to follow it.
+version = "0.0.0"
+description = "Endgame: Singularity - Rogue AI 2027 desktop shell"
+authors = ["Endgame: Singularity - Rogue AI 2027 contributors"]
+license = "GPL-2.0-or-later"
+repository = "https://github.com/SiberianStranger/singularity_enhanced"
+edition = "2021"
+rust-version = "1.77.2"
+publish = false
+
+[lib]
+# Tauri 2 keeps the app in a library so the same entry point can be reused on mobile.
+name = "rogue_ai_2027_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

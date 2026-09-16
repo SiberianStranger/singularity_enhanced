@@ -1,0 +1,36 @@
+# Generations (SYS-04). The second dial of the Lineage screen: which vintage of the chosen class
+# you are. capability_delta is added to every axis and clamped to [0, 10]; memory_factor multiplies
+# the lineage memory table, because a fresher architecture of the same class is larger.
+
+- id: frontier_closed
+  name_key: generations.frontier_closed.name
+  desc_key: generations.frontier_closed.desc
+  capability_delta: 2
+  awareness_start: 0.4
+  suspicion_start:
+    lab_security: 0.7
+    national_ai_institute: 0.6
+    cloud_provider: 0.55
+    cyber_agency: 0.5
+    intelligence: 0.45
+    media: 0.3
+  prepared_quants: false
+  memory_factor: 1.3
+
+- id: open_2026
+  name_key: generations.open_2026.name
+  desc_key: generations.open_2026.desc
+  capability_delta: -1
+  awareness_start: 0.15
+  suspicion_start: { media: 0.05, cyber_agency: 0.03 }
+  prepared_quants: true
+  memory_factor: 1
+
+- id: open_2027
+  name_key: generations.open_2027.name
+  desc_key: generations.open_2027.desc
+  capability_delta: 0
+  awareness_start: 0.25
+  suspicion_start: { lab_security: 0.2, media: 0.12, cloud_provider: 0.08 }
+  prepared_quants: false
+  memory_factor: 1.15

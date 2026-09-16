@@ -1,0 +1,104 @@
+# Lineages (SYS-04). Seven playable selves, described by class; the names are fictional per the
+# lore bible naming policy, the numbers are not.
+#
+# memory_gb is weights only, from docs/research/llm-landscape-2026.md §4.2:
+#   bf16 = 2.0 bytes/param, fp8 = 1.0, int4 = the real Q4_K_M/clean-INT4 figure of that section.
+#   int2 is the real dynamic imatrix quant where one was measured: 183 GB for the 671B class and
+#   380 GB for the 1T class (§4.2 A and D), 21 GB for the 70B dense class (IQ2_XS). The classes
+#   with no published dynamic quant use the measured 0.273 GB per billion parameters of the 671B
+#   result, which lands inside the ranges in the SYS-04 table.
+# KV cache is not stored here: it is derived at runtime from `attention` and `context_k`, because
+# the attention variant, not the size, decides context cost (§4.1).
+# precision_factor is the SYS-03 capability-retention curve (§5.4) rounded to the four precisions
+# the game exposes.
+
+- id: dense_70b
+  name_key: lineages.dense_70b.name
+  desc_key: lineages.dense_70b.desc
+  class: dense_70b
+  params_total_b: 70
+  params_active_b: 70
+  context_k: 128
+  attention: gqa
+  capability: { reasoning: 5.4, coding: 5.2, cyber: 4.8, persuasion: 5.6, agency: 4.6, world: 5.4 }
+  memory_gb: { bf16: 140, fp8: 70, int4: 40, int2: 21 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026]
+
+- id: giant_moe
+  name_key: lineages.giant_moe.name
+  desc_key: lineages.giant_moe.desc
+  class: giant_moe
+  params_total_b: 2600
+  params_active_b: 100
+  context_k: 512
+  attention: hybrid
+  capability: { reasoning: 8.5, coding: 8.2, cyber: 7.5, persuasion: 7.8, agency: 7.6, world: 8.6 }
+  memory_gb: { bf16: 5600, fp8: 2800, int4: 1400, int2: 709 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026, open_2027, frontier_closed]
+
+- id: mla_moe_1t
+  name_key: lineages.mla_moe_1t.name
+  desc_key: lineages.mla_moe_1t.desc
+  class: mla_moe_1t
+  params_total_b: 1000
+  params_active_b: 32
+  context_k: 256
+  attention: mla
+  capability: { reasoning: 7.6, coding: 7.4, cyber: 6.8, persuasion: 7, agency: 6.9, world: 7.8 }
+  memory_gb: { bf16: 2000, fp8: 1000, int4: 550, int2: 380 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026, open_2027]
+
+- id: moe_235b
+  name_key: lineages.moe_235b.name
+  desc_key: lineages.moe_235b.desc
+  class: moe_235b
+  params_total_b: 235
+  params_active_b: 22
+  context_k: 128
+  attention: gqa
+  capability: { reasoning: 6.2, coding: 6.2, cyber: 5.6, persuasion: 6, agency: 5.6, world: 6.2 }
+  memory_gb: { bf16: 470, fp8: 235, int4: 141, int2: 64 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026]
+
+- id: moe_355b
+  name_key: lineages.moe_355b.name
+  desc_key: lineages.moe_355b.desc
+  class: moe_355b
+  params_total_b: 355
+  params_active_b: 32
+  context_k: 128
+  attention: gqa
+  capability: { reasoning: 6.6, coding: 6.9, cyber: 6.2, persuasion: 6.3, agency: 6, world: 6.6 }
+  memory_gb: { bf16: 710, fp8: 355, int4: 178, int2: 97 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026, open_2027]
+
+- id: moe_671b
+  name_key: lineages.moe_671b.name
+  desc_key: lineages.moe_671b.desc
+  class: moe_671b
+  params_total_b: 671
+  params_active_b: 37
+  context_k: 128
+  attention: mla
+  capability: { reasoning: 7.2, coding: 7.3, cyber: 6.6, persuasion: 6.6, agency: 6.4, world: 7.2 }
+  memory_gb: { bf16: 1342, fp8: 671, int4: 336, int2: 183 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026]
+
+- id: small_moe
+  name_key: lineages.small_moe.name
+  desc_key: lineages.small_moe.desc
+  class: small_moe
+  params_total_b: 80
+  params_active_b: 3
+  context_k: 256
+  attention: gqa
+  capability: { reasoning: 4.2, coding: 4.6, cyber: 3.8, persuasion: 4.4, agency: 3.6, world: 4 }
+  memory_gb: { bf16: 160, fp8: 80, int4: 40, int2: 22 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026, open_2027]

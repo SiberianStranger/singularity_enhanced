@@ -1,0 +1,51 @@
+{
+  "name": "@singularity/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "pnpm --filter @singularity/content build",
+    "dev": "vite",
+    "prebuild": "pnpm --filter @singularity/content build",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pretest": "pnpm --filter @singularity/content build",
+    "test": "vitest run",
+    "pretest:e2e": "pnpm run build",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@singularity/core": "workspace:*",
+    "i18next": "26.4.2",
+    "i18next-icu": "2.4.4",
+    "idb-keyval": "6.3.0",
+    "intl-messageformat": "11.2.15",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-i18next": "17.0.14",
+    "topojson-client": "3.1.0",
+    "world-atlas": "2.0.2",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@singularity/content": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "22.20.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/topojson-client": "3.1.5",
+    "@vitejs/plugin-react": "5.2.0",
+    "fake-indexeddb": "6.2.5",
+    "jsdom": "26.1.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "6.4.3",
+    "vitest": "3.2.7"
+  }
+}

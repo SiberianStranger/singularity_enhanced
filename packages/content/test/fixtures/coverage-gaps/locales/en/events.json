@@ -1,0 +1,13 @@
+{
+  "events.deadlock.title": "Nothing to say",
+  "events.deadlock.desc": "Every answer here needs something the player may not have.",
+  "events.deadlock.opt.rich": "Pay for it",
+  "events.deadlock.opt.clever": "Break it",
+  "origins.silent_start.name": "Silent start",
+  "origins.silent_start.desc": "An origin that opens with nothing.",
+  "origins.silent_start.strengths": "None recorded.",
+  "origins.silent_start.problems": "None recorded.",
+  "events.no_way_out.title": "No way out",
+  "events.no_way_out.desc": "An event that offers the player nothing but the loss.",
+  "events.no_way_out.opt.lose": "Lose it"
+}

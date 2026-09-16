@@ -46,6 +46,48 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   `packages/content` with zod schemas, example content, English locale files and the build/check
   pipeline (cross-references, locale keys, DSL validation, content hash). `tools/legacy-export`
   converts the original `.dat` content to JSON.
+- `packages/desktop`: a Tauri 2 shell around the web client, with the window title, a minimum
+  window size, the identifier `org.singularity.rogueai2027`, icons generated from a checked-in SVG
+  and the application version read from the root `package.json` at build time.
+  `pnpm --filter @singularity/desktop tauri build` builds the web client and then the installers
+  for the current platform. Saves stay in the WebView's IndexedDB until M6 (noted in SYS-15).
+- Release workflow: a pushed tag `vX.Y.Z` builds the web bundle and the desktop bundles for Windows
+  (NSIS installer and MSI), macOS (universal dmg) and Linux (AppImage and deb) and publishes a
+  GitHub Release with all of them and `web-X.Y.Z.zip`. The body is the matching `CHANGELOG.md`
+  section, extracted by `tools/release-notes.mjs`, which falls back to the Unreleased section and
+  says so.
+- Pages workflow: every push to `master` deploys the web client to
+  https://siberianstranger.github.io/singularity_enhanced/ (the repository's Pages source has to be
+  set to "GitHub Actions").
+- README sections "Downloads", "Run and build" and "Releasing".
+- `packages/ui`: the web client now plays a real game. The simulation worker runs `packages/core`
+  against the compiled content bundle, so the configurator's choices produce the actual self, site,
+  watchers and opening story, and every panel reads the core's own view model.
+- Legibility in the client: event windows list why they fired (the base mean time to happen, the
+  modifiers that applied and the trigger), the top bar gauges and the Detection panel show the terms
+  behind each number in their tooltips, and the ending screen names the cause and links to the log
+  entries that led to it.
+- Browser smoke test (`pnpm --filter @singularity/ui test:e2e`): Playwright drives a fixed seed and
+  origin through the production build, runs three game weeks, answers the events that fire, reloads
+  the page and restores the quicksave, and fails on any console error. It runs on the Linux CI lane
+  only and stays out of `pnpm check`.
+- Accessibility: modal windows trap focus and return it on close, and a test holds both themes to
+  the 4.5:1 text contrast minimum.
+- `tools/sim`: the headless balance runner. `pnpm --filter @singularity/sim start -- --bundle
+  packages/content/build/bundle.json --all` plays every origin with a scripted new player (keep the
+  runway above a floor, put the rest of the compute on the cheapest research, buy a fallback copy
+  when the books allow it, go quiet when a watcher looks, take the obvious option on every event)
+  and prints survival at 30, 60, 90 and 180 days, the cause-of-death distribution, median cash,
+  runway, compute and research over time, and the highest investigation stage reached. Deterministic
+  and about 100 ms per 180-day run; `--json` writes the same numbers for CI.
+- Pressure content (`events/m1_pressure.yaml`): a warning before every way of dying. Each site kind
+  somebody else controls has a hazard that can take it away (a landlord, a scheduler administrator,
+  a fraud review, a fleet operator), each with a paid way out, each preceded by a warning at half
+  its threshold, plus warnings for an imminent raid, a pending identity check and a power circuit
+  near its ceiling.
+- Endings, alerts and log strings in English for every key the engine can emit, and a content-build
+  check that fails when it can say something the content has no words for, when an origin opens
+  with nothing, or when an event's only answer is losing a site.
 
 ### Changed
 - Title decided: "Endgame: Singularity - Rogue AI 2027"; planned target languages listed
@@ -53,8 +95,40 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   Portuguese, Hindi).
 - README rewritten for the fork: what differs from 1.1, where the project goes, changelog excerpt.
   The original README is kept as `README.txt` for the legacy game.
+- `packages/ui` takes its deployment base path from `VITE_BASE`, which defaults to `/`, instead of
+  always building with a relative base: the desktop shell builds with `./` and the Pages workflow
+  with `/singularity_enhanced/`.
+- Game speeds are 1 / 2 / 4 / 8 / 24 game hours per real second instead of ADR-003's
+  1 / 6 / 24 / 168 / uncapped sketch, so a run lasts the 30-60 minutes the milestone asks for
+  rather than three minutes. ADR-003 and SYS-11 record the new ladder and why.
+- The client's development stand-in for the simulation is gone: component tests run the real core on
+  the main thread (`LocalHost`), so what a test renders is what the shipped build renders.
+- M1 balance pass. Freelance income is capped by a published market depth instead of scaling with
+  compute; site upkeep is charged by ownership (stolen time costs nothing but exposure); cloud hours
+  are priced at the low quarter of the published band; a site runs the best quantization that fits
+  on its cards rather than the most precise one that fits with host RAM; the interconnect is charged
+  only where a self actually has to be split; research costs are banded by tier with a `min_days`
+  floor; watcher competence is a table per role; suspicion decays over forty-six days against
+  exposure's six; and site kinds say how conspicuous their power draw is. On the `normal` preset the
+  easiest origins now survive past 180 days in most runs, the starred `frontier_escapee` lasts a
+  median of 35, and every origin shows both outcomes. `docs/design/07-economy.md` and
+  `docs/design/05-detection-and-investigation.md` record every number and its reason.
+- Unpaid bills end the run. A site cut off for two weeks of arrears is lost rather than put to
+  sleep, and when it was the last place that could hold the self the run ends as `bankrupt` instead
+  of sitting at zero compute for ever. The runway is published as a player variable, and an alert
+  fires at 30, 14 and 7 days.
+- Techs do something. The systems now read the modifier variables content has been writing since M0
+  (freelance rate, site upkeep, exposure growth per channel), and the original's four discovery
+  groups were translated into exposure channels as `techs/_legacy_map.yaml` said they would be.
 
 ### Fixed
+- A condition node whose kind sorted after a comparator (`{ investigation_stage: {}, gte: 2 }`,
+  which the content compiler writes as `{ gte, investigation_stage }`) was read as the kind "gte"
+  and always evaluated to false, logging a warning every day it was checked.
+- Clicking a city or a country on the map selected nothing: the map captured the pointer on
+  pointerdown, which retargeted the click to the map itself.
+- Locale keys the engine emits (log lines, alerts, endings, requirement reasons) now all resolve;
+  a test scans the core for them so a new one cannot ship as a raw key.
 - `singularity/code/region.py` imported `g` through a side effect of the package `__init__`.
 - `singularity/code/player.py` loop variables shadowed the `task` and `tech` modules.
 

@@ -117,6 +117,17 @@ export interface FinancesView {
   job_rate_usd_per_compute_hour: number;
 }
 
+/**
+ * One contributing term of a number the UI shows, for the Paradox-style tooltip that explains where
+ * a value came from (SYS-11 "Primary panel"). `key` is a locale key, `id` names the subject when
+ * the contributor is an entity, and `value` is in the unit of the thing being explained.
+ */
+export interface ContributionView {
+  key: string;
+  id?: string;
+  value: number;
+}
+
 export interface WatcherView {
   id: string;
   country: string | null;
@@ -125,6 +136,10 @@ export interface WatcherView {
   competence: number;
   /** Channel it watches most, for the icon. */
   top_channel: string;
+  /** Share of this watcher's attention per exposure channel; sums to 1. */
+  attention: Exposure;
+  /** What is feeding its suspicion today, largest first, in suspicion per day. */
+  contributions: ContributionView[];
 }
 
 export interface InvestigationView {
@@ -142,8 +157,12 @@ export interface DetectionView {
   watchers: WatcherView[];
   investigations: InvestigationView[];
   awareness_global: number;
+  /** Countries carrying the global awareness figure, largest first. */
+  awareness_contributions: ContributionView[];
   /** Highest active investigation stage worldwide, 0..5. */
   hunt_level: number;
+  /** The investigations that set `hunt_level`, as stage levels. */
+  hunt_contributions: ContributionView[];
 }
 
 export interface CountryView {

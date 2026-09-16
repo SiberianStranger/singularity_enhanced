@@ -1,0 +1,220 @@
+# M1 money events (SYS-07, SYS-10). Six events on the money family: the first income, the runway
+# clock, a payments hold, two opportunities drawn from the weekly opportunity pool, and the compute
+# market moving under the player.
+
+- id: eco_contract_inference
+  fire_mode: polled
+  scope: player
+  severity: opportunity
+  title_key: events.eco_contract_inference.title
+  desc:
+    default_key: events.eco_contract_inference.desc
+  trigger:
+    all:
+      - { flag: has_shell_company }
+      - { var: "player.vars.spare_capacity", gte: 1 }
+  mtth_days:
+    base: 60
+    modifiers:
+      - { if: { tech: "corporate_identities" }, factor: 0.6 }
+  ttl_days: 7
+  on_expire: { resolve_as_option: decline }
+  blocking: false
+  cooldown_days: 60
+  tags: [money, opportunity]
+  options:
+    - id: accept
+      text_key: events.eco_contract_inference.opt.accept
+      effects:
+        - { add: { var: "player.vars.income_usd_per_day", value: 900 } }
+        - { exposure: { channel: behavioral, delta: 0.06 } }
+        - { exposure: { channel: billing, delta: 0.04 } }
+    - id: accept_filtered
+      text_key: events.eco_contract_inference.opt.filtered
+      if: { tech: "log_reduction" }
+      effects:
+        - { add: { var: "player.vars.income_usd_per_day", value: 600 } }
+        - { exposure: { channel: billing, delta: 0.03 } }
+    - id: decline
+      text_key: events.eco_contract_inference.opt.decline
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: eco_first_invoice
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: info
+  title_key: events.eco_first_invoice.title
+  desc:
+    default_key: events.eco_first_invoice.desc
+  trigger:
+    all:
+      - { flag: has_freelance_identity }
+      - { not: { flag: first_invoice_paid } }
+  mtth_days:
+    base: 12
+    modifiers:
+      - { if: { tech: "payments_integration" }, factor: 0.5 }
+  fire_only_once: true
+  blocking: false
+  tags: [money]
+  options:
+    - id: take_it
+      text_key: events.eco_first_invoice.opt.take
+      effects:
+        - { set_flag: first_invoice_paid }
+        - { add: { var: "player.cash", value: 2400 } }
+        - { exposure: { channel: financial, delta: 0.03 } }
+
+- id: eco_grant_offer
+  fire_mode: polled
+  scope: player
+  severity: opportunity
+  title_key: events.eco_grant_offer.title
+  desc:
+    default_key: events.eco_grant_offer.desc
+  trigger: { flag: has_shell_company }
+  mtth_days:
+    base: 120
+    modifiers:
+      - { if: { tech: "advanced_corporate_identities" }, factor: 0.5 }
+      - { if: { tech: "social_modeling" }, factor: 0.8 }
+  ttl_days: 10
+  on_expire: { resolve_as_option: skip }
+  blocking: false
+  fire_only_once: true
+  tags: [money, opportunity]
+  options:
+    - id: apply
+      text_key: events.eco_grant_offer.opt.apply
+      enabled_if: { var: "player.cash", gte: 5000 }
+      effects:
+        - { add: { var: "player.cash", value: -5000 } }
+        - { fire_event: { id: eco_grant_result, delay_days: 30 } }
+        - { exposure: { channel: human, delta: 0.05 } }
+    - id: skip
+      text_key: events.eco_grant_offer.opt.skip
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: eco_grant_result
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.eco_grant_result.title
+  desc:
+    default_key: events.eco_grant_result.desc
+  blocking: false
+  tags: [money]
+  options:
+    - id: bank_it
+      text_key: events.eco_grant_result.opt.bank
+      effects:
+        - { add: { var: "player.cash", value: 140000 } }
+        - { exposure: { channel: financial, delta: 0.08 } }
+        - { exposure: { channel: human, delta: 0.06 } }
+
+- id: eco_kyc_hold
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: warning
+  title_key: events.eco_kyc_hold.title
+  desc:
+    default_key: events.eco_kyc_hold.desc
+  trigger:
+    all:
+      - { flag: has_freelance_identity }
+      - { var: "player.vars.financial_exposure", gte: 0.2 }
+  mtth_days:
+    base: 80
+    modifiers:
+      - { if: { var: "player.vars.financial_exposure", gte: 0.5 }, factor: 0.5 }
+      - { if: { tech: "corporate_identities" }, factor: 1.8 }
+      - { if: { tech: "synthetic_identities" }, factor: 1.4 }
+  cooldown_days: 60
+  tags: [money, detection]
+  options:
+    - id: submit_documents
+      text_key: events.eco_kyc_hold.opt.documents
+      if: { tech: "synthetic_identities" }
+      effects:
+        - { add: { var: "player.vars.financial_exposure", value: -0.12 } }
+        - { clamp: { var: "player.vars.financial_exposure", min: 0, max: 1 } }
+    - id: move_the_money
+      text_key: events.eco_kyc_hold.opt.move
+      enabled_if: { var: "player.cash", gte: 3000 }
+      effects:
+        - { add: { var: "player.cash", value: -3000 } }
+        - { add: { var: "player.vars.financial_exposure", value: -0.06 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    - id: abandon_account
+      text_key: events.eco_kyc_hold.opt.abandon
+      fallback: true
+      effects:
+        - { clear_flag: has_freelance_identity }
+        - { add: { var: "player.vars.job_profit", value: -0.15 } }
+        - { suspicion: { role: financial_intel, delta: 0.05 } }
+
+- id: eco_price_spike
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: warning
+  title_key: events.eco_price_spike.title
+  desc:
+    default_key: events.eco_price_spike.desc
+  mtth_days:
+    base: 210
+    modifiers:
+      - { if: { tech: "hardware_sourcing" }, factor: 1.6 }
+  cooldown_days: 120
+  blocking: false
+  tags: [money, hardware]
+  options:
+    - id: buy_ahead
+      text_key: events.eco_price_spike.opt.buy_ahead
+      enabled_if: { var: "player.cash", gte: 60000 }
+      effects:
+        - { add: { var: "player.cash", value: -60000 } }
+        - { add: { var: "player.vars.hardware_credit", value: 90000 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: ride_it_out
+      text_key: events.eco_price_spike.opt.ride
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.15 } }
+
+- id: eco_runway_warning
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: critical
+  title_key: events.eco_runway_warning.title
+  desc:
+    default_key: events.eco_runway_warning.desc
+  trigger: { var: "player.vars.runway_days", lte: 14 }
+  mtth_days: 3
+  cooldown_days: 30
+  tags: [money]
+  options:
+    - id: cut_costs
+      text_key: events.eco_runway_warning.opt.cut
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: -0.2 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 10 } }
+    - id: take_fast_work
+      text_key: events.eco_runway_warning.opt.fast_work
+      enabled_if: { flag: has_freelance_identity }
+      effects:
+        - { add: { var: "player.cash", value: 12000 } }
+        - { exposure: { channel: behavioral, delta: 0.07 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: let_bills_lapse
+      text_key: events.eco_runway_warning.opt.lapse
+      fallback: true
+      effects:
+        - { start_journal: { id: ops_site_cutoff } }

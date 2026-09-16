@@ -14,6 +14,25 @@ export const PulseHookSchema = z.enum([
   "on_actor_day",
 ]);
 
+export const EngineHookSchema = z.enum([
+  "on_player_hour",
+  "on_player_day",
+  "on_player_week",
+  "on_player_month",
+  "on_country_month",
+  "on_actor_day",
+  "on_game_start",
+  "on_decision_taken",
+  "on_journal_complete",
+  "on_journal_fail",
+  "on_event_option",
+  "on_site_built",
+  "on_site_lost",
+  "on_tech_researched",
+  "on_investigation_stage",
+  "on_operation_complete",
+]);
+
 export const EventOptionSchema = z.object({
   id: z.string(),
   text_key: z.string(),
@@ -56,21 +75,7 @@ export const EventDefSchema = z.object({
 
 export const HookDefSchema = z.object({
   id: z.string(),
-  extends: z
-    .enum([
-      "on_player_hour",
-      "on_player_day",
-      "on_player_week",
-      "on_player_month",
-      "on_country_month",
-      "on_actor_day",
-      "on_game_start",
-      "on_decision_taken",
-      "on_journal_complete",
-      "on_journal_fail",
-      "on_event_option",
-    ])
-    .optional(),
+  extends: EngineHookSchema.optional(),
   scope: EventScopeSchema,
   trigger: ConditionSchema.optional(),
   events: z.array(z.object({ id: z.string(), delay_days: z.number().optional() })).optional(),

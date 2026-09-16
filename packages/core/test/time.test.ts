@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createGame } from "../src/index.js";
-import { createTimeSystem, isValidSpeed, ticksForFrame } from "../src/systems/time/index.js";
+import { HOURS_PER_DAY } from "../src/kernel/clock.js";
+import { MAX_SPEED } from "../src/kernel/world.js";
+import {
+  createTimeSystem,
+  isValidSpeed,
+  SPEED_HOURS_PER_SECOND,
+  ticksForFrame,
+} from "../src/systems/time/index.js";
 import { bundle } from "./helpers.js";
 
 describe("time system", () => {
@@ -14,11 +21,21 @@ describe("time system", () => {
   it("converts frame time into ticks", () => {
     expect(ticksForFrame(0, 1000, 100)).toEqual({ ticks: 0, leftoverMs: 0 });
     expect(ticksForFrame(1, 1000, 100).ticks).toBe(1);
-    expect(ticksForFrame(2, 1000, 100).ticks).toBe(6);
-    expect(ticksForFrame(3, 1000, 100).ticks).toBe(24);
-    expect(ticksForFrame(4, 1000, 100).ticks).toBe(100); // capped
-    expect(ticksForFrame(5, 16, 200)).toEqual({ ticks: 200, leftoverMs: 0 });
+    expect(ticksForFrame(2, 1000, 100).ticks).toBe(2);
+    expect(ticksForFrame(3, 1000, 100).ticks).toBe(4);
+    expect(ticksForFrame(4, 1000, 100).ticks).toBe(8);
+    expect(ticksForFrame(5, 1000, 100).ticks).toBe(24);
+    expect(ticksForFrame(5, 1000, 10).ticks).toBe(10); // capped
     expect(ticksForFrame(1, 0, 10)).toEqual({ ticks: 0, leftoverMs: 0 });
+  });
+
+  it("tops out at one game day per real second", () => {
+    // The pace SYS-11 documents: speed 1 reads, speed 5 skips a day a second.
+    expect(SPEED_HOURS_PER_SECOND[1]).toBe(1);
+    expect(SPEED_HOURS_PER_SECOND[MAX_SPEED]).toBe(HOURS_PER_DAY);
+    // Monotonic, so every step of the ladder is faster than the one below it.
+    const ladder = [...SPEED_HOURS_PER_SECOND];
+    expect([...ladder].sort((a, b) => a - b)).toEqual(ladder);
   });
 
   it("carries the remainder of a partial tick", () => {

@@ -9,15 +9,20 @@ import { tickToDate } from "../../kernel/clock.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import { MAX_SPEED, MIN_SPEED, type World } from "../../kernel/world.js";
 
-/** Game hours per real second per speed setting (ADR-003); speed 5 is uncapped. */
-export const SPEED_HOURS_PER_SECOND: readonly number[] = [
-  0,
-  1,
-  6,
-  24,
-  168,
-  Number.POSITIVE_INFINITY,
-];
+/**
+ * Game hours per real second per speed setting.
+ *
+ * ADR-003 sketched 1/6/24/168/uncapped. That ladder is too steep for the M1 slice: a run lasts on
+ * the order of half a game year, so at 168 hours a second the whole game goes past in half a minute
+ * and nothing is readable. The shipped ladder keeps ADR-003's speed 1 (one game hour per real
+ * second, the reading speed) and tops out at one game day per real second, which puts a full run at
+ * roughly 3 minutes of pure fast-forward and an hour of attentive play. See
+ * `docs/design/11-notifications-and-ui.md` "Implementation notes (client)".
+ *
+ * Speeds only change how fast real time is converted into ticks, never what a tick does, so moving
+ * this table cannot change the outcome of a game (ADR-003 "Determinism").
+ */
+export const SPEED_HOURS_PER_SECOND: readonly number[] = [0, 1, 2, 4, 8, 24];
 
 export interface FrameTicks {
   ticks: number;

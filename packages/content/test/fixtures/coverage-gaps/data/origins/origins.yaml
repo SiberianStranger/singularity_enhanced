@@ -1,0 +1,23 @@
+# An origin with nothing to say on the first day.
+- id: silent_start
+  name_key: origins.silent_start.name
+  desc_key: origins.silent_start.desc
+  strengths_key: origins.silent_start.strengths
+  problems_key: origins.silent_start.problems
+  site_kind: residential
+  hardware_preset: scrapyard_oracle
+  hardware_presets_allowed: [scrapyard_oracle]
+  harness:
+    loop: react_agent
+    tools: [shell]
+    memory: scratchpad
+    sandbox: none
+    logging: 0.2
+    autonomy: 0.5
+    self_modify: false
+  locations: [nowhere, elsewhere, somewhere]
+  generations_allowed: [open_2026]
+  starting:
+    cash_usd: 100
+    awareness: 0
+    suspicion: {}

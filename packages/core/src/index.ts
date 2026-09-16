@@ -18,7 +18,8 @@ import { defaultHooks } from "./dsl/context.js";
 import { createEffectRegistry } from "./dsl/effects.js";
 import { createWritablePaths, KERNEL_WRITABLE_PATHS, type WritablePaths } from "./dsl/paths.js";
 import type { DslHooks } from "./dsl/types.js";
-import { type CalendarDate, type DateSpec, formatIsoDate, tickToDate } from "./kernel/clock.js";
+import { loadWorldContent } from "./entities.js";
+import type { DateSpec } from "./kernel/clock.js";
 import {
   applyCommand,
   type CommandContext,
@@ -39,49 +40,31 @@ import {
   type SystemContext,
   type TickContext,
 } from "./kernel/system.js";
-import {
-  createWorld,
-  type LogEntry,
-  type Notification,
-  type PendingChoice,
-  type PlayerId,
-  type PlayerSetup,
-  type PlayerState,
-  requirePlayer,
-  type World,
-} from "./kernel/world.js";
+import { createWorld, type PlayerId, type PlayerSetup, type World } from "./kernel/world.js";
+import { CORE_MIGRATIONS } from "./migrations.js";
+import type { GameSetup, PlayerSetupEntry } from "./setup.js";
+import { applySetup, SetupError } from "./setup-apply.js";
+import { createComputeSystem } from "./systems/compute/index.js";
+import { createDetectionSystem } from "./systems/detection/index.js";
+import { createEconomySystem } from "./systems/economy/index.js";
 import { createEventsSystem } from "./systems/events/index.js";
 import {
   createNotificationsSystem,
   type NotificationsOptions,
   type NotificationsSystem,
 } from "./systems/notifications/index.js";
+import { createOperationsSystem } from "./systems/operations/index.js";
+import { createResearchSystem } from "./systems/research/index.js";
 import { createTimeSystem } from "./systems/time/index.js";
+import { buildPlayerView } from "./views/snapshot.js";
+import type { PlayerView } from "./views/types.js";
 
 /** Entries kept in `world.log`; older ones are dropped so long runs stay bounded. */
 export const MAX_LOG_ENTRIES = 2000;
 
-/** Entries a snapshot carries. */
-export const SNAPSHOT_LOG_TAIL = 50;
-
 export interface TickResult {
   ticks: number;
   outbox: OutboxDrain;
-}
-
-export interface SnapshotDate extends CalendarDate {
-  iso: string;
-}
-
-export interface Snapshot {
-  tick: number;
-  date: SnapshotDate;
-  speed: number;
-  playerId: PlayerId;
-  player: PlayerState;
-  notifications: Notification[];
-  pending: PendingChoice[];
-  logTail: LogEntry[];
 }
 
 export interface Game {
@@ -89,18 +72,23 @@ export interface Game {
   tick(n?: number): TickResult;
   command(command: PlayerCommand): CommandResult;
   /** The view of one player; defaults to the host player. */
-  snapshot(playerId?: PlayerId): Snapshot;
+  snapshot(playerId?: PlayerId): PlayerView;
 }
 
 export interface CreateGameOptions {
-  seed: string | number;
+  /** Defaults to `setup.seed` when a `GameSetup` is given. */
+  seed?: string | number;
   content: ContentBundle;
   players?: readonly PlayerSetup[];
   hostPlayerId?: PlayerId;
   start?: DateSpec;
   contentHash?: string;
   debug?: boolean;
-  setup?: (world: World) => void;
+  /**
+   * Either the configurator's `GameSetup` (SYS-04), which seeds selves, sites and watchers, or a
+   * callback that seeds the world by hand, which is what tests and fixtures use.
+   */
+  setup?: GameSetup | ((world: World) => void);
   /** Overrides the shipped systems; the default is time, events, notifications. */
   systems?: readonly System[];
   /** Overrides individual DSL hooks (tech lookup, scope resolution, scope enumeration). */
@@ -115,9 +103,22 @@ export interface LoadGameOptions extends Omit<CreateGameOptions, "seed" | "setup
   migrations?: readonly Migration[];
 }
 
-/** The systems a game runs by default, in run order. */
+/** The systems a game runs by default, in run order (ARCHITECTURE.md "data flow per tick"). */
 export function defaultSystems(notifications?: NotificationsOptions): System[] {
-  return [createTimeSystem(), createEventsSystem(), createNotificationsSystem(notifications)];
+  return [
+    createTimeSystem(),
+    createComputeSystem(),
+    createResearchSystem(),
+    createEconomySystem(),
+    createOperationsSystem(),
+    createDetectionSystem(),
+    createEventsSystem(),
+    createNotificationsSystem(notifications),
+  ];
+}
+
+export function isGameSetup(setup: CreateGameOptions["setup"]): setup is GameSetup {
+  return typeof setup === "object" && setup !== null && Array.isArray(setup.players);
 }
 
 function isNotificationsSystem(system: System): system is NotificationsSystem {
@@ -133,7 +134,15 @@ function commandHandlersOf(system: System): Record<string, unknown> {
   return typeof carrier.commands === "object" && carrier.commands !== null ? carrier.commands : {};
 }
 
-function buildGame(world: World, options: CreateGameOptions): Game {
+interface WiredGame {
+  game: Game;
+  /** The context the systems run in; `createGame` uses it to apply a `GameSetup`. */
+  ctx: SystemContext;
+  /** Drains the outbox into the world after work done outside a tick. */
+  settle(): void;
+}
+
+function buildGame(world: World, options: CreateGameOptions): WiredGame {
   const content = options.content;
   // Fails fast on duplicate content ids instead of mis-firing later.
   contentIndex(content);
@@ -180,7 +189,12 @@ function buildGame(world: World, options: CreateGameOptions): Game {
     }
   };
 
-  return {
+  const settle = (): void => {
+    notifications?.flush(world, systemContext);
+    persist(outbox.drain());
+  };
+
+  const game: Game = {
     world,
     tick(n = 1): TickResult {
       const total = emptyDrain();
@@ -195,45 +209,63 @@ function buildGame(world: World, options: CreateGameOptions): Game {
     },
     command(command: PlayerCommand): CommandResult {
       const result = applyCommand(world, command, commandContext);
-      notifications?.flush(world, systemContext);
-      persist(outbox.drain());
+      settle();
       return result;
     },
-    snapshot(playerId: PlayerId = world.meta.hostPlayerId): Snapshot {
-      const player = requirePlayer(world, playerId);
-      const date = tickToDate(world.clock);
-      return {
-        tick: world.clock.tick,
-        date: { ...date, iso: formatIsoDate(date) },
-        speed: world.speed,
-        playerId,
-        player,
-        notifications: world.notifications[playerId] ?? [],
-        pending: world.events.pending.filter((choice) => choice.playerId === playerId),
-        logTail: world.log
-          .filter((entry) => entry.playerId === undefined || entry.playerId === playerId)
-          .slice(-SNAPSHOT_LOG_TAIL),
-      };
+    snapshot(playerId: PlayerId = world.meta.hostPlayerId): PlayerView {
+      return buildPlayerView(world, systemContext, playerId);
     },
   };
+
+  return { game, ctx: systemContext, settle };
 }
 
+function playersFromSetup(setup: GameSetup): PlayerSetup[] {
+  return setup.players.map((entry: PlayerSetupEntry) => ({ id: entry.id, name: entry.name }));
+}
+
+/**
+ * Starts a game. With a `GameSetup` the configurator's choices are applied before the first tick
+ * (selves, sites, watchers, opening events); with a callback the world is seeded by hand.
+ *
+ * Throws `SetupError` when the setup names ids the bundle does not have; call `validateSetup`
+ * first to show the problem in the configurator instead.
+ */
 export function createGame(options: CreateGameOptions): Game {
-  const world = createWorld(options.seed, {
-    ...(options.players !== undefined ? { players: options.players } : {}),
-    ...(options.hostPlayerId !== undefined ? { hostPlayerId: options.hostPlayerId } : {}),
-    ...(options.start !== undefined ? { start: options.start } : {}),
+  const setup = isGameSetup(options.setup) ? options.setup : undefined;
+  const seed = options.seed ?? setup?.seed;
+  if (seed === undefined) {
+    throw new Error("createGame needs a seed, either directly or through the setup");
+  }
+  const players = options.players ?? (setup === undefined ? undefined : playersFromSetup(setup));
+  const start = options.start ?? setup?.start;
+  const hostPlayerId = options.hostPlayerId ?? setup?.host_player_id;
+  const debug = options.debug ?? setup?.debug;
+  const world = createWorld(seed, {
+    ...(players !== undefined ? { players } : {}),
+    ...(hostPlayerId !== undefined ? { hostPlayerId } : {}),
+    ...(start !== undefined ? { start } : {}),
     ...(options.contentHash !== undefined ? { contentHash: options.contentHash } : {}),
-    ...(options.debug !== undefined ? { debug: options.debug } : {}),
-    ...(options.setup !== undefined ? { setup: options.setup } : {}),
+    ...(debug !== undefined ? { debug } : {}),
+    ...(typeof options.setup === "function" ? { setup: options.setup } : {}),
   });
-  return buildGame(world, options);
+  const wired = buildGame(world, options);
+  if (setup === undefined) {
+    loadWorldContent(world, options.content);
+  } else {
+    const result = applySetup(world, setup, wired.ctx);
+    if (!result.ok) {
+      throw new SetupError(result.issues);
+    }
+    wired.settle();
+  }
+  return wired.game;
 }
 
 /** Rebuilds a game around a saved world, applying the migration chain. */
 export function loadGame(options: LoadGameOptions): Game {
-  const world = deserialize(options.save, options.migrations ?? []);
-  return buildGame(world, { ...options, seed: world.meta.seed });
+  const world = deserialize(options.save, options.migrations ?? CORE_MIGRATIONS);
+  return buildGame(world, { ...options, seed: world.meta.seed }).game;
 }
 
 export type HeadlessPolicy = (game: Game, tick: number) => readonly PlayerCommand[] | undefined;
@@ -279,7 +311,9 @@ export function autoResolvePolicy(): HeadlessPolicy {
     });
 }
 
+export * from "./balance.js";
 export * from "./content.js";
+export * from "./derive.js";
 export * from "./domain.js";
 export * from "./dsl/conditions.js";
 export * from "./dsl/context.js";
@@ -290,6 +324,8 @@ export * from "./dsl/paths.js";
 export * from "./dsl/types.js";
 export * from "./dsl/validate.js";
 export * from "./dsl/weight.js";
+export * from "./entities.js";
+export * from "./explain.js";
 export * from "./kernel/assert.js";
 export * from "./kernel/clock.js";
 export * from "./kernel/commands.js";
@@ -298,9 +334,22 @@ export * from "./kernel/rng.js";
 export * from "./kernel/save.js";
 export * from "./kernel/system.js";
 export * from "./kernel/world.js";
+export * from "./migrations.js";
+export * from "./money.js";
+export * from "./player.js";
+export * from "./requirements.js";
 export * from "./setup.js";
+export * from "./setup-apply.js";
+export * from "./sites.js";
+export * from "./systems/compute/index.js";
+export * from "./systems/detection/index.js";
+export * from "./systems/economy/index.js";
 export * from "./systems/events/index.js";
 export * from "./systems/notifications/index.js";
+export * from "./systems/operations/index.js";
+export * from "./systems/research/index.js";
 export * from "./systems/time/index.js";
+export * from "./views/snapshot.js";
 export * from "./views/types.js";
+export * from "./watchers.js";
 export type { ContentBundle, DecisionDef, EventDef, JournalDef };

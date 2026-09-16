@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ENGINE_TEXT_KEYS } from "@singularity/core";
 import { describe, expect, it } from "vitest";
 import { buildContent, formatIssues } from "../src/build.js";
 
@@ -64,6 +65,41 @@ describe("content build", () => {
     expect(await messagesFor("unwritable-path")).toContain(
       'events.unwritable.options[0].effects[0].set.var: path "world.meta.debug" is not writable',
     );
+  });
+
+  it("fails when the engine can say something the content has no words for", async () => {
+    const messages = await messagesFor("coverage-gaps");
+    expect(messages).toContain(
+      'locales.en.endings.bankrupt: the engine emits "endings.bankrupt" and no locale string defines it',
+    );
+    expect(messages).toContain(
+      'locales.en.alerts.runway_low: the engine emits "alerts.runway_low" and no locale string defines it',
+    );
+  });
+
+  it("fails an origin that opens with nothing", async () => {
+    const messages = await messagesFor("coverage-gaps");
+    expect(messages).toContain("origins.silent_start.opening_events: no opening event");
+    expect(messages).toContain("origins.silent_start.opening_journal: no opening journal entry");
+  });
+
+  it("fails an event whose only answer is losing a site", async () => {
+    expect(await messagesFor("coverage-gaps")).toContain(
+      "events.no_way_out.options: every option loses a site: a place to run is never taken without a choice",
+    );
+  });
+
+  it("holds the shipped content to all three", async () => {
+    const result = await buildContent();
+    const paths = result.issues.map((issue) => issue.path);
+    expect(paths).toEqual([]);
+    for (const key of ENGINE_TEXT_KEYS) {
+      expect(result.bundle.locales.en[key]).toBeDefined();
+    }
+    for (const origin of result.bundle.origins ?? []) {
+      expect(origin.opening_events?.length ?? 0).toBeGreaterThan(0);
+      expect(origin.opening_journal?.length ?? 0).toBeGreaterThan(0);
+    }
   });
 
   it("reports schema errors with file and path", async () => {

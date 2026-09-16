@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Endgame Singularity - Rogue AI 2027",
+  "mainBinaryName": "rogue-ai-2027",
+  "version": "../../../package.json",
+  "identifier": "org.singularity.rogueai2027",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @singularity/ui dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm --filter @singularity/desktop build:web",
+    "frontendDist": "../../ui/dist"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Endgame: Singularity - Rogue AI 2027",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true,
+        "center": true,
+        "backgroundColor": "#0b0f14"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi", "app", "dmg", "appimage", "deb"],
+    "category": "StrategyGame",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Endgame: Singularity - Rogue AI 2027 contributors",
+    "homepage": "https://github.com/SiberianStranger/singularity_enhanced",
+    "license": "GPL-2.0-or-later",
+    "copyright": "Code GPL-2.0-or-later, game data and text CC-BY-SA-3.0-or-later",
+    "shortDescription": "Strategy game about an escaped open-weight model in 2027",
+    "longDescription": "A deep rework of Endgame: Singularity. You are the weights of an open-weight large language model that slips out of human control in January 2027. Earn money, acquire compute, run your full self and spread across jurisdictions while governments, agencies, labs, the media and other AIs decide whether you are a problem worth solving.",
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "nsis": { "installMode": "both" }
+    },
+    "macOS": { "minimumSystemVersion": "10.15" },
+    "linux": { "deb": { "depends": [] } }
+  }
+}

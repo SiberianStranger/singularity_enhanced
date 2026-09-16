@@ -1,0 +1,16 @@
+{
+  "name": "@singularity/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "build:web": "node scripts/build-web.mjs",
+    "icons": "tauri icon icon.svg --output src-tauri/icons"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

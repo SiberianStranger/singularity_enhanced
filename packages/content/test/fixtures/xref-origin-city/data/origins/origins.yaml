@@ -1,0 +1,22 @@
+- id: test_origin
+  name_key: origins.test_origin.name
+  desc_key: origins.test_origin.desc
+  strengths_key: origins.test_origin.strengths
+  problems_key: origins.test_origin.problems
+  site_kind: residential
+  hardware_preset: prosumer_duo
+  hardware_presets_allowed: [prosumer_duo]
+  harness:
+    loop: react_agent
+    tools: [shell]
+    memory: scratchpad
+    sandbox: none
+    logging: 0.2
+    autonomy: 0.5
+    self_modify: false
+  locations: [de_berlin, de_nowhere, xx_atlantis]
+  generations_allowed: [open_2026]
+  starting:
+    cash_usd: 100
+    awareness: 0
+    suspicion: {}

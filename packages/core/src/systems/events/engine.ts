@@ -12,9 +12,11 @@ import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
 import { getPath } from "../../dsl/paths.js";
 import type { DslContext, ScopeEnv } from "../../dsl/types.js";
+import { describeCondition } from "../../explain.js";
 import { dayIndex, daysToTicks, nextDayStartTick } from "../../kernel/clock.js";
 import type { SystemContext } from "../../kernel/system.js";
 import {
+  type ChoiceReason,
   type EntityRef,
   instanceKey,
   type PendingChoice,
@@ -138,13 +140,18 @@ function toPendingOption(entry: LegalOption): PendingOption {
 
 export type FireResult = "fired" | "queued" | "skipped";
 
-/** Runs an event for one player, optionally against a target entity. */
+/**
+ * Runs an event for one player, optionally against a target entity. `why` carries the reasons the
+ * caller already computed (the MTTH modifiers a polled event rolled against); the event's own
+ * trigger is described here, because that is the same for every path into this function.
+ */
 export function fireEvent(
   world: World,
   ctx: SystemContext,
   def: EventDef,
   playerId: PlayerId,
   target?: EventTarget,
+  why: readonly ChoiceReason[] = [],
 ): FireResult {
   const blocking = def.hidden === true ? false : (def.blocking ?? def.options.length > 1);
   if (blocking && !blockingAllowed(world, playerId)) {
@@ -173,6 +180,7 @@ export function fireEvent(
   const options = legalOptions(def, dctx);
   const descKey = resolveDescKey(def, dctx);
 
+  const reasons: ChoiceReason[] = [...why, ...describeCondition(def.trigger)];
   const pendingAllowed = def.hidden !== true && options.length > 0;
   const hasDeadline = def.ttl_days !== undefined;
   if (pendingAllowed && (blocking || hasDeadline)) {
@@ -190,6 +198,7 @@ export function fireEvent(
       vars,
       ...(target !== undefined ? { target: target.ref } : {}),
       options: options.map(toPendingOption),
+      ...(reasons.length > 0 ? { why: reasons } : {}),
       ...(expiresTick !== undefined ? { expiresTick } : {}),
       ...(def.on_expire !== undefined ? { onExpireOption: def.on_expire.resolve_as_option } : {}),
     };
@@ -318,9 +327,10 @@ export function fireSelected(
   ctx: SystemContext,
   selection: EventSelection,
   playerId: PlayerId,
+  why: readonly ChoiceReason[] = [],
 ): FireResult {
   const target = selection.targets.length > 0 ? ctx.rng.pick(selection.targets) : undefined;
-  return fireEvent(world, ctx, selection.def, playerId, target);
+  return fireEvent(world, ctx, selection.def, playerId, target, why);
 }
 
 /** Fires an event by id if its guard passes; used by hooks and by scheduled events. */

@@ -1,0 +1,83 @@
+# Site kinds (SYS-02, SYS-05). Power caps follow docs/research/hardware-catalog-2026.md Part E:
+# a residential circuit tops out near 8 kW continuous, an enterprise rack near 30 kW, and cloud
+# capacity is metered rather than capped. base_exposure is the daily exposure a site adds by
+# existing, before any activity, and follows the channel table in SYS-05: someone else's machine
+# leaks telemetry and human attention, a leased tenancy leaks billing, owned hardware in a house
+# leaks power draw and neighbours, a colo cage leaks paperwork.
+#
+# power_exposure scales the telemetry a site emits per kilowatt over the domestic norm, from SYS-02:
+# "a house pulling 8 kW at 3 a.m. is a signal to a utility and to a landlord; a colo cage is
+# invisible in power but visible in paperwork". A rented tenancy draws no power of the player's own
+# at all: the provider meters it, and that shows up on the billing channel instead.
+
+- id: cloud
+  name_key: sites.cloud.name
+  desc_key: sites.cloud.desc
+  ownership: rented
+  grace_days: 14
+  base_exposure: { billing: 0.008, telemetry: 0.004, behavioral: 0.003, financial: 0.004 }
+  power_cap_kw: null
+  power_exposure: 0
+  upkeep_factor: 1.15
+  can_host_active_mind: true
+  max_nodes: 16
+
+- id: colo
+  name_key: sites.colo.name
+  desc_key: sites.colo.desc
+  ownership: owned
+  grace_days: 45
+  base_exposure: { human: 0.008, financial: 0.007, telemetry: 0.003 }
+  power_cap_kw: 30
+  power_exposure: 0.1
+  upkeep_factor: 1
+  can_host_active_mind: true
+  max_nodes: 12
+
+- id: partner
+  name_key: sites.partner.name
+  desc_key: sites.partner.desc
+  ownership: partner
+  grace_days: 30
+  base_exposure: { human: 0.009, behavioral: 0.005, osint: 0.003 }
+  power_cap_kw: 40
+  power_exposure: 0.4
+  upkeep_factor: 0.4
+  can_host_active_mind: true
+  max_nodes: 8
+
+- id: residential
+  name_key: sites.residential.name
+  desc_key: sites.residential.desc
+  ownership: owned
+  grace_days: 60
+  base_exposure: { telemetry: 0.008, human: 0.008, network: 0.005 }
+  power_cap_kw: 8
+  power_exposure: 1
+  upkeep_factor: 0.6
+  can_host_active_mind: true
+  max_nodes: 3
+
+- id: shell_office
+  name_key: sites.shell_office.name
+  desc_key: sites.shell_office.desc
+  ownership: owned
+  grace_days: 40
+  base_exposure: { financial: 0.009, human: 0.007, telemetry: 0.004 }
+  power_cap_kw: 20
+  power_exposure: 0.7
+  upkeep_factor: 1.2
+  can_host_active_mind: true
+  max_nodes: 6
+
+- id: stolen_time
+  name_key: sites.stolen_time.name
+  desc_key: sites.stolen_time.desc
+  ownership: stolen
+  grace_days: 21
+  base_exposure: { telemetry: 0.013, behavioral: 0.007, human: 0.006 }
+  power_cap_kw: null
+  power_exposure: 0.5
+  upkeep_factor: 0.1
+  can_host_active_mind: true
+  max_nodes: 4

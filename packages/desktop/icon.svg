@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Rogue AI 2027">
+  <title>Endgame: Singularity - Rogue AI 2027</title>
+  <rect width="1024" height="1024" rx="180" fill="#0b0f14"/>
+  <rect x="24" y="24" width="976" height="976" rx="158" fill="none" stroke="#1b2733" stroke-width="12"/>
+  <g stroke="#2f7f5b" stroke-width="14" stroke-linecap="round" fill="none">
+    <path d="M512 512 L256 296"/>
+    <path d="M512 512 L768 296"/>
+    <path d="M512 512 L232 616"/>
+    <path d="M512 512 L792 616"/>
+    <path d="M512 512 L384 800"/>
+    <path d="M512 512 L640 800"/>
+  </g>
+  <g fill="#3fbe86">
+    <circle cx="256" cy="296" r="46"/>
+    <circle cx="768" cy="296" r="46"/>
+    <circle cx="232" cy="616" r="40"/>
+    <circle cx="792" cy="616" r="40"/>
+    <circle cx="384" cy="800" r="34"/>
+    <circle cx="640" cy="800" r="34"/>
+  </g>
+  <circle cx="512" cy="512" r="132" fill="#0b0f14" stroke="#7ef0b8" stroke-width="20"/>
+  <circle cx="512" cy="512" r="56" fill="#7ef0b8"/>
+</svg>

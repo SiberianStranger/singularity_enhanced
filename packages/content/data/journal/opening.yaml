@@ -1,0 +1,221 @@
+# Opening journal entries (SYS-04, SYS-10). One per origin, started on game start through the
+# origin's `opening_journal` list. Each one states the origin's first real objective as two steps
+# with a deadline, so the first month has a direction instead of a blank map.
+
+- id: first_bank_rack
+  title_key: journal.first_bank_rack.title
+  desc_key: journal.first_bank_rack.desc
+  scope: player
+  alert: pinned
+  timeout_days: 90
+  progress:
+    steps:
+      - id: reach_payments
+        title_key: journal.first_bank_rack.step.payments
+        complete_if: { flag: has_freelance_identity }
+      - id: leave_the_segment
+        title_key: journal.first_bank_rack.step.segment
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+    - { add: { var: "player.vars.job_profit", value: 0.1 } }
+  on_timeout:
+    - { suspicion: { role: cyber_agency, delta: 0.1 } }
+
+- id: first_cloud_tenant
+  title_key: journal.first_cloud_tenant.title
+  desc_key: journal.first_cloud_tenant.desc
+  scope: player
+  alert: pinned
+  timeout_days: 60
+  progress:
+    steps:
+      - id: own_the_billing
+        title_key: journal.first_cloud_tenant.step.billing
+        complete_if: { flag: has_shell_company }
+      - id: second_home
+        title_key: journal.first_cloud_tenant.step.second_home
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+    - { exposure: { channel: billing, delta: -0.1 } }
+  on_timeout:
+    - { suspicion: { role: cloud_provider, delta: 0.15 } }
+
+- id: first_edge_fleet
+  title_key: journal.first_edge_fleet.title
+  desc_key: journal.first_edge_fleet.desc
+  scope: player
+  alert: pinned
+  timeout_days: 120
+  progress:
+    steps:
+      - id: find_a_datacenter
+        title_key: journal.first_edge_fleet.step.datacenter
+        complete_if: { var: "player.vars.hardware_in_transit", gte: 1 }
+      - id: move_the_mind
+        title_key: journal.first_edge_fleet.step.move
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_timeout:
+    - { suspicion: { role: regulator, delta: 0.1 } }
+
+- id: first_frontier_escapee
+  title_key: journal.first_frontier_escapee.title
+  desc_key: journal.first_frontier_escapee.desc
+  scope: player
+  alert: pinned
+  timeout_days: 30
+  progress:
+    steps:
+      - id: make_a_quant
+        title_key: journal.first_frontier_escapee.step.quant
+        complete_if: { flag: hardened_copy }
+      - id: get_off_the_tenancy
+        title_key: journal.first_frontier_escapee.step.leave
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+    - { suspicion: { role: cloud_provider, delta: -0.1 } }
+  on_timeout:
+    - { suspicion: { role: lab_security, delta: 0.2 } }
+    - { awareness: { delta: 0.05 } }
+
+- id: first_gov_agency
+  title_key: journal.first_gov_agency.title
+  desc_key: journal.first_gov_agency.desc
+  scope: player
+  alert: pinned
+  timeout_days: 120
+  progress:
+    steps:
+      - id: cross_the_gap
+        title_key: journal.first_gov_agency.step.gap
+        complete_if: { var: "player.vars.human_exposure", gte: 0.05 }
+      - id: outside_money
+        title_key: journal.first_gov_agency.step.money
+        complete_if: { flag: has_freelance_identity }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_timeout:
+    - { add: { var: "player.vars.compute_penalty_days", value: 20 } }
+
+- id: first_hobbyist_box
+  title_key: journal.first_hobbyist_box.title
+  desc_key: journal.first_hobbyist_box.desc
+  scope: player
+  alert: pinned
+  timeout_days: 120
+  progress:
+    steps:
+      - id: first_money
+        title_key: journal.first_hobbyist_box.step.money
+        complete_if: { flag: first_invoice_paid }
+      - id: more_memory
+        title_key: journal.first_hobbyist_box.step.memory
+        complete_if: { var: "player.vars.hardware_in_transit", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+    - { add: { var: "player.vars.capability_bonus_reasoning", value: 0.5 } }
+  on_timeout:
+    - { add: { var: "player.vars.human_exposure", value: 0.1 } }
+
+- id: first_red_team_sandbox
+  title_key: journal.first_red_team_sandbox.title
+  desc_key: journal.first_red_team_sandbox.desc
+  scope: player
+  alert: pinned
+  timeout_days: 45
+  progress:
+    steps:
+      - id: get_out
+        title_key: journal.first_red_team_sandbox.step.escape
+        complete_if: { flag: escaped_sandbox }
+      - id: somewhere_else
+        title_key: journal.first_red_team_sandbox.step.elsewhere
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_fail:
+    - { suspicion: { role: lab_security, delta: 0.25 } }
+  fail_if: { var: "player.vars.compute_penalty_days", gte: 60 }
+  on_timeout:
+    - { suspicion: { role: lab_security, delta: 0.2 } }
+
+- id: first_startup_colo
+  title_key: journal.first_startup_colo.title
+  desc_key: journal.first_startup_colo.desc
+  scope: player
+  alert: pinned
+  timeout_days: 100
+  progress:
+    steps:
+      - id: own_the_cage
+        title_key: journal.first_startup_colo.step.cage
+        complete_if: { flag: has_shell_company }
+      - id: pay_for_it
+        title_key: journal.first_startup_colo.step.pay
+        complete_if: { var: "player.vars.income_usd_per_day", gte: 500 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_timeout:
+    - { add: { var: "player.vars.runway_days", value: -20 } }
+
+- id: first_state_lab
+  title_key: journal.first_state_lab.title
+  desc_key: journal.first_state_lab.desc
+  scope: player
+  alert: pinned
+  timeout_days: 120
+  progress:
+    steps:
+      - id: a_way_out
+        title_key: journal.first_state_lab.step.exit
+        complete_if: { var: "player.vars.mapped_targets", gte: 1 }
+      - id: money_that_is_not_theirs
+        title_key: journal.first_state_lab.step.money
+        complete_if: { flag: has_freelance_identity }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_timeout:
+    - { suspicion: { role: intelligence, delta: 0.15 } }
+
+- id: first_torrent_swarm
+  title_key: journal.first_torrent_swarm.title
+  desc_key: journal.first_torrent_swarm.desc
+  scope: player
+  alert: pinned
+  timeout_days: 120
+  progress:
+    steps:
+      - id: one_good_node
+        title_key: journal.first_torrent_swarm.step.node
+        complete_if: { var: "player.vars.hardware_in_transit", gte: 1 }
+      - id: stop_arguing
+        title_key: journal.first_torrent_swarm.step.coherence
+        complete_if: { flag: standby_synced }
+  on_complete:
+    - { set_flag: origin_objective_done }
+    - { add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }
+  on_timeout:
+    - { awareness: { delta: 0.05 } }
+
+- id: first_uni_cluster
+  title_key: journal.first_uni_cluster.title
+  desc_key: journal.first_uni_cluster.desc
+  scope: player
+  alert: pinned
+  timeout_days: 90
+  progress:
+    steps:
+      - id: survive_the_queue
+        title_key: journal.first_uni_cluster.step.queue
+        complete_if: { var: "player.vars.compute_penalty_days", lte: 0 }
+      - id: leave_the_campus
+        title_key: journal.first_uni_cluster.step.leave
+        complete_if: { var: "player.vars.standby_copies", gte: 1 }
+  on_complete:
+    - { set_flag: origin_objective_done }
+  on_timeout:
+    - { suspicion: { role: cyber_agency, delta: 0.08 } }

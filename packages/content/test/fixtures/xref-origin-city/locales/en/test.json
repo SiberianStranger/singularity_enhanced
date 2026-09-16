@@ -1,0 +1,7 @@
+{
+  "origins.test_origin.name": "Test origin",
+  "origins.test_origin.desc": "A fixture.",
+  "origins.test_origin.strengths": "None.",
+  "origins.test_origin.problems": "All of them.",
+  "world.city.de_berlin.name": "Berlin"
+}

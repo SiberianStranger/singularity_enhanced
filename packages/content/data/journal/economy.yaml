@@ -1,0 +1,30 @@
+# Economy journal entries (SYS-07, SYS-05). The original game killed a base outright when its
+# maintenance went unpaid. Here an unpaid site opens this entry instead: a notice, then a final
+# notice, then a cutoff, all of it visible and all of it survivable by paying.
+
+- id: ops_site_cutoff
+  title_key: journal.ops_site_cutoff.title
+  desc_key: journal.ops_site_cutoff.desc
+  scope: player
+  alert: pinned
+  timeout_days: 30
+  progress:
+    var: "player.vars.cutoff_pressure"
+    max: 3
+  stages:
+    - threshold: 0.34
+      on_enter:
+        - { log: { key: log.ops_site_cutoff.notice } }
+        - { exposure: { channel: billing, delta: 0.06 } }
+    - threshold: 0.67
+      on_enter:
+        - { notify: { severity: critical, key: alerts.ops_site_cutoff.final, link: { panel: finances } } }
+        - { exposure: { channel: human, delta: 0.08 } }
+  complete_if: { var: "player.vars.runway_days", gte: 30 }
+  on_complete:
+    - { log: { key: log.ops_site_cutoff.settled } }
+    - { set: { var: "player.vars.cutoff_pressure", value: 0 } }
+  on_timeout:
+    - { set_flag: site_cut_off }
+    - { suspicion: { role: financial_intel, delta: 0.1 } }
+    - { exposure: { channel: financial, delta: 0.12 } }

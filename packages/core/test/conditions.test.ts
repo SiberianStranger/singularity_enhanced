@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createConditionRegistry, evaluateCondition } from "../src/dsl/conditions.js";
+import { compareValue, createConditionRegistry, evaluateCondition } from "../src/dsl/conditions.js";
 import { DslError } from "../src/dsl/paths.js";
 import { requirePlayer } from "../src/kernel/world.js";
 import { bundle, logKeys, testContext } from "./helpers.js";
@@ -109,6 +109,18 @@ describe("conditions", () => {
     expect(evaluateCondition({ no_such_kind: {} }, ctx)).toBe(false);
     expect(logKeys(outbox)).toContain("dsl.condition_failed");
     expect(outbox.read().log[0]?.vars.message).toContain('unknown condition kind "no_such_kind"');
+  });
+
+  it("finds a registered kind that a comparator sorts in front of", () => {
+    // The content compiler writes object keys sorted, so `{ investigation_stage: {}, gte: 2 }`
+    // reaches the engine as `{ gte: 2, investigation_stage: {} }`. The comparator is not the kind.
+    const { ctx, outbox } = testContext();
+    ctx.conditions.register("investigation_stage", (node) =>
+      compareValue(3, node, "investigation_stage"),
+    );
+    expect(evaluateCondition({ gte: 2, investigation_stage: {} }, ctx)).toBe(true);
+    expect(evaluateCondition({ gte: 4, investigation_stage: {} }, ctx)).toBe(false);
+    expect(logKeys(outbox)).toHaveLength(0);
   });
 
   it("never throws on malformed nodes", () => {

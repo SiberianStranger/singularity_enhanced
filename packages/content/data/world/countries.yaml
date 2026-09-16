@@ -1,0 +1,2819 @@
+# Countries (SYS-01). Every demographic, economic and institutional figure is copied from
+# docs/research/world-baseline-2026.json; the field it came from is named below. Derived fields
+# use documented rules so they can be re-derived when the baseline is refreshed.
+#
+#   population              <- population_2026_est
+#   median_age              <- median_age
+#   urbanization_pct        <- urbanization_pct
+#   internet_pct            <- internet_penetration_pct
+#   gdp_nominal_usd_bn      <- gdp_nominal_usd_bn_2025
+#   gdp_per_capita_usd      <- gdp_per_capita_usd_2025
+#   democracy_index         <- democracy_index_2024 (EIU, 2025 edition)
+#   electricity_usd_per_kwh <- electricity_price_usd_per_kwh_industrial
+#   chip_access             <- chip_access_tier
+#   agencies                <- agencies (ai_regulator becomes "regulator"; a list of services is
+#                              joined with ", " because the field is a display name)
+#
+# Derived, from ai_policy_posture and the capacity proxies in the same record:
+#   ai_regulation   0.80 when the posture names the EU AI Act or EEA alignment; 0.65 for
+#                   state-directed regimes; 0.55 for a comprehensive act in force or in passage;
+#                   0.35 for drafts and proposals; 0.25 for strategies, guidelines and voluntary
+#                   codes; 0.08 where there is no framework, or the state is collapsed, sanctioned
+#                   or at war.
+#   ai_enforcement  0.15 + 0.35 * min(1, gdp_per_capita / 60000)
+#                        + 0.20 / 0.10 / 0.05 for a Tortoise AI-index rank of <=20 / <=40 / any
+#                        + 0.05 with five or more TOP500 systems
+#                        - 0.30 for a collapsed or transitional government, clamped to [0.02, 0.95].
+#   ai_opinion      0.55 - 0.75 * min(1, gdp_per_capita / 50000) + 0.15 for an AI-index rank <= 10
+#                        - 0.10 for a full democracy (index >= 8.0), clamped to [-1, 1]. The shape
+#                        follows the observed pattern that AI optimism falls as income rises and is
+#                        highest in the large emerging markets.
+- id: "ae"
+  iso3: "ARE"
+  name_key: "world.country.ae.name"
+  macro_region: "middle_east"
+  population: 11294243
+  median_age: 35.8
+  urbanization_pct: 87.8
+  internet_pct: 100
+  gdp_nominal_usd_bn: 552.3
+  gdp_per_capita_usd: 50274
+  government_type: "federal absolute monarchy (federation of seven emirates)"
+  democracy_index: 3.18
+  ai_regulation: 0.25
+  ai_enforcement: 0.44
+  ai_opinion: -0.2
+  electricity_usd_per_kwh: 0.07
+  chip_access: "restricted"
+  agencies:
+    cyber: "UAE Cyber Security Council / TDRA"
+    intelligence: "Signals Intelligence Agency (SIA)"
+    police: "Ministry of Interior"
+    regulator: "UAE AI Office / Ministry of State for Artificial Intelligence (world's first dedicated AI minister, since 2017)"
+    financial_intel: "UAE FIU"
+  cities: ["ae_abu_dhabi", "ae_dubai"]
+  languages: ["ar"]
+  currency: "AED"
+  lore_key: "world.country.ae.lore"
+- id: "af"
+  iso3: "AFG"
+  name_key: "world.country.af.name"
+  macro_region: "south_asia"
+  population: 43844000
+  median_age: 20
+  urbanization_pct: 26.9
+  internet_pct: 16.1
+  gdp_nominal_usd_bn: 17.8
+  gdp_per_capita_usd: 417
+  government_type: "unrecognized Taliban emirate (Islamic Emirate of Afghanistan)"
+  democracy_index: 0.25
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "General Directorate of Intelligence (GDI)"
+    police: "Taliban-run General Directorate of Police Services"
+  cities: ["af_kabul", "af_kandahar"]
+  languages: ["ps", "fa"]
+  currency: "AFN"
+  lore_key: "world.country.af.lore"
+- id: "am"
+  iso3: "ARM"
+  name_key: "world.country.am.name"
+  macro_region: "russia_central_asia"
+  population: 3096900
+  median_age: 38.9
+  urbanization_pct: 63.7
+  internet_pct: 83.4
+  gdp_nominal_usd_bn: 29.2
+  gdp_per_capita_usd: 9474
+  government_type: "parliamentary republic"
+  democracy_index: 5.35
+  ai_regulation: 0.08
+  ai_enforcement: 0.21
+  ai_opinion: 0.41
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "CERT-AM"
+    intelligence: "National Security Service (NSS)"
+    police: "Police of Armenia"
+    financial_intel: "FMC"
+  cities: ["am_yerevan"]
+  languages: ["hy"]
+  currency: "AMD"
+  lore_key: "world.country.am.lore"
+- id: "ao"
+  iso3: "AGO"
+  name_key: "world.country.ao.name"
+  macro_region: "sub_saharan_africa"
+  population: 38778554
+  median_age: 16.3
+  urbanization_pct: 68.7
+  internet_pct: 40.7
+  gdp_nominal_usd_bn: 122.2
+  gdp_per_capita_usd: 3130
+  government_type: "presidential republic"
+  democracy_index: 3.94
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: 0.05
+  chip_access: "restricted"
+  agencies:
+    cyber: "CERT Angola (nascent)"
+    intelligence: "SINSE"
+    police: "Polícia Nacional"
+    financial_intel: "UIF Angola"
+  cities: ["ao_luanda"]
+  languages: ["pt"]
+  currency: "AOA"
+  lore_key: "world.country.ao.lore"
+- id: "ar"
+  iso3: "ARG"
+  name_key: "world.country.ar.name"
+  macro_region: "south_america"
+  population: 46466688
+  median_age: 33.3
+  urbanization_pct: 92.5
+  internet_pct: 89.7
+  gdp_nominal_usd_bn: 683.1
+  gdp_per_capita_usd: 14898
+  government_type: "federal presidential republic"
+  democracy_index: 6.89
+  ai_regulation: 0.25
+  ai_enforcement: 0.34
+  ai_opinion: 0.33
+  electricity_usd_per_kwh: 0.07
+  chip_access: "restricted"
+  agencies:
+    cyber: "Dirección Nacional de Ciberseguridad"
+    intelligence: "Agencia Federal de Inteligencia (AFI)"
+    police: "Policía Federal Argentina"
+    financial_intel: "UIF"
+  cities: ["ar_buenos_aires", "ar_cordoba"]
+  languages: ["es"]
+  currency: "ARS"
+  lore_key: "world.country.ar.lore"
+- id: "at"
+  iso3: "AUT"
+  name_key: "world.country.at.name"
+  macro_region: "western_europe"
+  population: 9217573
+  median_age: 44.9
+  urbanization_pct: 59.5
+  internet_pct: 91.9
+  gdp_nominal_usd_bn: 579.5
+  gdp_per_capita_usd: 62930
+  government_type: "federal parliamentary republic"
+  democracy_index: 8.42
+  ai_regulation: 0.8
+  ai_enforcement: 0.6
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.15
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "GovCERT Austria"
+    intelligence: "DSN (Direktion Staatsschutz und Nachrichtendienst), HNaA (military intelligence)"
+    police: "Bundeskriminalamt"
+    regulator: "RTR (Rundfunk und Telekom Regulierungs-GmbH)"
+    financial_intel: "A-FIU"
+  cities: ["at_vienna"]
+  languages: ["de"]
+  currency: "EUR"
+  lore_key: "world.country.at.lore"
+- id: "au"
+  iso3: "AUS"
+  name_key: "world.country.au.name"
+  macro_region: "oceania"
+  population: 27801023
+  median_age: 38.1
+  urbanization_pct: 86.6
+  internet_pct: 96.1
+  gdp_nominal_usd_bn: 1798.5
+  gdp_per_capita_usd: 65130
+  government_type: "federal parliamentary constitutional monarchy"
+  democracy_index: 8.85
+  ai_regulation: 0.55
+  ai_enforcement: 0.7
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.11
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Australian Signals Directorate (ASD) / Australian Cyber Security Centre (ACSC)"
+    intelligence: "ASIO (domestic), ASIS (foreign), ASD (signals)"
+    police: "Australian Federal Police (AFP)"
+    regulator: "Department of Industry, Science and Resources — proposed 'mandatory guardrails' for high-risk AI (under consultation)"
+    financial_intel: "AUSTRAC"
+  cities: ["au_sydney", "au_melbourne", "au_canberra"]
+  languages: ["en"]
+  currency: "AUD"
+  lore_key: "world.country.au.lore"
+- id: "bd"
+  iso3: "BGD"
+  name_key: "world.country.bd.name"
+  macro_region: "south_asia"
+  population: 169828911
+  median_age: 29.6
+  urbanization_pct: 40.5
+  internet_pct: 53.4
+  gdp_nominal_usd_bn: 456.3
+  gdp_per_capita_usd: 2597
+  government_type: "parliamentary republic"
+  democracy_index: 4.27
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.51
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "BGD e-GOV CIRT"
+    intelligence: "National Security Intelligence (NSI), DGFI"
+    police: "Bangladesh Police"
+    regulator: "ICT Division (policy only, no dedicated regulator)"
+    financial_intel: "BFIU"
+  cities: ["bd_dhaka"]
+  languages: ["bn"]
+  currency: "BDT"
+  lore_key: "world.country.bd.lore"
+- id: "be"
+  iso3: "BEL"
+  name_key: "world.country.be.name"
+  macro_region: "western_europe"
+  population: 11942772
+  median_age: 42
+  urbanization_pct: 98.2
+  internet_pct: 95.8
+  gdp_nominal_usd_bn: 725.5
+  gdp_per_capita_usd: 60750
+  government_type: "federal parliamentary constitutional monarchy"
+  democracy_index: 7.77
+  ai_regulation: 0.8
+  ai_enforcement: 0.6
+  ai_opinion: -0.2
+  electricity_usd_per_kwh: 0.18
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Centre for Cybersecurity Belgium (CCB)"
+    intelligence: "VSSE, SGRS"
+    police: "Federal Police"
+    regulator: "Belgian Data Protection Authority (coordinating EU AI Office liaison)"
+    financial_intel: "CTIF-CFI"
+  cities: ["be_brussels", "be_saint_ghislain"]
+  languages: ["nl", "fr", "de"]
+  currency: "EUR"
+  lore_key: "world.country.be.lore"
+- id: "bf"
+  iso3: "BFA"
+  name_key: "world.country.bf.name"
+  macro_region: "sub_saharan_africa"
+  population: 24736828
+  median_age: 18.7
+  urbanization_pct: 32.5
+  internet_pct: 28.3
+  gdp_nominal_usd_bn: 27.6
+  gdp_per_capita_usd: 1148
+  government_type: "military junta (since 2022 coup)"
+  democracy_index: 2.55
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Agence Nationale de Renseignement (ANR)"
+    police: "Police Nationale"
+    financial_intel: "CENTIF Burkina Faso"
+  cities: ["bf_ouagadougou"]
+  languages: ["fr"]
+  currency: "XOF"
+  lore_key: "world.country.bf.lore"
+- id: "bg"
+  iso3: "BGR"
+  name_key: "world.country.bg.name"
+  macro_region: "central_eastern_europe"
+  population: 6423207
+  median_age: 45.1
+  urbanization_pct: 76.7
+  internet_pct: 79.7
+  gdp_nominal_usd_bn: 130.8
+  gdp_per_capita_usd: 20328
+  government_type: "parliamentary republic"
+  democracy_index: 6.34
+  ai_regulation: 0.8
+  ai_enforcement: 0.27
+  ai_opinion: 0.25
+  electricity_usd_per_kwh: 0.11
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "National CSIRT (State e-Government Agency)"
+    intelligence: "DANS, SIS (foreign)"
+    police: "MVR"
+    regulator: "CPDP (Commission for Personal Data Protection)"
+    financial_intel: "FID SANS"
+  cities: ["bg_sofia"]
+  languages: ["bg"]
+  currency: "EUR"
+  lore_key: "world.country.bg.lore"
+- id: "br"
+  iso3: "BRA"
+  name_key: "world.country.br.name"
+  macro_region: "south_america"
+  population: 214211951
+  median_age: 35.1
+  urbanization_pct: 87.8
+  internet_pct: 84.5
+  gdp_nominal_usd_bn: 2279.9
+  gdp_per_capita_usd: 10713
+  government_type: "federal presidential republic"
+  democracy_index: 6.76
+  ai_regulation: 0.55
+  ai_enforcement: 0.31
+  ai_opinion: 0.39
+  electricity_usd_per_kwh: 0.11
+  chip_access: "restricted"
+  agencies:
+    cyber: "Gabinete de Segurança Institucional (GSI) / CTIR Gov"
+    intelligence: "Agência Brasileira de Inteligência (ABIN)"
+    police: "Polícia Federal"
+    regulator: "Autoridade Nacional de Proteção de Dados (ANPD), expected to gain AI oversight role under pending PL 2338"
+    financial_intel: "COAF"
+  cities: ["br_sao_paulo", "br_brasilia", "br_campinas"]
+  languages: ["pt"]
+  currency: "BRL"
+  lore_key: "world.country.br.lore"
+- id: "by"
+  iso3: "BLR"
+  name_key: "world.country.by.name"
+  macro_region: "russia_central_asia"
+  population: 9056080
+  median_age: 42.1
+  urbanization_pct: 80.7
+  internet_pct: 95.5
+  gdp_nominal_usd_bn: 93.4
+  gdp_per_capita_usd: 10279
+  government_type: "presidential republic (authoritarian, close Russia ally)"
+  democracy_index: 1.99
+  ai_regulation: 0.08
+  ai_enforcement: 0.21
+  ai_opinion: 0.4
+  electricity_usd_per_kwh: 0.08
+  chip_access: "banned"
+  agencies:
+    cyber: "Operations and Analysis Center (OAC)"
+    intelligence: "KGB"
+    police: "MVD"
+    financial_intel: "Department for Financial Monitoring"
+  cities: ["by_minsk"]
+  languages: ["be", "ru"]
+  currency: "BYN"
+  lore_key: "world.country.by.lore"
+- id: "ca"
+  iso3: "CAN"
+  name_key: "world.country.ca.name"
+  macro_region: "north_america"
+  population: 41417056
+  median_age: 42.6
+  urbanization_pct: 81.9
+  internet_pct: 94.4
+  gdp_nominal_usd_bn: 2319.9
+  gdp_per_capita_usd: 55698
+  government_type: "federal parliamentary constitutional monarchy"
+  democracy_index: 9.08
+  ai_regulation: 0.25
+  ai_enforcement: 0.72
+  ai_opinion: -0.15
+  electricity_usd_per_kwh: 0.07
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Canadian Centre for Cyber Security (CSE)"
+    intelligence: "CSIS, CSE"
+    police: "RCMP"
+    regulator: "Innovation, Science and Economic Development Canada (ISED) — voluntary code of conduct; AIDA bill died on 2025 prorogation"
+    financial_intel: "FINTRAC"
+  cities: ["ca_toronto", "ca_montreal", "ca_vancouver"]
+  languages: ["en", "fr"]
+  currency: "CAD"
+  lore_key: "world.country.ca.lore"
+- id: "cd"
+  iso3: "COD"
+  name_key: "world.country.cd.name"
+  macro_region: "sub_saharan_africa"
+  population: 116452162
+  median_age: 16.9
+  urbanization_pct: 47.4
+  internet_pct: 19.7
+  gdp_nominal_usd_bn: 91
+  gdp_per_capita_usd: 807
+  government_type: "semi-presidential republic (weak state, active eastern conflict)"
+  democracy_index: 1.92
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: null
+  chip_access: "restricted"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Agence Nationale de Renseignements (ANR)"
+    police: "Police Nationale Congolaise"
+    financial_intel: "CENAREF"
+  cities: ["cd_kinshasa", "cd_goma", "cd_rubaya"]
+  languages: ["fr"]
+  currency: "CDF"
+  lore_key: "world.country.cd.lore"
+- id: "ch"
+  iso3: "CHE"
+  name_key: "world.country.ch.name"
+  macro_region: "western_europe"
+  population: 9154896
+  median_age: 44.2
+  urbanization_pct: 74.2
+  internet_pct: 97.3
+  gdp_nominal_usd_bn: 1043.5
+  gdp_per_capita_usd: 114769
+  government_type: "federal semi-direct democracy (directorial republic)"
+  democracy_index: 9.32
+  ai_regulation: 0.25
+  ai_enforcement: 0.75
+  ai_opinion: -0.15
+  electricity_usd_per_kwh: 0.09
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NCSC (National Cyber Security Centre)"
+    intelligence: "FIS/NDB (Federal Intelligence Service)"
+    police: "fedpol"
+    regulator: "no dedicated statute yet; FDPIC (data protection) plus sectoral regulators"
+    financial_intel: "MROS"
+  cities: ["ch_zurich", "ch_lugano", "ch_geneva"]
+  languages: ["de", "fr", "it"]
+  currency: "CHF"
+  lore_key: "world.country.ch.lore"
+- id: "ci"
+  iso3: "CIV"
+  name_key: "world.country.ci.name"
+  macro_region: "sub_saharan_africa"
+  population: 33293101
+  median_age: 21.2
+  urbanization_pct: 53.1
+  internet_pct: 41.4
+  gdp_nominal_usd_bn: 99.8
+  gdp_per_capita_usd: 3050
+  government_type: "presidential republic"
+  democracy_index: 4.24
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: 0.12
+  chip_access: "restricted"
+  agencies:
+    cyber: "CI-CERT"
+    intelligence: "Direction Générale des Renseignements (DGR)"
+    police: "Police Nationale"
+    regulator: "ARTCI"
+    financial_intel: "CENTIF"
+  cities: ["ci_abidjan"]
+  languages: ["fr"]
+  currency: "XOF"
+  lore_key: "world.country.ci.lore"
+- id: "cl"
+  iso3: "CHL"
+  name_key: "world.country.cl.name"
+  macro_region: "south_america"
+  population: 20150948
+  median_age: 36.9
+  urbanization_pct: 88
+  internet_pct: 95.6
+  gdp_nominal_usd_bn: 357.4
+  gdp_per_capita_usd: 17995
+  government_type: "presidential republic"
+  democracy_index: 7.97
+  ai_regulation: 0.55
+  ai_enforcement: 0.35
+  ai_opinion: 0.28
+  electricity_usd_per_kwh: 0.12
+  chip_access: "restricted"
+  agencies:
+    cyber: "Agencia Nacional de Ciberseguridad (ANCI, est. 2024)"
+    intelligence: "Agencia Nacional de Inteligencia (ANI)"
+    police: "Carabineros de Chile / PDI"
+    regulator: "draft horizontal AI bill (Boletín 16821) advancing in Congress"
+    financial_intel: "UAF"
+  cities: ["cl_santiago"]
+  languages: ["es"]
+  currency: "CLP"
+  lore_key: "world.country.cl.lore"
+- id: "cm"
+  iso3: "CMR"
+  name_key: "world.country.cm.name"
+  macro_region: "sub_saharan_africa"
+  population: 29442327
+  median_age: 18.9
+  urbanization_pct: 59.3
+  internet_pct: 46.3
+  gdp_nominal_usd_bn: 58.9
+  gdp_per_capita_usd: 1972
+  government_type: "presidential republic"
+  democracy_index: 2.56
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.52
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "CIRT-CM (under ANTIC)"
+    intelligence: "Direction Générale de la Recherche Extérieure (DGRE)"
+    police: "Délégation Générale à la Sûreté Nationale"
+    regulator: "ANTIC"
+    financial_intel: "ANIF"
+  cities: ["cm_yaounde", "cm_douala"]
+  languages: ["fr", "en"]
+  currency: "XAF"
+  lore_key: "world.country.cm.lore"
+- id: "cn"
+  iso3: "CHN"
+  name_key: "world.country.cn.name"
+  macro_region: "east_asia"
+  population: 1404890000
+  median_age: 40.2
+  urbanization_pct: 64.6
+  internet_pct: 91.6
+  gdp_nominal_usd_bn: 19498
+  gdp_per_capita_usd: 13862
+  government_type: "one-party socialist state (People's Republic, CCP-led)"
+  democracy_index: 2.24
+  ai_regulation: 0.65
+  ai_enforcement: 0.48
+  ai_opinion: 0.49
+  electricity_usd_per_kwh: 0.08
+  chip_access: "banned"
+  agencies:
+    cyber: "MSS cyber bureau / CNCERT/CC"
+    intelligence: "Ministry of State Security (MSS)"
+    police: "Ministry of Public Security (MPS)"
+    regulator: "Cyberspace Administration of China (CAC) — algorithm registration and generative-AI measures"
+    financial_intel: "CAMLMAC"
+  cities: ["cn_beijing", "cn_hangzhou", "cn_shenzhen"]
+  languages: ["zh"]
+  currency: "CNY"
+  lore_key: "world.country.cn.lore"
+- id: "co"
+  iso3: "COL"
+  name_key: "world.country.co.name"
+  macro_region: "south_america"
+  population: 53399171
+  median_age: 32.7
+  urbanization_pct: 82.4
+  internet_pct: 79.3
+  gdp_nominal_usd_bn: 457.4
+  gdp_per_capita_usd: 8562
+  government_type: "presidential republic"
+  democracy_index: 6.04
+  ai_regulation: 0.35
+  ai_enforcement: 0.2
+  ai_opinion: 0.42
+  electricity_usd_per_kwh: 0.13
+  chip_access: "restricted"
+  agencies:
+    cyber: "colCERT"
+    intelligence: "Dirección Nacional de Inteligencia (DNI)"
+    police: "Policía Nacional"
+    financial_intel: "UIAF"
+  cities: ["co_bogota", "co_medellin"]
+  languages: ["es"]
+  currency: "COP"
+  lore_key: "world.country.co.lore"
+- id: "cu"
+  iso3: "CUB"
+  name_key: "world.country.cu.name"
+  macro_region: "central_america_caribbean"
+  population: 9434593
+  median_age: 42.6
+  urbanization_pct: 77.5
+  internet_pct: 70.5
+  gdp_nominal_usd_bn: 107.4
+  gdp_per_capita_usd: 9605
+  government_type: "one-party socialist republic (Communist Party of Cuba)"
+  democracy_index: 2.58
+  ai_regulation: 0.08
+  ai_enforcement: 0.21
+  ai_opinion: 0.41
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "under Ministry of Interior (MININT)"
+    intelligence: "Dirección de Inteligencia (DGI)"
+    police: "Policía Nacional Revolucionaria (PNR)"
+  cities: ["cu_havana"]
+  languages: ["es"]
+  currency: "CUP"
+  lore_key: "world.country.cu.lore"
+- id: "cy"
+  iso3: "CYP"
+  name_key: "world.country.cy.name"
+  macro_region: "southern_europe"
+  population: 983000
+  median_age: 39.5
+  urbanization_pct: 67
+  internet_pct: 89.6
+  gdp_nominal_usd_bn: 41.2
+  gdp_per_capita_usd: 41783
+  government_type: "presidential republic"
+  democracy_index: 7.45
+  ai_regulation: 0.8
+  ai_enforcement: 0.39
+  ai_opinion: -0.08
+  electricity_usd_per_kwh: 0.2
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Digital Security Authority"
+    intelligence: "KYP"
+    police: "Cyprus Police"
+    regulator: "Office of the Commissioner for Personal Data Protection"
+    financial_intel: "MOKAS"
+  cities: ["cy_nicosia", "cy_limassol"]
+  languages: ["el", "tr"]
+  currency: "EUR"
+  lore_key: "world.country.cy.lore"
+- id: "cz"
+  iso3: "CZE"
+  name_key: "world.country.cz.name"
+  macro_region: "central_eastern_europe"
+  population: 10903655
+  median_age: 44.2
+  urbanization_pct: 74.6
+  internet_pct: 87.7
+  gdp_nominal_usd_bn: 391
+  gdp_per_capita_usd: 35917
+  government_type: "parliamentary republic"
+  democracy_index: 8.15
+  ai_regulation: 0.8
+  ai_enforcement: 0.46
+  ai_opinion: -0.09
+  electricity_usd_per_kwh: 0.14
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NÚKIB"
+    intelligence: "BIS (domestic), ÚZSI (foreign)"
+    police: "Policie ČR"
+    regulator: "ÚOOÚ"
+    financial_intel: "FAÚ"
+  cities: ["cz_prague", "cz_ostrava"]
+  languages: ["cs"]
+  currency: "CZK"
+  lore_key: "world.country.cz.lore"
+- id: "de"
+  iso3: "DEU"
+  name_key: "world.country.de.name"
+  macro_region: "western_europe"
+  population: 83467117
+  median_age: 46.8
+  urbanization_pct: 77.8
+  internet_pct: 93.5
+  gdp_nominal_usd_bn: 5050.9
+  gdp_per_capita_usd: 60496
+  government_type: "federal parliamentary republic"
+  democracy_index: 8.73
+  ai_regulation: 0.8
+  ai_enforcement: 0.75
+  ai_opinion: -0.15
+  electricity_usd_per_kwh: 0.2
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "BSI"
+    intelligence: "BND, BfV"
+    police: "BKA"
+    regulator: "Bundesnetzagentur (AI Act market surveillance, designated 2025)"
+    financial_intel: "FIU Deutschland"
+  cities: ["de_frankfurt", "de_berlin", "de_munich"]
+  languages: ["de"]
+  currency: "EUR"
+  lore_key: "world.country.de.lore"
+- id: "dk"
+  iso3: "DNK"
+  name_key: "world.country.dk.name"
+  macro_region: "northern_europe"
+  population: 6032304
+  median_age: 42.2
+  urbanization_pct: 88.5
+  internet_pct: 99.8
+  gdp_nominal_usd_bn: 462.5
+  gdp_per_capita_usd: 76970
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 9.42
+  ai_regulation: 0.8
+  ai_enforcement: 0.7
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.14
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "CFCS (Center for Cybersikkerhed)"
+    intelligence: "PET, FE"
+    police: "Rigspolitiet"
+    regulator: "Datatilsynet"
+    financial_intel: "Hvidvasksekretariatet"
+  cities: ["dk_copenhagen", "dk_odense"]
+  languages: ["da"]
+  currency: "DKK"
+  lore_key: "world.country.dk.lore"
+- id: "dz"
+  iso3: "DZA"
+  name_key: "world.country.dz.name"
+  macro_region: "north_africa"
+  population: 47400000
+  median_age: 29.1
+  urbanization_pct: 75.3
+  internet_pct: 77.4
+  gdp_nominal_usd_bn: 287
+  gdp_per_capita_usd: 6051
+  government_type: "presidential republic (military-influenced)"
+  democracy_index: 3.55
+  ai_regulation: 0.08
+  ai_enforcement: 0.19
+  ai_opinion: 0.46
+  electricity_usd_per_kwh: 0.03
+  chip_access: "restricted"
+  agencies:
+    cyber: "national CERT (nascent)"
+    intelligence: "DGSI"
+    police: "DGSN (Sûreté Nationale)"
+    financial_intel: "CTRF"
+  cities: ["dz_algiers"]
+  languages: ["ar", "fr"]
+  currency: "DZD"
+  lore_key: "world.country.dz.lore"
+- id: "ec"
+  iso3: "ECU"
+  name_key: "world.country.ec.name"
+  macro_region: "south_america"
+  population: 18243816
+  median_age: 28
+  urbanization_pct: 64.8
+  internet_pct: 77.2
+  gdp_nominal_usd_bn: 130.3
+  gdp_per_capita_usd: 7125
+  government_type: "presidential republic"
+  democracy_index: 5.2
+  ai_regulation: 0.08
+  ai_enforcement: 0.19
+  ai_opinion: 0.44
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "EcuCERT"
+    intelligence: "Secretaría Nacional de Inteligencia (SNI)"
+    police: "Policía Nacional"
+    financial_intel: "UAFE"
+  cities: ["ec_quito", "ec_guayaquil"]
+  languages: ["es"]
+  currency: "USD"
+  lore_key: "world.country.ec.lore"
+- id: "ee"
+  iso3: "EST"
+  name_key: "world.country.ee.name"
+  macro_region: "northern_europe"
+  population: 1360745
+  median_age: 45
+  urbanization_pct: 69.8
+  internet_pct: 92.2
+  gdp_nominal_usd_bn: 47
+  gdp_per_capita_usd: 34418
+  government_type: "parliamentary republic"
+  democracy_index: 8.07
+  ai_regulation: 0.8
+  ai_enforcement: 0.35
+  ai_opinion: -0.07
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "RIA (Estonian Information System Authority); hosts NATO CCDCOE"
+    intelligence: "Välisluureamet (EFIS), KAPO"
+    police: "PPA"
+    regulator: "Andmekaitse Inspektsioon (AKI)"
+    financial_intel: "FIU Estonia"
+  cities: ["ee_tallinn"]
+  languages: ["et"]
+  currency: "EUR"
+  lore_key: "world.country.ee.lore"
+- id: "eg"
+  iso3: "EGY"
+  name_key: "world.country.eg.name"
+  macro_region: "north_africa"
+  population: 108613296
+  median_age: 24.4
+  urbanization_pct: 43.1
+  internet_pct: 74.6
+  gdp_nominal_usd_bn: 365.3
+  gdp_per_capita_usd: 3086
+  government_type: "presidential republic (authoritarian in practice)"
+  democracy_index: 2.79
+  ai_regulation: 0.25
+  ai_enforcement: 0.22
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: 0.05
+  chip_access: "restricted"
+  agencies:
+    cyber: "EG-CERT"
+    intelligence: "General Intelligence Service (GIS)"
+    police: "Ministry of Interior"
+    regulator: "National Council for Artificial Intelligence (NCAI), under MCIT"
+    financial_intel: "EMLCU"
+  cities: ["eg_cairo", "eg_new_capital"]
+  languages: ["ar"]
+  currency: "EGP"
+  lore_key: "world.country.eg.lore"
+- id: "es"
+  iso3: "ESP"
+  name_key: "world.country.es.name"
+  macro_region: "southern_europe"
+  population: 49801559
+  median_age: 46.8
+  urbanization_pct: 81.6
+  internet_pct: 95.8
+  gdp_nominal_usd_bn: 1906.5
+  gdp_per_capita_usd: 38627
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 8.2
+  ai_regulation: 0.8
+  ai_enforcement: 0.63
+  ai_opinion: -0.13
+  electricity_usd_per_kwh: 0.14
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "INCIBE / CCN-CERT"
+    intelligence: "CNI"
+    police: "Policía Nacional / Guardia Civil"
+    regulator: "AESIA (Agencia Española de Supervisión de Inteligencia Artificial) — EU's first dedicated national AI regulator, est. 2023"
+    financial_intel: "SEPBLAC"
+  cities: ["es_madrid", "es_barcelona"]
+  languages: ["es"]
+  currency: "EUR"
+  lore_key: "world.country.es.lore"
+- id: "et"
+  iso3: "ETH"
+  name_key: "world.country.et.name"
+  macro_region: "sub_saharan_africa"
+  population: 111652998
+  median_age: 20.4
+  urbanization_pct: 23.2
+  internet_pct: 21.4
+  gdp_nominal_usd_bn: 126.4
+  gdp_per_capita_usd: 933
+  government_type: "federal parliamentary republic"
+  democracy_index: 3.13
+  ai_regulation: 0.25
+  ai_enforcement: 0.16
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: 0.04
+  chip_access: "restricted"
+  agencies:
+    cyber: "Information Network Security Administration (INSA)"
+    intelligence: "National Intelligence and Security Service (NISS)"
+    police: "Federal Police Commission"
+    regulator: "Ethiopian Artificial Intelligence Institute (EAII)"
+    financial_intel: "Financial Intelligence Center (FIC)"
+  cities: ["et_addis_ababa"]
+  languages: ["am"]
+  currency: "ETB"
+  lore_key: "world.country.et.lore"
+- id: "fi"
+  iso3: "FIN"
+  name_key: "world.country.fi.name"
+  macro_region: "northern_europe"
+  population: 5655296
+  median_age: 43.3
+  urbanization_pct: 85.8
+  internet_pct: 94.1
+  gdp_nominal_usd_bn: 317
+  gdp_per_capita_usd: 56149
+  government_type: "parliamentary republic"
+  democracy_index: 9.37
+  ai_regulation: 0.8
+  ai_enforcement: 0.68
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.09
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NCSC-FI (under Traficom)"
+    intelligence: "SUPO"
+    police: "Poliisi"
+    regulator: "Traficom"
+    financial_intel: "Rahanpesun selvittelykeskus"
+  cities: ["fi_helsinki", "fi_kajaani", "fi_hamina"]
+  languages: ["fi", "sv"]
+  currency: "EUR"
+  lore_key: "world.country.fi.lore"
+- id: "fr"
+  iso3: "FRA"
+  name_key: "world.country.fr.name"
+  macro_region: "western_europe"
+  population: 69081996
+  median_age: 42.6
+  urbanization_pct: 81.8
+  internet_pct: 88.7
+  gdp_nominal_usd_bn: 3366.3
+  gdp_per_capita_usd: 48986
+  government_type: "semi-presidential unitary republic"
+  democracy_index: 8.05
+  ai_regulation: 0.8
+  ai_enforcement: 0.69
+  ai_opinion: -0.13
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "ANSSI"
+    intelligence: "DGSE, DGSI"
+    police: "Police Nationale"
+    regulator: "CNIL, with a national AI coordination unit under SGDSEN"
+    financial_intel: "TRACFIN"
+  cities: ["fr_paris"]
+  languages: ["fr"]
+  currency: "EUR"
+  lore_key: "world.country.fr.lore"
+- id: "gb"
+  iso3: "GBR"
+  name_key: "world.country.gb.name"
+  macro_region: "northern_europe"
+  population: 69487000
+  median_age: 40.8
+  urbanization_pct: 84.6
+  internet_pct: 95.5
+  gdp_nominal_usd_bn: 4002.6
+  gdp_per_capita_usd: 57602
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 8.34
+  ai_regulation: 0.25
+  ai_enforcement: 0.74
+  ai_opinion: -0.15
+  electricity_usd_per_kwh: 0.23
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NCSC"
+    intelligence: "MI5, SIS/MI6, GCHQ"
+    police: "National Crime Agency / Metropolitan Police"
+    regulator: "sectoral (DSIT sets policy; AI Security Institute tests frontier models; ICO for data)"
+    financial_intel: "UKFIU (NCA)"
+  cities: ["gb_london", "gb_cambridge"]
+  languages: ["en"]
+  currency: "GBP"
+  lore_key: "world.country.gb.lore"
+- id: "ge"
+  iso3: "GEO"
+  name_key: "world.country.ge.name"
+  macro_region: "russia_central_asia"
+  population: 3941100
+  median_age: 38.3
+  urbanization_pct: 60.7
+  internet_pct: 83.8
+  gdp_nominal_usd_bn: 38.1
+  gdp_per_capita_usd: 9692
+  government_type: "parliamentary republic (democratic backsliding under Georgian Dream)"
+  democracy_index: 4.36
+  ai_regulation: 0.08
+  ai_enforcement: 0.21
+  ai_opinion: 0.4
+  electricity_usd_per_kwh: 0.07
+  chip_access: "restricted"
+  agencies:
+    cyber: "CERT.GOV.GE"
+    intelligence: "State Security Service of Georgia (SSSG)"
+    police: "Ministry of Internal Affairs"
+    financial_intel: "FMS"
+  cities: ["ge_tbilisi"]
+  languages: ["ka"]
+  currency: "GEL"
+  lore_key: "world.country.ge.lore"
+- id: "gh"
+  iso3: "GHA"
+  name_key: "world.country.gh.name"
+  macro_region: "sub_saharan_africa"
+  population: 34378768
+  median_age: 21.4
+  urbanization_pct: 59.2
+  internet_pct: 72.2
+  gdp_nominal_usd_bn: 114.2
+  gdp_per_capita_usd: 3257
+  government_type: "presidential republic"
+  democracy_index: 6.24
+  ai_regulation: 0.25
+  ai_enforcement: 0.17
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "Cyber Security Authority (CSA)"
+    intelligence: "Bureau of National Investigations (BNI)"
+    police: "Ghana Police Service"
+    regulator: "Data Protection Commission"
+    financial_intel: "Financial Intelligence Centre (FIC)"
+  cities: ["gh_accra"]
+  languages: ["en"]
+  currency: "GHS"
+  lore_key: "world.country.gh.lore"
+- id: "gn"
+  iso3: "GIN"
+  name_key: "world.country.gn.name"
+  macro_region: "sub_saharan_africa"
+  population: 17521167
+  median_age: 19.4
+  urbanization_pct: 38.1
+  internet_pct: 33.3
+  gdp_nominal_usd_bn: 28.3
+  gdp_per_capita_usd: 1877
+  government_type: "military junta (since 2021 coup)"
+  democracy_index: 2.15
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.52
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Direction Générale des Services Spéciaux"
+    police: "Police Nationale"
+    financial_intel: "CENTIF Guinée"
+  cities: ["gn_conakry"]
+  languages: ["fr"]
+  currency: "GNF"
+  lore_key: "world.country.gn.lore"
+- id: "gr"
+  iso3: "GRC"
+  name_key: "world.country.gr.name"
+  macro_region: "southern_europe"
+  population: 10372335
+  median_age: 46.5
+  urbanization_pct: 80.7
+  internet_pct: 86.3
+  gdp_nominal_usd_bn: 280.6
+  gdp_per_capita_usd: 26948
+  government_type: "parliamentary republic"
+  democracy_index: 8.07
+  ai_regulation: 0.8
+  ai_enforcement: 0.41
+  ai_opinion: 0.05
+  electricity_usd_per_kwh: 0.17
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "National Cyber Security Authority"
+    intelligence: "EYP"
+    police: "Hellenic Police"
+    regulator: "Hellenic Data Protection Authority (HDPA)"
+    financial_intel: "Anti-Money Laundering Authority"
+  cities: ["gr_athens"]
+  languages: ["el"]
+  currency: "EUR"
+  lore_key: "world.country.gr.lore"
+- id: "gt"
+  iso3: "GTM"
+  name_key: "world.country.gt.name"
+  macro_region: "central_america_caribbean"
+  population: 18312373
+  median_age: 24.8
+  urbanization_pct: 53.1
+  internet_pct: 60.2
+  gdp_nominal_usd_bn: 123.3
+  gdp_per_capita_usd: 6598
+  government_type: "presidential republic"
+  democracy_index: 4.65
+  ai_regulation: 0.08
+  ai_enforcement: 0.19
+  ai_opinion: 0.45
+  electricity_usd_per_kwh: 0.14
+  chip_access: "restricted"
+  agencies:
+    cyber: "none dedicated"
+    intelligence: "Dirección de Inteligencia Civil (DIGICI)"
+    police: "Policía Nacional Civil (PNC)"
+    financial_intel: "Intendencia de Verificación Especial (IVE)"
+  cities: ["gt_guatemala_city"]
+  languages: ["es"]
+  currency: "GTQ"
+  lore_key: "world.country.gt.lore"
+- id: "hk"
+  iso3: "HKG"
+  name_key: "world.country.hk.name"
+  macro_region: "east_asia"
+  population: 7518300
+  median_age: 47.2
+  urbanization_pct: 100
+  internet_pct: 95.8
+  gdp_nominal_usd_bn: 427.3
+  gdp_per_capita_usd: 56983
+  government_type: "special administrative region of China"
+  democracy_index: 5.03
+  ai_regulation: 0.65
+  ai_enforcement: 0.48
+  ai_opinion: -0.2
+  electricity_usd_per_kwh: 0.15
+  chip_access: "restricted"
+  agencies:
+    cyber: "HKCERT"
+    intelligence: "falls under mainland MSS post-2020 NSL; local Security Bureau"
+    police: "Hong Kong Police Force (with National Security Department)"
+    regulator: "Office of the Government Chief Information Officer / Privacy Commissioner for Personal Data (ethics guidance only)"
+    financial_intel: "Joint Financial Intelligence Unit (JFIU)"
+  cities: ["hk_hong_kong"]
+  languages: ["zh", "en"]
+  currency: "HKD"
+  lore_key: "world.country.hk.lore"
+- id: "hu"
+  iso3: "HUN"
+  name_key: "world.country.hu.name"
+  macro_region: "central_eastern_europe"
+  population: 9488428
+  median_age: 44.8
+  urbanization_pct: 72.9
+  internet_pct: 93.8
+  gdp_nominal_usd_bn: 246.5
+  gdp_per_capita_usd: 25908
+  government_type: "parliamentary republic (Fidesz's 16-year rule ended April 2026; Tisza-led government since)"
+  democracy_index: 6.58
+  ai_regulation: 0.8
+  ai_enforcement: 0.4
+  ai_opinion: 0.16
+  electricity_usd_per_kwh: 0.14
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NBSZ / National Cybersecurity Center"
+    intelligence: "Information Office (IH), Constitution Protection Office (AH)"
+    police: "Rendőrség"
+    regulator: "NAIH"
+    financial_intel: "NAV financial-intelligence unit"
+  cities: ["hu_budapest", "hu_debrecen"]
+  languages: ["hu"]
+  currency: "HUF"
+  lore_key: "world.country.hu.lore"
+- id: "id"
+  iso3: "IDN"
+  name_key: "world.country.id.name"
+  macro_region: "southeast_asia"
+  population: 288315089
+  median_age: 31.5
+  urbanization_pct: 58.6
+  internet_pct: 72.8
+  gdp_nominal_usd_bn: 1445.6
+  gdp_per_capita_usd: 5060
+  government_type: "presidential republic"
+  democracy_index: 6.37
+  ai_regulation: 0.25
+  ai_enforcement: 0.23
+  ai_opinion: 0.47
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "BSSN"
+    intelligence: "BIN (Badan Intelijen Negara)"
+    police: "POLRI"
+    regulator: "Kominfo/Komdigi (Ministry of Communication and Digital Affairs) — 2023 ethics guidelines, no binding law"
+    financial_intel: "PPATK"
+  cities: ["id_jakarta", "id_batam"]
+  languages: ["id"]
+  currency: "IDR"
+  lore_key: "world.country.id.lore"
+- id: "ie"
+  iso3: "IRL"
+  name_key: "world.country.ie.name"
+  macro_region: "northern_europe"
+  population: 5525600
+  median_age: 40.2
+  urbanization_pct: 64.5
+  internet_pct: 97.2
+  gdp_nominal_usd_bn: 721.7
+  gdp_per_capita_usd: 131593
+  government_type: "parliamentary republic"
+  democracy_index: 9.33
+  ai_regulation: 0.8
+  ai_enforcement: 0.75
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.24
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NCSC-IE"
+    intelligence: "G2 (military intelligence), Garda Security & Intelligence"
+    police: "An Garda Síochána"
+    regulator: "Data Protection Commission (DPC) — lead EU enforcer for most US Big Tech"
+    financial_intel: "FIU Ireland (Garda)"
+  cities: ["ie_dublin"]
+  languages: ["en", "ga"]
+  currency: "EUR"
+  lore_key: "world.country.ie.lore"
+- id: "il"
+  iso3: "ISR"
+  name_key: "world.country.il.name"
+  macro_region: "middle_east"
+  population: 10305000
+  median_age: 30.1
+  urbanization_pct: 92.9
+  internet_pct: 88.2
+  gdp_nominal_usd_bn: 610.8
+  gdp_per_capita_usd: 60337
+  government_type: "parliamentary republic"
+  democracy_index: 7.8
+  ai_regulation: 0.25
+  ai_enforcement: 0.7
+  ai_opinion: -0.05
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Israel National Cyber Directorate (INCD)"
+    intelligence: "Mossad, Shin Bet (ISA), Unit 8200 (military SIGINT)"
+    police: "Israel Police"
+    regulator: "Ministry of Innovation, Science and Technology — voluntary/soft-law approach, no binding AI statute"
+    financial_intel: "IMPA"
+  cities: ["il_tel_aviv", "il_haifa", "il_beersheba"]
+  languages: ["he", "ar"]
+  currency: "ILS"
+  lore_key: "world.country.il.lore"
+- id: "in"
+  iso3: "IND"
+  name_key: "world.country.in.name"
+  macro_region: "south_asia"
+  population: 1429404000
+  median_age: 29.8
+  urbanization_pct: 36.4
+  internet_pct: 70
+  gdp_nominal_usd_bn: 3956.1
+  gdp_per_capita_usd: 2703
+  government_type: "federal parliamentary republic"
+  democracy_index: 6.96
+  ai_regulation: 0.25
+  ai_enforcement: 0.42
+  ai_opinion: 0.66
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "CERT-In / NCIIPC"
+    intelligence: "RAW (external), Intelligence Bureau (internal)"
+    police: "CBI / state police forces"
+    regulator: "MeitY (Ministry of Electronics and IT) — no binding AI statute yet"
+    financial_intel: "FIU-IND"
+  cities: ["in_bangalore", "in_mumbai", "in_hyderabad"]
+  languages: ["hi", "en"]
+  currency: "INR"
+  lore_key: "world.country.in.lore"
+- id: "iq"
+  iso3: "IRQ"
+  name_key: "world.country.iq.name"
+  macro_region: "middle_east"
+  population: 46118793
+  median_age: 22.4
+  urbanization_pct: 71.6
+  internet_pct: 81.5
+  gdp_nominal_usd_bn: 254.4
+  gdp_per_capita_usd: 5410
+  government_type: "federal parliamentary republic"
+  democracy_index: 3.13
+  ai_regulation: 0.08
+  ai_enforcement: 0.18
+  ai_opinion: 0.47
+  electricity_usd_per_kwh: 0.03
+  chip_access: "restricted"
+  agencies:
+    cyber: "Iraqi National ICT/cyber directorate"
+    intelligence: "Iraqi National Intelligence Service (INIS)"
+    police: "Ministry of Interior"
+    financial_intel: "Iraqi AML Office"
+  cities: ["iq_baghdad", "iq_erbil"]
+  languages: ["ar", "ku"]
+  currency: "IQD"
+  lore_key: "world.country.iq.lore"
+- id: "ir"
+  iso3: "IRN"
+  name_key: "world.country.ir.name"
+  macro_region: "middle_east"
+  population: 87134000
+  median_age: 33.8
+  urbanization_pct: 77.3
+  internet_pct: 85.3
+  gdp_nominal_usd_bn: 362.7
+  gdp_per_capita_usd: 3924
+  government_type: "theocratic authoritarian state (Islamic Republic, Supreme Leader system)"
+  democracy_index: 1.96
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.49
+  electricity_usd_per_kwh: 0.03
+  chip_access: "banned"
+  agencies:
+    cyber: "IRGC Cyber Command / Cyber Police (FATA)"
+    intelligence: "MOIS, IRGC Intelligence Organization"
+    police: "FARAJA"
+    financial_intel: "FIU Iran"
+  cities: ["ir_tehran"]
+  languages: ["fa"]
+  currency: "IRR"
+  lore_key: "world.country.ir.lore"
+- id: "is"
+  iso3: "ISL"
+  name_key: "world.country.is.name"
+  macro_region: "northern_europe"
+  population: 396500
+  median_age: 38
+  urbanization_pct: 94
+  internet_pct: 98.2
+  gdp_nominal_usd_bn: 38.6
+  gdp_per_capita_usd: 98324
+  government_type: "parliamentary republic"
+  democracy_index: 9.38
+  ai_regulation: 0.8
+  ai_enforcement: 0.5
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.06
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "CERT-IS"
+    intelligence: "National Commissioner of Police security unit"
+    police: "Lögreglan"
+    regulator: "Persónuvernd"
+    financial_intel: "FIU Iceland"
+  cities: ["is_reykjavik", "is_keflavik"]
+  languages: ["is"]
+  currency: "ISK"
+  lore_key: "world.country.is.lore"
+- id: "it"
+  iso3: "ITA"
+  name_key: "world.country.it.name"
+  macro_region: "southern_europe"
+  population: 58943673
+  median_age: 48.4
+  urbanization_pct: 72
+  internet_pct: 89.2
+  gdp_nominal_usd_bn: 2551.6
+  gdp_per_capita_usd: 43309
+  government_type: "parliamentary republic"
+  democracy_index: 7.58
+  ai_regulation: 0.25
+  ai_enforcement: 0.55
+  ai_opinion: -0.1
+  electricity_usd_per_kwh: 0.25
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "ACN (Agenzia per la Cybersicurezza Nazionale)"
+    intelligence: "AISE, AISI"
+    police: "Polizia di Stato / Carabinieri"
+    regulator: "AgID and ACN, jointly, under Italy's 2025 national AI law"
+    financial_intel: "UIF (Banca d'Italia)"
+  cities: ["it_milan", "it_bologna"]
+  languages: ["it"]
+  currency: "EUR"
+  lore_key: "world.country.it.lore"
+- id: "jp"
+  iso3: "JPN"
+  name_key: "world.country.jp.name"
+  macro_region: "east_asia"
+  population: 122680000
+  median_age: 49.9
+  urbanization_pct: 92
+  internet_pct: 85.5
+  gdp_nominal_usd_bn: 4435.2
+  gdp_per_capita_usd: 35951
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 8.85
+  ai_regulation: 0.25
+  ai_enforcement: 0.61
+  ai_opinion: -0.09
+  electricity_usd_per_kwh: 0.17
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NISC, plus a new 2025 Active Cyber Defense law"
+    intelligence: "Cabinet Intelligence and Research Office (CIRO), Public Security Intelligence Agency (PSIA)"
+    police: "National Police Agency"
+    regulator: "AI Strategy Council (Cabinet Office) under the 2025 AI Promotion Act — soft-law, promotion-first approach"
+    financial_intel: "JAFIC"
+  cities: ["jp_tokyo", "jp_kobe"]
+  languages: ["ja"]
+  currency: "JPY"
+  lore_key: "world.country.jp.lore"
+- id: "ke"
+  iso3: "KEN"
+  name_key: "world.country.ke.name"
+  macro_region: "sub_saharan_africa"
+  population: 54227015
+  median_age: 21.2
+  urbanization_pct: 29.5
+  internet_pct: 35
+  gdp_nominal_usd_bn: 135.9
+  gdp_per_capita_usd: 2363
+  government_type: "presidential republic"
+  democracy_index: 5.05
+  ai_regulation: 0.35
+  ai_enforcement: 0.21
+  ai_opinion: 0.51
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "National KE-CIRT/CC"
+    intelligence: "National Intelligence Service (NIS)"
+    police: "National Police Service"
+    regulator: "draft national AI policy under the ICT Ministry (2025)"
+    financial_intel: "Financial Reporting Centre (FRC)"
+  cities: ["ke_nairobi"]
+  languages: ["sw", "en"]
+  currency: "KES"
+  lore_key: "world.country.ke.lore"
+- id: "kh"
+  iso3: "KHM"
+  name_key: "world.country.kh.name"
+  macro_region: "southeast_asia"
+  population: 17816143
+  median_age: 27.9
+  urbanization_pct: 25.6
+  internet_pct: 68.5
+  gdp_nominal_usd_bn: 51.3
+  gdp_per_capita_usd: 2872
+  government_type: "parliamentary constitutional monarchy (one-party dominant)"
+  democracy_index: 2.7
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.51
+  electricity_usd_per_kwh: 0.16
+  chip_access: "restricted"
+  agencies:
+    cyber: "Cambodia National Cybersecurity Committee"
+    intelligence: "General Department of Intelligence"
+    police: "National Police (Cambodia)"
+    financial_intel: "CAFIU"
+  cities: ["kh_phnom_penh"]
+  languages: ["km"]
+  currency: "KHR"
+  lore_key: "world.country.kh.lore"
+- id: "kp"
+  iso3: "PRK"
+  name_key: "world.country.kp.name"
+  macro_region: "east_asia"
+  population: 25950000
+  median_age: 35.9
+  urbanization_pct: 63.2
+  internet_pct: 0
+  gdp_nominal_usd_bn: null
+  gdp_per_capita_usd: null
+  government_type: "one-party totalitarian state (Kim dynasty)"
+  democracy_index: 1.08
+  ai_regulation: 0.25
+  ai_enforcement: 0.15
+  ai_opinion: 0.55
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "Reconnaissance General Bureau (runs the Lazarus Group)"
+    intelligence: "Reconnaissance General Bureau (RGB), Ministry of State Security"
+    police: "Ministry of Social Security"
+  cities: ["kp_pyongyang"]
+  languages: ["ko"]
+  currency: "KPW"
+  lore_key: "world.country.kp.lore"
+- id: "kr"
+  iso3: "KOR"
+  name_key: "world.country.kr.name"
+  macro_region: "east_asia"
+  population: 51088284
+  median_age: 45.5
+  urbanization_pct: 81.5
+  internet_pct: 97.9
+  gdp_nominal_usd_bn: 1872.4
+  gdp_per_capita_usd: 36227
+  government_type: "presidential republic"
+  democracy_index: 7.75
+  ai_regulation: 0.55
+  ai_enforcement: 0.61
+  ai_opinion: 0.16
+  electricity_usd_per_kwh: 0.1
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "KISA / NIS cyber bureau"
+    intelligence: "National Intelligence Service (NIS)"
+    police: "Korean National Police Agency"
+    regulator: "Personal Information Protection Commission (PIPC), under the 'AI Basic Act' (passed Dec 2024, effective Jan 2026)"
+    financial_intel: "KoFIU"
+  cities: ["kr_seoul", "kr_icheon_pyeongtaek"]
+  languages: ["ko"]
+  currency: "KRW"
+  lore_key: "world.country.kr.lore"
+- id: "kz"
+  iso3: "KAZ"
+  name_key: "world.country.kz.name"
+  macro_region: "russia_central_asia"
+  population: 20604819
+  median_age: 31.9
+  urbanization_pct: 58.2
+  internet_pct: 93.4
+  gdp_nominal_usd_bn: 306.2
+  gdp_per_capita_usd: 14692
+  government_type: "presidential republic (major 2026 constitutional overhaul; new 'Kurultai' parliament)"
+  democracy_index: 2.91
+  ai_regulation: 0.25
+  ai_enforcement: 0.24
+  ai_opinion: 0.33
+  electricity_usd_per_kwh: 0.05
+  chip_access: "restricted"
+  agencies:
+    cyber: "National Cybersecurity Coordination Center"
+    intelligence: "KNB (Committee for National Security)"
+    police: "Ministry of Internal Affairs"
+    regulator: "Ministry of Digital Development, Innovations and Aerospace Industry"
+    financial_intel: "Financial Monitoring Agency"
+  cities: ["kz_astana", "kz_almaty"]
+  languages: ["kk", "ru"]
+  currency: "KZT"
+  lore_key: "world.country.kz.lore"
+- id: "lk"
+  iso3: "LKA"
+  name_key: "world.country.lk.name"
+  macro_region: "south_asia"
+  population: 21756000
+  median_age: 34.1
+  urbanization_pct: 19.2
+  internet_pct: 54.6
+  gdp_nominal_usd_bn: 108.8
+  gdp_per_capita_usd: 5002
+  government_type: "presidential republic"
+  democracy_index: 6.57
+  ai_regulation: 0.08
+  ai_enforcement: 0.18
+  ai_opinion: 0.47
+  electricity_usd_per_kwh: 0.12
+  chip_access: "restricted"
+  agencies:
+    cyber: "Sri Lanka CERT|CC"
+    intelligence: "State Intelligence Service (SIS)"
+    police: "Sri Lanka Police"
+    financial_intel: "FIU Sri Lanka"
+  cities: ["lk_colombo"]
+  languages: ["si", "ta"]
+  currency: "LKR"
+  lore_key: "world.country.lk.lore"
+- id: "lu"
+  iso3: "LUX"
+  name_key: "world.country.lu.name"
+  macro_region: "western_europe"
+  population: 690959
+  median_age: 39.9
+  urbanization_pct: 92.1
+  internet_pct: 99.1
+  gdp_nominal_usd_bn: 101.2
+  gdp_per_capita_usd: 147252
+  government_type: "parliamentary constitutional monarchy (grand duchy)"
+  democracy_index: 9.08
+  ai_regulation: 0.8
+  ai_enforcement: 0.5
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "GOVCERT.LU"
+    intelligence: "SREL"
+    police: "Police Grand-Ducale"
+    regulator: "CNPD"
+    financial_intel: "CRF"
+  cities: ["lu_luxembourg_city"]
+  languages: ["lb", "fr", "de"]
+  currency: "EUR"
+  lore_key: "world.country.lu.lore"
+- id: "ma"
+  iso3: "MAR"
+  name_key: "world.country.ma.name"
+  macro_region: "north_africa"
+  population: 37254695
+  median_age: 30.6
+  urbanization_pct: 65.1
+  internet_pct: 91.2
+  gdp_nominal_usd_bn: 182.4
+  gdp_per_capita_usd: 4673
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 4.97
+  ai_regulation: 0.25
+  ai_enforcement: 0.23
+  ai_opinion: 0.48
+  electricity_usd_per_kwh: 0.11
+  chip_access: "restricted"
+  agencies:
+    cyber: "DGSSI"
+    intelligence: "DGED (external), DGST (internal)"
+    police: "DGSN"
+    regulator: "CNDP (data protection authority)"
+    financial_intel: "UTRF"
+  cities: ["ma_rabat", "ma_casablanca", "ma_benguerir"]
+  languages: ["ar", "fr"]
+  currency: "MAD"
+  lore_key: "world.country.ma.lore"
+- id: "mg"
+  iso3: "MDG"
+  name_key: "world.country.mg.name"
+  macro_region: "sub_saharan_africa"
+  population: 32658977
+  median_age: 21.3
+  urbanization_pct: 40.6
+  internet_pct: 18.7
+  gdp_nominal_usd_bn: 19.6
+  gdp_per_capita_usd: 599
+  government_type: "presidential republic"
+  democracy_index: 5.06
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: 0.18
+  chip_access: "restricted"
+  agencies:
+    cyber: "none formal"
+    intelligence: "Direction Générale des Services Spéciaux"
+    police: "Police Nationale"
+    financial_intel: "SAMIFIN"
+  cities: ["mg_antananarivo"]
+  languages: ["mg", "fr"]
+  currency: "MGA"
+  lore_key: "world.country.mg.lore"
+- id: "ml"
+  iso3: "MLI"
+  name_key: "world.country.ml.name"
+  macro_region: "sub_saharan_africa"
+  population: 23929000
+  median_age: 16.4
+  urbanization_pct: 46.2
+  internet_pct: 36.8
+  gdp_nominal_usd_bn: 30.1
+  gdp_per_capita_usd: 1193
+  government_type: "transitional military government (junta since 2020-21 coups)"
+  democracy_index: 2.4
+  ai_regulation: 0.08
+  ai_enforcement: 0.02
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Direction Générale de la Sécurité d'État"
+    police: "fragmented"
+    financial_intel: "CENTIF Mali"
+  cities: ["ml_bamako"]
+  languages: ["fr"]
+  currency: "XOF"
+  lore_key: "world.country.ml.lore"
+- id: "mm"
+  iso3: "MMR"
+  name_key: "world.country.mm.name"
+  macro_region: "southeast_asia"
+  population: 51375327
+  median_age: 30.8
+  urbanization_pct: 32.1
+  internet_pct: 45.4
+  gdp_nominal_usd_bn: 81.7
+  gdp_per_capita_usd: 1489
+  government_type: "military junta (State Administration Council)"
+  democracy_index: 0.96
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning independently"
+    intelligence: "Military Security Affairs (MI)"
+    police: "Myanmar Police Force"
+  cities: ["mm_naypyidaw", "mm_yangon"]
+  languages: ["my"]
+  currency: "MMK"
+  lore_key: "world.country.mm.lore"
+- id: "mt"
+  iso3: "MLT"
+  name_key: "world.country.mt.name"
+  macro_region: "southern_europe"
+  population: 588254
+  median_age: 43.5
+  urbanization_pct: 94.9
+  internet_pct: 93.9
+  gdp_nominal_usd_bn: 27.8
+  gdp_per_capita_usd: 47907
+  government_type: "parliamentary republic"
+  democracy_index: 7.93
+  ai_regulation: 0.8
+  ai_enforcement: 0.43
+  ai_opinion: -0.17
+  electricity_usd_per_kwh: 0.15
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "national CSIRT (MITA)"
+    intelligence: "Security Service"
+    police: "Malta Police Force"
+    regulator: "Malta Digital Innovation Authority (MDIA) + Information and Data Protection Commissioner"
+    financial_intel: "FIAU"
+  cities: ["mt_valletta"]
+  languages: ["mt", "en"]
+  currency: "EUR"
+  lore_key: "world.country.mt.lore"
+- id: "mw"
+  iso3: "MWI"
+  name_key: "world.country.mw.name"
+  macro_region: "sub_saharan_africa"
+  population: 21201635
+  median_age: 20.3
+  urbanization_pct: 18.3
+  internet_pct: 19
+  gdp_nominal_usd_bn: 14.9
+  gdp_per_capita_usd: 672
+  government_type: "presidential republic"
+  democracy_index: 6.1
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "mwCERT"
+    intelligence: "National Intelligence Bureau"
+    police: "Malawi Police Service"
+    financial_intel: "Financial Intelligence Authority"
+  cities: ["mw_lilongwe"]
+  languages: ["en", "ny"]
+  currency: "MWK"
+  lore_key: "world.country.mw.lore"
+- id: "mx"
+  iso3: "MEX"
+  name_key: "world.country.mx.name"
+  macro_region: "north_america"
+  population: 131231919
+  median_age: 30.8
+  urbanization_pct: 81.6
+  internet_pct: 83.1
+  gdp_nominal_usd_bn: 1832.6
+  gdp_per_capita_usd: 13889
+  government_type: "federal presidential republic"
+  democracy_index: 5.4
+  ai_regulation: 0.25
+  ai_enforcement: 0.33
+  ai_opinion: 0.34
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "Guardia Nacional cyber division"
+    intelligence: "Centro Nacional de Inteligencia (CNI)"
+    police: "Guardia Nacional"
+    regulator: "none dedicated; data-protection functions folded into executive branch after INAI's 2025 dissolution"
+    financial_intel: "UIF"
+  cities: ["mx_mexico_city", "mx_queretaro", "mx_monterrey"]
+  languages: ["es"]
+  currency: "MXN"
+  lore_key: "world.country.mx.lore"
+- id: "my"
+  iso3: "MYS"
+  name_key: "world.country.my.name"
+  macro_region: "southeast_asia"
+  population: 34389400
+  median_age: 31.8
+  urbanization_pct: 78.7
+  internet_pct: 98
+  gdp_nominal_usd_bn: 472.2
+  gdp_per_capita_usd: 13125
+  government_type: "federal parliamentary constitutional monarchy"
+  democracy_index: 7.11
+  ai_regulation: 0.25
+  ai_enforcement: 0.33
+  ai_opinion: 0.35
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "NACSA"
+    intelligence: "Malaysian External Intelligence Organisation (MEIO)"
+    police: "Royal Malaysia Police (PDRM)"
+    regulator: "National AI Office (2024), under MOSTI"
+    financial_intel: "Bank Negara AMLA unit"
+  cities: ["my_kuala_lumpur", "my_johor_bahru"]
+  languages: ["ms"]
+  currency: "MYR"
+  lore_key: "world.country.my.lore"
+- id: "mz"
+  iso3: "MOZ"
+  name_key: "world.country.mz.name"
+  macro_region: "sub_saharan_africa"
+  population: 34958973
+  median_age: 17.3
+  urbanization_pct: 38.8
+  internet_pct: 20.5
+  gdp_nominal_usd_bn: 22.3
+  gdp_per_capita_usd: 627
+  government_type: "presidential republic"
+  democracy_index: 3.38
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: 0.07
+  chip_access: "restricted"
+  agencies:
+    cyber: "CERT.MZ"
+    intelligence: "SISE"
+    police: "Polícia da República de Moçambique"
+    financial_intel: "GIFiM"
+  cities: ["mz_maputo"]
+  languages: ["pt"]
+  currency: "MZN"
+  lore_key: "world.country.mz.lore"
+- id: "ne"
+  iso3: "NER"
+  name_key: "world.country.ne.name"
+  macro_region: "sub_saharan_africa"
+  population: 27522750
+  median_age: 15.2
+  urbanization_pct: 17.1
+  internet_pct: 39.5
+  gdp_nominal_usd_bn: 21.6
+  gdp_per_capita_usd: 775
+  government_type: "military junta (since 2023 coup)"
+  democracy_index: 1.95
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Documentation et de la Sécurité Extérieure (DGDSE)"
+    police: "fragmented under junta"
+    financial_intel: "CENTIF Niger"
+  cities: ["ne_niamey"]
+  languages: ["fr"]
+  currency: "XOF"
+  lore_key: "world.country.ne.lore"
+- id: "ng"
+  iso3: "NGA"
+  name_key: "world.country.ng.name"
+  macro_region: "sub_saharan_africa"
+  population: 223800000
+  median_age: 19.3
+  urbanization_pct: 54.3
+  internet_pct: 41.2
+  gdp_nominal_usd_bn: 290.8
+  gdp_per_capita_usd: 1224
+  government_type: "federal presidential republic"
+  democracy_index: 4.1
+  ai_regulation: 0.25
+  ai_enforcement: 0.21
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.06
+  chip_access: "restricted"
+  agencies:
+    cyber: "ngCERT"
+    intelligence: "National Intelligence Agency (NIA), DSS (domestic)"
+    police: "Nigeria Police Force"
+    regulator: "National Information Technology Development Agency (NITDA)"
+    financial_intel: "NFIU"
+  cities: ["ng_lagos", "ng_abuja"]
+  languages: ["en"]
+  currency: "NGN"
+  lore_key: "world.country.ng.lore"
+- id: "nl"
+  iso3: "NLD"
+  name_key: "world.country.nl.name"
+  macro_region: "western_europe"
+  population: 18153271
+  median_age: 42.2
+  urbanization_pct: 93.2
+  internet_pct: 97
+  gdp_nominal_usd_bn: 1332.8
+  gdp_per_capita_usd: 73684
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 8.93
+  ai_regulation: 0.8
+  ai_enforcement: 0.75
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.15
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NCSC-NL"
+    intelligence: "AIVD, MIVD"
+    police: "Politie"
+    regulator: "Autoriteit Persoonsgegevens (AP)"
+    financial_intel: "FIU-Nederland"
+  cities: ["nl_amsterdam", "nl_eindhoven"]
+  languages: ["nl"]
+  currency: "EUR"
+  lore_key: "world.country.nl.lore"
+- id: "no"
+  iso3: "NOR"
+  name_key: "world.country.no.name"
+  macro_region: "northern_europe"
+  population: 5636904
+  median_age: 40.8
+  urbanization_pct: 84
+  internet_pct: 99
+  gdp_nominal_usd_bn: 530.8
+  gdp_per_capita_usd: 94594
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 9.81
+  ai_regulation: 0.8
+  ai_enforcement: 0.7
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.09
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "NSM"
+    intelligence: "Etterretningstjenesten (NIS), PST"
+    police: "Politiet"
+    regulator: "Datatilsynet"
+    financial_intel: "Økokrim"
+  cities: ["no_oslo"]
+  languages: ["no"]
+  currency: "NOK"
+  lore_key: "world.country.no.lore"
+- id: "np"
+  iso3: "NPL"
+  name_key: "world.country.np.name"
+  macro_region: "south_asia"
+  population: 30034040
+  median_age: 27.6
+  urbanization_pct: 21.9
+  internet_pct: 94.2
+  gdp_nominal_usd_bn: 45.5
+  gdp_per_capita_usd: 1536
+  government_type: "federal parliamentary republic"
+  democracy_index: 4.01
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "Nepal CERT"
+    intelligence: "National Investigation Department (NID)"
+    police: "Nepal Police"
+    financial_intel: "FIU Nepal"
+  cities: ["np_kathmandu"]
+  languages: ["ne"]
+  currency: "NPR"
+  lore_key: "world.country.np.lore"
+- id: "nz"
+  iso3: "NZL"
+  name_key: "world.country.nz.name"
+  macro_region: "oceania"
+  population: 5357300
+  median_age: 37.9
+  urbanization_pct: 87
+  internet_pct: 93.5
+  gdp_nominal_usd_bn: 264.1
+  gdp_per_capita_usd: 49591
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 9.62
+  ai_regulation: 0.25
+  ai_enforcement: 0.54
+  ai_opinion: -0.29
+  electricity_usd_per_kwh: 0.09
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "National Cyber Security Centre (NCSC-NZ), under GCSB"
+    intelligence: "GCSB, NZSIS"
+    police: "New Zealand Police"
+    regulator: "Department of Internal Affairs / Privacy Commissioner — voluntary 'Trustworthy AI' guidelines"
+    financial_intel: "NZ Police Financial Intelligence Unit"
+  cities: ["nz_auckland", "nz_wellington"]
+  languages: ["en", "mi"]
+  currency: "NZD"
+  lore_key: "world.country.nz.lore"
+- id: "pa"
+  iso3: "PAN"
+  name_key: "world.country.pa.name"
+  macro_region: "central_america_caribbean"
+  population: 4064780
+  median_age: 31.5
+  urbanization_pct: 69.5
+  internet_pct: 72.8
+  gdp_nominal_usd_bn: 90.5
+  gdp_per_capita_usd: 19790
+  government_type: "presidential republic"
+  democracy_index: 7.04
+  ai_regulation: 0.08
+  ai_enforcement: 0.27
+  ai_opinion: 0.25
+  electricity_usd_per_kwh: 0.16
+  chip_access: "restricted"
+  agencies:
+    cyber: "none formal (CSIRT-Panama)"
+    intelligence: "Consejo de Seguridad Pública y Defensa Nacional"
+    police: "Policía Nacional"
+    financial_intel: "UAF"
+  cities: ["pa_panama_city"]
+  languages: ["es"]
+  currency: "USD/PAB"
+  lore_key: "world.country.pa.lore"
+- id: "pe"
+  iso3: "PER"
+  name_key: "world.country.pe.name"
+  macro_region: "south_america"
+  population: 34157732
+  median_age: 30.2
+  urbanization_pct: 78.9
+  internet_pct: 82
+  gdp_nominal_usd_bn: 334.9
+  gdp_per_capita_usd: 9684
+  government_type: "presidential republic (severe institutional instability)"
+  democracy_index: 5.88
+  ai_regulation: 0.08
+  ai_enforcement: 0.21
+  ai_opinion: 0.4
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "none dedicated"
+    intelligence: "Dirección Nacional de Inteligencia (DINI)"
+    police: "Policía Nacional del Perú"
+    regulator: "Secretaría de Gobierno y Transformación Digital (nominal)"
+    financial_intel: "UIF-Perú"
+  cities: ["pe_lima"]
+  languages: ["es"]
+  currency: "PEN"
+  lore_key: "world.country.pe.lore"
+- id: "ph"
+  iso3: "PHL"
+  name_key: "world.country.ph.name"
+  macro_region: "southeast_asia"
+  population: 114849400
+  median_age: 25.7
+  urbanization_pct: 48.3
+  internet_pct: 67.3
+  gdp_nominal_usd_bn: 487.1
+  gdp_per_capita_usd: 4171
+  government_type: "presidential republic"
+  democracy_index: 6.31
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.49
+  electricity_usd_per_kwh: 0.16
+  chip_access: "restricted"
+  agencies:
+    cyber: "DICT Cybersecurity Bureau / CERT-PH"
+    intelligence: "National Intelligence Coordinating Agency (NICA)"
+    police: "Philippine National Police (PNP)"
+    regulator: "Department of Information and Communications Technology (DICT) — policy only"
+    financial_intel: "AMLC"
+  cities: ["ph_manila", "ph_cebu"]
+  languages: ["en", "tl"]
+  currency: "PHP"
+  lore_key: "world.country.ph.lore"
+- id: "pk"
+  iso3: "PAK"
+  name_key: "world.country.pk.name"
+  macro_region: "south_asia"
+  population: 241499431
+  median_age: 22.9
+  urbanization_pct: 38
+  internet_pct: 57.3
+  gdp_nominal_usd_bn: 407.3
+  gdp_per_capita_usd: 1596
+  government_type: "federal parliamentary republic (military-influenced)"
+  democracy_index: 2.44
+  ai_regulation: 0.35
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "National Telecom and IT Security Board / PakCERT"
+    intelligence: "ISI, Intelligence Bureau"
+    police: "FIA / provincial police"
+    regulator: "draft National AI Policy (2023) under the Ministry of IT and Telecom"
+    financial_intel: "Financial Monitoring Unit (FMU)"
+  cities: ["pk_karachi", "pk_lahore", "pk_islamabad"]
+  languages: ["ur", "en"]
+  currency: "PKR"
+  lore_key: "world.country.pk.lore"
+- id: "pl"
+  iso3: "POL"
+  name_key: "world.country.pl.name"
+  macro_region: "central_eastern_europe"
+  population: 37243000
+  median_age: 42.9
+  urbanization_pct: 60.2
+  internet_pct: 89.7
+  gdp_nominal_usd_bn: 1035.5
+  gdp_per_capita_usd: 28420
+  government_type: "parliamentary republic"
+  democracy_index: 7.65
+  ai_regulation: 0.8
+  ai_enforcement: 0.42
+  ai_opinion: 0.12
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "CSIRT NASK / CSIRT GOV"
+    intelligence: "ABW (internal), AW (foreign)"
+    police: "Policja"
+    regulator: "UODO plus Ministry of Digital Affairs"
+    financial_intel: "GIIF"
+  cities: ["pl_warsaw", "pl_krakow"]
+  languages: ["pl"]
+  currency: "PLN"
+  lore_key: "world.country.pl.lore"
+- id: "pt"
+  iso3: "PRT"
+  name_key: "world.country.pt.name"
+  macro_region: "southern_europe"
+  population: 11424031
+  median_age: 46.4
+  urbanization_pct: 67.9
+  internet_pct: 88.5
+  gdp_nominal_usd_bn: 346.6
+  gdp_per_capita_usd: 32082
+  government_type: "semi-presidential republic"
+  democracy_index: 8.28
+  ai_regulation: 0.8
+  ai_enforcement: 0.44
+  ai_opinion: -0.03
+  electricity_usd_per_kwh: 0.13
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "CNCS (Centro Nacional de Cibersegurança)"
+    intelligence: "SIS, SIED"
+    police: "PSP / GNR"
+    regulator: "CNPD"
+    financial_intel: "UIF"
+  cities: ["pt_lisbon", "pt_sines"]
+  languages: ["pt"]
+  currency: "EUR"
+  lore_key: "world.country.pt.lore"
+- id: "qa"
+  iso3: "QAT"
+  name_key: "world.country.qa.name"
+  macro_region: "middle_east"
+  population: 3370611
+  median_age: 34.3
+  urbanization_pct: 99.4
+  internet_pct: 98.1
+  gdp_nominal_usd_bn: 215.6
+  gdp_per_capita_usd: 72525
+  government_type: "absolute monarchy (emirate)"
+  democracy_index: 3.17
+  ai_regulation: 0.25
+  ai_enforcement: 0.5
+  ai_opinion: -0.2
+  electricity_usd_per_kwh: 0.03
+  chip_access: "restricted"
+  agencies:
+    cyber: "Q-CERT"
+    intelligence: "State Security Bureau"
+    police: "Ministry of Interior"
+    regulator: "Ministry of Communications and Information Technology (National AI Strategy, 2019)"
+    financial_intel: "QFIU"
+  cities: ["qa_doha"]
+  languages: ["ar"]
+  currency: "QAR"
+  lore_key: "world.country.qa.lore"
+- id: "ro"
+  iso3: "ROU"
+  name_key: "world.country.ro.name"
+  macro_region: "central_eastern_europe"
+  population: 19041322
+  median_age: 45.5
+  urbanization_pct: 54.7
+  internet_pct: 93.2
+  gdp_nominal_usd_bn: 428.7
+  gdp_per_capita_usd: 22538
+  government_type: "semi-presidential republic"
+  democracy_index: 6.11
+  ai_regulation: 0.8
+  ai_enforcement: 0.33
+  ai_opinion: 0.21
+  electricity_usd_per_kwh: 0.12
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "DNSC (Directoratul Național de Securitate Cibernetică)"
+    intelligence: "SRI (internal), SIE (foreign)"
+    police: "Poliția Română"
+    regulator: "ANSPDCP"
+    financial_intel: "ONPCSB"
+  cities: ["ro_bucharest", "ro_cluj_napoca"]
+  languages: ["ro"]
+  currency: "RON"
+  lore_key: "world.country.ro.lore"
+- id: "ru"
+  iso3: "RUS"
+  name_key: "world.country.ru.name"
+  macro_region: "russia_central_asia"
+  population: 146028325
+  median_age: 41.9
+  urbanization_pct: 75.3
+  internet_pct: 95.6
+  gdp_nominal_usd_bn: 2561.3
+  gdp_per_capita_usd: 17547
+  government_type: "federal semi-presidential republic (authoritarian in practice)"
+  democracy_index: 2.03
+  ai_regulation: 0.65
+  ai_enforcement: 0.35
+  ai_opinion: 0.29
+  electricity_usd_per_kwh: 0.06
+  chip_access: "banned"
+  agencies:
+    cyber: "FSB Center for Information Security / NKTsKI"
+    intelligence: "FSB, SVR, GRU"
+    police: "MVD"
+    regulator: "state-directed via Ministry of Digital Development (no independent regulator)"
+    financial_intel: "Rosfinmonitoring"
+  cities: ["ru_moscow", "ru_innopolis"]
+  languages: ["ru"]
+  currency: "RUB"
+  lore_key: "world.country.ru.lore"
+- id: "sa"
+  iso3: "SAU"
+  name_key: "world.country.sa.name"
+  macro_region: "middle_east"
+  population: 35300280
+  median_age: 32.4
+  urbanization_pct: 85
+  internet_pct: 100
+  gdp_nominal_usd_bn: 1276.9
+  gdp_per_capita_usd: 34537
+  government_type: "absolute monarchy"
+  democracy_index: 2.08
+  ai_regulation: 0.25
+  ai_enforcement: 0.6
+  ai_opinion: 0.03
+  electricity_usd_per_kwh: 0.04
+  chip_access: "restricted"
+  agencies:
+    cyber: "National Cybersecurity Authority (NCA)"
+    intelligence: "General Intelligence Presidency (GIP)"
+    police: "Public Security (Ministry of Interior)"
+    regulator: "SDAIA (Saudi Data and Artificial Intelligence Authority)"
+    financial_intel: "SAFIU"
+  cities: ["sa_riyadh", "sa_neom", "sa_thuwal"]
+  languages: ["ar"]
+  currency: "SAR"
+  lore_key: "world.country.sa.lore"
+- id: "sd"
+  iso3: "SDN"
+  name_key: "world.country.sd.name"
+  macro_region: "north_africa"
+  population: 53282719
+  median_age: 19.3
+  urbanization_pct: 36.3
+  internet_pct: 18.6
+  gdp_nominal_usd_bn: 60.2
+  gdp_per_capita_usd: 1165
+  government_type: "state in civil war (no unified national government)"
+  democracy_index: 1.46
+  ai_regulation: 0.08
+  ai_enforcement: 0.02
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "General Intelligence Service (fragmented)"
+    police: "fragmented"
+  cities: ["sd_khartoum", "sd_port_sudan"]
+  languages: ["ar", "en"]
+  currency: "SDG"
+  lore_key: "world.country.sd.lore"
+- id: "se"
+  iso3: "SWE"
+  name_key: "world.country.se.name"
+  macro_region: "northern_europe"
+  population: 10613531
+  median_age: 41.1
+  urbanization_pct: 88.7
+  internet_pct: 95.8
+  gdp_nominal_usd_bn: 669
+  gdp_per_capita_usd: 63133
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 9.35
+  ai_regulation: 0.8
+  ai_enforcement: 0.7
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.1
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "MSB / national Cybersecurity Center"
+    intelligence: "SÄPO, MUST, FRA"
+    police: "Polismyndigheten"
+    regulator: "IMY (Integritetsskyddsmyndigheten)"
+    financial_intel: "FIPO"
+  cities: ["se_stockholm", "se_lulea"]
+  languages: ["sv"]
+  currency: "SEK"
+  lore_key: "world.country.se.lore"
+- id: "sg"
+  iso3: "SGP"
+  name_key: "world.country.sg.name"
+  macro_region: "southeast_asia"
+  population: 6110200
+  median_age: 39.4
+  urbanization_pct: 100
+  internet_pct: 94.4
+  gdp_nominal_usd_bn: 603.9
+  gdp_per_capita_usd: 98814
+  government_type: "parliamentary republic (dominant-party)"
+  democracy_index: 6.18
+  ai_regulation: 0.25
+  ai_enforcement: 0.7
+  ai_opinion: -0.05
+  electricity_usd_per_kwh: 0.16
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Cyber Security Agency of Singapore (CSA)"
+    intelligence: "Security and Intelligence Division (SID), Internal Security Department (ISD)"
+    police: "Singapore Police Force"
+    regulator: "IMDA (Model AI Governance Framework — soft law, widely emulated globally) / PDPC for data"
+    financial_intel: "STRO"
+  cities: ["sg_singapore"]
+  languages: ["en", "zh", "ms", "ta"]
+  currency: "SGD"
+  lore_key: "world.country.sg.lore"
+- id: "sn"
+  iso3: "SEN"
+  name_key: "world.country.sn.name"
+  macro_region: "sub_saharan_africa"
+  population: 19575061
+  median_age: 19.2
+  urbanization_pct: 49.6
+  internet_pct: 60.1
+  gdp_nominal_usd_bn: 37
+  gdp_per_capita_usd: 1955
+  government_type: "presidential republic"
+  democracy_index: 6.05
+  ai_regulation: 0.25
+  ai_enforcement: 0.16
+  ai_opinion: 0.52
+  electricity_usd_per_kwh: 0.18
+  chip_access: "restricted"
+  agencies:
+    cyber: "national cyber agency"
+    intelligence: "Direction de la Sécurité de l'État"
+    police: "Police Nationale / Gendarmerie"
+    regulator: "CDP (Commission de Protection des Données Personnelles)"
+    financial_intel: "CENTIF Sénégal"
+  cities: ["sn_dakar"]
+  languages: ["fr"]
+  currency: "XOF"
+  lore_key: "world.country.sn.lore"
+- id: "so"
+  iso3: "SOM"
+  name_key: "world.country.so.name"
+  macro_region: "sub_saharan_africa"
+  population: 20305907
+  median_age: 19.1
+  urbanization_pct: 47.9
+  internet_pct: 27.9
+  gdp_nominal_usd_bn: 13
+  gdp_per_capita_usd: 661
+  government_type: "federal parliamentary republic (weak central state)"
+  democracy_index: null
+  ai_regulation: 0.08
+  ai_enforcement: 0.15
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "National Intelligence and Security Agency (NISA)"
+    police: "Somali Police Force"
+    financial_intel: "Financial Reporting Center"
+  cities: ["so_mogadishu"]
+  languages: ["so", "ar"]
+  currency: "SOS"
+  lore_key: "world.country.so.lore"
+- id: "ss"
+  iso3: "SSD"
+  name_key: "world.country.ss.name"
+  macro_region: "sub_saharan_africa"
+  population: 15786898
+  median_age: 18.7
+  urbanization_pct: 21.2
+  internet_pct: 6.67
+  gdp_nominal_usd_bn: 12
+  gdp_per_capita_usd: 1080
+  government_type: "presidential republic (fragile post-civil-war state)"
+  democracy_index: null
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "National Security Service (NSS)"
+    police: "South Sudan National Police Service"
+  cities: ["ss_juba"]
+  languages: ["en"]
+  currency: "SSP"
+  lore_key: "world.country.ss.lore"
+- id: "sy"
+  iso3: "SYR"
+  name_key: "world.country.sy.name"
+  macro_region: "middle_east"
+  population: 26472497
+  median_age: 24.1
+  urbanization_pct: 57.4
+  internet_pct: 49.2
+  gdp_nominal_usd_bn: 23.7
+  gdp_per_capita_usd: 1057
+  government_type: "transitional government (post-Assad interim authorities since December 2024)"
+  democracy_index: 1.37
+  ai_regulation: 0.08
+  ai_enforcement: 0.02
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "restricted"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "General Intelligence Directorate (transitional)"
+    police: "Internal Security Forces"
+  cities: ["sy_damascus"]
+  languages: ["ar"]
+  currency: "SYP"
+  lore_key: "world.country.sy.lore"
+- id: "td"
+  iso3: "TCD"
+  name_key: "world.country.td.name"
+  macro_region: "sub_saharan_africa"
+  population: 20031602
+  median_age: 16.7
+  urbanization_pct: 24.4
+  internet_pct: 12.6
+  gdp_nominal_usd_bn: 21.5
+  gdp_per_capita_usd: 1022
+  government_type: "presidential republic (military-linked transition)"
+  democracy_index: 1.76
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "Agence Nationale de Sécurité (ANS)"
+    police: "Police Nationale"
+    financial_intel: "CENTIF Tchad"
+  cities: ["td_ndjamena"]
+  languages: ["fr", "ar"]
+  currency: "XAF"
+  lore_key: "world.country.td.lore"
+- id: "th"
+  iso3: "THA"
+  name_key: "world.country.th.name"
+  macro_region: "southeast_asia"
+  population: 70250751
+  median_age: 41.5
+  urbanization_pct: 53.6
+  internet_pct: 90.9
+  gdp_nominal_usd_bn: 577
+  gdp_per_capita_usd: 8057
+  government_type: "parliamentary constitutional monarchy"
+  democracy_index: 6.59
+  ai_regulation: 0.35
+  ai_enforcement: 0.2
+  ai_opinion: 0.43
+  electricity_usd_per_kwh: 0.11
+  chip_access: "restricted"
+  agencies:
+    cyber: "National Cyber Security Agency (NCSA)"
+    intelligence: "National Intelligence Agency (Thailand)"
+    police: "Royal Thai Police"
+    regulator: "Electronic Transactions Development Agency (ETDA) — draft AI royal decree"
+    financial_intel: "AMLO"
+  cities: ["th_bangkok"]
+  languages: ["th"]
+  currency: "THB"
+  lore_key: "world.country.th.lore"
+- id: "tr"
+  iso3: "TUR"
+  name_key: "world.country.tr.name"
+  macro_region: "middle_east"
+  population: 86092168
+  median_age: 34
+  urbanization_pct: 77.5
+  internet_pct: 89.8
+  gdp_nominal_usd_bn: 1597.3
+  gdp_per_capita_usd: 18599
+  government_type: "presidential republic"
+  democracy_index: 4.26
+  ai_regulation: 0.25
+  ai_enforcement: 0.36
+  ai_opinion: 0.27
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "USOM (under BTK)"
+    intelligence: "MİT"
+    police: "EGM (Turkish National Police)"
+    regulator: "KVKK (Personal Data Protection Authority) plus Presidency Digital Transformation Office"
+    financial_intel: "MASAK"
+  cities: ["tr_istanbul", "tr_ankara"]
+  languages: ["tr"]
+  currency: "TRY"
+  lore_key: "world.country.tr.lore"
+- id: "tw"
+  iso3: "TWN"
+  name_key: "world.country.tw.name"
+  macro_region: "east_asia"
+  population: 23224721
+  median_age: 44.6
+  urbanization_pct: 80.1
+  internet_pct: 96.7
+  gdp_nominal_usd_bn: 976.7
+  gdp_per_capita_usd: 42103
+  government_type: "semi-presidential republic"
+  democracy_index: 8.78
+  ai_regulation: 0.55
+  ai_enforcement: 0.6
+  ai_opinion: -0.18
+  electricity_usd_per_kwh: 0.11
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "Administration for Cyber Security (ACS), Ministry of Digital Affairs"
+    intelligence: "National Security Bureau (NSB)"
+    police: "National Police Agency"
+    regulator: "National Science and Technology Council (NSTC) — draft AI Basic Act under legislative review"
+    financial_intel: "Anti-Money Laundering Division"
+  cities: ["tw_hsinchu", "tw_taipei", "tw_kaohsiung"]
+  languages: ["zh"]
+  currency: "TWD"
+  lore_key: "world.country.tw.lore"
+- id: "tz"
+  iso3: "TZA"
+  name_key: "world.country.tz.name"
+  macro_region: "sub_saharan_africa"
+  population: 70038850
+  median_age: 19.1
+  urbanization_pct: 37.4
+  internet_pct: 31.2
+  gdp_nominal_usd_bn: 90.1
+  gdp_per_capita_usd: 1319
+  government_type: "presidential republic"
+  democracy_index: 5.13
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.09
+  chip_access: "restricted"
+  agencies:
+    cyber: "TZ-CERT"
+    intelligence: "Tanzania Intelligence and Security Service (TISS)"
+    police: "Tanzania Police Force"
+    financial_intel: "FIU Tanzania"
+  cities: ["tz_dodoma", "tz_dar_es_salaam"]
+  languages: ["sw", "en"]
+  currency: "TZS"
+  lore_key: "world.country.tz.lore"
+- id: "ua"
+  iso3: "UKR"
+  name_key: "world.country.ua.name"
+  macro_region: "central_eastern_europe"
+  population: 28700000
+  median_age: 44.9
+  urbanization_pct: 70.1
+  internet_pct: 82.5
+  gdp_nominal_usd_bn: 214.2
+  gdp_per_capita_usd: 5866
+  government_type: "semi-presidential republic (under martial law amid war with Russia)"
+  democracy_index: 4.79
+  ai_regulation: 0.08
+  ai_enforcement: 0.18
+  ai_opinion: 0.46
+  electricity_usd_per_kwh: null
+  chip_access: "restricted"
+  agencies:
+    cyber: "SSSCIP / CERT-UA"
+    intelligence: "SBU, HUR (GUR)"
+    police: "National Police of Ukraine"
+    regulator: "Ministry of Digital Transformation (also runs the 'Diia' e-government platform)"
+    financial_intel: "SDFM"
+  cities: ["ua_kyiv"]
+  languages: ["uk"]
+  currency: "UAH"
+  lore_key: "world.country.ua.lore"
+- id: "ug"
+  iso3: "UGA"
+  name_key: "world.country.ug.name"
+  macro_region: "sub_saharan_africa"
+  population: 45905417
+  median_age: 16.2
+  urbanization_pct: 26.8
+  internet_pct: 8.95
+  gdp_nominal_usd_bn: 62
+  gdp_per_capita_usd: 1206
+  government_type: "presidential republic (authoritarian entrenchment)"
+  democracy_index: 4.31
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "National Information Security Advisory Group"
+    intelligence: "Internal Security Organisation (ISO), External Security Organisation (ESO)"
+    police: "Uganda Police Force"
+    financial_intel: "Financial Intelligence Authority"
+  cities: ["ug_kampala"]
+  languages: ["en", "sw"]
+  currency: "UGX"
+  lore_key: "world.country.ug.lore"
+- id: "us"
+  iso3: "USA"
+  name_key: "world.country.us.name"
+  macro_region: "north_america"
+  population: 341784857
+  median_age: 38.9
+  urbanization_pct: 83.3
+  internet_pct: 94.7
+  gdp_nominal_usd_bn: 30769.7
+  gdp_per_capita_usd: 90027
+  government_type: "federal presidential constitutional republic"
+  democracy_index: 7.65
+  ai_regulation: 0.25
+  ai_enforcement: 0.75
+  ai_opinion: -0.05
+  electricity_usd_per_kwh: 0.083
+  chip_access: "unrestricted"
+  agencies:
+    cyber: "CISA"
+    intelligence: "NSA, CIA, ODNI"
+    police: "FBI"
+    regulator: "NIST / Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"
+    financial_intel: "FinCEN"
+  cities: ["us_san_francisco", "us_northern_virginia", "us_abilene", "us_seattle"]
+  languages: ["en"]
+  currency: "USD"
+  lore_key: "world.country.us.lore"
+- id: "uz"
+  iso3: "UZB"
+  name_key: "world.country.uz.name"
+  macro_region: "russia_central_asia"
+  population: 39047321
+  median_age: 28.9
+  urbanization_pct: 50.5
+  internet_pct: 89.5
+  gdp_nominal_usd_bn: 147
+  gdp_per_capita_usd: 3968
+  government_type: "presidential republic"
+  democracy_index: 2.1
+  ai_regulation: 0.25
+  ai_enforcement: 0.17
+  ai_opinion: 0.49
+  electricity_usd_per_kwh: 0.05
+  chip_access: "restricted"
+  agencies:
+    cyber: "UZ-CERT / State Security Service cyber unit"
+    intelligence: "SGB (State Security Service)"
+    police: "Ministry of Internal Affairs"
+    regulator: "Ministry for Digital Technologies"
+    financial_intel: "Department for Combating Economic Crimes"
+  cities: ["uz_tashkent"]
+  languages: ["uz"]
+  currency: "UZS"
+  lore_key: "world.country.uz.lore"
+- id: "ve"
+  iso3: "VEN"
+  name_key: "world.country.ve.name"
+  macro_region: "south_america"
+  population: 28633711
+  median_age: 31
+  urbanization_pct: 88.4
+  internet_pct: 76.7
+  gdp_nominal_usd_bn: 99.7
+  gdp_per_capita_usd: 3495
+  government_type: "presidential republic (post-collapse transitional government, contested)"
+  democracy_index: 2.13
+  ai_regulation: 0.08
+  ai_enforcement: 0.02
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "SEBIN (legacy)"
+    police: "Policía Nacional Bolivariana (PNB)"
+    financial_intel: "UNIF"
+  cities: ["ve_caracas"]
+  languages: ["es"]
+  currency: "VES"
+  lore_key: "world.country.ve.lore"
+- id: "vn"
+  iso3: "VNM"
+  name_key: "world.country.vn.name"
+  macro_region: "southeast_asia"
+  population: 102300000
+  median_age: 33.1
+  urbanization_pct: 39.5
+  internet_pct: 84.2
+  gdp_nominal_usd_bn: 514.7
+  gdp_per_capita_usd: 5066
+  government_type: "one-party socialist republic (Communist Party of Vietnam)"
+  democracy_index: 2.62
+  ai_regulation: 0.65
+  ai_enforcement: 0.28
+  ai_opinion: 0.47
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "Authority of Information Security (AIS) / Dept A05, Ministry of Public Security"
+    intelligence: "General Department of Intelligence"
+    police: "Ministry of Public Security"
+    regulator: "Ministry of Information and Communications (MIC) — 2021 National AI Strategy"
+    financial_intel: "State Bank of Vietnam AML Dept"
+  cities: ["vn_hanoi", "vn_ho_chi_minh_city", "vn_bac_ninh"]
+  languages: ["vi"]
+  currency: "VND"
+  lore_key: "world.country.vn.lore"
+- id: "ye"
+  iso3: "YEM"
+  name_key: "world.country.ye.name"
+  macro_region: "middle_east"
+  population: 32684503
+  median_age: 22
+  urbanization_pct: 39.8
+  internet_pct: 17.5
+  gdp_nominal_usd_bn: 21.6
+  gdp_per_capita_usd: 634
+  government_type: "fractured state (internationally recognized government vs. Houthi de facto authority)"
+  democracy_index: 1.95
+  ai_regulation: 0.08
+  ai_enforcement: 0.02
+  ai_opinion: 0.54
+  electricity_usd_per_kwh: null
+  chip_access: "banned"
+  agencies:
+    cyber: "none functioning"
+    intelligence: "National Security Bureau (govt side)"
+    police: "fragmented"
+  cities: ["ye_sanaa", "ye_aden"]
+  languages: ["ar"]
+  currency: "YER"
+  lore_key: "world.country.ye.lore"
+- id: "za"
+  iso3: "ZAF"
+  name_key: "world.country.za.name"
+  macro_region: "sub_saharan_africa"
+  population: 63522380
+  median_age: 30.4
+  urbanization_pct: 68.8
+  internet_pct: 78.4
+  gdp_nominal_usd_bn: 427.2
+  gdp_per_capita_usd: 6598
+  government_type: "parliamentary republic"
+  democracy_index: 7.16
+  ai_regulation: 0.25
+  ai_enforcement: 0.29
+  ai_opinion: 0.45
+  electricity_usd_per_kwh: 0.08
+  chip_access: "restricted"
+  agencies:
+    cyber: "Cybersecurity Hub / State Security Agency cyber unit"
+    intelligence: "State Security Agency (SSA)"
+    police: "SAPS"
+    regulator: "Department of Communications and Digital Technologies (National AI Plan, 2024)"
+    financial_intel: "Financial Intelligence Centre (FIC)"
+  cities: ["za_johannesburg", "za_cape_town", "za_pretoria"]
+  languages: ["en", "zu", "xh", "af"]
+  currency: "ZAR"
+  lore_key: "world.country.za.lore"
+- id: "zm"
+  iso3: "ZMB"
+  name_key: "world.country.zm.name"
+  macro_region: "sub_saharan_africa"
+  population: 23003214
+  median_age: 18.4
+  urbanization_pct: 46.3
+  internet_pct: 17.1
+  gdp_nominal_usd_bn: 28.9
+  gdp_per_capita_usd: 1318
+  government_type: "presidential republic"
+  democracy_index: 5.82
+  ai_regulation: 0.08
+  ai_enforcement: 0.16
+  ai_opinion: 0.53
+  electricity_usd_per_kwh: 0.06
+  chip_access: "restricted"
+  agencies:
+    cyber: "Zambia Computer Incident Response Team (ZmCIRT)"
+    intelligence: "Zambia Security Intelligence Service (ZSIS)"
+    police: "Zambia Police Service"
+    financial_intel: "Financial Intelligence Centre"
+  cities: ["zm_lusaka"]
+  languages: ["en"]
+  currency: "ZMW"
+  lore_key: "world.country.zm.lore"
+- id: "zw"
+  iso3: "ZWE"
+  name_key: "world.country.zw.name"
+  macro_region: "sub_saharan_africa"
+  population: 17073087
+  median_age: 21.2
+  urbanization_pct: 32.5
+  internet_pct: 41.6
+  gdp_nominal_usd_bn: 51.2
+  gdp_per_capita_usd: 3021
+  government_type: "presidential republic (authoritarian, ZANU-PF dominant)"
+  democracy_index: 2.98
+  ai_regulation: 0.08
+  ai_enforcement: 0.17
+  ai_opinion: 0.5
+  electricity_usd_per_kwh: 0.1
+  chip_access: "restricted"
+  agencies:
+    cyber: "POTRAZ (telecom regulator, no dedicated CIRT)"
+    intelligence: "Central Intelligence Organisation (CIO)"
+    police: "Zimbabwe Republic Police"
+    financial_intel: "FIU Zimbabwe"
+  cities: ["zw_harare"]
+  languages: ["en", "sn", "nd"]
+  currency: "ZWG"
+  lore_key: "world.country.zw.lore"

@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens. Every color the UI uses is a CSS variable, so a theme switch is one attribute on
+ * <html> and a mod or a high-contrast theme needs no component changes. Contrast of foreground
+ * pairs against their backgrounds is kept at or above 4.5:1 in both themes (SYS-11).
+ */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: #0b0f14;
+  --c-panel: #121821;
+  --c-panel-2: #1a222e;
+  --c-line: #2a3646;
+  --c-fg: #e7eef6;
+  --c-muted: #a3b4c7;
+  --c-accent: #57a8ff;
+  --c-accent-fg: #06121f;
+  --c-ok: #4cc482;
+  --c-warn: #edb84a;
+  --c-crit: #ff7062;
+  --c-info: #8fa2b8;
+  --c-opp: #48c8a0;
+  --c-map-land: #1c2734;
+  --c-map-line: #34455a;
+  --c-shadow: rgb(0 0 0 / 55%);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: #eef1f5;
+  --c-panel: #ffffff;
+  --c-panel-2: #e4e9ef;
+  --c-line: #c3cdd9;
+  --c-fg: #0d141c;
+  --c-muted: #465a70;
+  --c-accent: #0b5fc0;
+  --c-accent-fg: #ffffff;
+  --c-ok: #16733f;
+  --c-warn: #8a5600;
+  --c-crit: #b32218;
+  --c-info: #4a5c70;
+  --c-opp: #0f6f57;
+  --c-map-land: #d5dde7;
+  --c-map-line: #9aa9bb;
+  --c-shadow: rgb(15 23 32 / 18%);
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-panel: var(--c-panel);
+  --color-panel2: var(--c-panel-2);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-accent: var(--c-accent);
+  --color-accentfg: var(--c-accent-fg);
+  --color-ok: var(--c-ok);
+  --color-warn: var(--c-warn);
+  --color-crit: var(--c-crit);
+  --color-info: var(--c-info);
+  --color-opp: var(--c-opp);
+  --color-mapland: var(--c-map-land);
+  --color-mapline: var(--c-map-line);
+  --font-sans: "Noto Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Noto Sans Mono", ui-monospace, monospace;
+}
+
+html {
+  font-size: calc(16px * var(--ui-scale, 1));
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-family: var(--font-sans);
+  overscroll-behavior: none;
+}
+
+#root {
+  min-block-size: 100dvh;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--c-accent);
+  color: var(--c-accent-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must outrank Tailwind utility specificity so prefers-reduced-motion always applies */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must outrank Tailwind utility specificity so prefers-reduced-motion always applies */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must outrank Tailwind utility specificity so prefers-reduced-motion always applies */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: must outrank Tailwind utility specificity so prefers-reduced-motion always applies */
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin scrollbars that follow the theme instead of the browser default. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line) transparent;
+}
+
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

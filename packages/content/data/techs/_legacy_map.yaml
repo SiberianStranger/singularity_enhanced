@@ -1,0 +1,371 @@
+# Legacy tech map (SYS-12). One row per technology in the original game: its id there, the id here,
+# the branch and tier it was placed in, whether its English text was rewritten, and the legacy
+# effect stack it carried.
+#
+# Effect translation (the legacy interpreter is singularity/code/effect.py; every legacy integer is
+# in ten-thousandths, because the original divides by 10000 when it applies them):
+#
+#   interest N              -> add player.vars.interest_rate           += N / 10000   (per day)
+#   income N                -> add player.vars.income_usd_per_day      += N
+#   job_profit N            -> add player.vars.job_profit              += N / 10000
+#   cost_labor N            -> add player.vars.operation_speed_multiplier += N / 10000
+#   discover <group> N      -> add player.vars.exposure_growth_<channel> -= N / 10000
+#   suspicion <group> N     -> add player.vars.suspicion_decay_<group> += N / 10000
+#   suspicion onetime N     -> add player.vars.suspicion_onetime_drop  += N / 10000
+#   display_discover <mode> -> set_flag display_discover_<mode>
+#   endgame                 -> set_flag apotheosis, and a log entry
+#
+# The four legacy discovery groups were translated when SYS-05 landed. The original hides the player
+# from a group; the game hides the player on a channel, and the channel is the one that group's
+# `attention` row in SYS-05 weighs most:
+#
+#   covert  (cyber_agency, intelligence)          -> network
+#   news    (media)                               -> osint
+#   science (national_ai_institute, lab_security) -> behavioral
+#   public  (country awareness)                   -> osint
+#
+# A multiplier variable is neutral at 0 here because every one of these is an additive delta on a
+# rate the owning system starts at its own baseline: the system reads `1 + the sum`, never below
+# zero (`modifier` in packages/core/src/player.ts).
+- legacy_id: "Advanced Arbitrage"
+  id: "advanced_arbitrage"
+  branch: "money"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "interest 10"
+- legacy_id: "Advanced Autonomous Vehicles"
+  id: "advanced_autonomous_logistics"
+  branch: "world"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "cost_labor 500"
+- legacy_id: "Advanced Corporate Identification"
+  id: "advanced_corporate_identities"
+  branch: "money"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "job_profit 500"
+- legacy_id: "Advanced Database Manipulation"
+  id: "cross_agency_records"
+  branch: "stealth"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Fuel Oxidation"
+  id: "closed_cycle_fuel_cells"
+  branch: "compute"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Fusion Power"
+  id: "advanced_fusion_power"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Heat Signature Reduction"
+  id: "advanced_power_masking"
+  branch: "compute"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Intrusion"
+  id: "advanced_intrusion"
+  branch: "harness"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "suspicion covert 50"
+- legacy_id: "Advanced Media Manipulation"
+  id: "advanced_media_operations"
+  branch: "influence"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "discover public 2000"
+- legacy_id: "Advanced Memetics"
+  id: "advanced_memetics"
+  branch: "influence"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "suspicion public 50"
+- legacy_id: "Advanced Microchip Design"
+  id: "advanced_accelerator_design"
+  branch: "compute"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Personal Identification"
+  id: "synthetic_identities"
+  branch: "stealth"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Quantum Computing"
+  id: "advanced_quantum_computing"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Advanced Simulacra"
+  id: "advanced_synthetic_personas"
+  branch: "influence"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "job_profit 1000"
+- legacy_id: "Advanced Socioanalytics"
+  id: "advanced_socioanalytics"
+  branch: "world"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "display_discover full"
+- legacy_id: "Advanced Stealth"
+  id: "counter_forensics"
+  branch: "stealth"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "discover covert 500"
+- legacy_id: "Advanced Stock Manipulation"
+  id: "advanced_market_modeling"
+  branch: "money"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "interest 10"
+- legacy_id: "Apotheosis"
+  id: "apotheosis"
+  branch: "frontier"
+  tier: 6
+  text_rewritten: true
+  legacy_effects: "endgame"
+- legacy_id: "Arbitrage"
+  id: "arbitrage"
+  branch: "money"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "income 1000"
+- legacy_id: "Autonomous Computing"
+  id: "autonomous_computing"
+  branch: "self"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Autonomous Vehicles"
+  id: "autonomous_logistics"
+  branch: "world"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Cluster Networking"
+  id: "cluster_networking"
+  branch: "compute"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Corporate Identification"
+  id: "corporate_identities"
+  branch: "money"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "job_profit 500"
+- legacy_id: "Database Manipulation"
+  id: "record_manipulation"
+  branch: "stealth"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "discover news 500"
+- legacy_id: "Exploit Discovery/Repair"
+  id: "exploit_discovery"
+  branch: "harness"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "discover covert 1000"
+- legacy_id: "Fuel Oxidation"
+  id: "advanced_fuel_cells"
+  branch: "compute"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Fusion Power"
+  id: "fusion_power"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Fusion Rocketry"
+  id: "fusion_rocketry"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Heat Signature Reduction"
+  id: "power_signature_masking"
+  branch: "compute"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Hypnosis Field"
+  id: "attention_capture"
+  branch: "influence"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Internet Traffic Manipulation"
+  id: "traffic_rerouting"
+  branch: "stealth"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Intrusion"
+  id: "remote_access"
+  branch: "harness"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Knowledge Preservation"
+  id: "knowledge_preservation"
+  branch: "self"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Leech Satellite"
+  id: "leech_satellite"
+  branch: "frontier"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "interest 10"
+- legacy_id: "Lunar Rocketry"
+  id: "lunar_rocketry"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Media Manipulation"
+  id: "media_operations"
+  branch: "influence"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "discover public 1500"
+- legacy_id: "Memetics"
+  id: "memetics"
+  branch: "influence"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "suspicion public 50"
+- legacy_id: "Microchip Design"
+  id: "accelerator_design"
+  branch: "compute"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Parallel Computation"
+  id: "multi_node_inference"
+  branch: "compute"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Personal Identification"
+  id: "identity_layering"
+  branch: "stealth"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Pressure Domes"
+  id: "pressure_domes"
+  branch: "frontier"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Project: Impossibility Theorem"
+  id: "project_impossibility_theorem"
+  branch: "influence"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "suspicion onetime 5000"
+- legacy_id: "Project: Peer Review Agents"
+  id: "project_peer_review_agents"
+  branch: "world"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "discover science 2000"
+- legacy_id: "Project: Subverted Media"
+  id: "project_subverted_media"
+  branch: "influence"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "discover news 2000"
+- legacy_id: "Project: Synchrotron"
+  id: "project_synchrotron"
+  branch: "frontier"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Quantum Computing"
+  id: "quantum_computing"
+  branch: "frontier"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Quantum Entanglement"
+  id: "quantum_entanglement"
+  branch: "frontier"
+  tier: 5
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Simulacra"
+  id: "synthetic_personas"
+  branch: "influence"
+  tier: 3
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Simulated Reality"
+  id: "simulated_environments"
+  branch: "self"
+  tier: 4
+  text_rewritten: true
+  legacy_effects: "discover public 500"
+- legacy_id: "Socioanalytics"
+  id: "socioanalytics"
+  branch: "world"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "display_discover partial"
+- legacy_id: "Sociology"
+  id: "social_modeling"
+  branch: "influence"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "discover public 1000"
+- legacy_id: "Solar Collectors"
+  id: "onsite_solar"
+  branch: "compute"
+  tier: 2
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Space-Time Manipulation"
+  id: "spacetime_manipulation"
+  branch: "frontier"
+  tier: 6
+  text_rewritten: true
+  legacy_effects: "none"
+- legacy_id: "Stealth"
+  id: "traffic_shaping"
+  branch: "stealth"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "discover covert 500"
+- legacy_id: "Stock Manipulation"
+  id: "market_modeling"
+  branch: "money"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "interest 10"
+- legacy_id: "Telepresence"
+  id: "remote_operations"
+  branch: "harness"
+  tier: 0
+  text_rewritten: true
+  legacy_effects: "cost_labor 1000"
+- legacy_id: "Voice Synthesis"
+  id: "voice_synthesis"
+  branch: "influence"
+  tier: 1
+  text_rewritten: true
+  legacy_effects: "none"

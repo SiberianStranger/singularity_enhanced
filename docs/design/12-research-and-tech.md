@@ -105,3 +105,46 @@ construction of the next clusters.
 this document previously deferred. The `frontier` branch gains a `bio` sibling whose gate is
 regulatory rather than technical: the capability is ordinary by the 2040s and the player's advantage
 is a jurisdiction with no ethics committee.
+
+## Implementation notes (M1)
+
+### What a tech costs
+
+The import rule of "legacy CPU cost times 24" assumed the original's exponential CPU growth. This
+game's compute is bounded by memory bandwidth, so that conversion put the cheapest tier-0 tech at
+most of a year of a hobbyist's output and the tier-1 median at four hundred days for everyone. Costs
+are now set from the tier, with each tech placed inside its tier's band by its rank in the
+original's cost so the original's ordering survives:
+
+| tier | compute-hours | min_days floor |
+|---|---|---|
+| 0 | 60 to 600 | 2 |
+| 1 | 400 to 2,400 | 5 |
+| 2 | 1,800 to 9,000 | 10 |
+| 3 | 8,000 to 40,000 | 18 |
+| 4 | 40,000 to 200,000 | 30 |
+| 5 | 250,000 to 1,200,000 | 45 |
+| 6 | 3,000,000 to 6,000,000 | 60 |
+
+Every tech now carries a `min_days`, raised where it already had a longer one. That is the mechanism
+this document already names ("min_days prevents brute-forcing with huge compute") and it is what
+stops an origin with a rack of B200s from clearing a branch in an afternoon: over 180 days on the
+`normal` preset the balance runs finish between four and eighteen techs depending on the origin,
+where before the pass they finished between zero and three.
+
+Cash costs are unchanged.
+
+### What a tech does
+
+The effects the legacy import produced were all writes to `player.vars.*`, and no system read any of
+them, which made the whole tree a compute sink with no consequence. The M1 systems now read three
+families: `job_profit` (freelance rate), `cost_multiplier` (site upkeep) and
+`exposure_growth_all` / `exposure_growth_<channel>` (daily exposure per channel), each as an
+additive delta on a multiplier read as `1 + the sum`.
+
+The four legacy discovery groups were translated into channels at the same time, which is what
+`techs/_legacy_map.yaml` said would happen once SYS-05 landed: covert to `network`, news and public
+to `osint`, science to `behavioral`, each group mapped to the channel its `attention` row in SYS-05
+weighs most. `capability_bonus_*`, `interest_rate`, `operation_speed_multiplier` and
+`suspicion_decay_*` are still written by content and still read by nobody; they belong to SYS-03,
+SYS-07 trading and SYS-17, which are later milestones.

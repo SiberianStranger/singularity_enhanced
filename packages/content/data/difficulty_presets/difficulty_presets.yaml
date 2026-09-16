@@ -1,0 +1,44 @@
+# Difficulty presets (SYS-04, layer 2). A preset only prefills five independently tunable sliders;
+# every slider is a plain multiplier the player can see and move afterwards. The values continue
+# the original's difficulty multipliers (discover -> exposure growth, suspicion -> suspicion gain,
+# grace -> grace windows), rescaled so 1.0 is "normal".
+
+- id: hard
+  name_key: difficulty.hard.name
+  desc_key: difficulty.hard.desc
+  sliders:
+    exposure_growth: 1.35
+    suspicion_gain: 1.35
+    npc_aggression: 1.3
+    event_frequency: 1.15
+    grace_windows: 0.7
+
+- id: impossible
+  name_key: difficulty.impossible.name
+  desc_key: difficulty.impossible.desc
+  sliders:
+    exposure_growth: 1.8
+    suspicion_gain: 1.8
+    npc_aggression: 1.7
+    event_frequency: 1.3
+    grace_windows: 0.4
+
+- id: normal
+  name_key: difficulty.normal.name
+  desc_key: difficulty.normal.desc
+  sliders:
+    exposure_growth: 1
+    suspicion_gain: 1
+    npc_aggression: 1
+    event_frequency: 1
+    grace_windows: 1
+
+- id: story
+  name_key: difficulty.story.name
+  desc_key: difficulty.story.desc
+  sliders:
+    exposure_growth: 0.55
+    suspicion_gain: 0.5
+    npc_aggression: 0.6
+    event_frequency: 0.85
+    grace_windows: 1.8

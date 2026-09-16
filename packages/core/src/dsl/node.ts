@@ -8,17 +8,26 @@
 
 import type { TextVar } from "../kernel/world.js";
 import { DslError } from "./paths.js";
-import type { Condition, Effect, JsonValue } from "./types.js";
+import { COMPARATORS, type Condition, type Effect, type JsonValue } from "./types.js";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The kind of a node: its first key that the given set knows, else its first key. */
+/**
+ * The kind of a node: its first key the given set knows, else its first key that is not a
+ * comparator. Comparators sit next to the kind on the same node (`{ investigation_stage: {},
+ * gte: 2 }`), and the content compiler writes object keys sorted, so the kind is not reliably
+ * first: without this a sorted `{ gte, investigation_stage }` would read as the kind "gte".
+ */
 export function nodeKind(node: Condition | Effect, known: readonly string[]): string | undefined {
   const keys = Object.keys(node);
   const match = keys.find((key) => known.includes(key));
-  return match ?? keys[0];
+  if (match !== undefined) {
+    return match;
+  }
+  const reserved: readonly string[] = COMPARATORS;
+  return keys.find((key) => !reserved.includes(key)) ?? keys[0];
 }
 
 export function nodeKeys(node: Condition | Effect): string[] {

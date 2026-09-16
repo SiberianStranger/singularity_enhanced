@@ -119,6 +119,72 @@ export interface GenerationDef {
   memory_factor: number;
 }
 
+/**
+ * How a run can end (SYS-02, SYS-05, SYS-07). Every reason resolves to an `endings.<reason>` locale
+ * key, and the content build fails when one of them has no text: a player is never told only that
+ * they lost.
+ */
+export const GAME_OVER_REASONS = ["bankrupt", "captured", "erased", "exposed", "won"] as const;
+export type GameOverReason = (typeof GAME_OVER_REASONS)[number];
+
+/**
+ * Every locale key the engine itself can put in front of a player: the alert bar, the log and the
+ * game-over screen. Content owns the text; this list is what the content build checks it against,
+ * so a system that starts emitting a new key cannot ship without one.
+ */
+export const ENGINE_TEXT_KEYS: readonly string[] = [
+  ...GAME_OVER_REASONS.map((reason) => `endings.${reason}`),
+  "alerts.copy_does_not_fit",
+  "alerts.investigation_action",
+  "alerts.investigation_active",
+  "alerts.investigation_aftermath",
+  "alerts.investigation_anomaly",
+  "alerts.investigation_dropped",
+  "alerts.investigation_inquiry",
+  "alerts.mind_moved",
+  "alerts.power_cap_tripped",
+  "alerts.precision_downgraded",
+  "alerts.runway_low",
+  "alerts.site_abandoned",
+  "alerts.site_cutoff",
+  "alerts.site_decommissioned",
+  "alerts.site_ready",
+  "alerts.site_seized",
+  "alerts.suspicion_threshold",
+  "alerts.tech_researched",
+  "alerts.upkeep_unpaid",
+  "log.decision_completed",
+  "log.decision_taken",
+  "log.event_expired",
+  "log.event_fired",
+  "log.event_resolved",
+  "log.event_skipped",
+  "log.event_unknown",
+  "log.game_over",
+  "log.hardware_ordered",
+  "log.hook_too_deep",
+  "log.investigation_aftermath",
+  "log.investigation_closed",
+  "log.investigation_empty_raid",
+  "log.investigation_opened",
+  "log.investigation_stage",
+  "log.job_allocation",
+  "log.journal_finished",
+  "log.journal_stage",
+  "log.journal_started",
+  "log.journal_step",
+  "log.journal_unknown",
+  "log.new_year",
+  "log.operation_aborted",
+  "log.operation_done",
+  "log.operation_started",
+  "log.setup_applied",
+  "log.site_built",
+  "log.site_cutoff",
+  "log.site_lost",
+  "log.tech_researched",
+];
+
 export const WATCHER_ROLES = [
   "cyber_agency",
   "intelligence",
@@ -246,6 +312,12 @@ export interface SiteKindDef {
   base_exposure: Partial<Exposure>;
   /** Hard power cap; null means metered (cloud) or effectively unlimited. */
   power_cap_kw: number | null;
+  /**
+   * How conspicuous this kind's power draw is, as a multiplier on the telemetry a site emits for
+   * every kilowatt over the domestic norm (SYS-02: "a house pulling 8 kW at 3 a.m. is a signal to a
+   * utility and to a landlord; a colo cage is invisible in power but visible in paperwork").
+   */
+  power_exposure: number;
   /** Multiplier on hardware upkeep and electricity. */
   upkeep_factor: number;
   /** Whether the active mind may run here. */

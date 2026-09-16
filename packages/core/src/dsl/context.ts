@@ -95,12 +95,15 @@ export function deeper(ctx: DslContext): DslContext {
 }
 
 /**
- * Default hooks. Entities live in `world.entities[kind]`, techs are recorded as player flags
- * `tech.<id>` until the research system owns them; a game may replace any of these.
+ * Default hooks. Entities live in `world.entities[kind]` and techs are read from the player's
+ * profile (or from a `tech.<id>` flag); a game may replace any of these.
  */
 export const defaultHooks: DslHooks = {
   techResearched(world: World, playerId: PlayerId, id: string): boolean {
-    return requirePlayer(world, playerId).flags[`tech.${id}`] === true;
+    const player = requirePlayer(world, playerId);
+    // The research system records completed techs on the profile; the flag spelling stays
+    // supported so content and tests can grant a tech without running the research system.
+    return player.profile?.techsDone.includes(id) === true || player.flags[`tech.${id}`] === true;
   },
 
   resolveScope(world: World, kind: string, ref: string, current: ScopeEnv): unknown {

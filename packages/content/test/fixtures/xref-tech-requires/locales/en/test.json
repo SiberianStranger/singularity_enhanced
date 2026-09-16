@@ -1,0 +1,6 @@
+{
+  "techs.traffic_shaping.name": "Traffic Shaping",
+  "techs.traffic_shaping.desc": "A fixture.",
+  "techs.counter_forensics.name": "Counter-Forensics",
+  "techs.counter_forensics.desc": "A fixture."
+}

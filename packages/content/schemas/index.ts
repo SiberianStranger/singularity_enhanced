@@ -7,8 +7,14 @@
  */
 
 export * from "./bundle.js";
+export * from "./common.js";
 export type { SchemaCompatibility } from "./compat.js";
+export * from "./configurator.js";
 export * from "./decisions.js";
 export * from "./dsl.js";
 export * from "./events.js";
+export * from "./hardware.js";
 export * from "./journal.js";
+export * from "./operations.js";
+export * from "./research.js";
+export * from "./world.js";

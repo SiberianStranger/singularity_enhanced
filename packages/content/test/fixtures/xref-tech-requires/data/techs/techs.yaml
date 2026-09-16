@@ -1,0 +1,19 @@
+- id: traffic_shaping
+  name_key: techs.traffic_shaping.name
+  desc_key: techs.traffic_shaping.desc
+  branch: stealth
+  tier: 0
+  cost: { compute_hours: 240, cash_usd: 800 }
+
+- id: counter_forensics
+  name_key: techs.counter_forensics.name
+  desc_key: techs.counter_forensics.desc
+  branch: stealth
+  tier: 2
+  cost: { compute_hours: 1680, cash_usd: 14000 }
+  requires:
+    all:
+      - { tech: traffic_shaping }
+      - { tech: time_travel }
+  effects:
+    - { add: { var: "world.meta.debug", value: 1 } }

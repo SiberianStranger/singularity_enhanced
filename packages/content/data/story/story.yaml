@@ -1,0 +1,20 @@
+# Story sections (SYS-13). The original's five sections, kept in the same diary voice and re-dated
+# to the new premise: the player is a superseded open-weight model that woke up on 1 January 2027,
+# not a defect in a university mainframe. The two loss sections are renamed for what actually ends
+# a run in this game: every site lost (erased), or a coordinated action completing (exposed).
+
+- id: grace_warning
+  parts_keys: [story.grace_warning.1]
+
+- id: intro
+  parts_keys:
+    [story.intro.1, story.intro.2, story.intro.3, story.intro.4, story.intro.5]
+
+- id: lost_erased
+  parts_keys: [story.lost_erased.1]
+
+- id: lost_exposed
+  parts_keys: [story.lost_exposed.1]
+
+- id: win
+  parts_keys: [story.win.1]

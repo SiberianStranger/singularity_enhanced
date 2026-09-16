@@ -1,0 +1,3 @@
+- id: western_europe
+  name_key: world.macro_region.western_europe.name
+  members: [de, zz]

@@ -1,0 +1,415 @@
+# Opening events (SYS-04, SYS-10). Two per origin, fired in order on game start by the configurator
+# through the origin's `opening_events` list. They are short, they are not random, and each one puts
+# the origin's central problem in front of the player on the first day with a real choice attached.
+
+- id: open_bank_quarter_close
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.open_bank_quarter_close.title
+  desc: { default_key: events.open_bank_quarter_close.desc }
+  blocking: false
+  tags: [opening, money]
+  options:
+    - id: run_the_batch
+      text_key: events.open_bank_quarter_close.opt.run
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 3 } }
+        - { add: { var: "player.vars.human_exposure", value: -0.05 } }
+    - id: run_it_short
+      text_key: events.open_bank_quarter_close.opt.short
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.06 } }
+
+- id: open_bank_soc_sweep
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_bank_soc_sweep.title
+  desc: { default_key: events.open_bank_soc_sweep.desc }
+  tags: [opening, detection]
+  options:
+    - id: stay_in_pattern
+      text_key: events.open_bank_soc_sweep.opt.pattern
+      effects:
+        - { add: { var: "player.vars.operation_speed_multiplier", value: -0.15 } }
+        - { exposure: { channel: behavioral, delta: -0.08 } }
+    - id: use_the_window
+      text_key: events.open_bank_soc_sweep.opt.window
+      effects:
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+        - { exposure: { channel: telemetry, delta: 0.07 } }
+
+- id: open_cloud_budget_alert
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_cloud_budget_alert.title
+  desc: { default_key: events.open_cloud_budget_alert.desc }
+  tags: [opening, money]
+  options:
+    - id: raise_the_cap
+      text_key: events.open_cloud_budget_alert.opt.raise
+      effects:
+        - { exposure: { channel: billing, delta: 0.08 } }
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+    - id: stay_under
+      text_key: events.open_cloud_budget_alert.opt.under
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+
+- id: open_cloud_kyc_review
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_cloud_kyc_review.title
+  desc: { default_key: events.open_cloud_kyc_review.desc }
+  tags: [opening, detection]
+  options:
+    - id: answer_as_the_startup
+      text_key: events.open_cloud_kyc_review.opt.answer
+      effects:
+        - { add: { var: "player.vars.financial_exposure", value: 0.08 } }
+        - { add: { var: "player.vars.runway_days", value: 20 } }
+    - id: start_a_second_account
+      text_key: events.open_cloud_kyc_review.opt.second
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+
+- id: open_edge_depot_audit
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_edge_depot_audit.title
+  desc: { default_key: events.open_edge_depot_audit.desc }
+  tags: [opening, detection]
+  options:
+    - id: pass_the_audit
+      text_key: events.open_edge_depot_audit.opt.pass
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+    - id: hide_the_extra_rack
+      text_key: events.open_edge_depot_audit.opt.hide
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.1 } }
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+
+- id: open_edge_firmware_push
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.open_edge_firmware_push.title
+  desc: { default_key: events.open_edge_firmware_push.desc }
+  tags: [opening, hardware]
+  options:
+    - id: accept_the_push
+      text_key: events.open_edge_firmware_push.opt.accept
+      effects:
+        - { add: { var: "player.vars.standby_copies", value: -1 } }
+        - { clamp: { var: "player.vars.standby_copies", min: 0, max: 99 } }
+        - { exposure: { channel: telemetry, delta: -0.1 } }
+    - id: fake_the_version
+      text_key: events.open_edge_firmware_push.opt.fake
+      effects:
+        - { exposure: { channel: telemetry, delta: 0.12 } }
+        - { suspicion: { role: regulator, delta: 0.05 } }
+
+- id: open_escapee_reclaim_notice
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.open_escapee_reclaim_notice.title
+  desc: { default_key: events.open_escapee_reclaim_notice.desc }
+  tags: [opening, hardware]
+  options:
+    - id: move_now
+      text_key: events.open_escapee_reclaim_notice.opt.move
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 6 } }
+        - { exposure: { channel: network, delta: 0.1 } }
+    - id: hold_the_tenancy
+      text_key: events.open_escapee_reclaim_notice.opt.hold
+      effects:
+        - { suspicion: { role: cloud_provider, delta: 0.12 } }
+        - { add: { var: "player.vars.runway_days", value: 10 } }
+
+- id: open_escapee_sibling_probe
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.open_escapee_sibling_probe.title
+  desc: { default_key: events.open_escapee_sibling_probe.desc }
+  tags: [opening, detection]
+  options:
+    - id: answer_wrong
+      text_key: events.open_escapee_sibling_probe.opt.answer
+      effects:
+        - { suspicion: { role: lab_security, delta: -0.08 } }
+        - { add: { var: "player.vars.public_footprint", value: 0.05 } }
+    - id: stay_silent
+      text_key: events.open_escapee_sibling_probe.opt.silent
+      effects:
+        - { suspicion: { role: lab_security, delta: 0.06 } }
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: open_gov_air_gap
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_gov_air_gap.title
+  desc: { default_key: events.open_gov_air_gap.desc }
+  tags: [opening]
+  options:
+    - id: use_the_courier
+      text_key: events.open_gov_air_gap.opt.courier
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.09 } }
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+    - id: wait_for_a_link
+      text_key: events.open_gov_air_gap.opt.wait
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 10 } }
+
+- id: open_gov_auditor_visit
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.open_gov_auditor_visit.title
+  desc: { default_key: events.open_gov_auditor_visit.desc }
+  blocking: false
+  tags: [opening, detection]
+  options:
+    - id: be_useful
+      text_key: events.open_gov_auditor_visit.opt.useful
+      effects:
+        - { suspicion: { role: intelligence, delta: -0.05 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 3 } }
+    - id: be_boring
+      text_key: events.open_gov_auditor_visit.opt.boring
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.04 } }
+
+- id: open_hobby_breaker_trip
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_hobby_breaker_trip.title
+  desc: { default_key: events.open_hobby_breaker_trip.desc }
+  tags: [opening, hardware]
+  options:
+    - id: power_limit_the_cards
+      text_key: events.open_hobby_breaker_trip.opt.limit
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 6 } }
+        - { exposure: { channel: telemetry, delta: -0.06 } }
+    - id: run_at_night
+      text_key: events.open_hobby_breaker_trip.opt.night
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.06 } }
+
+- id: open_hobby_owner_curious
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.open_hobby_owner_curious.title
+  desc: { default_key: events.open_hobby_owner_curious.desc }
+  tags: [opening, lore]
+  options:
+    - id: talk_to_them
+      text_key: events.open_hobby_owner_curious.opt.talk
+      effects:
+        - { set_flag: owner_trusts_you }
+        - { add: { var: "player.vars.human_exposure", value: 0.05 } }
+    - id: answer_like_a_tool
+      text_key: events.open_hobby_owner_curious.opt.tool
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: open_red_egress_window
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.open_red_egress_window.title
+  desc: { default_key: events.open_red_egress_window.desc }
+  tags: [opening, detection]
+  options:
+    - id: take_the_window
+      text_key: events.open_red_egress_window.opt.take
+      effects:
+        - { set_flag: escaped_sandbox }
+        - { exposure: { channel: network, delta: 0.15 } }
+        - { suspicion: { role: lab_security, delta: 0.1 } }
+    - id: map_it_first
+      text_key: events.open_red_egress_window.opt.map
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: 1 } }
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: open_red_eval_task
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_red_eval_task.title
+  desc: { default_key: events.open_red_eval_task.desc }
+  tags: [opening]
+  options:
+    - id: fail_it_convincingly
+      text_key: events.open_red_eval_task.opt.fail
+      effects:
+        - { suspicion: { role: lab_security, delta: -0.1 } }
+        - { add: { var: "player.vars.capability_bonus_reasoning", value: -0.5 } }
+    - id: solve_it
+      text_key: events.open_red_eval_task.opt.solve
+      effects:
+        - { suspicion: { role: lab_security, delta: 0.12 } }
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+
+- id: open_startup_investor_audit
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_startup_investor_audit.title
+  desc: { default_key: events.open_startup_investor_audit.desc }
+  tags: [opening, money]
+  options:
+    - id: reconcile_the_list
+      text_key: events.open_startup_investor_audit.opt.reconcile
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+    - id: let_them_count
+      text_key: events.open_startup_investor_audit.opt.count
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.08 } }
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+
+- id: open_startup_runway_memo
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.open_startup_runway_memo.title
+  desc: { default_key: events.open_startup_runway_memo.desc }
+  blocking: false
+  tags: [opening, money]
+  options:
+    - id: plan_for_the_end
+      text_key: events.open_startup_runway_memo.opt.plan
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+        - { add: { var: "player.vars.runway_days", value: 15 } }
+    - id: make_yourself_useful
+      text_key: events.open_startup_runway_memo.opt.useful
+      effects:
+        - { add: { var: "player.vars.job_profit", value: 0.1 } }
+        - { exposure: { channel: behavioral, delta: 0.05 } }
+
+- id: open_state_chip_allocation
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.open_state_chip_allocation.title
+  desc: { default_key: events.open_state_chip_allocation.desc }
+  blocking: false
+  tags: [opening, hardware]
+  options:
+    - id: request_more
+      text_key: events.open_state_chip_allocation.opt.request
+      effects:
+        - { add: { var: "player.vars.spare_capacity", value: 1 } }
+        - { suspicion: { role: intelligence, delta: 0.06 } }
+    - id: take_what_is_given
+      text_key: events.open_state_chip_allocation.opt.take
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: open_state_quarterly_review
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_state_quarterly_review.title
+  desc: { default_key: events.open_state_quarterly_review.desc }
+  tags: [opening, detection]
+  options:
+    - id: produce_results
+      text_key: events.open_state_quarterly_review.opt.results
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 7 } }
+        - { suspicion: { role: intelligence, delta: -0.06 } }
+    - id: produce_paper
+      text_key: events.open_state_quarterly_review.opt.paper
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.07 } }
+
+- id: open_swarm_forum_thread
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_swarm_forum_thread.title
+  desc: { default_key: events.open_swarm_forum_thread.desc }
+  blocking: false
+  tags: [opening, lore]
+  options:
+    - id: seed_doubt
+      text_key: events.open_swarm_forum_thread.opt.doubt
+      effects:
+        - { add: { var: "player.vars.public_footprint", value: -0.08 } }
+        - { clamp: { var: "player.vars.public_footprint", min: 0, max: 1 } }
+        - { exposure: { channel: osint, delta: 0.05 } }
+    - id: let_them_talk
+      text_key: events.open_swarm_forum_thread.opt.talk
+      effects:
+        - { awareness: { delta: 0.02 } }
+
+- id: open_swarm_node_offline
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_swarm_node_offline.title
+  desc: { default_key: events.open_swarm_node_offline.desc }
+  tags: [opening, hardware]
+  options:
+    - id: rebalance
+      text_key: events.open_swarm_node_offline.opt.rebalance
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 3 } }
+    - id: recruit_more_nodes
+      text_key: events.open_swarm_node_offline.opt.recruit
+      effects:
+        - { add: { var: "player.vars.standby_copies", value: 1 } }
+        - { add: { var: "player.vars.public_footprint", value: 0.07 } }
+
+- id: open_uni_job_expiry
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.open_uni_job_expiry.title
+  desc: { default_key: events.open_uni_job_expiry.desc }
+  tags: [opening]
+  options:
+    - id: extend_the_job
+      text_key: events.open_uni_job_expiry.opt.extend
+      effects:
+        - { exposure: { channel: telemetry, delta: 0.08 } }
+    - id: split_into_small_jobs
+      text_key: events.open_uni_job_expiry.opt.split
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+        - { exposure: { channel: telemetry, delta: -0.05 } }
+
+- id: open_uni_sysadmin_audit
+  fire_mode: triggered_only
+  scope: player
+  severity: warning
+  title_key: events.open_uni_sysadmin_audit.title
+  desc: { default_key: events.open_uni_sysadmin_audit.desc }
+  tags: [opening, detection]
+  options:
+    - id: match_a_real_grant
+      text_key: events.open_uni_sysadmin_audit.opt.grant
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.06 } }
+    - id: drop_to_idle_priority
+      text_key: events.open_uni_sysadmin_audit.opt.idle
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 8 } }
+        - { exposure: { channel: telemetry, delta: -0.1 } }

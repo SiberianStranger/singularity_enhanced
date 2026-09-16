@@ -1,0 +1,160 @@
+name: Release
+
+# Pushing a tag such as v0.2.0 builds the web bundle and the desktop bundles for the three
+# platforms, then publishes a GitHub Release with all of them and the matching CHANGELOG.md
+# section as the body. See the "Releasing" section of README.md for the steps.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Web bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # version is taken from the "packageManager" field in package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web client
+        env:
+          # Relative, so the zip can be served from any directory of any host.
+          VITE_BASE: "./"
+        run: pnpm --filter @singularity/ui build
+
+      - name: Zip the web client
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cd packages/ui/dist
+          zip -qr "$GITHUB_WORKSPACE/web-$version.zip" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: web-*.zip
+          if-no-files-found: error
+
+  desktop:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows installers
+            os: windows-latest
+            rust-targets: ""
+            args: "--bundles nsis,msi"
+          - name: macOS disk image
+            os: macos-latest
+            rust-targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+            args: "--target universal-apple-darwin --bundles app,dmg"
+          - name: Linux packages
+            os: ubuntu-latest
+            rust-targets: ""
+            args: "--bundles appimage,deb"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the WebKitGTK build dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libxdo-dev libssl-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri -> target
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Without tagName or releaseId the action only builds; the bundles come back as workflow
+      # artifacts named "[platform]-[arch]-[bundle]" and the publish job attaches them to the
+      # release. The web client is rebuilt here by the beforeBuildCommand hook of tauri.conf.json.
+      - uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: packages/desktop
+          tauriScript: pnpm tauri
+          args: ${{ matrix.args }}
+          uploadWorkflowArtifacts: true
+
+  publish:
+    name: Publish the release
+    needs: [web, desktop]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      # The product name contains spaces, which GitHub turns into dots in asset names.
+      - name: Normalize the asset names
+        working-directory: assets
+        run: |
+          for file in *; do
+            name="$(printf '%s' "$file" | tr ' ' '-' | tr -s '-')"
+            if [ "$file" != "$name" ]; then
+              mv -- "$file" "$name"
+            fi
+          done
+
+      - name: Extract the release notes
+        run: node tools/release-notes.mjs "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in
+            v0.*) prerelease="--prerelease" ;;
+          esac
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+            gh release upload "$GITHUB_REF_NAME" assets/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release-notes.md \
+              $prerelease \
+              assets/*
+          fi

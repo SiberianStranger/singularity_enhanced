@@ -1,0 +1,5 @@
+{
+  "hardware.preset.test_preset.name": "Test preset",
+  "hardware.preset.test_preset.desc": "A fixture.",
+  "hardware.preset.test_preset.drawback": "It does not exist."
+}

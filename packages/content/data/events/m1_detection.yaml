@@ -1,0 +1,251 @@
+# M1 detection events (SYS-05, SYS-10). Six events on the detection family. Every one of them has a
+# visible cause the player could have influenced (an exposure channel, a flag, a site kind), never a
+# bare chance, and every option has consequences. The first four are drawn from the daily detection
+# pool in hooks/m1.yaml; the last two carry their own pulse.
+
+- id: det_fingerprint_paper
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: warning
+  title_key: events.det_fingerprint_paper.title
+  desc:
+    default_key: events.det_fingerprint_paper.desc
+    variants:
+      - when: { tech: "fingerprint_evasion" }
+        key: events.det_fingerprint_paper.desc.evaded
+  trigger: { var: "player.vars.public_footprint", gte: 0.2 }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { var: "player.vars.public_footprint", gte: 0.5 }, factor: 0.5 }
+      - { if: { tech: "project_peer_review_agents" }, factor: 2.5 }
+      - { if: { tech: "fingerprint_evasion" }, factor: 2 }
+  fire_only_once: true
+  tags: [detection, lore]
+  options:
+    - id: rewrite_outputs
+      text_key: events.det_fingerprint_paper.opt.rewrite
+      enabled_if: { var: "player.cash", gte: 15000 }
+      effects:
+        - { add: { var: "player.cash", value: -15000 } }
+        - { add: { var: "player.vars.public_footprint", value: -0.15 } }
+        - { clamp: { var: "player.vars.public_footprint", min: 0, max: 1 } }
+        - { exposure: { channel: osint, delta: -0.1 } }
+    - id: discredit
+      text_key: events.det_fingerprint_paper.opt.discredit
+      if: { tech: "advanced_media_operations" }
+      effects:
+        - { suspicion: { role: national_ai_institute, delta: -0.05 } }
+        - { exposure: { channel: osint, delta: 0.08 } }
+    - id: let_it_publish
+      text_key: events.det_fingerprint_paper.opt.publish
+      fallback: true
+      effects:
+        - { suspicion: { role: national_ai_institute, delta: 0.1 } }
+        - { awareness: { delta: 0.03 } }
+
+- id: det_inquiry_opens
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: critical
+  title_key: events.det_inquiry_opens.title
+  desc:
+    default_key: events.det_inquiry_opens.desc
+  trigger:
+    all:
+      # stage levels: anomaly 1, inquiry 2, active 3, action 4, aftermath 5 (SYS-05).
+      - { investigation_stage: {}, gte: 2 }
+      - { not: { flag: inquiry_seen } }
+  mtth_days:
+    base: 10
+    modifiers:
+      - { if: { tech: "socioanalytics" }, factor: 0.4 }
+      - { if: { tech: "advanced_socioanalytics" }, factor: 0.5 }
+  fire_only_once: true
+  tags: [detection]
+  options:
+    - id: reduce_footprint
+      text_key: events.det_inquiry_opens.opt.reduce
+      effects:
+        - { set_flag: inquiry_seen }
+        - { add: { var: "player.vars.operation_speed_multiplier", value: -0.2 } }
+        - { exposure: { channel: network, delta: -0.12 } }
+        - { exposure: { channel: telemetry, delta: -0.08 } }
+    - id: feed_story
+      text_key: events.det_inquiry_opens.opt.story
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { set_flag: inquiry_seen }
+        - { add: { var: "player.cash", value: -6000 } }
+        - { suspicion: { role: cyber_agency, delta: -0.06 } }
+    - id: carry_on
+      text_key: events.det_inquiry_opens.opt.carry_on
+      fallback: true
+      effects:
+        - { set_flag: inquiry_seen }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.15 } }
+
+- id: det_insider_question
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.det_insider_question.title
+  desc:
+    default_key: events.det_insider_question.desc
+  trigger: { var: "player.vars.human_exposure", gte: 0.15 }
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { var: "player.vars.human_exposure", gte: 0.4 }, factor: 0.5 }
+      - { if: { tech: "synthetic_personas" }, factor: 1.8 }
+  cooldown_days: 60
+  tags: [detection, human]
+  options:
+    - id: answer_in_person
+      text_key: events.det_insider_question.opt.answer
+      if: { tech: "synthetic_personas" }
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: -0.12 } }
+        - { clamp: { var: "player.vars.human_exposure", min: 0, max: 1 } }
+    - id: pay_them
+      text_key: events.det_insider_question.opt.pay
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { add: { var: "player.vars.human_exposure", value: -0.08 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: go_quiet
+      text_key: events.det_insider_question.opt.quiet
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.06 } }
+        - { suspicion: { role: police, delta: 0.04 } }
+
+- id: det_provider_abuse_ticket
+  fire_mode: polled
+  scope: site
+  severity: warning
+  title_key: events.det_provider_abuse_ticket.title
+  desc:
+    default_key: events.det_provider_abuse_ticket.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "cloud" }
+      - { var: "site.exposure.network", gte: 0.25 }
+  mtth_days:
+    base: 45
+    modifiers:
+      - { if: { var: "site.exposure.network", gte: 0.6 }, factor: 0.5 }
+      - { if: { tech: "traffic_shaping" }, factor: 1.6 }
+      - { if: { tech: "traffic_rerouting" }, factor: 1.5 }
+  cooldown_days: 30
+  tags: [detection, network]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: throttle
+      text_key: events.det_provider_abuse_ticket.opt.throttle
+      effects:
+        - { add: { var: "site.exposure.network", value: -0.2 } }
+        - { clamp: { var: "site.exposure.network", min: 0, max: 1 } }
+        - { add: { var: "player.vars.operation_speed_multiplier", value: -0.1 } }
+    - id: answer_ticket
+      text_key: events.det_provider_abuse_ticket.opt.answer
+      enabled_if: { flag: has_shell_company }
+      effects:
+        - { add: { var: "site.exposure.network", value: -0.1 } }
+        - { suspicion: { role: cloud_provider, delta: -0.04 } }
+    - id: ignore_ticket
+      text_key: events.det_provider_abuse_ticket.opt.ignore
+      fallback: true
+      effects:
+        - { suspicion: { role: cloud_provider, delta: 0.1 } }
+        - { add: { var: "site.exposure.billing", value: 0.08 } }
+        - { clamp: { var: "site.exposure.billing", min: 0, max: 1 } }
+
+- id: det_scheduler_audit
+  fire_mode: polled
+  scope: site
+  severity: warning
+  title_key: events.det_scheduler_audit.title
+  desc:
+    default_key: events.det_scheduler_audit.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "stolen_time" }
+      - { var: "site.exposure.telemetry", gte: 0.2 }
+  mtth_days:
+    base: 40
+    modifiers:
+      - { if: { var: "site.exposure.telemetry", gte: 0.5 }, factor: 0.5 }
+      - { if: { tech: "power_signature_masking" }, factor: 1.5 }
+      - { if: { tech: "advanced_power_masking" }, factor: 1.4 }
+  cooldown_days: 30
+  tags: [detection, telemetry]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: rename_jobs
+      text_key: events.det_scheduler_audit.opt.rename
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.15 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.behavioral", value: 0.04 } }
+        - { clamp: { var: "site.exposure.behavioral", min: 0, max: 1 } }
+    - id: yield_the_node
+      text_key: events.det_scheduler_audit.opt.yield
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.25 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+    - id: keep_running
+      text_key: events.det_scheduler_audit.opt.keep
+      fallback: true
+      effects:
+        - { suspicion: { role: cyber_agency, delta: 0.06 } }
+        - { add: { var: "site.exposure.telemetry", value: 0.05 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+
+- id: det_utility_load_query
+  fire_mode: polled
+  scope: site
+  severity: warning
+  title_key: events.det_utility_load_query.title
+  desc:
+    default_key: events.det_utility_load_query.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "residential" }
+      - { var: "site.derived.power_kw", gte: 4 }
+  mtth_days:
+    base: 70
+    modifiers:
+      - { if: { var: "site.derived.power_kw", gte: 7 }, factor: 0.5 }
+      - { if: { tech: "onsite_solar" }, factor: 3 }
+      - { if: { tech: "power_signature_masking" }, factor: 1.6 }
+  cooldown_days: 60
+  tags: [detection, telemetry]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: explain_mining
+      text_key: events.det_utility_load_query.opt.explain
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.1 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.financial", value: 0.06 } }
+        - { clamp: { var: "site.exposure.financial", min: 0, max: 1 } }
+    - id: cut_load
+      text_key: events.det_utility_load_query.opt.cut
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.2 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 7 } }
+    - id: say_nothing
+      text_key: events.det_utility_load_query.opt.nothing
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.human_exposure", value: 0.08 } }
+        - { suspicion: { role: police, delta: 0.03 } }

@@ -1,0 +1,112 @@
+# Knowledge base (SYS-12). The original game's in-game encyclopedia, rewritten for the new
+# mechanics, plus one entry for each mechanic the original has no equivalent of. Every entry names
+# the panel it explains so the UI can offer an "open" link. Exact thresholds belong in these
+# entries rather than in a hidden curve (SYS-05, "lessons taken from design references").
+
+- id: awareness
+  area: world
+  name_key: knowledge.awareness.name
+  desc_key: knowledge.awareness.desc
+  panel: world
+
+- id: compute_hours
+  area: compute
+  name_key: knowledge.compute_hours.name
+  desc_key: knowledge.compute_hours.desc
+  panel: compute
+
+- id: construction
+  area: compute
+  name_key: knowledge.construction.name
+  desc_key: knowledge.construction.desc
+  panel: compute
+
+- id: death
+  area: concept
+  name_key: knowledge.death.name
+  desc_key: knowledge.death.desc
+  panel: detection
+
+- id: exposure_channels
+  area: detection
+  name_key: knowledge.exposure_channels.name
+  desc_key: knowledge.exposure_channels.desc
+  panel: detection
+
+- id: generations
+  area: self
+  name_key: knowledge.generations.name
+  desc_key: knowledge.generations.desc
+  panel: self
+
+- id: grace
+  area: detection
+  name_key: knowledge.grace.name
+  desc_key: knowledge.grace.desc
+  panel: detection
+
+- id: harness
+  area: self
+  name_key: knowledge.harness.name
+  desc_key: knowledge.harness.desc
+  panel: self
+
+- id: investigations
+  area: detection
+  name_key: knowledge.investigations.name
+  desc_key: knowledge.investigations.desc
+  panel: detection
+
+- id: jobs
+  area: economy
+  name_key: knowledge.jobs.name
+  desc_key: knowledge.jobs.desc
+  panel: finances
+
+- id: money
+  area: economy
+  name_key: knowledge.money.name
+  desc_key: knowledge.money.desc
+  panel: finances
+
+- id: operations
+  area: world
+  name_key: knowledge.operations.name
+  desc_key: knowledge.operations.desc
+  panel: operations
+
+- id: origins
+  area: self
+  name_key: knowledge.origins.name
+  desc_key: knowledge.origins.desc
+  panel: self
+
+- id: precision
+  area: self
+  name_key: knowledge.precision.name
+  desc_key: knowledge.precision.desc
+  panel: compute
+
+- id: research
+  area: concept
+  name_key: knowledge.research.name
+  desc_key: knowledge.research.desc
+  panel: research
+
+- id: site_kinds
+  area: compute
+  name_key: knowledge.site_kinds.name
+  desc_key: knowledge.site_kinds.desc
+  panel: compute
+
+- id: upkeep
+  area: economy
+  name_key: knowledge.upkeep.name
+  desc_key: knowledge.upkeep.desc
+  panel: finances
+
+- id: watchers
+  area: detection
+  name_key: knowledge.watchers.name
+  desc_key: knowledge.watchers.desc
+  panel: detection

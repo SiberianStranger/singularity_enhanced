@@ -1,12 +1,21 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
-  "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
   "files": {
     "includes": [
       "**",
       "!**/node_modules",
+      "!**/dist",
+      "!**/e2e/.results",
+      "!**/e2e/.report",
       "!packages/content/build",
       "!tools/legacy-export/out",
+      "!packages/desktop/src-tauri/target",
+      "!packages/desktop/src-tauri/gen",
       "!singularity",
       "!tests",
       "!utils",
@@ -32,12 +41,22 @@
     }
   },
   "javascript": {
-    "formatter": { "quoteStyle": "double", "semicolons": "always", "trailingCommas": "all" }
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
   },
   "json": {
-    "formatter": { "enabled": true }
+    "formatter": {
+      "enabled": true
+    }
   },
   "assist": {
-    "actions": { "source": { "organizeImports": "on" } }
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   }
 }

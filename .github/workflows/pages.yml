@@ -1,0 +1,64 @@
+name: GitHub Pages
+
+# Deploys the web client to https://siberianstranger.github.io/singularity_enhanced/ on every push
+# to master. In the repository settings, under Pages, Build and deployment, the source has to be
+# set to "GitHub Actions" for the deploy step to work.
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "singularity/**"
+      - "tests/**"
+      - "utils/**"
+      - "docs/**"
+      - "*.txt"
+      - "*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # version is taken from the "packageManager" field in package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web client
+        env:
+          # Pages serves the site from the repository sub-path.
+          VITE_BASE: /singularity_enhanced/
+        run: pnpm --filter @singularity/ui build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/ui/dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,21 @@
+- id: de
+  iso3: DEU
+  name_key: world.country.de.name
+  macro_region: middle_earth
+  population: 84000000
+  median_age: 46.7
+  urbanization_pct: 77.6
+  internet_pct: 93
+  gdp_nominal_usd_bn: 4900
+  gdp_per_capita_usd: 58000
+  government_type: federal parliamentary republic
+  democracy_index: 8.8
+  ai_regulation: 0.8
+  ai_enforcement: 0.6
+  ai_opinion: -0.3
+  electricity_usd_per_kwh: 0.2
+  chip_access: unrestricted
+  agencies: { cyber: BSI }
+  cities: [de_berlin, de_atlantis]
+  languages: [de]
+  currency: EUR

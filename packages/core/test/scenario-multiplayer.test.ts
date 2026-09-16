@@ -47,9 +47,9 @@ describe("scenario: two players in one world", () => {
     const bobSnapshot = game.snapshot("bob");
     expect(adaSnapshot.pending.map((choice) => choice.instanceId)).toEqual([adaChoice?.instanceId]);
     expect(bobSnapshot.pending.map((choice) => choice.instanceId)).toEqual([bobChoice?.instanceId]);
-    expect(adaSnapshot.player.name).toBe("Ada");
-    expect(bobSnapshot.player.cash).toBe(2000);
-    expect(adaSnapshot.playerId).toBe("ada");
+    expect(adaSnapshot.players.find((entry) => entry.id === "ada")?.name).toBe("Ada");
+    expect(bobSnapshot.resources.cash_usd).toBe(2000);
+    expect(adaSnapshot.player_id).toBe("ada");
 
     // Ada cannot answer Bob's event.
     const stolen = game.command({
@@ -115,7 +115,7 @@ describe("scenario: two players in one world", () => {
     });
     expect(game.command({ type: "set_speed", playerId: "ada", speed: 2 }).ok).toBe(false);
     expect(game.command({ type: "set_speed", playerId: "bob", speed: 2 }).ok).toBe(true);
-    expect(game.snapshot().playerId).toBe("bob");
+    expect(game.snapshot().player_id).toBe("bob");
     expect(game.snapshot("ada").speed).toBe(2);
   });
 });

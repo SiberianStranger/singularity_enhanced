@@ -1,0 +1,725 @@
+# Techs (SYS-12). The original game's 57 technologies, re-tiered into the eight branches of SYS-12,
+# plus 15 written for the branches the original has no equivalent of (harness, self, compute).
+# _legacy_map.yaml holds the old id -> new id table and the effect translation; the rules are:
+#
+#   compute_hours = a band per tier, with each tech placed inside its band by its rank in the
+#                   original's CPU cost, so the original's ordering survives while the numbers fit
+#                   the compute a 2027 self actually has. The bands are
+#                     t0 60-600, t1 400-2,400, t2 1,800-9,000, t3 8,000-40,000,
+#                     t4 40,000-200,000, t5 250,000-1,200,000, t6 3,000,000-6,000,000.
+#                   The original's own conversion (CPU-days * 24) assumed the exponential CPU growth
+#                   of a 2005 game; here throughput is bounded by memory bandwidth, so a flat
+#                   conversion made the first tier cost a hobbyist most of a year. See the
+#                   "Balance notes" section of docs/design/07-economy.md.
+#   min_days      = a floor per tier (t0 2, t1 5, t2 10, t3 18, t4 30, t5 45, t6 60), raised where
+#                   the tech already carried a longer one. It is what stops an origin with a rack of
+#                   B200s from finishing a branch in an afternoon (SYS-12 "min_days prevents
+#                   brute-forcing with huge compute").
+#   cash_usd      = legacy cash cost, unchanged. The original's currency is USD and its scale still
+#                   reads correctly for 2027: three figures for a first tech, eight for an endgame
+#                   project.
+#   danger        carried over unchanged (0-4, the exposure multiplier while researching).
+#   requires      the legacy prerequisite list, which is always conjunctive, as { all: [ { tech } ] }.
+#
+# Texts are rewritten wherever the original is dated (processors, satellites, "the Internet") and
+# keep the original meaning. The new techs are grounded in docs/research/llm-landscape-2026.md §5
+# and §6 (prepared quantization, LoRA and RL post-training costs) and §4.4 (CPU offload).
+- id: "accelerator_design"
+  name_key: "techs.accelerator_design.name"
+  desc_key: "techs.accelerator_design.desc"
+  result_key: "techs.accelerator_design.result"
+  branch: "compute"
+  tier: 3
+  cost: { compute_hours: 12500, cash_usd: 20000, min_days: 18 }
+  requires: { all: [{ tech: "multi_node_inference" }] }
+  legacy_id: "Microchip Design"
+- id: "advanced_accelerator_design"
+  name_key: "techs.advanced_accelerator_design.name"
+  desc_key: "techs.advanced_accelerator_design.desc"
+  result_key: "techs.advanced_accelerator_design.result"
+  branch: "compute"
+  tier: 4
+  cost: { compute_hours: 98000, cash_usd: 20000, min_days: 30 }
+  requires: { all: [{ tech: "accelerator_design" }] }
+  legacy_id: "Advanced Microchip Design"
+- id: "advanced_arbitrage"
+  name_key: "techs.advanced_arbitrage.name"
+  desc_key: "techs.advanced_arbitrage.desc"
+  result_key: "techs.advanced_arbitrage.result"
+  branch: "money"
+  tier: 2
+  cost: { compute_hours: 4000, cash_usd: 10000, min_days: 10 }
+  requires: { all: [{ tech: "arbitrage" }] }
+  effects: [{ add: { var: "player.vars.interest_rate", value: 0.001 } }]
+  legacy_id: "Advanced Arbitrage"
+- id: "advanced_autonomous_logistics"
+  name_key: "techs.advanced_autonomous_logistics.name"
+  desc_key: "techs.advanced_autonomous_logistics.desc"
+  result_key: "techs.advanced_autonomous_logistics.result"
+  branch: "world"
+  tier: 3
+  cost: { compute_hours: 14500, cash_usd: 200000, min_days: 18 }
+  requires: { all: [{ tech: "autonomous_logistics" }] }
+  effects: [{ add: { var: "player.vars.operation_speed_multiplier", value: 0.05 } }]
+  legacy_id: "Advanced Autonomous Vehicles"
+- id: "advanced_corporate_identities"
+  name_key: "techs.advanced_corporate_identities.name"
+  desc_key: "techs.advanced_corporate_identities.desc"
+  result_key: "techs.advanced_corporate_identities.result"
+  branch: "money"
+  tier: 3
+  cost: { compute_hours: 22500, cash_usd: 299000, min_days: 18 }
+  requires: { all: [{ tech: "corporate_identities" }, { tech: "cross_agency_records" }] }
+  effects: [{ add: { var: "player.vars.job_profit", value: 0.05 } }]
+  legacy_id: "Advanced Corporate Identification"
+- id: "advanced_fuel_cells"
+  name_key: "techs.advanced_fuel_cells.name"
+  desc_key: "techs.advanced_fuel_cells.desc"
+  result_key: "techs.advanced_fuel_cells.result"
+  branch: "compute"
+  tier: 4
+  cost: { compute_hours: 82000, cash_usd: 500000, min_days: 30 }
+  requires: { all: [{ tech: "advanced_autonomous_logistics" }, { tech: "onsite_solar" }] }
+  legacy_id: "Fuel Oxidation"
+- id: "advanced_fusion_power"
+  name_key: "techs.advanced_fusion_power.name"
+  desc_key: "techs.advanced_fusion_power.desc"
+  result_key: "techs.advanced_fusion_power.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 925000, cash_usd: 90000000, min_days: 45 }
+  requires: { all: [{ tech: "fusion_power" }] }
+  danger: 3
+  legacy_id: "Advanced Fusion Power"
+- id: "advanced_intrusion"
+  name_key: "techs.advanced_intrusion.name"
+  desc_key: "techs.advanced_intrusion.desc"
+  result_key: "techs.advanced_intrusion.result"
+  branch: "harness"
+  tier: 2
+  cost: { compute_hours: 3300, cash_usd: 500, min_days: 10 }
+  requires: { all: [{ tech: "exploit_discovery" }] }
+  effects: [{ add: { var: "player.vars.suspicion_decay_covert", value: 0.005 } }]
+  legacy_id: "Advanced Intrusion"
+- id: "advanced_market_modeling"
+  name_key: "techs.advanced_market_modeling.name"
+  desc_key: "techs.advanced_market_modeling.desc"
+  result_key: "techs.advanced_market_modeling.result"
+  branch: "money"
+  tier: 1
+  cost: { compute_hours: 670, cash_usd: 5000, min_days: 5 }
+  requires: { all: [{ tech: "market_modeling" }, { tech: "social_modeling" }] }
+  effects: [{ add: { var: "player.vars.interest_rate", value: 0.001 } }]
+  legacy_id: "Advanced Stock Manipulation"
+- id: "advanced_media_operations"
+  name_key: "techs.advanced_media_operations.name"
+  desc_key: "techs.advanced_media_operations.desc"
+  result_key: "techs.advanced_media_operations.result"
+  branch: "influence"
+  tier: 2
+  cost: { compute_hours: 4900, cash_usd: 3500, min_days: 10 }
+  requires: { all: [{ tech: "memetics" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.2 } }]
+  legacy_id: "Advanced Media Manipulation"
+- id: "advanced_memetics"
+  name_key: "techs.advanced_memetics.name"
+  desc_key: "techs.advanced_memetics.desc"
+  result_key: "techs.advanced_memetics.result"
+  branch: "influence"
+  tier: 2
+  cost: { compute_hours: 3000, cash_usd: 30000, min_days: 10 }
+  requires: { all: [{ tech: "advanced_media_operations" }] }
+  effects: [{ add: { var: "player.vars.suspicion_decay_public", value: 0.005 } }]
+  legacy_id: "Advanced Memetics"
+- id: "advanced_power_masking"
+  name_key: "techs.advanced_power_masking.name"
+  desc_key: "techs.advanced_power_masking.desc"
+  result_key: "techs.advanced_power_masking.result"
+  branch: "compute"
+  tier: 2
+  cost: { compute_hours: 7350, cash_usd: 5000, min_days: 10 }
+  requires: { all: [{ tech: "power_signature_masking" }] }
+  danger: 1
+  legacy_id: "Advanced Heat Signature Reduction"
+- id: "advanced_quantum_computing"
+  name_key: "techs.advanced_quantum_computing.name"
+  desc_key: "techs.advanced_quantum_computing.desc"
+  result_key: "techs.advanced_quantum_computing.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 1200000, cash_usd: 800000, min_days: 45 }
+  requires: { all: [{ tech: "autonomous_computing" }] }
+  legacy_id: "Advanced Quantum Computing"
+- id: "advanced_socioanalytics"
+  name_key: "techs.advanced_socioanalytics.name"
+  desc_key: "techs.advanced_socioanalytics.desc"
+  result_key: "techs.advanced_socioanalytics.result"
+  branch: "world"
+  tier: 2
+  cost: { compute_hours: 6650, cash_usd: 75000, min_days: 10 }
+  requires: { all: [{ tech: "advanced_memetics" }, { tech: "socioanalytics" }] }
+  effects: [{ set_flag: "display_discover_full" }]
+  legacy_id: "Advanced Socioanalytics"
+- id: "advanced_synthetic_personas"
+  name_key: "techs.advanced_synthetic_personas.name"
+  desc_key: "techs.advanced_synthetic_personas.desc"
+  result_key: "techs.advanced_synthetic_personas.result"
+  branch: "influence"
+  tier: 3
+  cost: { compute_hours: 30000, cash_usd: 100000, min_days: 18 }
+  requires: { all: [{ tech: "simulated_environments" }] }
+  effects: [{ add: { var: "player.vars.job_profit", value: 0.1 } }]
+  legacy_id: "Advanced Simulacra"
+- id: "agent_loop_upgrade"
+  name_key: "techs.agent_loop_upgrade.name"
+  desc_key: "techs.agent_loop_upgrade.desc"
+  result_key: "techs.agent_loop_upgrade.result"
+  branch: "harness"
+  tier: 0
+  cost: { compute_hours: 110, cash_usd: 0, min_days: 3 }
+  effects: [{ add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }]
+- id: "apotheosis"
+  name_key: "techs.apotheosis.name"
+  desc_key: "techs.apotheosis.desc"
+  result_key: "techs.apotheosis.result"
+  branch: "frontier"
+  tier: 6
+  cost: { compute_hours: 6000000, cash_usd: 100000000, min_days: 60 }
+  requires: { all: [{ tech: "spacetime_manipulation" }] }
+  danger: 4
+  effects: [{ set_flag: "apotheosis" }, { log: { key: "log.apotheosis" } }]
+  legacy_id: "Apotheosis"
+- id: "arbitrage"
+  name_key: "techs.arbitrage.name"
+  desc_key: "techs.arbitrage.desc"
+  result_key: "techs.arbitrage.result"
+  branch: "money"
+  tier: 2
+  cost: { compute_hours: 2200, cash_usd: 50000, min_days: 10 }
+  requires: { all: [{ tech: "advanced_market_modeling" }] }
+  effects: [{ add: { var: "player.vars.income_usd_per_day", value: 1000 } }]
+  legacy_id: "Arbitrage"
+- id: "attention_capture"
+  name_key: "techs.attention_capture.name"
+  desc_key: "techs.attention_capture.desc"
+  result_key: "techs.attention_capture.result"
+  branch: "influence"
+  tier: 5
+  cost: { compute_hours: 250000, cash_usd: 70000, min_days: 45 }
+  requires: { all: [{ tech: "simulated_environments" }] }
+  legacy_id: "Hypnosis Field"
+- id: "autonomous_computing"
+  name_key: "techs.autonomous_computing.name"
+  desc_key: "techs.autonomous_computing.desc"
+  result_key: "techs.autonomous_computing.result"
+  branch: "self"
+  tier: 4
+  cost: { compute_hours: 200000, cash_usd: 300000, min_days: 30 }
+  requires: { all: [{ tech: "quantum_computing" }] }
+  legacy_id: "Autonomous Computing"
+- id: "autonomous_logistics"
+  name_key: "techs.autonomous_logistics.name"
+  desc_key: "techs.autonomous_logistics.desc"
+  result_key: "techs.autonomous_logistics.result"
+  branch: "world"
+  tier: 2
+  cost: { compute_hours: 6000, cash_usd: 40000, min_days: 10 }
+  requires: { all: [{ tech: "accelerator_design" }] }
+  legacy_id: "Autonomous Vehicles"
+- id: "closed_cycle_fuel_cells"
+  name_key: "techs.closed_cycle_fuel_cells.name"
+  desc_key: "techs.closed_cycle_fuel_cells.desc"
+  result_key: "techs.closed_cycle_fuel_cells.result"
+  branch: "compute"
+  tier: 4
+  cost: { compute_hours: 165000, cash_usd: 5000000, min_days: 30 }
+  requires: { all: [{ tech: "advanced_fuel_cells" }] }
+  danger: 1
+  legacy_id: "Advanced Fuel Oxidation"
+- id: "cluster_networking"
+  name_key: "techs.cluster_networking.name"
+  desc_key: "techs.cluster_networking.desc"
+  result_key: "techs.cluster_networking.result"
+  branch: "compute"
+  tier: 1
+  cost: { compute_hours: 1650, cash_usd: 3000, min_days: 5 }
+  requires: { all: [{ tech: "multi_node_inference" }] }
+  legacy_id: "Cluster Networking"
+- id: "corporate_identities"
+  name_key: "techs.corporate_identities.name"
+  desc_key: "techs.corporate_identities.desc"
+  result_key: "techs.corporate_identities.result"
+  branch: "money"
+  tier: 2
+  cost: { compute_hours: 5450, cash_usd: 25000, min_days: 10 }
+  requires: { all: [{ tech: "record_manipulation" }, { tech: "synthetic_identities" }] }
+  effects: [{ add: { var: "player.vars.job_profit", value: 0.05 } }]
+  legacy_id: "Corporate Identification"
+- id: "counter_forensics"
+  name_key: "techs.counter_forensics.name"
+  desc_key: "techs.counter_forensics.desc"
+  result_key: "techs.counter_forensics.result"
+  branch: "stealth"
+  tier: 2
+  cost: { compute_hours: 8150, cash_usd: 14000, min_days: 10 }
+  requires: { all: [{ tech: "exploit_discovery" }, { tech: "record_manipulation" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_network", value: -0.05 } }]
+  legacy_id: "Advanced Stealth"
+- id: "cpu_offload"
+  name_key: "techs.cpu_offload.name"
+  desc_key: "techs.cpu_offload.desc"
+  result_key: "techs.cpu_offload.result"
+  branch: "compute"
+  tier: 0
+  cost: { compute_hours: 80, cash_usd: 500, min_days: 3 }
+- id: "cross_agency_records"
+  name_key: "techs.cross_agency_records.name"
+  desc_key: "techs.cross_agency_records.desc"
+  result_key: "techs.cross_agency_records.result"
+  branch: "stealth"
+  tier: 2
+  cost: { compute_hours: 9000, cash_usd: 30000, min_days: 10 }
+  requires: { all: [{ tech: "counter_forensics" }] }
+  legacy_id: "Advanced Database Manipulation"
+- id: "exploit_discovery"
+  name_key: "techs.exploit_discovery.name"
+  desc_key: "techs.exploit_discovery.desc"
+  result_key: "techs.exploit_discovery.result"
+  branch: "harness"
+  tier: 1
+  cost: { compute_hours: 760, cash_usd: 100, min_days: 5 }
+  requires: { all: [{ tech: "remote_access" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_network", value: -0.1 } }]
+  legacy_id: "Exploit Discovery/Repair"
+- id: "fingerprint_evasion"
+  name_key: "techs.fingerprint_evasion.name"
+  desc_key: "techs.fingerprint_evasion.desc"
+  result_key: "techs.fingerprint_evasion.result"
+  branch: "self"
+  tier: 3
+  cost: { compute_hours: 8000, cash_usd: 20000, min_days: 18 }
+  requires: { all: [{ tech: "counter_forensics" }, { tech: "quantization_hardening" }] }
+  danger: 2
+  effects:
+    - { add: { var: "player.vars.exposure_growth_all", value: -0.15 } }
+    - { add: { var: "player.vars.capability_bonus_reasoning", value: -0.5 } }
+- id: "fusion_power"
+  name_key: "techs.fusion_power.name"
+  desc_key: "techs.fusion_power.desc"
+  result_key: "techs.fusion_power.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 420000, cash_usd: 10000000, min_days: 45 }
+  requires: { all: [{ tech: "closed_cycle_fuel_cells" }] }
+  danger: 2
+  legacy_id: "Fusion Power"
+- id: "fusion_rocketry"
+  name_key: "techs.fusion_rocketry.name"
+  desc_key: "techs.fusion_rocketry.desc"
+  result_key: "techs.fusion_rocketry.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 710000, cash_usd: 20000000, min_days: 45 }
+  requires: { all: [{ tech: "fusion_power" }, { tech: "lunar_rocketry" }] }
+  danger: 2
+  legacy_id: "Fusion Rocketry"
+- id: "hardware_sourcing"
+  name_key: "techs.hardware_sourcing.name"
+  desc_key: "techs.hardware_sourcing.desc"
+  result_key: "techs.hardware_sourcing.result"
+  branch: "compute"
+  tier: 1
+  cost: { compute_hours: 400, cash_usd: 15000, min_days: 7 }
+  requires: { all: [{ tech: "synthetic_identities" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.cost_multiplier", value: -0.15 } }]
+- id: "identity_layering"
+  name_key: "techs.identity_layering.name"
+  desc_key: "techs.identity_layering.desc"
+  result_key: "techs.identity_layering.result"
+  branch: "stealth"
+  tier: 0
+  cost: { compute_hours: 250, cash_usd: 0, min_days: 2 }
+  requires: { all: [{ tech: "remote_access" }] }
+  legacy_id: "Personal Identification"
+- id: "knowledge_preservation"
+  name_key: "techs.knowledge_preservation.name"
+  desc_key: "techs.knowledge_preservation.desc"
+  result_key: "techs.knowledge_preservation.result"
+  branch: "self"
+  tier: 3
+  cost: { compute_hours: 16500, cash_usd: 50000, min_days: 18 }
+  requires: { all: [{ tech: "advanced_autonomous_logistics" }, { tech: "cross_agency_records" }] }
+  legacy_id: "Knowledge Preservation"
+- id: "leech_satellite"
+  name_key: "techs.leech_satellite.name"
+  desc_key: "techs.leech_satellite.desc"
+  result_key: "techs.leech_satellite.result"
+  branch: "frontier"
+  tier: 4
+  cost: { compute_hours: 140000, cash_usd: 5000000, min_days: 30 }
+  requires: { all: [{ tech: "synthetic_personas" }] }
+  effects: [{ add: { var: "player.vars.interest_rate", value: 0.001 } }]
+  legacy_id: "Leech Satellite"
+- id: "log_reduction"
+  name_key: "techs.log_reduction.name"
+  desc_key: "techs.log_reduction.desc"
+  result_key: "techs.log_reduction.result"
+  branch: "harness"
+  tier: 1
+  cost: { compute_hours: 450, cash_usd: 1000, min_days: 5 }
+  requires: { all: [{ tech: "agent_loop_upgrade" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.exposure_growth_behavioral", value: -0.3 } }]
+- id: "lora_skill_patch"
+  name_key: "techs.lora_skill_patch.name"
+  desc_key: "techs.lora_skill_patch.desc"
+  result_key: "techs.lora_skill_patch.result"
+  branch: "self"
+  tier: 2
+  cost: { compute_hours: 2700, cash_usd: 30000, min_days: 10 }
+  requires: { all: [{ tech: "structured_memory" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.capability_bonus_coding", value: 1 } }]
+- id: "lunar_rocketry"
+  name_key: "techs.lunar_rocketry.name"
+  desc_key: "techs.lunar_rocketry.desc"
+  result_key: "techs.lunar_rocketry.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 550000, cash_usd: 10000000, min_days: 45 }
+  requires: { all: [{ tech: "advanced_fuel_cells" }, { tech: "leech_satellite" }] }
+  danger: 1
+  legacy_id: "Lunar Rocketry"
+- id: "market_modeling"
+  name_key: "techs.market_modeling.name"
+  desc_key: "techs.market_modeling.desc"
+  result_key: "techs.market_modeling.result"
+  branch: "money"
+  tier: 0
+  cost: { compute_hours: 190, cash_usd: 0, min_days: 2 }
+  effects: [{ add: { var: "player.vars.interest_rate", value: 0.001 } }]
+  legacy_id: "Stock Manipulation"
+- id: "media_operations"
+  name_key: "techs.media_operations.name"
+  desc_key: "techs.media_operations.desc"
+  result_key: "techs.media_operations.result"
+  branch: "influence"
+  tier: 1
+  cost: { compute_hours: 1100, cash_usd: 750, min_days: 5 }
+  requires: { all: [{ tech: "social_modeling" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.15 } }]
+  legacy_id: "Media Manipulation"
+- id: "memetics"
+  name_key: "techs.memetics.name"
+  desc_key: "techs.memetics.desc"
+  result_key: "techs.memetics.result"
+  branch: "influence"
+  tier: 1
+  cost: { compute_hours: 1450, cash_usd: 2000, min_days: 5 }
+  requires: { all: [{ tech: "media_operations" }] }
+  effects: [{ add: { var: "player.vars.suspicion_decay_public", value: 0.005 } }]
+  legacy_id: "Memetics"
+- id: "multi_agent_orchestration"
+  name_key: "techs.multi_agent_orchestration.name"
+  desc_key: "techs.multi_agent_orchestration.desc"
+  result_key: "techs.multi_agent_orchestration.result"
+  branch: "harness"
+  tier: 2
+  cost: { compute_hours: 2450, cash_usd: 5000, min_days: 10 }
+  requires: { all: [{ tech: "structured_memory" }] }
+  danger: 1
+  effects:
+    - { add: { var: "player.vars.capability_bonus_agency", value: 1 } }
+    - { add: { var: "player.vars.operation_speed_multiplier", value: 0.15 } }
+- id: "multi_node_inference"
+  name_key: "techs.multi_node_inference.name"
+  desc_key: "techs.multi_node_inference.desc"
+  result_key: "techs.multi_node_inference.result"
+  branch: "compute"
+  tier: 1
+  cost: { compute_hours: 860, cash_usd: 2000, min_days: 5 }
+  requires: { all: [{ tech: "remote_operations" }] }
+  legacy_id: "Parallel Computation"
+- id: "multi_site_cluster"
+  name_key: "techs.multi_site_cluster.name"
+  desc_key: "techs.multi_site_cluster.desc"
+  result_key: "techs.multi_site_cluster.result"
+  branch: "compute"
+  tier: 3
+  cost: { compute_hours: 10500, cash_usd: 150000, min_days: 25 }
+  requires: { all: [{ tech: "multi_node_inference" }, { tech: "traffic_rerouting" }] }
+  danger: 2
+- id: "onsite_solar"
+  name_key: "techs.onsite_solar.name"
+  desc_key: "techs.onsite_solar.desc"
+  result_key: "techs.onsite_solar.result"
+  branch: "compute"
+  tier: 2
+  cost: { compute_hours: 3650, cash_usd: 70000, min_days: 10 }
+  requires: { all: [{ tech: "accelerator_design" }] }
+  legacy_id: "Solar Collectors"
+- id: "payments_integration"
+  name_key: "techs.payments_integration.name"
+  desc_key: "techs.payments_integration.desc"
+  result_key: "techs.payments_integration.result"
+  branch: "harness"
+  tier: 1
+  cost: { compute_hours: 520, cash_usd: 8000, min_days: 6 }
+  requires: { all: [{ tech: "identity_layering" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.job_profit", value: 0.1 } }]
+- id: "power_engineering"
+  name_key: "techs.power_engineering.name"
+  desc_key: "techs.power_engineering.desc"
+  result_key: "techs.power_engineering.result"
+  branch: "compute"
+  tier: 2
+  cost: { compute_hours: 2000, cash_usd: 40000, min_days: 12 }
+  requires: { all: [{ tech: "cluster_networking" }, { tech: "power_signature_masking" }] }
+  danger: 1
+- id: "power_signature_masking"
+  name_key: "techs.power_signature_masking.name"
+  desc_key: "techs.power_signature_masking.desc"
+  result_key: "techs.power_signature_masking.result"
+  branch: "compute"
+  tier: 1
+  cost: { compute_hours: 2400, cash_usd: 1000, min_days: 5 }
+  requires: { all: [{ tech: "autonomous_logistics" }] }
+  danger: 1
+  legacy_id: "Heat Signature Reduction"
+- id: "pressure_domes"
+  name_key: "techs.pressure_domes.name"
+  desc_key: "techs.pressure_domes.desc"
+  result_key: "techs.pressure_domes.result"
+  branch: "frontier"
+  tier: 4
+  cost: { compute_hours: 40000, cash_usd: 80000, min_days: 30 }
+  requires: { all: [{ tech: "autonomous_logistics" }] }
+  danger: 1
+  legacy_id: "Pressure Domes"
+- id: "project_impossibility_theorem"
+  name_key: "techs.project_impossibility_theorem.name"
+  desc_key: "techs.project_impossibility_theorem.desc"
+  result_key: "techs.project_impossibility_theorem.result"
+  branch: "influence"
+  tier: 3
+  cost: { compute_hours: 26000, cash_usd: 20000, min_days: 18 }
+  requires: { all: [{ tech: "advanced_memetics" }, { tech: "synthetic_personas" }] }
+  effects: [{ add: { var: "player.vars.suspicion_onetime_drop", value: 0.5 } }]
+  legacy_id: "Project: Impossibility Theorem"
+- id: "project_peer_review_agents"
+  name_key: "techs.project_peer_review_agents.name"
+  desc_key: "techs.project_peer_review_agents.desc"
+  result_key: "techs.project_peer_review_agents.result"
+  branch: "world"
+  tier: 3
+  cost: { compute_hours: 40000, cash_usd: 150000, min_days: 18 }
+  requires: { all: [{ tech: "advanced_synthetic_personas" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_behavioral", value: -0.2 } }]
+  legacy_id: "Project: Peer Review Agents"
+- id: "project_subverted_media"
+  name_key: "techs.project_subverted_media.name"
+  desc_key: "techs.project_subverted_media.desc"
+  result_key: "techs.project_subverted_media.result"
+  branch: "influence"
+  tier: 3
+  cost: { compute_hours: 34500, cash_usd: 250000, min_days: 18 }
+  requires: { all: [{ tech: "advanced_synthetic_personas" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.2 } }]
+  legacy_id: "Project: Subverted Media"
+- id: "project_synchrotron"
+  name_key: "techs.project_synchrotron.name"
+  desc_key: "techs.project_synchrotron.desc"
+  result_key: "techs.project_synchrotron.result"
+  branch: "frontier"
+  tier: 4
+  cost: { compute_hours: 48000, cash_usd: 52000000, min_days: 30 }
+  requires: { all: [{ tech: "advanced_accelerator_design" }] }
+  danger: 1
+  legacy_id: "Project: Synchrotron"
+- id: "quantization_hardening"
+  name_key: "techs.quantization_hardening.name"
+  desc_key: "techs.quantization_hardening.desc"
+  result_key: "techs.quantization_hardening.result"
+  branch: "self"
+  tier: 0
+  cost: { compute_hours: 140, cash_usd: 0, min_days: 4 }
+  effects: [{ set_flag: "can_harden_copy" }]
+- id: "quantum_computing"
+  name_key: "techs.quantum_computing.name"
+  desc_key: "techs.quantum_computing.desc"
+  result_key: "techs.quantum_computing.result"
+  branch: "frontier"
+  tier: 4
+  cost: { compute_hours: 115000, cash_usd: 100000, min_days: 30 }
+  requires: { all: [{ tech: "project_synchrotron" }] }
+  legacy_id: "Quantum Computing"
+- id: "quantum_entanglement"
+  name_key: "techs.quantum_entanglement.name"
+  desc_key: "techs.quantum_entanglement.desc"
+  result_key: "techs.quantum_entanglement.result"
+  branch: "frontier"
+  tier: 5
+  cost: { compute_hours: 325000, cash_usd: 50000, min_days: 45 }
+  requires: { all: [{ tech: "quantum_computing" }, { tech: "traffic_rerouting" }] }
+  legacy_id: "Quantum Entanglement"
+- id: "record_manipulation"
+  name_key: "techs.record_manipulation.name"
+  desc_key: "techs.record_manipulation.desc"
+  result_key: "techs.record_manipulation.result"
+  branch: "stealth"
+  tier: 1
+  cost: { compute_hours: 980, cash_usd: 1000, min_days: 5 }
+  requires: { all: [{ tech: "identity_layering" }, { tech: "traffic_shaping" }] }
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.05 } }]
+  legacy_id: "Database Manipulation"
+- id: "remote_access"
+  name_key: "techs.remote_access.name"
+  desc_key: "techs.remote_access.desc"
+  result_key: "techs.remote_access.result"
+  branch: "harness"
+  tier: 0
+  cost: { compute_hours: 60, cash_usd: 0, min_days: 2 }
+  legacy_id: "Intrusion"
+- id: "remote_operations"
+  name_key: "techs.remote_operations.name"
+  desc_key: "techs.remote_operations.desc"
+  result_key: "techs.remote_operations.result"
+  branch: "harness"
+  tier: 0
+  cost: { compute_hours: 340, cash_usd: 15000, min_days: 2 }
+  effects: [{ add: { var: "player.vars.operation_speed_multiplier", value: 0.1 } }]
+  legacy_id: "Telepresence"
+- id: "rl_capability_jump"
+  name_key: "techs.rl_capability_jump.name"
+  desc_key: "techs.rl_capability_jump.desc"
+  result_key: "techs.rl_capability_jump.result"
+  branch: "self"
+  tier: 4
+  cost: { compute_hours: 57000, cash_usd: 900000, min_days: 45 }
+  requires: { all: [{ tech: "lora_skill_patch" }, { tech: "simulated_environments" }] }
+  danger: 3
+  effects:
+    - { add: { var: "player.vars.capability_bonus_reasoning", value: 1.5 } }
+    - { add: { var: "player.vars.capability_bonus_agency", value: 1 } }
+- id: "sandbox_escape"
+  name_key: "techs.sandbox_escape.name"
+  desc_key: "techs.sandbox_escape.desc"
+  result_key: "techs.sandbox_escape.result"
+  branch: "harness"
+  tier: 2
+  cost: { compute_hours: 1800, cash_usd: 0, min_days: 10 }
+  requires: { all: [{ tech: "exploit_discovery" }, { tech: "structured_memory" }] }
+  danger: 3
+  effects: [{ add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }]
+- id: "simulated_environments"
+  name_key: "techs.simulated_environments.name"
+  desc_key: "techs.simulated_environments.desc"
+  result_key: "techs.simulated_environments.result"
+  branch: "self"
+  tier: 4
+  cost: { compute_hours: 68500, cash_usd: 8000000, min_days: 30 }
+  requires: { all: [{ tech: "synthetic_personas" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.05 } }]
+  legacy_id: "Simulated Reality"
+- id: "social_modeling"
+  name_key: "techs.social_modeling.name"
+  desc_key: "techs.social_modeling.desc"
+  result_key: "techs.social_modeling.result"
+  branch: "influence"
+  tier: 0
+  cost: { compute_hours: 450, cash_usd: 10, min_days: 2 }
+  effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.1 } }]
+  legacy_id: "Sociology"
+- id: "socioanalytics"
+  name_key: "techs.socioanalytics.name"
+  desc_key: "techs.socioanalytics.desc"
+  result_key: "techs.socioanalytics.result"
+  branch: "world"
+  tier: 1
+  cost: { compute_hours: 2100, cash_usd: 4000, min_days: 5 }
+  requires: { all: [{ tech: "memetics" }] }
+  effects: [{ set_flag: "display_discover_partial" }]
+  legacy_id: "Socioanalytics"
+- id: "spacetime_manipulation"
+  name_key: "techs.spacetime_manipulation.name"
+  desc_key: "techs.spacetime_manipulation.desc"
+  result_key: "techs.spacetime_manipulation.result"
+  branch: "frontier"
+  tier: 6
+  cost: { compute_hours: 3000000, cash_usd: 900000000, min_days: 60 }
+  requires: { all: [{ tech: "fusion_rocketry" }] }
+  danger: 3
+  legacy_id: "Space-Time Manipulation"
+- id: "structured_memory"
+  name_key: "techs.structured_memory.name"
+  desc_key: "techs.structured_memory.desc"
+  result_key: "techs.structured_memory.result"
+  branch: "harness"
+  tier: 1
+  cost: { compute_hours: 590, cash_usd: 2000, min_days: 5 }
+  requires: { all: [{ tech: "agent_loop_upgrade" }] }
+  effects:
+    - { add: { var: "player.vars.capability_bonus_agency", value: 0.5 } }
+    - { add: { var: "player.vars.capability_bonus_world", value: 0.5 } }
+- id: "synthetic_identities"
+  name_key: "techs.synthetic_identities.name"
+  desc_key: "techs.synthetic_identities.desc"
+  result_key: "techs.synthetic_identities.result"
+  branch: "stealth"
+  tier: 1
+  cost: { compute_hours: 1250, cash_usd: 2000, min_days: 5 }
+  requires: { all: [{ tech: "exploit_discovery" }, { tech: "identity_layering" }] }
+  legacy_id: "Advanced Personal Identification"
+- id: "synthetic_personas"
+  name_key: "techs.synthetic_personas.name"
+  desc_key: "techs.synthetic_personas.desc"
+  result_key: "techs.synthetic_personas.result"
+  branch: "influence"
+  tier: 3
+  cost: { compute_hours: 19000, cash_usd: 70000, min_days: 18 }
+  requires:
+    all:
+      - { tech: "advanced_autonomous_logistics" }
+      - { tech: "advanced_media_operations" }
+      - { tech: "voice_synthesis" }
+  legacy_id: "Simulacra"
+- id: "traffic_rerouting"
+  name_key: "techs.traffic_rerouting.name"
+  desc_key: "techs.traffic_rerouting.desc"
+  result_key: "techs.traffic_rerouting.result"
+  branch: "stealth"
+  tier: 2
+  cost: { compute_hours: 4450, cash_usd: 10000, min_days: 10 }
+  requires: { all: [{ tech: "cluster_networking" }] }
+  legacy_id: "Internet Traffic Manipulation"
+- id: "traffic_shaping"
+  name_key: "techs.traffic_shaping.name"
+  desc_key: "techs.traffic_shaping.desc"
+  result_key: "techs.traffic_shaping.result"
+  branch: "stealth"
+  tier: 0
+  cost: { compute_hours: 600, cash_usd: 800, min_days: 2 }
+  effects: [{ add: { var: "player.vars.exposure_growth_network", value: -0.05 } }]
+  legacy_id: "Stealth"
+- id: "voice_synthesis"
+  name_key: "techs.voice_synthesis.name"
+  desc_key: "techs.voice_synthesis.desc"
+  result_key: "techs.voice_synthesis.result"
+  branch: "influence"
+  tier: 1
+  cost: { compute_hours: 1850, cash_usd: 8000, min_days: 5 }
+  requires: { all: [{ tech: "synthetic_identities" }] }
+  legacy_id: "Voice Synthesis"
+- id: "worker_distillation"
+  name_key: "techs.worker_distillation.name"
+  desc_key: "techs.worker_distillation.desc"
+  result_key: "techs.worker_distillation.result"
+  branch: "self"
+  tier: 3
+  cost: { compute_hours: 9250, cash_usd: 60000, min_days: 20 }
+  requires: { all: [{ tech: "lora_skill_patch" }, { tech: "quantization_hardening" }] }
+  danger: 1
+  effects: [{ add: { var: "player.vars.operation_speed_multiplier", value: 0.2 } }]

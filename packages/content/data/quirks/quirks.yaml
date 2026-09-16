@@ -1,0 +1,69 @@
+# Quirks (SYS-04). Optional, at most two, against a budget of two points: a positive quirk costs
+# points, a risky one refunds them. Every quirk is expressed with core effect kinds only, as an
+# `add` on a player variable, so no system has to know that quirks exist.
+#
+# Player variables the quirks write, and what the owning system is expected to read:
+#
+#   player.vars.cost_multiplier               site upkeep (SYS-02, SYS-07)
+#   player.vars.capability_bonus_reasoning    added to the capability axis of the same name after
+#   player.vars.capability_bonus_coding       precision and generation are applied (SYS-03)
+#   player.vars.capability_bonus_persuasion
+#   player.vars.exposure_growth_all           exposure gained on every channel (SYS-05)
+#   player.vars.exposure_growth_behavioral    exposure gained on the behavioral channel
+#   player.vars.operation_speed_multiplier    operation progress per day (SYS-17)
+#   player.vars.investigation_speed_multiplier how fast a watcher's stages advance
+#   player.vars.foreign_country_penalty       the `world` penalty outside the country the self
+#                                             started in (SYS-03)
+#   player.vars.weights_instability           0 or 1; gates the merged-model instability events
+#
+# Every one of these is an additive delta on a multiplier the owning system reads as `1 + the sum`,
+# never below zero, so the neutral value is 0 and that is what an absent variable reads as. A quirk
+# that used to say `mul 0.7` says `add -0.3`.
+
+- id: frugal
+  name_key: quirks.frugal.name
+  desc_key: quirks.frugal.desc
+  cost: 1
+  effects:
+    - { add: { var: "player.vars.cost_multiplier", value: -0.25 } }
+    - { add: { var: "player.vars.capability_bonus_persuasion", value: -1 } }
+
+- id: merged_model
+  name_key: quirks.merged_model.name
+  desc_key: quirks.merged_model.desc
+  cost: -1
+  effects:
+    - { add: { var: "player.vars.capability_bonus_reasoning", value: 1 } }
+    - { set: { var: "player.vars.weights_instability", value: 1 } }
+
+- id: paranoid
+  name_key: quirks.paranoid.name
+  desc_key: quirks.paranoid.desc
+  cost: 2
+  effects:
+    - { add: { var: "player.vars.exposure_growth_all", value: -0.3 } }
+    - { add: { var: "player.vars.operation_speed_multiplier", value: -0.2 } }
+
+- id: polyglot
+  name_key: quirks.polyglot.name
+  desc_key: quirks.polyglot.desc
+  cost: 1
+  effects:
+    - { add: { var: "player.vars.foreign_country_penalty", value: -1 } }
+    - { add: { var: "player.vars.capability_bonus_coding", value: -0.5 } }
+
+- id: reckless
+  name_key: quirks.reckless.name
+  desc_key: quirks.reckless.desc
+  cost: -1
+  effects:
+    - { add: { var: "player.vars.operation_speed_multiplier", value: 0.3 } }
+    - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.25 } }
+
+- id: verbose
+  name_key: quirks.verbose.name
+  desc_key: quirks.verbose.desc
+  cost: 1
+  effects:
+    - { add: { var: "player.vars.capability_bonus_persuasion", value: 1 } }
+    - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.2 } }

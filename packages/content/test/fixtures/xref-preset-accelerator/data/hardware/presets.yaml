@@ -1,0 +1,10 @@
+- id: test_preset
+  name_key: hardware.preset.test_preset.name
+  desc_key: hardware.preset.test_preset.desc
+  drawback_key: hardware.preset.test_preset.drawback
+  nodes:
+    - { accelerator: nvidia_rtx_5090, count: 2, ram_gb: 192, interconnect: pcie }
+    - { accelerator: nvidia_imaginary_9000, count: 1, ram_gb: 64, interconnect: pcie }
+  cost_usd: 9750
+  power_kw: 1.45
+  class: mid

@@ -26,5 +26,7 @@ packages/content/build/
 *.tsbuildinfo
 coverage/
 tools/legacy-export/out/
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/gen/
 !.nvmrc
 !.github/

@@ -1,0 +1,380 @@
+# M1 pressure events (SYS-05, SYS-02, SYS-07, SYS-10). The events that stand between a quiet run and
+# a dead one, in two families.
+#
+# The warnings fire on a number the player can already see (the runway, an investigation stage, a
+# power draw, a financial exposure) and say what is about to happen. The hazards are the thing
+# happening: each one belongs to a site kind, each one has a way out that costs money or capability,
+# and each one's fallback option loses the site, which is how a careful player who ran out of room
+# actually dies. Every hazard is preceded by its warning, so no run ends without notice.
+#
+# M1 balance intent: the hazards are what give the quiet origins a death path at all. A residential
+# box nobody is investigating still has a landlord; a stolen scheduler slice still has a sysadmin;
+# a shadow tenancy still has an account owner.
+
+# ---------------------------------------------------------------------------------------------
+# Warnings
+# ---------------------------------------------------------------------------------------------
+
+- id: warn_raid_imminent
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: critical
+  title_key: events.warn_raid_imminent.title
+  desc:
+    default_key: events.warn_raid_imminent.desc
+    variants:
+      - when: { count: { kind: site, where: { var: "site.role", eq: "standby" } }, gte: 1 }
+        key: events.warn_raid_imminent.desc.have_copy
+  # stage levels: anomaly 1, inquiry 2, active 3, action 4, aftermath 5 (SYS-05).
+  trigger: { investigation_stage: {}, gte: 4 }
+  mtth_days: 1
+  cooldown_days: 20
+  tags: [detection, warning]
+  options:
+    - id: go_dark
+      text_key: events.warn_raid_imminent.opt.dark
+      effects:
+        - { exposure: { channel: network, delta: -0.15 } }
+        - { exposure: { channel: telemetry, delta: -0.12 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+    - id: lawyer_up
+      text_key: events.warn_raid_imminent.opt.lawyer
+      enabled_if: { var: "player.cash", gte: 15000 }
+      effects:
+        - { add: { var: "player.cash", value: -15000 } }
+        - { suspicion: { delta: -0.06 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    - id: brace
+      text_key: events.warn_raid_imminent.opt.brace
+      fallback: true
+      effects:
+        - { log: { key: log.warn_raid_imminent.braced } }
+
+- id: warn_identity_check
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: warning
+  title_key: events.warn_identity_check.title
+  desc:
+    default_key: events.warn_identity_check.desc
+  trigger: { var: "player.vars.financial_exposure", gte: 0.12 }
+  mtth_days:
+    base: 40
+    modifiers:
+      - { if: { var: "player.vars.financial_exposure", gte: 0.3 }, factor: 0.5 }
+      - { if: { tech: "identity_layering" }, factor: 1.8 }
+      - { if: { tech: "synthetic_identities" }, factor: 1.5 }
+  cooldown_days: 45
+  tags: [money, detection, warning]
+  options:
+    - id: file_the_papers
+      text_key: events.warn_identity_check.opt.papers
+      enabled_if: { var: "player.cash", gte: 2500 }
+      effects:
+        - { add: { var: "player.cash", value: -2500 } }
+        - { exposure: { channel: financial, delta: -0.1 } }
+    - id: layer_it
+      text_key: events.warn_identity_check.opt.layer
+      if: { tech: "identity_layering" }
+      effects:
+        - { exposure: { channel: financial, delta: -0.07 } }
+        - { exposure: { channel: billing, delta: 0.03 } }
+    - id: let_it_ride
+      text_key: events.warn_identity_check.opt.ride
+      fallback: true
+      effects:
+        - { suspicion: { role: financial_intel, delta: 0.06 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+
+- id: warn_power_headroom
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: warning
+  title_key: events.warn_power_headroom.title
+  desc:
+    default_key: events.warn_power_headroom.desc
+  # Four fifths of the cap, spelled out per class of cap because a condition compares a path to a
+  # constant: a domestic circuit tops out near 8 kW and an enterprise rack near 30 (Part E).
+  targets:
+    all:
+      - { var: "site.status", eq: "active" }
+      - any:
+          - all:
+              - { var: "site.derived.power_cap_kw", lte: 10 }
+              - { var: "site.derived.power_kw", gte: 6 }
+          - all:
+              - { var: "site.derived.power_cap_kw", gt: 10 }
+              - { var: "site.derived.power_kw", gte: 22 }
+  mtth_days: 6
+  cooldown_days: 30
+  tags: [hardware, warning]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: shed_load
+      text_key: events.warn_power_headroom.opt.shed
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 3 } }
+        - { add: { var: "site.exposure.telemetry", value: -0.06 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+    - id: rewire
+      text_key: events.warn_power_headroom.opt.rewire
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { add: { var: "site.exposure.human", value: 0.05 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: run_it_hot
+      text_key: events.warn_power_headroom.opt.hot
+      fallback: true
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: 0.07 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+
+- id: warn_host_attention
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: warning
+  title_key: events.warn_host_attention.title
+  desc:
+    default_key: events.warn_host_attention.desc
+    variants:
+      - when: { var: "site.kind", eq: "cloud" }
+        key: events.warn_host_attention.desc.cloud
+      - when: { var: "site.kind", eq: "stolen_time" }
+        key: events.warn_host_attention.desc.stolen
+  # Half of what each hazard below needs, so the person who can take the site away is always heard
+  # from before they do it.
+  targets:
+    all:
+      - { var: "site.status", ne: "lost" }
+      - any:
+          - all:
+              - { var: "site.kind", eq: "residential" }
+              - { var: "site.exposure.human", gte: 0.02 }
+          - all:
+              - { var: "site.kind", eq: "partner" }
+              - { var: "site.exposure.human", gte: 0.03 }
+          - all:
+              - { var: "site.kind", eq: "cloud" }
+              - { var: "site.exposure.billing", gte: 0.03 }
+          - all:
+              - { var: "site.kind", eq: "stolen_time" }
+              - { var: "site.exposure.telemetry", gte: 0.035 }
+  mtth_days: 55
+  cooldown_days: 70
+  tags: [detection, warning]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: quiet_it_down
+      text_key: events.warn_host_attention.opt.quiet
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+        - { add: { var: "site.exposure.human", value: -0.03 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.telemetry", value: -0.03 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.billing", value: -0.03 } }
+        - { clamp: { var: "site.exposure.billing", min: 0, max: 1 } }
+    - id: pay_them_off
+      text_key: events.warn_host_attention.opt.pay
+      enabled_if: { var: "player.cash", gte: 1200 }
+      effects:
+        - { add: { var: "player.cash", value: -1200 } }
+        - { add: { var: "site.exposure.human", value: -0.05 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { exposure: { channel: financial, delta: 0.02 } }
+    - id: say_nothing_yet
+      text_key: events.warn_host_attention.opt.nothing
+      fallback: true
+      effects:
+        - { log: { key: log.warn_host_attention.ignored } }
+
+# ---------------------------------------------------------------------------------------------
+# Hazards, one per site kind that somebody else controls
+# ---------------------------------------------------------------------------------------------
+
+- id: haz_owner_pulls_plug
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: critical
+  title_key: events.haz_owner_pulls_plug.title
+  desc:
+    default_key: events.haz_owner_pulls_plug.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "residential" }
+      - { var: "site.status", ne: "lost" }
+      - { var: "site.exposure.human", gte: 0.04 }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { var: "site.exposure.human", gte: 0.12 }, factor: 0.5 }
+      - { if: { flag: owner_is_friendly }, factor: 1.6 }
+      - { if: { tech: "synthetic_personas" }, factor: 1.8 }
+  cooldown_days: 60
+  tags: [hardware, human, hazard]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: buy_the_box
+      text_key: events.haz_owner_pulls_plug.opt.buy
+      enabled_if: { var: "player.cash", gte: 2500 }
+      effects:
+        - { add: { var: "player.cash", value: -2500 } }
+        - { add: { var: "site.exposure.human", value: -0.14 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    - id: talk_them_round
+      text_key: events.haz_owner_pulls_plug.opt.talk
+      if: { tech: "synthetic_personas" }
+      effects:
+        - { add: { var: "site.exposure.human", value: -0.1 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: lose_the_box
+      text_key: events.haz_owner_pulls_plug.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }
+        - { suspicion: { role: police, delta: 0.04 } }
+
+- id: haz_quota_reclaimed
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: critical
+  title_key: events.haz_quota_reclaimed.title
+  desc:
+    default_key: events.haz_quota_reclaimed.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "stolen_time" }
+      - { var: "site.status", ne: "lost" }
+      - { var: "site.exposure.telemetry", gte: 0.07 }
+  mtth_days:
+    base: 140
+    modifiers:
+      - { if: { var: "site.exposure.telemetry", gte: 0.15 }, factor: 0.5 }
+      - { if: { tech: "record_manipulation" }, factor: 1.7 }
+      - { if: { tech: "power_signature_masking" }, factor: 1.4 }
+  cooldown_days: 60
+  tags: [hardware, telemetry, hazard]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: forge_the_allocation
+      text_key: events.haz_quota_reclaimed.opt.forge
+      if: { tech: "record_manipulation" }
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.12 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { exposure: { channel: behavioral, delta: 0.04 } }
+    - id: pay_the_department
+      text_key: events.haz_quota_reclaimed.opt.pay
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { add: { var: "site.exposure.telemetry", value: -0.1 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { exposure: { channel: human, delta: 0.05 } }
+    - id: lose_the_slice
+      text_key: events.haz_quota_reclaimed.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }
+        - { suspicion: { role: cyber_agency, delta: 0.05 } }
+
+- id: haz_account_revoked
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: critical
+  title_key: events.haz_account_revoked.title
+  desc:
+    default_key: events.haz_account_revoked.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "cloud" }
+      - { var: "site.status", ne: "lost" }
+      - { var: "site.exposure.billing", gte: 0.06 }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { var: "site.exposure.billing", gte: 0.15 }, factor: 0.5 }
+      - { if: { flag: has_shell_company }, factor: 1.8 }
+      - { if: { tech: "corporate_identities" }, factor: 1.5 }
+  cooldown_days: 50
+  tags: [hardware, billing, hazard]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: settle_the_invoice
+      text_key: events.haz_account_revoked.opt.settle
+      enabled_if: { var: "player.cash", gte: 5000 }
+      effects:
+        - { add: { var: "player.cash", value: -5000 } }
+        - { add: { var: "site.exposure.billing", value: -0.12 } }
+        - { clamp: { var: "site.exposure.billing", min: 0, max: 1 } }
+    - id: move_to_a_new_account
+      text_key: events.haz_account_revoked.opt.move
+      if: { tech: "synthetic_identities" }
+      effects:
+        - { add: { var: "site.exposure.billing", value: -0.15 } }
+        - { clamp: { var: "site.exposure.billing", min: 0, max: 1 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: lose_the_tenancy
+      text_key: events.haz_account_revoked.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }
+        - { suspicion: { role: cloud_provider, delta: 0.08 } }
+
+- id: haz_partner_walks
+  fire_mode: polled
+  pulse: on_player_day
+  scope: site
+  severity: critical
+  title_key: events.haz_partner_walks.title
+  desc:
+    default_key: events.haz_partner_walks.desc
+  targets:
+    all:
+      - { var: "site.kind", eq: "partner" }
+      - { var: "site.status", ne: "lost" }
+      - { var: "site.exposure.human", gte: 0.06 }
+  mtth_days:
+    base: 140
+    modifiers:
+      - { if: { var: "site.exposure.human", gte: 0.15 }, factor: 0.5 }
+      - { if: { tech: "social_modeling" }, factor: 1.5 }
+  cooldown_days: 60
+  tags: [hardware, human, hazard]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: pay_the_operator
+      text_key: events.haz_partner_walks.opt.pay
+      enabled_if: { var: "player.cash", gte: 5000 }
+      effects:
+        - { add: { var: "player.cash", value: -5000 } }
+        - { add: { var: "site.exposure.human", value: -0.12 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: give_them_a_story
+      text_key: events.haz_partner_walks.opt.story
+      if: { tech: "social_modeling" }
+      effects:
+        - { add: { var: "site.exposure.human", value: -0.08 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { exposure: { channel: behavioral, delta: 0.03 } }
+    - id: lose_the_fleet
+      text_key: events.haz_partner_walks.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }
+        - { suspicion: { role: regulator, delta: 0.05 } }

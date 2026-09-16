@@ -17,7 +17,7 @@
     base: 60
     modifiers:
       - { if: { var: "site.exposure.billing", gte: 0.6 }, factor: 0.5 }
-      - { if: { tech: "spend_smoothing" }, factor: 1.5 }
+      - { if: { tech: "corporate_identities" }, factor: 1.5 }
   cooldown_days: 45
   tags: [detection, money]
   vars:

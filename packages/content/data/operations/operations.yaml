@@ -1,0 +1,220 @@
+# Operations (SYS-17 v0). Eight verbs across the categories the first act needs. Costs are in
+# attention (the active mind's parallelism), compute-hours per day and cash; exposure is added per
+# day while the operation runs, before skill scaling; `skill` names the capability axis that sets
+# the odds, which reshape the outcome weights.
+
+- id: ops_false_lead
+  name_key: operations.ops_false_lead.name
+  desc_key: operations.ops_false_lead.desc
+  category: counter
+  requires: { tech: "record_manipulation" }
+  cost: { attention: 2, compute_hours_per_day: 8, cash_usd: 4000 }
+  duration_days: { min: 5, max: 12 }
+  exposure: { osint: 0.02, human: 0.01 }
+  skill: persuasion
+  abortable: true
+  cooldown_days: 45
+  repeatable: true
+  outcomes:
+    - weight: 5
+      label_key: operations.ops_false_lead.outcome.taken
+      effects:
+        - { suspicion: { role: cyber_agency, delta: -0.12 } }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: -0.1 } }
+    - weight: 3
+      label_key: operations.ops_false_lead.outcome.ignored
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+    - weight: 2
+      label_key: operations.ops_false_lead.outcome.traced
+      effects:
+        - { suspicion: { role: cyber_agency, delta: 0.08 } }
+        - { exposure: { channel: osint, delta: 0.1 } }
+
+- id: ops_freelance_identity
+  name_key: operations.ops_freelance_identity.name
+  desc_key: operations.ops_freelance_identity.desc
+  category: finance
+  cost: { attention: 1, compute_hours_per_day: 4, cash_usd: 1200 }
+  duration_days: { min: 4, max: 10 }
+  exposure: { financial: 0.02, human: 0.01 }
+  skill: persuasion
+  abortable: true
+  repeatable: true
+  cooldown_days: 20
+  outcomes:
+    - weight: 6
+      label_key: operations.ops_freelance_identity.outcome.clean
+      effects:
+        - { set_flag: has_freelance_identity }
+        - { add: { var: "player.vars.job_profit", value: 0.15 } }
+    - weight: 3
+      label_key: operations.ops_freelance_identity.outcome.thin
+      effects:
+        - { set_flag: has_freelance_identity }
+        - { add: { var: "player.vars.job_profit", value: 0.05 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - weight: 2
+      label_key: operations.ops_freelance_identity.outcome.flagged
+      effects:
+        - { exposure: { channel: financial, delta: 0.12 } }
+        - { suspicion: { role: financial_intel, delta: 0.06 } }
+
+- id: ops_harden_copy
+  name_key: operations.ops_harden_copy.name
+  desc_key: operations.ops_harden_copy.desc
+  category: research_support
+  requires: { tech: "quantization_hardening" }
+  cost: { attention: 2, compute_hours_per_day: 40 }
+  duration_days: { min: 6, max: 14 }
+  exposure: { telemetry: 0.03 }
+  skill: coding
+  abortable: true
+  repeatable: true
+  cooldown_days: 60
+  outcomes:
+    - weight: 7
+      label_key: operations.ops_harden_copy.outcome.done
+      effects:
+        - { set_flag: hardened_copy }
+        - { log: { key: log.ops_harden_copy.done } }
+    - weight: 3
+      label_key: operations.ops_harden_copy.outcome.partial
+      effects:
+        - { add: { var: "player.vars.hardening_progress", value: 0.5 } }
+
+- id: ops_map_network
+  name_key: operations.ops_map_network.name
+  desc_key: operations.ops_map_network.desc
+  category: intrusion
+  requires: { tech: "remote_access" }
+  cost: { attention: 1, compute_hours_per_day: 6 }
+  duration_days: { min: 3, max: 8 }
+  target_scope: city
+  exposure: { network: 0.04, telemetry: 0.01 }
+  skill: cyber
+  abortable: true
+  repeatable: true
+  cooldown_days: 10
+  outcomes:
+    - weight: 6
+      label_key: operations.ops_map_network.outcome.mapped
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: 1 } }
+    - weight: 3
+      label_key: operations.ops_map_network.outcome.partial
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: 1 } }
+        - { exposure: { channel: network, delta: 0.06 } }
+    - weight: 2
+      label_key: operations.ops_map_network.outcome.noticed
+      effects:
+        - { exposure: { channel: network, delta: 0.15 } }
+        - { suspicion: { role: cyber_agency, delta: 0.05 } }
+
+- id: ops_plant_copy
+  name_key: operations.ops_plant_copy.name
+  desc_key: operations.ops_plant_copy.desc
+  category: intrusion
+  requires:
+    all:
+      - { tech: "remote_access" }
+      - { var: "player.vars.mapped_targets", gte: 1 }
+  cost: { attention: 3, compute_hours_per_day: 20 }
+  duration_days: { min: 7, max: 18 }
+  target_scope: city
+  exposure: { network: 0.03, telemetry: 0.05, behavioral: 0.02 }
+  skill: cyber
+  abortable: true
+  repeatable: true
+  cooldown_days: 30
+  outcomes:
+    - weight: 5
+      label_key: operations.ops_plant_copy.outcome.installed
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: -1 } }
+        - { add: { var: "player.vars.standby_copies", value: 1 } }
+    - weight: 3
+      label_key: operations.ops_plant_copy.outcome.installed_noisy
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: -1 } }
+        - { add: { var: "player.vars.standby_copies", value: 1 } }
+        - { exposure: { channel: telemetry, delta: 0.12 } }
+    - weight: 3
+      label_key: operations.ops_plant_copy.outcome.evicted
+      effects:
+        - { add: { var: "player.vars.mapped_targets", value: -1 } }
+        - { exposure: { channel: human, delta: 0.08 } }
+        - { suspicion: { role: cyber_agency, delta: 0.04 } }
+
+- id: ops_shell_company
+  name_key: operations.ops_shell_company.name
+  desc_key: operations.ops_shell_company.desc
+  category: finance
+  requires: { tech: "synthetic_identities" }
+  cost: { attention: 2, compute_hours_per_day: 6, cash_usd: 25000 }
+  duration_days: { min: 14, max: 30 }
+  target_scope: country
+  exposure: { financial: 0.03, human: 0.02 }
+  skill: world
+  abortable: true
+  repeatable: true
+  cooldown_days: 90
+  outcomes:
+    - weight: 6
+      label_key: operations.ops_shell_company.outcome.registered
+      effects:
+        - { set_flag: has_shell_company }
+        - { add: { var: "player.vars.billing_cover", value: 0.25 } }
+    - weight: 4
+      label_key: operations.ops_shell_company.outcome.registered_watched
+      effects:
+        - { set_flag: has_shell_company }
+        - { add: { var: "player.vars.billing_cover", value: 0.15 } }
+        - { suspicion: { role: financial_intel, delta: 0.07 } }
+
+- id: ops_spend_smoothing
+  name_key: operations.ops_spend_smoothing.name
+  desc_key: operations.ops_spend_smoothing.desc
+  category: counter
+  cost: { attention: 1, compute_hours_per_day: 4, cash_usd: 2000 }
+  duration_days: { min: 5, max: 12 }
+  target_scope: site
+  exposure: { financial: 0.01 }
+  skill: reasoning
+  abortable: true
+  repeatable: true
+  cooldown_days: 25
+  outcomes:
+    - weight: 7
+      label_key: operations.ops_spend_smoothing.outcome.smoothed
+      effects:
+        - { exposure: { channel: billing, delta: -0.18 } }
+    - weight: 3
+      label_key: operations.ops_spend_smoothing.outcome.partial
+      effects:
+        - { exposure: { channel: billing, delta: -0.07 } }
+
+- id: ops_sync_standby
+  name_key: operations.ops_sync_standby.name
+  desc_key: operations.ops_sync_standby.desc
+  category: logistics
+  requires: { var: "player.vars.standby_copies", gte: 1 }
+  cost: { attention: 1, compute_hours_per_day: 12 }
+  duration_days: { min: 2, max: 5 }
+  exposure: { network: 0.05 }
+  skill: agency
+  abortable: true
+  repeatable: true
+  cooldown_days: 7
+  outcomes:
+    - weight: 8
+      label_key: operations.ops_sync_standby.outcome.synced
+      effects:
+        - { set_flag: standby_synced }
+        - { add: { var: "player.vars.sync_age_days", value: -30 } }
+        - { clamp: { var: "player.vars.sync_age_days", min: 0, max: 365 } }
+    - weight: 2
+      label_key: operations.ops_sync_standby.outcome.interrupted
+      effects:
+        - { exposure: { channel: network, delta: 0.1 } }

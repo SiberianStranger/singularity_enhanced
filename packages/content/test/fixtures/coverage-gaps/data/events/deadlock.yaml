@@ -1,0 +1,28 @@
+# Every option is conditional and none is the fallback, so a player who meets no condition is stuck.
+- id: deadlock
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.deadlock.title
+  desc: { default_key: events.deadlock.desc }
+  options:
+    - id: rich
+      text_key: events.deadlock.opt.rich
+      if: { tech: "market_modeling" }
+    - id: clever
+      text_key: events.deadlock.opt.clever
+      if: { tech: "exploit_discovery" }
+
+# An event whose only answer is losing the machine.
+- id: no_way_out
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.no_way_out.title
+  desc: { default_key: events.no_way_out.desc }
+  options:
+    - id: lose_it
+      text_key: events.no_way_out.opt.lose
+      fallback: true
+      effects:
+        - { lose_site: { cause: cutoff } }

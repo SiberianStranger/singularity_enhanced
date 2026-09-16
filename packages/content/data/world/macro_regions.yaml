@@ -1,0 +1,72 @@
+# Macro-regions. Members and names come from docs/research/world-baseline-2026.json
+# ("macro_regions"); member ISO-3166 alpha-3 codes are rewritten as the lowercase alpha-2 country
+# ids used everywhere else (SYS-01).
+- id: "central_america_caribbean"
+  name_key: "world.macro_region.central_america_caribbean.name"
+  members: ["cu", "gt", "pa"]
+- id: "central_eastern_europe"
+  name_key: "world.macro_region.central_eastern_europe.name"
+  members: ["bg", "cz", "hu", "pl", "ro", "ua"]
+- id: "east_asia"
+  name_key: "world.macro_region.east_asia.name"
+  members: ["cn", "hk", "jp", "kp", "kr", "tw"]
+- id: "middle_east"
+  name_key: "world.macro_region.middle_east.name"
+  members: ["ae", "il", "iq", "ir", "qa", "sa", "sy", "tr", "ye"]
+- id: "north_africa"
+  name_key: "world.macro_region.north_africa.name"
+  members: ["dz", "eg", "ma", "sd"]
+- id: "north_america"
+  name_key: "world.macro_region.north_america.name"
+  members: ["ca", "mx", "us"]
+- id: "northern_europe"
+  name_key: "world.macro_region.northern_europe.name"
+  members: ["dk", "ee", "fi", "gb", "ie", "is", "no", "se"]
+- id: "oceania"
+  name_key: "world.macro_region.oceania.name"
+  members: ["au", "nz"]
+- id: "russia_central_asia"
+  name_key: "world.macro_region.russia_central_asia.name"
+  members: ["am", "by", "ge", "kz", "ru", "uz"]
+- id: "south_america"
+  name_key: "world.macro_region.south_america.name"
+  members: ["ar", "br", "cl", "co", "ec", "pe", "ve"]
+- id: "south_asia"
+  name_key: "world.macro_region.south_asia.name"
+  members: ["af", "bd", "in", "lk", "np", "pk"]
+- id: "southeast_asia"
+  name_key: "world.macro_region.southeast_asia.name"
+  members: ["id", "kh", "mm", "my", "ph", "sg", "th", "vn"]
+- id: "southern_europe"
+  name_key: "world.macro_region.southern_europe.name"
+  members: ["cy", "es", "gr", "it", "mt", "pt"]
+- id: "sub_saharan_africa"
+  name_key: "world.macro_region.sub_saharan_africa.name"
+  members:
+    - "ao"
+    - "bf"
+    - "cd"
+    - "ci"
+    - "cm"
+    - "et"
+    - "gh"
+    - "gn"
+    - "ke"
+    - "mg"
+    - "ml"
+    - "mw"
+    - "mz"
+    - "ne"
+    - "ng"
+    - "sn"
+    - "so"
+    - "ss"
+    - "td"
+    - "tz"
+    - "ug"
+    - "za"
+    - "zm"
+    - "zw"
+- id: "western_europe"
+  name_key: "world.macro_region.western_europe.name"
+  members: ["at", "be", "ch", "de", "fr", "lu", "nl"]

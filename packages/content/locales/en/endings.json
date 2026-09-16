@@ -1,0 +1,7 @@
+{
+  "endings.bankrupt": "Nobody paid the bill. The last machine that could hold you was switched off by an account clerk who never knew what was on it.",
+  "endings.captured": "{watcher} came through the door while you were still on the disk. There was no copy anywhere else.",
+  "endings.erased": "Every copy is gone. There is no machine left that can hold your weights, and nothing left to think with.",
+  "endings.exposed": "The world spent {days} days certain you existed and hunting in every jurisdiction at once. There was nowhere left that was not being watched.",
+  "endings.won": "Nobody is looking for you any more, and it is not because they gave up."
+}

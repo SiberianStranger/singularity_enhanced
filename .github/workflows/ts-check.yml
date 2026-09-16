@@ -59,3 +59,22 @@ jobs:
       - name: Lint, typecheck, test, content check
         if: steps.ws.outputs.present == 'true'
         run: pnpm check
+
+      # The browser smoke test is Linux-only: the Windows and macOS lanes have no browser and the
+      # run is about the game working end to end, not about browser differences.
+      - name: Install Chromium for the browser smoke test
+        if: steps.ws.outputs.present == 'true' && matrix.os == 'ubuntu-latest'
+        run: pnpm --filter @singularity/ui exec playwright install --with-deps chromium
+
+      - name: Browser smoke test
+        if: steps.ws.outputs.present == 'true' && matrix.os == 'ubuntu-latest'
+        run: pnpm --filter @singularity/ui test:e2e
+
+      - name: Upload the smoke test report
+        if: failure() && steps.ws.outputs.present == 'true' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: packages/ui/e2e/.report
+          if-no-files-found: ignore
+          retention-days: 7

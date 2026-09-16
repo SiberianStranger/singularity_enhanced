@@ -182,6 +182,34 @@ The host emits at most 20 views a second at any speed, and a frame may replay at
 (`MAX_TICKS_PER_FRAME`), so a tab that was throttled in the background catches up without skipping
 past an event the player should have seen.
 
+### Pace (from the balance runs)
+
+The ladder above is confirmed by the M1 balance runs, and the default speed follows from them. On
+the `normal` preset, 30 seeds per origin, the median run lasts between 35 game days (the starred
+`frontier_escapee`) and the full 180, with seven of the eleven origins between 100 and 180. A
+typical game is therefore 90 to 180 game days, and the definition of done asks for 30 to 60 minutes
+of real time.
+
+| speed | game hours per real second | game days per real minute | 90 game days | 180 game days |
+|---|---|---|---|---|
+| 0 | paused | - | - | - |
+| 1 | 1 | 2.5 | 36 min | 72 min |
+| 2 | 2 | 5 | 18 min | 36 min |
+| 3 | 4 | 10 | 9 min | 18 min |
+| 4 | 8 | 20 | 4.5 min | 9 min |
+| 5 | 24 | 60 | 1.5 min | 3 min |
+
+The client should therefore:
+
+- start a new game **paused** on the origin's opening events, and
+- use **speed 2** as the default once the player unpauses.
+
+At speed 2 the clock alone spends 18 to 36 minutes on a typical run; reading events, answering
+them, and the pauses the alert bar forces put an attentive first game inside the 30 to 60 minutes
+the milestone asks for, and a player who fast-forwards quiet weeks at 3 or 4 stays at the lower end
+of it. Speed 1 exists for the week after an investigation reaches `active`, where a day matters;
+speed 5 is for a run that is already decided.
+
 ### Why did this happen
 
 `PendingChoice.why` carries the reasons an event fired: the base mean time to happen, one line per

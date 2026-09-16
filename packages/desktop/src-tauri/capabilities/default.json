@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions granted to the main game window. The shell only hosts the web client, so nothing beyond the Tauri core defaults is enabled; saves live in the WebView storage (SYS-15).",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

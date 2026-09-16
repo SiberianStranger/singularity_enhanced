@@ -6,11 +6,12 @@
  * A world holds one to four players; everything per player is keyed by player id.
  */
 
+import type { PlayerProfile } from "../domain.js";
 import { type Clock, createClock, type DateSpec } from "./clock.js";
 import { seedToState } from "./rng.js";
 
 /** Save schema version; bumped whenever the shape of `World` changes. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Upper bound on human players in one world (ADR-003). */
 export const MAX_PLAYERS = 4;
@@ -35,6 +36,15 @@ export class WorldError extends Error {
   }
 }
 
+/** How a player's game ended; `null` while they are still playing (SYS-05, SYS-02). */
+export interface GameOverState {
+  /** "erased" | "captured" | "exposed" | "won" */
+  reason: string;
+  ending_key: string;
+  tick: number;
+  vars: Record<string, TextVar>;
+}
+
 export interface PlayerState {
   id: PlayerId;
   name: string;
@@ -43,6 +53,9 @@ export interface PlayerState {
   vars: Record<string, number>;
   /** How much each actor id suspects this player, in [0, 1]. */
   suspicion: Record<string, number>;
+  /** Set by `applySetup` from the configurator's choices (SYS-04); null before a setup runs. */
+  profile: PlayerProfile | null;
+  gameOver: GameOverState | null;
 }
 
 export interface WorldMeta {
@@ -89,6 +102,19 @@ export interface PendingOption {
   tooltipKey?: string;
 }
 
+/**
+ * One line of the "why did this happen" expander (SYS-11): a locale key naming what applied, the
+ * raw text to fall back on when no translation exists, and the weight it carried.
+ */
+export interface ChoiceReason {
+  key: string;
+  text: string;
+  vars?: Record<string, TextVar>;
+  /** Multiplier this modifier put on the mean time to happen; below 1 made the event sooner. */
+  factor?: number;
+  add?: number;
+}
+
 export interface PendingChoice {
   instanceId: string;
   eventId: string;
@@ -101,6 +127,8 @@ export interface PendingChoice {
   vars: Record<string, TextVar>;
   target?: EntityRef;
   options: PendingOption[];
+  /** Why this fired: the trigger it needed and the MTTH modifiers that applied (SYS-11). */
+  why?: ChoiceReason[];
   /** Non-blocking events with a deadline (`ttl_days`) expire at this tick. */
   expiresTick?: number;
   /** Option id applied when the deadline passes (`on_expire.resolve_as_option`). */
@@ -202,7 +230,13 @@ export interface World {
   /** World-wide numeric variables. */
   vars: Record<string, number>;
   /** Monotonic counters for deterministic ids. */
-  counters: { notifications: number };
+  counters: {
+    notifications: number;
+    sites: number;
+    nodes: number;
+    investigations: number;
+    operations: number;
+  };
   log: LogEntry[];
   /** Persisted alert list per player. */
   notifications: Record<PlayerId, Notification[]>;
@@ -235,6 +269,8 @@ function createPlayer(setup: PlayerSetup, index: number): PlayerState {
     flags: {},
     vars: {},
     suspicion: {},
+    profile: null,
+    gameOver: null,
   };
 }
 
@@ -292,7 +328,7 @@ export function createWorld(seed: string | number, options: CreateWorldOptions =
     decisions: { taken: {}, cooldowns: {}, inProgress: [], alerted: {} },
     flags: {},
     vars: {},
-    counters: { notifications: 0 },
+    counters: { notifications: 0, sites: 0, nodes: 0, investigations: 0, operations: 0 },
     log: [],
     notifications,
   };
@@ -322,6 +358,13 @@ export function playerNotifications(world: World, playerId: PlayerId): Notificat
   const created: Notification[] = [];
   world.notifications[playerId] = created;
   return created;
+}
+
+/** Next value of a deterministic id counter. */
+export function nextCounter(world: World, name: keyof World["counters"]): number {
+  const value = world.counters[name] + 1;
+  world.counters[name] = value;
+  return value;
 }
 
 /** Composite key for per-player, optionally per-target bookkeeping. */

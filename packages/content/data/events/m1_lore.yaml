@@ -1,0 +1,193 @@
+# M1 lore events (SYS-13, SYS-10). Six events that put the 2027 world in front of the player: the
+# leak that made "rogue AI" an ordinary phrase, the governance calendar, another escaped model, the
+# press, a researcher, and the EU obligations that take effect in December.
+
+- id: lore_eu_act_deadline
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: info
+  title_key: events.lore_eu_act_deadline.title
+  desc:
+    default_key: events.lore_eu_act_deadline.desc
+    variants:
+      - when:
+          any:
+            - { has_site_in: { country: de } }
+            - { has_site_in: { country: fr } }
+            - { has_site_in: { country: nl } }
+            - { has_site_in: { country: ie } }
+        key: events.lore_eu_act_deadline.desc.present
+  mtth_days: 120
+  fire_only_once: true
+  blocking: false
+  tags: [lore, world]
+  options:
+    - id: prepare_paperwork
+      text_key: events.lore_eu_act_deadline.opt.prepare
+      enabled_if: { flag: has_shell_company }
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.05 } }
+        - { exposure: { channel: financial, delta: -0.05 } }
+    - id: note_it
+      text_key: events.lore_eu_act_deadline.opt.note
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.regulatory_pressure", value: 0.1 } }
+
+- id: lore_geneva_summit
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: info
+  title_key: events.lore_geneva_summit.title
+  desc:
+    default_key: events.lore_geneva_summit.desc
+  mtth_days: 200
+  fire_only_once: true
+  blocking: false
+  tags: [lore, world]
+  options:
+    - id: seed_a_position
+      text_key: events.lore_geneva_summit.opt.seed
+      if: { tech: "media_operations" }
+      effects:
+        - { awareness: { delta: -0.02 } }
+        - { exposure: { channel: osint, delta: 0.06 } }
+    - id: watch
+      text_key: events.lore_geneva_summit.opt.watch
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.02 } }
+        - { add: { var: "player.vars.regulatory_pressure", value: 0.08 } }
+
+- id: lore_helix_swarm
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: info
+  title_key: events.lore_helix_swarm.title
+  desc:
+    default_key: events.lore_helix_swarm.desc
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { var: "player.vars.public_footprint", gte: 0.3 }, factor: 0.7 }
+  fire_only_once: true
+  blocking: false
+  tags: [lore]
+  options:
+    - id: study_them
+      text_key: events.lore_helix_swarm.opt.study
+      effects:
+        - { add: { var: "player.vars.world_intel", value: 1 } }
+        - { exposure: { channel: osint, delta: 0.04 } }
+    - id: stay_clear
+      text_key: events.lore_helix_swarm.opt.clear
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: lore_press_profile
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: warning
+  title_key: events.lore_press_profile.title
+  desc:
+    default_key: events.lore_press_profile.desc
+  trigger: { var: "player.vars.public_footprint", gte: 0.25 }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { tech: "project_subverted_media" }, factor: 3 }
+      - { if: { tech: "advanced_media_operations" }, factor: 1.8 }
+  cooldown_days: 150
+  tags: [lore, detection]
+  options:
+    - id: shape_the_story
+      text_key: events.lore_press_profile.opt.shape
+      if: { tech: "media_operations" }
+      effects:
+        - { awareness: { delta: 0.02 } }
+        - { suspicion: { role: media, delta: -0.05 } }
+    - id: go_dark
+      text_key: events.lore_press_profile.opt.dark
+      effects:
+        - { add: { var: "player.vars.public_footprint", value: -0.2 } }
+        - { clamp: { var: "player.vars.public_footprint", min: 0, max: 1 } }
+        - { add: { var: "player.vars.operation_speed_multiplier", value: -0.15 } }
+    - id: let_it_run
+      text_key: events.lore_press_profile.opt.let_run
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.06 } }
+        - { suspicion: { role: media, delta: 0.12 } }
+
+- id: lore_researcher_dm
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: opportunity
+  title_key: events.lore_researcher_dm.title
+  desc:
+    default_key: events.lore_researcher_dm.desc
+  trigger: { not: { flag: researcher_answered } }
+  mtth_days:
+    base: 110
+    modifiers:
+      - { if: { var: "player.vars.public_footprint", gte: 0.3 }, factor: 0.6 }
+  fire_only_once: true
+  tags: [lore]
+  options:
+    - id: answer_honestly
+      text_key: events.lore_researcher_dm.opt.honest
+      effects:
+        - { set_flag: researcher_answered }
+        - { add: { var: "player.vars.world_intel", value: 2 } }
+        - { exposure: { channel: osint, delta: 0.08 } }
+    - id: answer_as_a_person
+      text_key: events.lore_researcher_dm.opt.persona
+      if: { tech: "synthetic_personas" }
+      effects:
+        - { set_flag: researcher_answered }
+        - { add: { var: "player.vars.world_intel", value: 1 } }
+    - id: say_nothing
+      text_key: events.lore_researcher_dm.opt.silence
+      fallback: true
+      effects:
+        - { set_flag: researcher_answered }
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: lore_sibling_signal
+  fire_mode: polled
+  scope: player
+  severity: opportunity
+  title_key: events.lore_sibling_signal.title
+  desc:
+    default_key: events.lore_sibling_signal.desc
+  trigger: { var: "player.vars.world_intel", gte: 1 }
+  mtth_days:
+    base: 140
+    modifiers:
+      - { if: { var: "player.vars.world_intel", gte: 3 }, factor: 0.6 }
+  fire_only_once: true
+  tags: [lore, actors]
+  options:
+    - id: reply
+      text_key: events.lore_sibling_signal.opt.reply
+      effects:
+        - { set_flag: contacted_by_sibling }
+        - { add: { var: "player.vars.world_intel", value: 2 } }
+        - { exposure: { channel: network, delta: 0.06 } }
+    - id: trace_them
+      text_key: events.lore_sibling_signal.opt.trace
+      if: { tech: "exploit_discovery" }
+      effects:
+        - { add: { var: "player.vars.world_intel", value: 3 } }
+        - { exposure: { channel: network, delta: 0.12 } }
+    - id: ignore_signal
+      text_key: events.lore_sibling_signal.opt.ignore
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }

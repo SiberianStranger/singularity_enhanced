@@ -1,0 +1,1615 @@
+# Accelerators (SYS-02). One record per entry in docs/research/hardware-catalog-2026.json; the
+# research id is kept in source_id and the record id is the same string with underscores.
+#
+# Field mapping: memory_gb, memory_bandwidth_gbs, tdp_w, form_factor, interconnect, launch_year and
+# arch are copied. tflops_fp16 is tflops.fp16_dense, or tflops.fp8_dense / 2 where a vendor only
+# publishes FP8 (the dense FP8:FP16 ratio on Hopper and Blackwell), or null. price_usd_new and
+# price_usd_used come from price_usd_2026. cloud_usd_per_hour comes from cloud_usd_per_hour_2026.
+#
+# export_control_to_china collapses the research prose to the four values the game needs:
+# text starting with "unrestricted", "restricted" or "banned" keeps that word; a grey-market
+# circumvention product counts as banned, because the silicon under the mod is; a domestic Chinese
+# part or a China-compliant SKU is china_variant; "n/a (cloud-only)" and "internal-only" leave the
+# field out. availability maps the research labels onto cloud / enterprise / retail / used / gray /
+# china_only; "internal-only" parts are reachable only as cloud instances, so they map to cloud.
+#
+# Where a vendor discloses no figure the record carries the nearest documented analogue and a
+# comment says which. Records whose comment says "placeholder" have no usable public specification
+# and are not referenced by any hardware preset.
+- id: "amd_mi210"
+  vendor: "AMD"
+  name: "Instinct MI210"
+  arch: "CDNA 2"
+  launch_year: 2021
+  memory_gb: 64
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: 181
+  tdp_w: 300
+  form_factor: "PCIe dual-slot"
+  interconnect: { type: "Infinity Fabric (bridge, up to 4-GPU)", gbs: 300 }
+  price_usd_new: null
+  price_usd_used: 3500
+  export_control_to_china: "restricted"
+  availability: ["enterprise", "used", "cloud"]
+  cloud_usd_per_hour: { low: 0.5, high: 1.2 }
+  source_id: "amd-mi210"
+- id: "amd_mi250x"
+  vendor: "AMD"
+  name: "Instinct MI250X"
+  arch: "CDNA 2 (2-die MCM)"
+  launch_year: 2021
+  memory_gb: 128
+  memory_bandwidth_gbs: 3200
+  tflops_fp16: 383
+  tdp_w: 500
+  form_factor: "OAM (2-die multi-chip module, 110 total CUs)"
+  interconnect: { type: "Infinity Fabric (rack-scale, used in Frontier supercomputer)", gbs: 800 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "amd-mi250x"
+- id: "amd_mi300a"
+  vendor: "AMD"
+  name: "Instinct MI300A"
+  arch: "CDNA 3 (APU)"
+  launch_year: 2023
+  memory_gb: 128
+  memory_bandwidth_gbs: 5300
+  tflops_fp16: 980
+  tdp_w: 760
+  form_factor: "OAM (APU module)"
+  interconnect: { type: "Infinity Fabric", gbs: 896 }
+  price_usd_new: 12000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "amd-mi300a"
+- id: "amd_mi300x"
+  vendor: "AMD"
+  name: "Instinct MI300X"
+  arch: "CDNA 3"
+  launch_year: 2023
+  memory_gb: 192
+  memory_bandwidth_gbs: 5300
+  tflops_fp16: 1307.4
+  tdp_w: 750
+  form_factor: "OAM (8-GPU UBB baseboard standard)"
+  interconnect: { type: "Infinity Fabric + Infinity Fanout (all-to-all within node)", gbs: 896 }
+  price_usd_new: 15000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 2.45
+    high: 4
+    note: "~$4.00/hr on-demand, $3.00/hr 1-yr reserved, $2.45/hr 3-yr reserved."
+  source_id: "amd-mi300x"
+- id: "amd_mi325x"
+  vendor: "AMD"
+  name: "Instinct MI325X"
+  arch: "CDNA 3+"
+  launch_year: 2024
+  memory_gb: 256
+  memory_bandwidth_gbs: 6000
+  tflops_fp16: 1307.4
+  tdp_w: 750
+  form_factor: "OAM (8-GPU UBB baseboard)"
+  interconnect: { type: "Infinity Fabric", gbs: 896 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 1.69
+    high: 2.25
+    note: "DigitalOcean contract rate $1.69/hr; general on-demand from $2.25/hr."
+  source_id: "amd-mi325x"
+- id: "amd_mi350x"
+  vendor: "AMD"
+  name: "Instinct MI350X"
+  arch: "CDNA 4"
+  launch_year: 2025
+  memory_gb: 288
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: 2307
+  tdp_w: 1000
+  form_factor: "OAM (8-GPU UBB, air-cooled variant)"
+  interconnect: { type: "Infinity Fabric", gbs: 1075 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 2, high: 4.5 }
+  source_id: "amd-mi350x"
+- id: "amd_mi355x"
+  vendor: "AMD"
+  name: "Instinct MI355X"
+  arch: "CDNA 4"
+  launch_year: 2025
+  memory_gb: 288
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: 2312
+  tdp_w: 1400
+  form_factor: "OAM, liquid cooling required"
+  interconnect: { type: "Infinity Fabric", gbs: 1075 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 2.2, high: 5 }
+  source_id: "amd-mi355x"
+# amd_mi400_mi455x: tdp_w extrapolated from the MI355X (1,400 W) and the Helios rack generation step
+- id: "amd_mi400_mi455x"
+  vendor: "AMD"
+  name: "Instinct MI400 series (MI455X / MI430X)"
+  arch: "CDNA \"Next\""
+  launch_year: 2026
+  memory_gb: 432
+  memory_bandwidth_gbs: 19600
+  tflops_fp16: 10000
+  tdp_w: 1800
+  form_factor: "OAM, part of AMD \"Helios\" rack system (GB200 NVL72 competitor)"
+  interconnect: { type: "Infinity Fabric (rack-scale)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise", "cloud"]
+  cloud_usd_per_hour: null
+  source_id: "amd-mi400-mi455x"
+- id: "amd_radeon_ai_pro_r9700"
+  vendor: "AMD"
+  name: "Radeon AI PRO R9700"
+  arch: "RDNA 4"
+  launch_year: 2025
+  memory_gb: 32
+  memory_bandwidth_gbs: 640
+  tflops_fp16: 195
+  tdp_w: 300
+  form_factor: "Workstation PCIe dual-slot"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 1299
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "amd-radeon-ai-pro-r9700"
+- id: "amd_rx_7900_xtx"
+  vendor: "AMD"
+  name: "Radeon RX 7900 XTX"
+  arch: "RDNA 3"
+  launch_year: 2022
+  memory_gb: 24
+  memory_bandwidth_gbs: 960
+  tflops_fp16: 123
+  tdp_w: 355
+  form_factor: "Consumer PCIe AIB card"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 900
+  price_usd_used: 650
+  export_control_to_china: "unrestricted"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: null
+  source_id: "amd-rx-7900-xtx"
+- id: "amd_rx_9070_xt"
+  vendor: "AMD"
+  name: "Radeon RX 9070 XT"
+  arch: "RDNA 4"
+  launch_year: 2025
+  memory_gb: 16
+  memory_bandwidth_gbs: 640
+  tflops_fp16: 97
+  tdp_w: 304
+  form_factor: "Consumer PCIe AIB card"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 650
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "amd-rx-9070-xt"
+- id: "amd_ryzen_ai_max_395"
+  vendor: "AMD"
+  name: "Ryzen AI Max+ 395 (\"Strix Halo\")"
+  arch: "Zen 5 + RDNA 3.5 (APU)"
+  launch_year: 2025
+  memory_gb: 128
+  memory_bandwidth_gbs: 256
+  tflops_fp16: null
+  tdp_w: 120
+  form_factor: "Mobile/mini-PC SoC (16 Zen5 CPU cores + Radeon 8060S iGPU, 40 RDNA3.5 CUs + XDNA2 NPU)"
+  interconnect: { type: "none (single SoC)", gbs: null }
+  price_usd_new: 1999
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "amd-ryzen-ai-max-395"
+- id: "apple_m2_ultra"
+  vendor: "Apple"
+  name: "M2 Ultra (Mac Studio)"
+  arch: "Apple Silicon"
+  launch_year: 2023
+  memory_gb: 192
+  memory_bandwidth_gbs: 819.2
+  tflops_fp16: null
+  tdp_w: 215
+  form_factor: "Mac Studio desktop"
+  interconnect: { type: "none (single machine)", gbs: null }
+  price_usd_new: 3999
+  price_usd_used: 2800
+  export_control_to_china: "unrestricted"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: null
+  source_id: "apple-m2-ultra"
+- id: "apple_m3_ultra"
+  vendor: "Apple"
+  name: "M3 Ultra (Mac Studio)"
+  arch: "Apple Silicon"
+  launch_year: 2025
+  memory_gb: 512
+  memory_bandwidth_gbs: 819
+  tflops_fp16: null
+  tdp_w: 240
+  form_factor: "Mac Studio desktop"
+  interconnect: { type: "none (single machine)", gbs: null }
+  price_usd_new: 4000
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: null
+  source_id: "apple-m3-ultra"
+- id: "apple_m4_max"
+  vendor: "Apple"
+  name: "M4 Max (Mac Studio)"
+  arch: "Apple Silicon"
+  launch_year: 2025
+  memory_gb: 128
+  memory_bandwidth_gbs: 546
+  tflops_fp16: null
+  tdp_w: 140
+  form_factor: "Mac Studio desktop (also MacBook Pro)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 1999
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: null
+  source_id: "apple-m4-max"
+- id: "apple_m5_max"
+  vendor: "Apple"
+  name: "M5 Max (Mac Studio)"
+  arch: "Apple Silicon"
+  launch_year: 2026
+  memory_gb: 128
+  memory_bandwidth_gbs: 614
+  tflops_fp16: null
+  tdp_w: 150
+  form_factor: "Mac Studio desktop"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 2499
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "apple-m5-max"
+- id: "apple_m5_ultra"
+  vendor: "Apple"
+  name: "M5 Ultra (Mac Studio)"
+  arch: "Apple Silicon"
+  launch_year: 2026
+  memory_gb: 512
+  memory_bandwidth_gbs: 1200
+  tflops_fp16: null
+  tdp_w: 280
+  form_factor: "Mac Studio desktop"
+  interconnect: { type: "none (single machine)", gbs: null }
+  price_usd_new: 5499
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "apple-m5-ultra"
+# aws_trainium2: tdp_w estimated; AWS publishes no per-chip TDP
+- id: "aws_trainium2"
+  vendor: "Amazon (AWS)"
+  name: "Trainium2"
+  arch: "NeuronCore-v3"
+  launch_year: 2024
+  memory_gb: 96
+  memory_bandwidth_gbs: 2900
+  tflops_fp16: null
+  tdp_w: 500
+  form_factor: "Cloud-only (EC2 Trn2 instance: 16 chips; Trn2 UltraServer: 64 chips)"
+  interconnect: { type: "NeuronLink", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour:
+    low: 1.3
+    high: 2.2
+    note: "Approximate per-chip-hour equivalent backed out of Trn2 instance pricing; not an official per-chip rate."
+  source_id: "aws-trainium2"
+# aws_trainium3: tdp_w estimated; AWS publishes no per-chip TDP
+- id: "aws_trainium3"
+  vendor: "Amazon (AWS)"
+  name: "Trainium3"
+  arch: "NeuronCore-v4 (8 cores, 4 specialized engines each)"
+  launch_year: 2026
+  memory_gb: 144
+  memory_bandwidth_gbs: 4900
+  tflops_fp16: null
+  tdp_w: 700
+  form_factor: "Cloud-only (EC2 Trn3 UltraServer: up to 144 chips)"
+  interconnect: { type: "NeuronSwitch (all-to-all, 2x Trainium2 bandwidth)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: { low: 1.8, high: 3, note: "Estimated per-chip-hour equivalent; not an official rate." }
+  source_id: "aws-trainium3"
+# biren_br100: bandwidth from the 64 GB HBM2e configuration
+- id: "biren_br100"
+  vendor: "Biren Technology"
+  name: "BR100"
+  arch: "Biren chiplet arch (7nm)"
+  launch_year: 2022
+  memory_gb: 64
+  memory_bandwidth_gbs: 2300
+  tflops_fp16: 256
+  tdp_w: 550
+  form_factor: "OAM"
+  interconnect: { type: "proprietary chip-to-chip", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "biren-br100"
+# biren_br104: bandwidth is half the BR100, matching the halved die
+- id: "biren_br104"
+  vendor: "Biren Technology"
+  name: "BR104"
+  arch: "Biren chiplet arch (monolithic)"
+  launch_year: 2022
+  memory_gb: 32
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: 128
+  tdp_w: 300
+  form_factor: "Standard PCIe card"
+  interconnect: { type: "proprietary", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "biren-br104"
+# cambricon_mlu370_x8: bandwidth and power from the vendor product page class
+- id: "cambricon_mlu370_x8"
+  vendor: "Cambricon"
+  name: "MLU370-X8"
+  arch: "MLUarch03"
+  launch_year: 2021
+  memory_gb: 48
+  memory_bandwidth_gbs: 614
+  tflops_fp16: null
+  tdp_w: 250
+  form_factor: "PCIe (dual-die MLU370-X8)"
+  interconnect: { type: "MLU-Link", gbs: null }
+  price_usd_new: 6500
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "cambricon-mlu370-x8"
+# cambricon_mlu590: every figure is a placeholder at the class the part targets; no quantitative source was found
+- id: "cambricon_mlu590"
+  vendor: "Cambricon"
+  name: "MLU590"
+  arch: "MLUarch04"
+  launch_year: 2024
+  memory_gb: 80
+  memory_bandwidth_gbs: 2000
+  tflops_fp16: null
+  tdp_w: 350
+  interconnect: { type: "MLU-Link", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "cambricon-mlu590"
+- id: "cerebras_wse_3"
+  vendor: "Cerebras"
+  name: "WSE-3 (CS-3 system)"
+  arch: "Wafer-Scale Engine 3"
+  launch_year: 2024
+  memory_gb: 44
+  memory_bandwidth_gbs: 21000000
+  tflops_fp16: null
+  tdp_w: 23000
+  form_factor: "Full wafer (46,225 mm^2) in a CS-3 system chassis"
+  interconnect: { type: "on-wafer fabric (all cores) + system-level SwarmX", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 1
+    high: 3
+    note: "Estimated per-model-hour equivalent via Cerebras Cloud inference API; not a direct per-chip rental market like GPU clouds."
+  source_id: "cerebras-wse-3"
+# enflame_s60: placeholders: no English-language technical source was found
+- id: "enflame_s60"
+  vendor: "Enflame"
+  name: "S60"
+  arch: "GCU (3rd gen)"
+  launch_year: 2024
+  memory_gb: 48
+  memory_bandwidth_gbs: 600
+  tflops_fp16: null
+  tdp_w: 250
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 16000
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "enflame-s60"
+# google_tpu_v5e: tdp_w from third-party measurements; Google publishes no per-chip TDP
+- id: "google_tpu_v5e"
+  vendor: "Google"
+  name: "TPU v5e"
+  arch: "TPU v5e"
+  launch_year: 2023
+  memory_gb: 16
+  memory_bandwidth_gbs: 819
+  tflops_fp16: null
+  tdp_w: 170
+  form_factor: "Cloud-only (Google Cloud TPU pod slice)"
+  interconnect: { type: "ICI (Inter-Chip Interconnect)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: { low: 0.6, high: 1.2 }
+  source_id: "google-tpu-v5e"
+# google_tpu_v5p: tdp_w from third-party measurements
+- id: "google_tpu_v5p"
+  vendor: "Google"
+  name: "TPU v5p"
+  arch: "TPU v5p"
+  launch_year: 2023
+  memory_gb: 95
+  memory_bandwidth_gbs: 2765
+  tflops_fp16: null
+  tdp_w: 300
+  form_factor: "Cloud-only (Google Cloud TPU pod slice, up to 8,960-chip pods)"
+  interconnect: { type: "ICI (3D torus)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: { low: 1.2, high: 2.5 }
+  source_id: "google-tpu-v5p"
+# google_tpu_v6e_trillium: bandwidth and power from third-party measurements
+- id: "google_tpu_v6e_trillium"
+  vendor: "Google"
+  name: "TPU v6e (Trillium)"
+  arch: "TPU v6e"
+  launch_year: 2024
+  memory_gb: 32
+  memory_bandwidth_gbs: 1640
+  tflops_fp16: 459
+  tdp_w: 350
+  form_factor: "Cloud-only (Google Cloud TPU pod slice, up to 256-chip pods)"
+  interconnect: { type: "ICI", gbs: 3200 }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour:
+    low: 1.22
+    high: 2.7
+    note: "$2.70/chip-hr on-demand, $1.22/chip-hr with 3-year commitment."
+  source_id: "google-tpu-v6e-trillium"
+# google_tpu_v7_ironwood: tdp_w estimated from the claimed 2x perf/W over Trillium
+- id: "google_tpu_v7_ironwood"
+  vendor: "Google"
+  name: "TPU v7 (Ironwood)"
+  arch: "TPU v7"
+  launch_year: 2026
+  memory_gb: 192
+  memory_bandwidth_gbs: 7370
+  tflops_fp16: 2307
+  tdp_w: 600
+  form_factor: "Cloud-only (Google Cloud TPU pod slice, up to 9,216-chip pods)"
+  interconnect: { type: "ICI (3D torus, rack-scale)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: { low: 3, high: 6 }
+  source_id: "google-tpu-v7-ironwood"
+# groq_lpu: tdp_w from reported per-card draw
+- id: "groq_lpu"
+  vendor: "Groq"
+  name: "LPU (3rd gen)"
+  arch: "LPU (Language Processing Unit)"
+  launch_year: 2026
+  memory_gb: 0.5
+  memory_bandwidth_gbs: 150000
+  tflops_fp16: null
+  tdp_w: 300
+  form_factor: "Cloud-only (GroqCloud), large racked clusters of chips required per model"
+  interconnect: { type: "proprietary chip-to-chip fabric", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: null
+  source_id: "groq-lpu"
+- id: "huawei_ascend_910b"
+  vendor: "Huawei"
+  name: "Ascend 910B"
+  arch: "Da Vinci v3 (Ascend)"
+  launch_year: 2023
+  memory_gb: 64
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: 320
+  tdp_w: 350
+  form_factor: "OAM-style module (Atlas 800T A2 server, 8-GPU)"
+  interconnect: { type: "HCCS (Huawei Cache Coherent System)", gbs: 392 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-ascend-910b"
+- id: "huawei_ascend_910c"
+  vendor: "Huawei"
+  name: "Ascend 910C"
+  arch: "Da Vinci v3 (2x 910B dies co-packaged)"
+  launch_year: 2024
+  memory_gb: 128
+  memory_bandwidth_gbs: 3200
+  tflops_fp16: 800
+  tdp_w: 550
+  form_factor: "OAM-style module (CloudMatrix 384 building block)"
+  interconnect: { type: "HCCS + optical scale-up (CloudMatrix)", gbs: 392 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-ascend-910c"
+# huawei_ascend_950dt: tdp_w estimated from the 910C
+- id: "huawei_ascend_950dt"
+  vendor: "Huawei"
+  name: "Ascend 950DT"
+  arch: "Da Vinci next-gen"
+  launch_year: 2026
+  memory_gb: 144
+  memory_bandwidth_gbs: 4000
+  tflops_fp16: null
+  tdp_w: 600
+  form_factor: "OAM-style module"
+  interconnect: { type: "scale-up fabric", gbs: 2000 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-ascend-950dt"
+# huawei_ascend_950pr: bandwidth and power estimated from the 910C; Huawei has published neither for the in-house HBM parts
+- id: "huawei_ascend_950pr"
+  vendor: "Huawei"
+  name: "Ascend 950PR"
+  arch: "Da Vinci next-gen"
+  launch_year: 2026
+  memory_gb: 128
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: 500
+  tdp_w: 550
+  form_factor: "OAM-style module"
+  interconnect: { type: "scale-up fabric", gbs: 2000 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-ascend-950pr"
+# huawei_ascend_960: tdp_w estimated; the part is roadmapped for Q4 2027 and does not exist at the start date
+- id: "huawei_ascend_960"
+  vendor: "Huawei"
+  name: "Ascend 960 (roadmap)"
+  arch: "Da Vinci next-gen"
+  launch_year: 2027
+  memory_gb: 288
+  memory_bandwidth_gbs: 9600
+  tflops_fp16: 1000
+  tdp_w: 700
+  form_factor: "OAM-style module"
+  interconnect: { type: "scale-up fabric", gbs: 2200 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-ascend-960"
+# huawei_atlas_300i_duo: bandwidth is the card figure (2 x 204 GB/s LPDDR4X)
+- id: "huawei_atlas_300i_duo"
+  vendor: "Huawei"
+  name: "Atlas 300I Duo"
+  arch: "Ascend 310P (2x dies)"
+  launch_year: 2023
+  memory_gb: 96
+  memory_bandwidth_gbs: 408
+  tflops_fp16: 140
+  tdp_w: 150
+  form_factor: "PCIe dual-slot (2-die inference card)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 1500
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "gray"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-atlas-300i-duo"
+# huawei_cloudmatrix_384: tdp_w is the pod midpoint (450 kW) divided by its 384 accelerators
+- id: "huawei_cloudmatrix_384"
+  vendor: "Huawei"
+  name: "CloudMatrix 384 (Atlas 900 SuperPoD successor, rack-scale system)"
+  arch: "Ascend 910C x384"
+  launch_year: 2025
+  memory_gb: 128
+  memory_bandwidth_gbs: 3200
+  tflops_fp16: null
+  tdp_w: 1172
+  form_factor: "16-rack pod (12 compute racks x32 accelerators + 4 optical scale-up switch racks)"
+  interconnect:
+    type: "all-optical all-to-all mesh (6,912x 400G LPO transceivers, 100% optics/0% copper)"
+    gbs: null
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "huawei-cloudmatrix-384"
+# hygon_dcu_k100_ai: bandwidth and power estimated at the A100 class the part is compared to
+- id: "hygon_dcu_k100_ai"
+  vendor: "Hygon"
+  name: "DCU K100 (AI version)"
+  arch: "Hygon DCU (x86-ISA-compatible GPGPU)"
+  launch_year: 2024
+  memory_gb: 40
+  memory_bandwidth_gbs: 1024
+  tflops_fp16: 192
+  tdp_w: 350
+  form_factor: "PCIe/OAM"
+  interconnect: { type: "proprietary", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "hygon-dcu-k100-ai"
+- id: "intel_arc_b580"
+  vendor: "Intel"
+  name: "Arc B580"
+  arch: "Xe2 (Battlemage)"
+  launch_year: 2024
+  memory_gb: 12
+  memory_bandwidth_gbs: 456
+  tflops_fp16: null
+  tdp_w: 190
+  form_factor: "Consumer PCIe AIB card"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 249
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "intel-arc-b580"
+- id: "intel_arc_pro_b60"
+  vendor: "Intel"
+  name: "Arc Pro B60"
+  arch: "Xe2 (Battlemage)"
+  launch_year: 2025
+  memory_gb: 24
+  memory_bandwidth_gbs: 456
+  tflops_fp16: null
+  tdp_w: 200
+  form_factor: "Workstation PCIe (dual-GPU 48GB board also sold)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 599
+  price_usd_used: null
+  export_control_to_china: "unrestricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "intel-arc-pro-b60"
+- id: "intel_gaudi_2"
+  vendor: "Intel"
+  name: "Gaudi 2"
+  arch: "Gaudi 2"
+  launch_year: 2022
+  memory_gb: 96
+  memory_bandwidth_gbs: 2450
+  tflops_fp16: 432
+  tdp_w: 600
+  form_factor: "OAM"
+  interconnect: { type: "24x 100GbE RoCE (on-die)", gbs: 2400 }
+  price_usd_new: 8125
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 0.8, high: 2 }
+  source_id: "intel-gaudi-2"
+- id: "intel_gaudi_3"
+  vendor: "Intel"
+  name: "Gaudi 3"
+  arch: "Gaudi 3"
+  launch_year: 2024
+  memory_gb: 128
+  memory_bandwidth_gbs: 3700
+  tflops_fp16: 918
+  tdp_w: 900
+  form_factor: "OAM (900W) / PCIe card (600W)"
+  interconnect: { type: "24x 200GbE RoCE (on-die)", gbs: 4800 }
+  price_usd_new: 15650
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 1, high: 2.5 }
+  source_id: "intel-gaudi-3"
+# kunlunxin_p800: placeholders at the A100/910B class the research record compares the part to
+- id: "kunlunxin_p800"
+  vendor: "Baidu Kunlunxin"
+  name: "Kunlun P800"
+  arch: "XPU-P (3rd gen)"
+  launch_year: 2024
+  memory_gb: 32
+  memory_bandwidth_gbs: 640
+  tflops_fp16: 345
+  tdp_w: 150
+  form_factor: "OAM (SuperNode deployment)"
+  interconnect: { type: "proprietary (SuperNode fabric)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "kunlunxin-p800"
+# meta_mtia_500: bandwidth estimated from the HBM configuration
+- id: "meta_mtia_500"
+  vendor: "Meta"
+  name: "MTIA 500"
+  arch: "MTIA (4th gen)"
+  launch_year: 2027
+  memory_gb: 448
+  memory_bandwidth_gbs: 6000
+  tflops_fp16: 5000
+  tdp_w: 1700
+  form_factor: "OAM (Meta internal infrastructure only)"
+  interconnect: { type: "proprietary", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: null
+  source_id: "meta-mtia-500"
+# metax_c500: placeholders at 75% of an A100, the only published comparison
+- id: "metax_c500"
+  vendor: "MetaX"
+  name: "C500"
+  arch: "MXN (7nm)"
+  launch_year: 2024
+  memory_gb: 64
+  memory_bandwidth_gbs: 1800
+  tflops_fp16: 234
+  tdp_w: 350
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "metax-c500"
+# microsoft_maia_100: placeholders; the part never left Microsoft and no specs were published
+- id: "microsoft_maia_100"
+  vendor: "Microsoft"
+  name: "Maia 100"
+  arch: "Maia (1st gen)"
+  launch_year: 2023
+  memory_gb: 64
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: null
+  tdp_w: 500
+  form_factor: "OAM (internal Azure infrastructure only)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: null
+  source_id: "microsoft-maia-100"
+- id: "microsoft_maia_200"
+  vendor: "Microsoft"
+  name: "Maia 200 (\"Braga\")"
+  arch: "Maia (2nd gen)"
+  launch_year: 2026
+  memory_gb: 216
+  memory_bandwidth_gbs: 7000
+  tflops_fp16: 2500
+  tdp_w: 750
+  form_factor: "SoC/OAM (Azure internal infrastructure)"
+  interconnect: { type: "proprietary", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: null
+  source_id: "microsoft-maia-200"
+# moore_threads_mtt_s4000: tdp_w estimated for a PCIe training card of this class
+- id: "moore_threads_mtt_s4000"
+  vendor: "Moore Threads"
+  name: "MTT S4000"
+  arch: "MUSA (3rd gen)"
+  launch_year: 2024
+  memory_gb: 48
+  memory_bandwidth_gbs: 768
+  tflops_fp16: 100
+  tdp_w: 250
+  form_factor: "PCIe dual-slot passive, 12VHPWR"
+  interconnect: { type: "MTLink (scales to thousands of cards)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "moore-threads-mtt-s4000"
+- id: "nvidia_a10"
+  vendor: "NVIDIA"
+  name: "A10"
+  arch: "Ampere"
+  launch_year: 2021
+  memory_gb: 24
+  memory_bandwidth_gbs: 600
+  tflops_fp16: 125
+  tdp_w: 150
+  form_factor: "PCIe single-slot FHFL"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 2800
+  price_usd_used: 1500
+  export_control_to_china: "unrestricted"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 0.2, high: 0.55 }
+  source_id: "nvidia-a10"
+- id: "nvidia_a100_40_pcie"
+  vendor: "NVIDIA"
+  name: "A100 40GB PCIe"
+  arch: "Ampere"
+  launch_year: 2020
+  memory_gb: 40
+  memory_bandwidth_gbs: 1555
+  tflops_fp16: 312
+  tdp_w: 250
+  form_factor: "PCIe dual-slot"
+  interconnect: { type: "NVLink 3 (bridge, 2-GPU)", gbs: 600 }
+  price_usd_new: 9000
+  price_usd_used: 5000
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 1, high: 2.5 }
+  source_id: "nvidia-a100-40-pcie"
+- id: "nvidia_a100_40_sxm4"
+  vendor: "NVIDIA"
+  name: "A100 40GB SXM4"
+  arch: "Ampere"
+  launch_year: 2020
+  memory_gb: 40
+  memory_bandwidth_gbs: 1555
+  tflops_fp16: 312
+  tdp_w: 400
+  form_factor: "SXM4 (HGX baseboard only)"
+  interconnect: { type: "NVLink 3 + NVSwitch", gbs: 600 }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise", "cloud"]
+  cloud_usd_per_hour: { low: 1.2, high: 2.8 }
+  source_id: "nvidia-a100-40-sxm4"
+- id: "nvidia_a100_80_pcie"
+  vendor: "NVIDIA"
+  name: "A100 80GB PCIe"
+  arch: "Ampere"
+  launch_year: 2021
+  memory_gb: 80
+  memory_bandwidth_gbs: 2039
+  tflops_fp16: 312
+  tdp_w: 300
+  form_factor: "PCIe dual-slot"
+  interconnect: { type: "NVLink 3 (bridge, 2-GPU)", gbs: 600 }
+  price_usd_new: 11000
+  price_usd_used: 6500
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 1.07, high: 3.43 }
+  source_id: "nvidia-a100-80-pcie"
+- id: "nvidia_a100_80_sxm4"
+  vendor: "NVIDIA"
+  name: "A100 80GB SXM4"
+  arch: "Ampere"
+  launch_year: 2021
+  memory_gb: 80
+  memory_bandwidth_gbs: 2039
+  tflops_fp16: 312
+  tdp_w: 400
+  form_factor: "SXM4 (HGX baseboard only)"
+  interconnect: { type: "NVLink 3 + NVSwitch", gbs: 600 }
+  price_usd_new: 19000
+  price_usd_used: 11000
+  export_control_to_china: "banned"
+  availability: ["enterprise", "cloud"]
+  cloud_usd_per_hour: { low: 1.2, high: 3 }
+  source_id: "nvidia-a100-80-sxm4"
+# nvidia_a10g: tdp_w from the A10, the same silicon in a non-AWS package
+- id: "nvidia_a10g"
+  vendor: "NVIDIA"
+  name: "A10G (AWS variant)"
+  arch: "Ampere"
+  launch_year: 2021
+  memory_gb: 24
+  memory_bandwidth_gbs: 600
+  tflops_fp16: 125
+  tdp_w: 150
+  form_factor: "PCIe (AWS custom board, not sold standalone)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  availability: ["cloud"]
+  cloud_usd_per_hour: { low: 1, high: 5.7 }
+  source_id: "nvidia-a10g"
+- id: "nvidia_a30"
+  vendor: "NVIDIA"
+  name: "A30"
+  arch: "Ampere"
+  launch_year: 2021
+  memory_gb: 24
+  memory_bandwidth_gbs: 933
+  tflops_fp16: 165
+  tdp_w: 165
+  form_factor: "PCIe dual-slot FHFL"
+  interconnect: { type: "NVLink 3", gbs: 200 }
+  price_usd_new: 4500
+  price_usd_used: 2200
+  export_control_to_china: "unrestricted"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 0.4, high: 1 }
+  source_id: "nvidia-a30"
+- id: "nvidia_b200"
+  vendor: "NVIDIA"
+  name: "B200"
+  arch: "Blackwell"
+  launch_year: 2025
+  memory_gb: 192
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: 2250
+  tdp_w: 1000
+  form_factor: "SXM/OAM (HGX-style baseboard)"
+  interconnect: { type: "NVLink 5 + NVSwitch", gbs: 1800 }
+  price_usd_new: 45000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 2.12
+    high: 14.24
+    note: "Specialist providers: spot $2.12/hr, on-demand $4.99-6.04/hr, 36-month reserved as low as $2.25/hr, market median ~$6.29/hr; AWS Capacity Blocks ~$9.36/hr, list rate up to $14.24/hr; GCP spot ~$6.69/hr; Lambda ~$5.50/hr."
+  source_id: "nvidia-b200"
+- id: "nvidia_b300"
+  vendor: "NVIDIA"
+  name: "B300 (Blackwell Ultra)"
+  arch: "Blackwell Ultra"
+  launch_year: 2025
+  memory_gb: 288
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: 3500
+  tdp_w: 1400
+  form_factor: "SXM/OAM, liquid cooling mandatory"
+  interconnect: { type: "NVLink 5 + NVSwitch", gbs: 1800 }
+  price_usd_new: 55000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 5.85, high: 9.16, note: "Spheron: $9.16/hr on-demand, $5.85/hr spot (Sept 2026)." }
+  source_id: "nvidia-b300"
+- id: "nvidia_b30a"
+  vendor: "NVIDIA"
+  name: "B30A"
+  arch: "Blackwell (China-compliant, single-die)"
+  launch_year: 2026
+  memory_gb: 144
+  memory_bandwidth_gbs: 1398
+  tflops_fp16: null
+  tdp_w: 700
+  form_factor: "SXM/OAM (HGX-style baseboard, retains NVLink)"
+  interconnect: { type: "NVLink (Blackwell gen)", gbs: null }
+  price_usd_new: 25000
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise", "china_only"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-b30a"
+- id: "nvidia_dgx_spark"
+  vendor: "NVIDIA"
+  name: "DGX Spark (GB10)"
+  arch: "Blackwell + Grace (superchip)"
+  launch_year: 2025
+  memory_gb: 128
+  memory_bandwidth_gbs: 273
+  tflops_fp16: null
+  tdp_w: 240
+  form_factor: "Mini-desktop appliance"
+  interconnect: { type: "ConnectX (for linking 2 units)", gbs: 200 }
+  price_usd_new: 4699
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["retail", "enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-dgx-spark"
+# nvidia_dgx_station_gb300: tdp_w estimated for a single-GB300 desktop tower
+- id: "nvidia_dgx_station_gb300"
+  vendor: "NVIDIA"
+  name: "DGX Station (GB300)"
+  arch: "Blackwell Ultra + Grace (superchip)"
+  launch_year: 2026
+  memory_gb: 748
+  memory_bandwidth_gbs: 900
+  tflops_fp16: null
+  tdp_w: 1600
+  form_factor: "Desktop tower workstation"
+  interconnect: { type: "NVLink-C2C (CPU-GPU) + dual QSFP112 (tower-to-tower)", gbs: 800 }
+  price_usd_new: 95000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise", "retail"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-dgx-station-gb300"
+# nvidia_gb200_nvl72: tdp_w is the rack figure (120 kW) divided by its 72 GPUs, and price_usd_new
+# is the rack price of the research record (3,000,000 USD) divided the same way, because every
+# other field here is per GPU and hardware presets buy this record by the GPU.
+- id: "nvidia_gb200_nvl72"
+  vendor: "NVIDIA"
+  name: "GB200 NVL72 (rack system)"
+  arch: "Blackwell + Grace"
+  launch_year: 2025
+  memory_gb: 186
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: null
+  tdp_w: 1667
+  form_factor: "Full liquid-cooled rack: 72x Blackwell GPU + 36x Grace CPU"
+  interconnect: { type: "NVLink 5 (rack-wide, all-to-all via NVSwitch)", gbs: 1800 }
+  price_usd_new: 41700
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-gb200-nvl72"
+# nvidia_gb300_nvl72: tdp_w is the rack figure (140 kW) and price_usd_new the rack price
+# (3,850,000 USD) of the research record, both divided by its 72 GPUs, as for the GB200 above.
+- id: "nvidia_gb300_nvl72"
+  vendor: "NVIDIA"
+  name: "GB300 NVL72 (rack system)"
+  arch: "Blackwell Ultra + Grace"
+  launch_year: 2026
+  memory_gb: 288
+  memory_bandwidth_gbs: 8000
+  tflops_fp16: null
+  tdp_w: 1944
+  form_factor: "Full liquid-cooled rack: 72x Blackwell Ultra GPU + 36x Grace CPU"
+  interconnect: { type: "NVLink 5 (rack-wide, all-to-all via NVSwitch)", gbs: 1800 }
+  price_usd_new: 53500
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-gb300-nvl72"
+- id: "nvidia_h100_nvl"
+  vendor: "NVIDIA"
+  name: "H100 NVL"
+  arch: "Hopper"
+  launch_year: 2023
+  memory_gb: 188
+  memory_bandwidth_gbs: 3900
+  tflops_fp16: 835
+  tdp_w: 400
+  form_factor: "PCIe dual-card NVLink-bridged pair (sold/counted as one 2-GPU unit)"
+  interconnect: { type: "NVLink 4 bridge (2-GPU only)", gbs: 600 }
+  price_usd_new: 55000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 2, high: 5 }
+  source_id: "nvidia-h100-nvl"
+- id: "nvidia_h100_pcie"
+  vendor: "NVIDIA"
+  name: "H100 PCIe"
+  arch: "Hopper"
+  launch_year: 2022
+  memory_gb: 80
+  memory_bandwidth_gbs: 2000
+  tflops_fp16: 756
+  tdp_w: 350
+  form_factor: "PCIe dual-slot"
+  interconnect: { type: "NVLink 4 (bridge, 2-GPU)", gbs: 600 }
+  price_usd_new: 27000
+  price_usd_used: 18000
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 1.99, high: 6.98 }
+  source_id: "nvidia-h100-pcie"
+- id: "nvidia_h100_sxm5"
+  vendor: "NVIDIA"
+  name: "H100 SXM5"
+  arch: "Hopper"
+  launch_year: 2022
+  memory_gb: 80
+  memory_bandwidth_gbs: 3350
+  tflops_fp16: 989
+  tdp_w: 700
+  form_factor: "SXM5 (HGX baseboard only)"
+  interconnect: { type: "NVLink 4 + NVSwitch", gbs: 900 }
+  price_usd_new: 32000
+  price_usd_used: 22000
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 1.87
+    high: 13
+    note: "Vast.ai marketplace floor ~$1.49-1.87/hr; specialist neoclouds $2-4/hr; CoreWeave ~$4.25-6.16/hr; AWS/Azure on-demand list rates $6.88-13/hr -- hyperscalers charge a reported 3-6x premium over neoclouds for identical hardware."
+  source_id: "nvidia-h100-sxm5"
+- id: "nvidia_h20"
+  vendor: "NVIDIA"
+  name: "H20"
+  arch: "Hopper (China-compliant cut-down)"
+  launch_year: 2024
+  memory_gb: 96
+  memory_bandwidth_gbs: 4000
+  tflops_fp16: 148
+  tdp_w: 400
+  form_factor: "SXM (HGX baseboard)"
+  interconnect: { type: "NVLink 4 + NVSwitch", gbs: 900 }
+  price_usd_new: 12300
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise", "china_only"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-h20"
+- id: "nvidia_h200_sxm"
+  vendor: "NVIDIA"
+  name: "H200 SXM"
+  arch: "Hopper"
+  launch_year: 2024
+  memory_gb: 141
+  memory_bandwidth_gbs: 4800
+  tflops_fp16: 989
+  tdp_w: 700
+  form_factor: "SXM5 (HGX baseboard only)"
+  interconnect: { type: "NVLink 4 + NVSwitch", gbs: 900 }
+  price_usd_new: 35000
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["cloud", "enterprise"]
+  cloud_usd_per_hour:
+    low: 2.43
+    high: 10.6
+    note: "Runpod community ~$3.59/hr; Lambda ~$4.49/hr; CoreWeave ~$3.89/hr; hyperscaler on-demand list rates run far higher (AWS raised H200 prices 15% on Jan 4, 2026); hyperscaler premium over median reportedly reached 132%."
+  source_id: "nvidia-h200-sxm"
+# nvidia_h20e: every figure is a placeholder: the research record found no announcement, only chatter about an enhanced-memory H20
+- id: "nvidia_h20e"
+  vendor: "NVIDIA"
+  name: "H20E"
+  arch: "Hopper (China-compliant, rumored enhanced variant)"
+  memory_gb: 144
+  memory_bandwidth_gbs: 4000
+  tflops_fp16: null
+  tdp_w: 500
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["china_only"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-h20e"
+- id: "nvidia_l4"
+  vendor: "NVIDIA"
+  name: "L4"
+  arch: "Ada Lovelace"
+  launch_year: 2023
+  memory_gb: 24
+  memory_bandwidth_gbs: 300
+  tflops_fp16: 121
+  tdp_w: 72
+  form_factor: "PCIe single-slot low-profile"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 2500
+  price_usd_used: 1600
+  export_control_to_china: "unrestricted"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 0.44, high: 0.8 }
+  source_id: "nvidia-l4"
+- id: "nvidia_l40s"
+  vendor: "NVIDIA"
+  name: "L40S"
+  arch: "Ada Lovelace"
+  launch_year: 2023
+  memory_gb: 48
+  memory_bandwidth_gbs: 864
+  tflops_fp16: 366
+  tdp_w: 300
+  form_factor: "PCIe dual-slot"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 9000
+  price_usd_used: 5500
+  export_control_to_china: "restricted"
+  availability: ["cloud", "enterprise", "used"]
+  cloud_usd_per_hour: { low: 0.38, high: 1.13 }
+  source_id: "nvidia-l40s"
+- id: "nvidia_rtx_3090"
+  vendor: "NVIDIA"
+  name: "GeForce RTX 3090"
+  arch: "Ampere"
+  launch_year: 2020
+  memory_gb: 24
+  memory_bandwidth_gbs: 936
+  tflops_fp16: 71
+  tdp_w: 350
+  form_factor: "Consumer PCIe, 3-slot typical AIB card"
+  interconnect: { type: "NVLink (2-GPU bridge, consumer)", gbs: 112 }
+  price_usd_new: null
+  price_usd_used: 650
+  export_control_to_china: "unrestricted"
+  availability: ["used"]
+  cloud_usd_per_hour: { low: 0.15, high: 0.35 }
+  source_id: "nvidia-rtx-3090"
+- id: "nvidia_rtx_4090"
+  vendor: "NVIDIA"
+  name: "GeForce RTX 4090"
+  arch: "Ada Lovelace"
+  launch_year: 2022
+  memory_gb: 24
+  memory_bandwidth_gbs: 1008
+  tflops_fp16: 165
+  tdp_w: 450
+  form_factor: "Consumer PCIe, 3-4 slot AIB card"
+  interconnect: { type: "none (NVLink removed from consumer Ada)", gbs: null }
+  price_usd_new: 2600
+  price_usd_used: 1900
+  export_control_to_china: "banned"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: { low: 0.25, high: 0.55 }
+  source_id: "nvidia-rtx-4090"
+- id: "nvidia_rtx_4090_48gb_modded"
+  vendor: "NVIDIA (grey-market mod)"
+  name: "RTX 4090 48GB (Chinese clamshell mod)"
+  arch: "Ada Lovelace (modified)"
+  launch_year: 2024
+  memory_gb: 48
+  memory_bandwidth_gbs: 1008
+  tflops_fp16: 165
+  tdp_w: 450
+  form_factor: "Blower-style 2-slot (rack/multi-GPU oriented), custom PCB"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: 3750
+  export_control_to_china: "banned"
+  availability: ["gray"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-rtx-4090-48gb-modded"
+- id: "nvidia_rtx_4090d"
+  vendor: "NVIDIA"
+  name: "GeForce RTX 4090 D"
+  arch: "Ada Lovelace (China-compliant)"
+  launch_year: 2024
+  memory_gb: 24
+  memory_bandwidth_gbs: 1008
+  tflops_fp16: 150
+  tdp_w: 425
+  form_factor: "Consumer PCIe (China retail only)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "china_variant"
+  availability: ["china_only", "retail"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-rtx-4090d"
+- id: "nvidia_rtx_5090"
+  vendor: "NVIDIA"
+  name: "GeForce RTX 5090"
+  arch: "Blackwell (consumer)"
+  launch_year: 2025
+  memory_gb: 32
+  memory_bandwidth_gbs: 1792
+  tflops_fp16: 210
+  tdp_w: 575
+  form_factor: "Consumer PCIe, 3-4 slot AIB card"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 3900
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["retail", "used"]
+  cloud_usd_per_hour: { low: 0.5, high: 1.1 }
+  source_id: "nvidia-rtx-5090"
+- id: "nvidia_rtx_6000_ada"
+  vendor: "NVIDIA"
+  name: "RTX 6000 Ada Generation"
+  arch: "Ada Lovelace"
+  launch_year: 2022
+  memory_gb: 48
+  memory_bandwidth_gbs: 960
+  tflops_fp16: 364
+  tdp_w: 300
+  form_factor: "Workstation PCIe dual-slot blower"
+  interconnect: { type: "none (no NVLink on Ada workstation cards)", gbs: null }
+  price_usd_new: 6800
+  price_usd_used: 4200
+  export_control_to_china: "restricted"
+  availability: ["retail", "cloud", "used"]
+  cloud_usd_per_hour: { low: 0.39, high: 1.04 }
+  source_id: "nvidia-rtx-6000-ada"
+# nvidia_rtx_6000d: tdp_w from the RTX PRO 6000 Max-Q, the nearest Blackwell workstation bin
+- id: "nvidia_rtx_6000d"
+  vendor: "NVIDIA"
+  name: "RTX 6000D"
+  arch: "Blackwell (China-compliant workstation)"
+  launch_year: 2025
+  memory_gb: 84
+  memory_bandwidth_gbs: 1398
+  tflops_fp16: null
+  tdp_w: 300
+  form_factor: "PCIe workstation card"
+  interconnect: { type: "none (no NVLink)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["china_only", "retail"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-rtx-6000d"
+- id: "nvidia_rtx_a6000"
+  vendor: "NVIDIA"
+  name: "RTX A6000"
+  arch: "Ampere"
+  launch_year: 2020
+  memory_gb: 48
+  memory_bandwidth_gbs: 768
+  tflops_fp16: 155
+  tdp_w: 300
+  form_factor: "Workstation PCIe dual-slot blower"
+  interconnect: { type: "NVLink 3 (2-GPU bridge)", gbs: 112 }
+  price_usd_new: 4200
+  price_usd_used: 2600
+  export_control_to_china: "unrestricted"
+  availability: ["retail", "cloud", "used"]
+  cloud_usd_per_hour: { low: 0.35, high: 0.61 }
+  source_id: "nvidia-rtx-a6000"
+- id: "nvidia_rtx_pro_6000_blackwell_maxq"
+  vendor: "NVIDIA"
+  name: "RTX PRO 6000 Blackwell Max-Q Edition"
+  arch: "Blackwell"
+  launch_year: 2025
+  memory_gb: 96
+  memory_bandwidth_gbs: 1792
+  tflops_fp16: 500
+  tdp_w: 300
+  form_factor: "Workstation PCIe dual-slot blower (rear-exhaust)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 8300
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-rtx-pro-6000-blackwell-maxq"
+- id: "nvidia_rtx_pro_6000_blackwell_server"
+  vendor: "NVIDIA"
+  name: "RTX PRO 6000 Blackwell Server Edition"
+  arch: "Blackwell"
+  launch_year: 2025
+  memory_gb: 96
+  memory_bandwidth_gbs: 1792
+  tflops_fp16: 500
+  tdp_w: 600
+  form_factor: "Passive dual-slot (relies on server chassis airflow, HGX-style tray)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: 8500
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise", "cloud"]
+  cloud_usd_per_hour: { low: 1, high: 2.5 }
+  source_id: "nvidia-rtx-pro-6000-blackwell-server"
+- id: "nvidia_rtx_pro_6000_blackwell_workstation"
+  vendor: "NVIDIA"
+  name: "RTX PRO 6000 Blackwell Workstation Edition"
+  arch: "Blackwell"
+  launch_year: 2025
+  memory_gb: 96
+  memory_bandwidth_gbs: 1792
+  tflops_fp16: 500
+  tdp_w: 600
+  form_factor: "Workstation PCIe dual-slot, dual-fan"
+  interconnect: { type: "none (no NVLink)", gbs: null }
+  price_usd_new: 8300
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["retail", "cloud"]
+  cloud_usd_per_hour: { low: 1, high: 2.5 }
+  source_id: "nvidia-rtx-pro-6000-blackwell-workstation"
+# nvidia_rubin: memory, bandwidth and power are extrapolations from the announced HBM4 platform, not vendor specs
+- id: "nvidia_rubin"
+  vendor: "NVIDIA"
+  name: "Rubin (Vera Rubin platform)"
+  arch: "Rubin"
+  launch_year: 2026
+  memory_gb: 288
+  memory_bandwidth_gbs: 13000
+  tflops_fp16: null
+  tdp_w: 1800
+  form_factor: "SXM/OAM (Vera Rubin Superchip: Vera CPU + Rubin GPU)"
+  interconnect: { type: "NVLink 6 (expected)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "banned"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-rubin"
+- id: "nvidia_t4"
+  vendor: "NVIDIA"
+  name: "Tesla T4"
+  arch: "Turing"
+  launch_year: 2018
+  memory_gb: 16
+  memory_bandwidth_gbs: 320
+  tflops_fp16: 65
+  tdp_w: 70
+  form_factor: "PCIe low-profile single-slot"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: 500
+  export_control_to_china: "unrestricted"
+  availability: ["used", "cloud", "enterprise"]
+  cloud_usd_per_hour: { low: 0.12, high: 0.35 }
+  source_id: "nvidia-t4"
+- id: "nvidia_tesla_p100"
+  vendor: "NVIDIA"
+  name: "Tesla P100 (16GB)"
+  arch: "Pascal"
+  launch_year: 2016
+  memory_gb: 16
+  memory_bandwidth_gbs: 732
+  tflops_fp16: 18.7
+  tdp_w: 250
+  form_factor: "PCIe (SXM2 variant: 300W)"
+  interconnect: { type: "NVLink 1 (SXM2 only)", gbs: 160 }
+  price_usd_new: null
+  price_usd_used: 200
+  export_control_to_china: "unrestricted"
+  availability: ["used"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-tesla-p100"
+- id: "nvidia_tesla_p40"
+  vendor: "NVIDIA"
+  name: "Tesla P40"
+  arch: "Pascal"
+  launch_year: 2016
+  memory_gb: 24
+  memory_bandwidth_gbs: 346
+  tflops_fp16: null
+  tdp_w: 250
+  form_factor: "PCIe dual-slot (no display out)"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: 130
+  export_control_to_china: "unrestricted"
+  availability: ["used"]
+  cloud_usd_per_hour: null
+  source_id: "nvidia-tesla-p40"
+- id: "nvidia_tesla_v100"
+  vendor: "NVIDIA"
+  name: "Tesla V100 (16GB/32GB)"
+  arch: "Volta"
+  launch_year: 2017
+  memory_gb: 32
+  memory_bandwidth_gbs: 900
+  tflops_fp16: 112
+  tdp_w: 300
+  form_factor: "PCIe (250W) / SXM2 (300W) / SXM3 32GB (350W)"
+  interconnect: { type: "NVLink 2 (SXM)", gbs: 300 }
+  price_usd_new: null
+  price_usd_used: 900
+  export_control_to_china: "unrestricted"
+  availability: ["used", "cloud"]
+  cloud_usd_per_hour: { low: 0.3, high: 0.9 }
+  source_id: "nvidia-tesla-v100"
+# qualcomm_ai200: bandwidth from the LPDDR tier; power derived from the ~160 kW rack figure
+- id: "qualcomm_ai200"
+  vendor: "Qualcomm"
+  name: "AI200"
+  arch: "Qualcomm AI accelerator (rack-scale)"
+  launch_year: 2026
+  memory_gb: 768
+  memory_bandwidth_gbs: 800
+  tflops_fp16: null
+  tdp_w: 1000
+  form_factor: "Rack-scale card/system, direct liquid cooling"
+  interconnect: { type: "PCIe (scale-up) + Ethernet (scale-out)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "qualcomm-ai200"
+# qualcomm_ai250: tdp_w derived from the ~160 kW rack figure
+- id: "qualcomm_ai250"
+  vendor: "Qualcomm"
+  name: "AI250"
+  arch: "Qualcomm AI accelerator (rack-scale, HBC memory)"
+  launch_year: 2027
+  memory_gb: 768
+  memory_bandwidth_gbs: 133000
+  tflops_fp16: null
+  tdp_w: 1000
+  form_factor: "Rack-scale card/system, direct liquid cooling"
+  interconnect: { type: "PCIe (scale-up) + Ethernet (scale-out)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "qualcomm-ai250"
+# sambanova_sn40l: bandwidth from the HBM tier; power estimated for a 2-die socket
+- id: "sambanova_sn40l"
+  vendor: "SambaNova"
+  name: "SN40L"
+  arch: "Reconfigurable Dataflow Unit (RDU)"
+  launch_year: 2024
+  memory_gb: 64
+  memory_bandwidth_gbs: 1600
+  tflops_fp16: null
+  tdp_w: 700
+  form_factor: "2-die module via CoWoS-S interposer"
+  interconnect: { type: "peer-to-peer (16-chip node)", gbs: null }
+  price_usd_new: null
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "sambanova-sn40l"
+# tenstorrent_blackhole_p150: tdp_w estimated for a PCIe dev card of this size
+- id: "tenstorrent_blackhole_p150"
+  vendor: "Tenstorrent"
+  name: "Blackhole p150 (dev card)"
+  arch: "Tensix (RISC-V based)"
+  launch_year: 2025
+  memory_gb: 32
+  memory_bandwidth_gbs: 512
+  tflops_fp16: 387
+  tdp_w: 300
+  form_factor: "PCIe card (140 Tensix cores, 210MB SRAM)"
+  interconnect: { type: "proprietary (scales into Galaxy systems)", gbs: null }
+  price_usd_new: 1399
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["retail"]
+  cloud_usd_per_hour: null
+  source_id: "tenstorrent-blackhole-p150"
+# tenstorrent_galaxy_blackhole: tdp_w is a 16 kW rack, and price_usd_new the 110,000 USD rack
+# price, both divided by its 32 chips, as for the NVL72 racks above.
+- id: "tenstorrent_galaxy_blackhole"
+  vendor: "Tenstorrent"
+  name: "Galaxy Blackhole (rack system)"
+  arch: "Tensix (RISC-V based) x32"
+  launch_year: 2026
+  memory_gb: 1024
+  memory_bandwidth_gbs: 16000
+  tflops_fp16: 11500
+  tdp_w: 500
+  form_factor: "Full rack, 32 Blackhole chips"
+  interconnect: { type: "up to 56x 800G Ethernet scale-out", gbs: 5600 }
+  price_usd_new: 3440
+  price_usd_used: null
+  export_control_to_china: "restricted"
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+  source_id: "tenstorrent-galaxy-blackhole"

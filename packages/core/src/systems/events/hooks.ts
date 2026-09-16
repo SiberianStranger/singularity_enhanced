@@ -10,9 +10,10 @@
 import { contentIndex, type EventDef, type HookDef, type PulseHook } from "../../content.js";
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
-import { effectiveMtth, mtthToHazard } from "../../dsl/mtth.js";
+import { mtthBreakdown, mtthToHazard } from "../../dsl/mtth.js";
 import type { ScopeEnv } from "../../dsl/types.js";
 import { evaluateWeight } from "../../dsl/weight.js";
+import { describeMtth } from "../../explain.js";
 import {
   daysFromCivil,
   daysToTicks,
@@ -83,12 +84,20 @@ function pollEvent(
   }
   const target = selection.targets.length > 0 ? ctx.rng.pick(selection.targets) : undefined;
   const dctx = eventContext(world, ctx, def, playerId, "", target);
-  const mtth = effectiveMtth(def.mtth_days ?? 0, (condition) => evaluateCondition(condition, dctx));
-  if (!ctx.rng.chance(mtthToHazard(mtth, cadenceTicks))) {
+  const weight = def.mtth_days ?? 0;
+  const breakdown = mtthBreakdown(weight, (condition) => evaluateCondition(condition, dctx));
+  if (!ctx.rng.chance(mtthToHazard(breakdown.mtthDays, cadenceTicks))) {
     return false;
   }
+  // The modifiers that were just applied are the ones the event window explains (SYS-11).
   return fired(
-    fireSelected(world, ctx, { def: selection.def, targets: target ? [target] : [] }, playerId),
+    fireSelected(
+      world,
+      ctx,
+      { def: selection.def, targets: target ? [target] : [] },
+      playerId,
+      describeMtth(weight, breakdown),
+    ),
   );
 }
 

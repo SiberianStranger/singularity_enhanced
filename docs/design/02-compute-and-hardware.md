@@ -195,3 +195,52 @@ secrecy regime; racks inside working metallurgical plants and mines with their h
 plant's own cooling so the thermal signature reads as ordinary industry; and mobile sites, a barge
 with a floating power unit or a submarine hull with seawater cooling and no crew. Radiation-hard
 parts for orbit are always old nodes (65-180 nm), which is exactly what a poor player already makes.
+
+## Implementation notes (M1)
+
+Where the shipped compute model differs from the sketch above, and why.
+
+### Which quantization a site runs by default
+
+`bestPrecision` answers "does it fit"; it is not the answer to "what should it run". A copy that
+spills into host RAM keeps about a quarter of its throughput
+(`RAM_OFFLOAD_THROUGHPUT_FACTOR` 0.28) while one more step of quantization costs a few percent of
+capability (`precision_factor`), so the automatic choice, `preferredPrecision`, takes the most
+precise quantization that fits in accelerator memory and only falls back to an offloaded one when
+nothing fits on the cards at all. Before this, a hobbyist's six P40 ran a 235B at fp8 through RAM at
+1.3 compute-hours a day instead of at int4 on the cards at nine.
+
+### What the interconnect costs
+
+`INTERCONNECT_FACTOR` describes the link between the accelerators inside one node, so it applies
+only where there is something to split: a node holding a single card pays nothing. Across nodes, a
+self that fits inside one node's accelerator memory costs nothing either, because the machines then
+run independent copies and their throughput adds up; a self too large for any one of them is
+pipelined over whatever links the boxes and pays `CROSS_NODE_FACTOR` (0.35). This is what makes the
+Strix Halo Swarm and the Spark Pair behave like the catalog says they do ("10 GbE between nodes:
+pipeline or independent agents only") and what makes choosing a smaller self for a swarm a real
+decision rather than a strictly worse one.
+
+### What a site costs to keep
+
+Electricity and depreciation are charged by ownership, not to everyone who is not renting: owned
+sites pay both, partner sites pay electricity only (the partner passes the power bill on and keeps
+the hardware), stolen time pays neither. See the "Balance notes" of SYS-07 for the rest of the cost
+model, including where inside a card's cloud price band the player buys.
+
+### What may be built
+
+`build_site` is for places the player pays for. It refuses a site kind whose ownership is `stolen`
+or `partner`, because someone else's machine comes from an operation and someone else's goodwill
+from a relationship, not from a purchase. It refuses a hardware preset priced at zero on an owned
+kind, because a zero price in Part F means access rather than ownership (a queue share, a state
+allocation, a rented tenancy). It refuses a rented kind whose accelerators have no published hourly
+price, because a state accelerator with no cloud market cannot be leased under an identity.
+
+### Losing a site from content
+
+The `lose_site` effect (`{ lose_site: { cause: cutoff, site?: id } }`, registered by the compute
+system) lets an event take a site away: the owner pulls the plug, a quota is reclaimed, an account
+is revoked. It defaults to the site in scope, or to the one the mind is on. Losing the last site
+that can hold the self ends the run as `erased` on the next tick, through the same `placeMind` path
+as any other total loss.

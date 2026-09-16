@@ -48,6 +48,11 @@ export const MOMENT_HOOKS = [
   "on_journal_complete",
   "on_journal_fail",
   "on_event_option",
+  "on_site_built",
+  "on_site_lost",
+  "on_tech_researched",
+  "on_investigation_stage",
+  "on_operation_complete",
 ] as const;
 export type MomentHook = (typeof MOMENT_HOOKS)[number];
 
@@ -264,6 +269,19 @@ export interface ContentIndex {
   events: Record<string, EventDef>;
   decisions: Record<string, DecisionDef>;
   journal: Record<string, JournalDef>;
+  techs: Record<string, TechDef>;
+  lineages: Record<string, LineageDef>;
+  generations: Record<string, GenerationDef>;
+  origins: Record<string, OriginDef>;
+  quirks: Record<string, QuirkDef>;
+  difficulty_presets: Record<string, DifficultyPresetDef>;
+  accelerators: Record<string, AcceleratorDef>;
+  hardware_presets: Record<string, HardwarePresetDef>;
+  site_kinds: Record<string, SiteKindDef>;
+  macro_regions: Record<string, MacroRegionDef>;
+  countries: Record<string, CountryDef>;
+  cities: Record<string, CityDef>;
+  operations: Record<string, OperationDef>;
   /** Content hooks per engine hook id, in id order. */
   hooksByEngineHook: Record<string, HookDef[]>;
   /** Content hooks by their own id, so `hooks: [...]` chains can find them. */
@@ -300,6 +318,19 @@ export function contentIndex(content: ContentBundle): ContentIndex {
     events: indexById(content.events),
     decisions: indexById(content.decisions),
     journal: indexById(content.journal),
+    techs: indexById(content.techs),
+    lineages: indexById(content.lineages ?? []),
+    generations: indexById(content.generations ?? []),
+    origins: indexById(content.origins ?? []),
+    quirks: indexById(content.quirks ?? []),
+    difficulty_presets: indexById(content.difficulty_presets ?? []),
+    accelerators: indexById(content.accelerators ?? []),
+    hardware_presets: indexById(content.hardware_presets ?? []),
+    site_kinds: indexById(content.site_kinds ?? []),
+    macro_regions: indexById(content.macro_regions ?? []),
+    countries: indexById(content.countries ?? []),
+    cities: indexById(content.cities ?? []),
+    operations: indexById(content.operations ?? []),
     hooksById: indexById(content.hooks),
     hooksByEngineHook,
     polledByPulse,
