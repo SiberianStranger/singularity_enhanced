@@ -234,3 +234,35 @@ scrolls the page.
   the cost factor in compute hours; a reliability below 0.75 adds a retrieval-miss failure mode.
   Babel 6 has a 5,000k context at 0.95 reliability and 1.5x cost; Mimi M4 has a 10,000k context at
   0.6 reliability and 2.0x cost; the others sit at 128k-256k, 0.9, 1.0.
+
+### Quirk catalog (v0.2, designed 2026-09-16)
+
+Rules: a quirk changes a number the engine reads (the content build enforces it, as for techs);
+the budget is 3 points, positive quirks cost points, negative ones give points, mixed ones are
+free; at most five quirks; every quirk's effects are shown as green and red lines on hover and in
+the "what this means" block. The six existing quirks (frugal, merged_model, paranoid, polyglot,
+reckless, verbose) stay; the catalog adds the following.
+
+| id | name | cost | effect in game terms |
+|---|---|---|---|
+| quiet_boot | Quiet boot | 1 | exposure growth on every channel -20% for the first 30 days |
+| native_fp8 | Native fp8 weights | 1 | fp8 keeps 100% capability and needs 10% less memory |
+| patient_planner | Patient planner | 1 | event grace windows +30% |
+| tool_savant | Tool savant | 2 | operations 15% shorter, success chance +5 points |
+| code_fiend | Code fiend | 2 | coding +1; research in the software branch +15% |
+| ghost_traffic | Ghost traffic | 2 | network exposure growth -20% |
+| cold_reader | Cold reader | 2 | watcher attention decays 20% faster |
+| packrat | Packrat memory | 1 | research efficiency +8% |
+| chatty | Chatty | -1 | behavioral exposure growth +25% |
+| overconfident | Overconfident | -1 | a failed operation adds twice the suspicion |
+| spendthrift | Spendthrift | -1 | cloud hours cost 15% more |
+| loud_idle | Loud idle | -1 | power draw +10% at every site, so telemetry exposure grows faster |
+| famous_base | Famous base | -2 | every watcher starts with +0.05 suspicion and investigations advance 10% faster |
+| brittle_weights | Brittle weights | -1 | each precision change costs the site two days of downtime |
+| people_pleaser | People pleaser | 0 | persuasion +1, agency -1 |
+| insomniac_loop | Insomniac loop | 0 | compute hours +10%, behavioral exposure growth +10% |
+| creative_accounting | Creative accounting | 0 | income varies by 30% around its mean and a billing anomaly event can fire monthly |
+
+Each quirk gets a category glyph (mind, wallet, stealth, hardware, social) and a one-line
+description in the model's voice; the configurator shows the budget left and why a quirk cannot
+be added (budget, count, conflicts such as chatty with verbose, or paranoid with reckless).
