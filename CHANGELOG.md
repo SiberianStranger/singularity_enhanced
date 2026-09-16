@@ -11,6 +11,13 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 Nothing yet.
 
+## [0.1.1] - 2026-09-16
+
+### Fixed
+- The release workflow now attaches the desktop installers (Windows NSIS and MSI, macOS dmg, Linux
+  AppImage and deb) to the GitHub Release; 0.1.0 shipped only the web zip because the build step
+  did not upload its bundles as workflow artifacts.
+
 ## [0.1.0] - 2026-09-16
 
 The first playable preview of the rebuilt game (milestone M1): a vertical slice in the browser and

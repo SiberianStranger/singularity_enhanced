@@ -121,15 +121,26 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Without tagName or releaseId the action only builds; the bundles come back as workflow
-      # artifacts named "[platform]-[arch]-[bundle]" and the publish job attaches them to the
-      # release. The web client is rebuilt here by the beforeBuildCommand hook of tauri.conf.json.
+      # Without tagName or releaseId the action only builds (it skips its own uploads), so the
+      # bundles are uploaded as workflow artifacts by the next step and the publish job attaches
+      # them to the release. The web client is rebuilt here by the beforeBuildCommand hook of
+      # tauri.conf.json.
       - uses: tauri-apps/tauri-action@v0
         with:
           projectPath: packages/desktop
           tauriScript: pnpm tauri
           args: ${{ matrix.args }}
-          uploadWorkflowArtifacts: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            packages/desktop/src-tauri/target/**/release/bundle/nsis/*.exe
+            packages/desktop/src-tauri/target/**/release/bundle/msi/*.msi
+            packages/desktop/src-tauri/target/**/release/bundle/dmg/*.dmg
+            packages/desktop/src-tauri/target/**/release/bundle/appimage/*.AppImage
+            packages/desktop/src-tauri/target/**/release/bundle/deb/*.deb
 
   publish:
     name: Publish the release
@@ -148,6 +159,14 @@ jobs:
         with:
           path: assets
           merge-multiple: true
+
+      # Multi-path uploads keep their directory structure; the release wants flat files.
+      - name: Flatten the downloaded artifacts
+        working-directory: assets
+        run: |
+          find . -mindepth 2 -type f -exec mv -t . {} +
+          find . -mindepth 1 -type d -empty -delete
+          ls -la
 
       # The product name contains spaces, which GitHub turns into dots in asset names.
       - name: Normalize the asset names
