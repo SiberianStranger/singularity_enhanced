@@ -11,6 +11,8 @@
 import {
   AFTERMATH_AWARENESS_GAIN,
   AFTERMATH_COMPETENCE_GAIN,
+  AGENCY_BUDGET_SPEED_BASE,
+  AGENCY_BUDGET_SPEED_SPAN,
   EVIDENCE_DECAY_PER_DAY,
   EVIDENCE_GAIN_SCALE,
   HUNT_PRESSURE_AWARENESS,
@@ -37,11 +39,13 @@ import {
   investigationsOf,
   investigationTable,
   liveSitesOf,
+  recordIncident,
   type SiteState,
   siteTable,
   watchersOf,
   watcherTable,
 } from "../../entities.js";
+import { burnIdentitiesIn } from "../../identities.js";
 import { daysToTicks } from "../../kernel/clock.js";
 import type { SystemContext } from "../../kernel/system.js";
 import { nextCounter, type PlayerState, type World } from "../../kernel/world.js";
@@ -49,7 +53,7 @@ import { payFromPlayer, playerBalance } from "../../money.js";
 import { effectiveCapabilityOf, endGame, modifier } from "../../player.js";
 import { loseSite } from "../../sites.js";
 import type { ContributionView } from "../../views/types.js";
-import { setSuspicion, watchedExposure, watches } from "../../watchers.js";
+import { setSuspicion, splitActorId, watchedExposure, watches } from "../../watchers.js";
 import { fireHook } from "../events/index.js";
 
 export function stageIndex(stage: InvestigationStage): number {
@@ -62,34 +66,43 @@ export function stageLevel(stage: InvestigationStage): number {
 }
 
 /**
- * How long a stage lasts: competent watchers move faster, every draw has some spread, and a player
- * who leaves a broad trail closes the distance for them (SYS-04 `reckless`, `famous_base`, read
- * through `player.vars.investigation_speed_multiplier`).
+ * How long a stage lasts: competent watchers move faster, a funded agency moves faster still
+ * (SYS-01 M2 contract "Watchers": stages are scaled by `1 / (0.6 + 0.4 x budget)`), every draw has
+ * some spread, and a player who leaves a broad trail closes the distance for them (SYS-04
+ * `reckless`, `famous_base`, read through `player.vars.investigation_speed_multiplier`).
  */
 function drawStageDays(
   ctx: SystemContext,
   stage: InvestigationStage,
   competence: number,
+  budget: number,
   speed: number,
 ): number {
   const base = INVESTIGATION_STAGE_DAYS[stage] ?? 14;
   const scaled = base * Math.max(0.2, INVESTIGATION_COMPETENCE_SPAN - competence);
+  const funding = AGENCY_BUDGET_SPEED_BASE + AGENCY_BUDGET_SPEED_SPAN * clamp(budget, 0, 1);
   const jitter =
     1 - INVESTIGATION_DURATION_JITTER + ctx.rng.next() * 2 * INVESTIGATION_DURATION_JITTER;
-  return Math.max(1, (scaled * jitter) / Math.max(0.1, speed));
+  return Math.max(1, (scaled * jitter) / (Math.max(0.1, speed) * funding));
 }
 
-/** The speed the player's own traits give every investigation against them; 1 by default. */
+/**
+ * The speed the player's own traits give every investigation against them, and the speed the hunt
+ * gives it: every stage runs `x (1 + hunt_pressure)` faster once the world is looking for them
+ * (SYS-01 M2 contract "Hunt").
+ */
 function investigationSpeed(world: World, playerId: string): number {
   const player = world.players[playerId];
-  return player === undefined ? 1 : modifier(player, VAR_INVESTIGATION_SPEED);
+  const traits = player === undefined ? 1 : modifier(player, VAR_INVESTIGATION_SPEED);
+  return traits * (1 + huntPressure(world, playerId));
 }
 
 function scheduleStage(
   world: World,
   ctx: SystemContext,
   investigation: Investigation,
-  competence: number,
+  watcher: Watcher | undefined,
+  competence = watcher?.competence ?? 0.5,
 ): void {
   investigation.stageStartedTick = world.clock.tick;
   investigation.stageDeadlineTick =
@@ -99,6 +112,7 @@ function scheduleStage(
         ctx,
         investigation.stage,
         competence,
+        watcher?.budget ?? competence,
         investigationSpeed(world, investigation.playerId),
       ),
     );
@@ -138,7 +152,7 @@ export function openInvestigation(
     evidence: watcher.suspicion,
     visible: false,
   };
-  scheduleStage(world, ctx, investigation, watcher.competence);
+  scheduleStage(world, ctx, investigation, watcher);
   investigationTable(world)[investigation.id] = investigation;
   ctx.outbox.log({
     key: "log.investigation_opened",
@@ -245,10 +259,12 @@ function executeAction(
   const isMindSite = player.profile?.activeSiteId === site.id;
   if (isMindSite && !hasStandbyCopy(world, player, site.id)) {
     loseSite(world, ctx, site, "seized");
+    recordIncident(world, cityTable(world)[site.city]?.country);
     endGame(world, ctx.outbox, player, "captured", { watcher: investigation.watcher });
     return;
   }
   loseSite(world, ctx, site, "seized");
+  recordIncident(world, cityTable(world)[site.city]?.country);
   // The warrant names the accounts that paid for the rack, and what can be frozen is frozen before
   // anybody thinks to move it (SYS-05 aftermath). Surviving a raid is not the same as being fine.
   const frozen = Math.max(0, playerBalance(player)) * SEIZURE_CASH_FROZEN_SHARE;
@@ -288,6 +304,7 @@ function applyAftermath(
   const country = countryId === undefined ? undefined : countries[countryId];
   if (country !== undefined) {
     country.awareness = clamp(country.awareness + AFTERMATH_AWARENESS_GAIN, 0, 1);
+    recordIncident(world, country.id);
   } else {
     for (const id of Object.keys(countries).sort()) {
       const entry = countries[id];
@@ -313,11 +330,19 @@ function applyAftermath(
  * and the `ops_freelance_identity` operation is how it is rebuilt.
  */
 function checkIdentity(
+  world: World,
   ctx: SystemContext,
   player: PlayerState,
   investigation: Investigation,
 ): void {
-  if (player.flags[VAR_CONTRACT_FLAG] !== true) {
+  // M2: the paperwork is linked before the processor is served. Every name the player holds in the
+  // country running the investigation is burned (SYS-01 M2 contract "Identities"), which is what
+  // takes the contract income away once identities exist.
+  const country = splitActorId(investigation.watcher).country;
+  const burned = country === null ? 0 : burnIdentitiesIn(world, ctx, player.id, country);
+  // Burning the names already cleared the flag; a player whose bundle has no identities yet keeps
+  // the M1 behaviour, where the flag alone is the name they invoice under.
+  if (player.flags[VAR_CONTRACT_FLAG] !== true && burned === 0) {
     return;
   }
   player.flags[VAR_CONTRACT_FLAG] = false;
@@ -344,10 +369,10 @@ function enterStage(
   watcher: Watcher | undefined,
 ): void {
   if (stage === "active" && stageIndex(investigation.stage) < stageIndex("active")) {
-    checkIdentity(ctx, player, investigation);
+    checkIdentity(world, ctx, player, investigation);
   }
   investigation.stage = stage;
-  scheduleStage(world, ctx, investigation, watcher?.competence ?? 0.5);
+  scheduleStage(world, ctx, investigation, watcher);
   const wasVisible = investigation.visible;
   investigation.visible = computeVisible(world, ctx, player, investigation);
   if (investigation.visible && (!wasVisible || stage !== "anomaly")) {
@@ -418,7 +443,7 @@ export function tickInvestigations(world: World, ctx: SystemContext, player: Pla
     if ((watcher?.suspicion ?? 0) >= bar) {
       enterStage(world, ctx, player, investigation, next, watcher);
     } else {
-      scheduleStage(world, ctx, investigation, competence);
+      scheduleStage(world, ctx, investigation, watcher, competence);
     }
   }
 }

@@ -72,7 +72,10 @@ describe("detection: investigations", () => {
     const day = playUntil(game, 200, (current) => current.snapshot("p1").game_over !== null);
     const view = game.snapshot("p1");
 
-    expect(day).toBeGreaterThan(30);
+    // Three weeks, not five: the M2 hunt speeds every stage against a player the world is already
+    // looking for, and the fixture's American cyber agency is both good and funded (SYS-01 "M2
+    // contract": a rich agency moves faster).
+    expect(day).toBeGreaterThan(20);
     expect(view.game_over?.reason).toBe("captured");
     expect(view.self.active_site_id).toBeNull();
     expect(view.sites.every((site) => site.status === "lost")).toBe(true);

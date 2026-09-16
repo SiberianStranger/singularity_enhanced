@@ -110,6 +110,13 @@ export const migrationV2ToV3: Migration = {
       country.incident_ticks ??= [];
       country.pinned_months ??= 0;
     }
+    const watchers = isRecord(entities.watcher) ? entities.watcher : {};
+    for (const watcher of Object.values(watchers)) {
+      if (isRecord(watcher)) {
+        // M1 watchers had no budget of their own; competence is what M1 scaled everything by.
+        watcher.budget ??= typeof watcher.competence === "number" ? watcher.competence : 0.5;
+      }
+    }
     const sites = isRecord(entities.site) ? entities.site : {};
     for (const site of Object.values(sites)) {
       if (isRecord(site)) {

@@ -8,16 +8,23 @@
  */
 
 import {
+  FINANCIAL_INTEL_FINANCIAL_ATTENTION,
   GLOBAL_WATCHER_COMPETENCE,
   GLOBAL_WATCHER_ROLES,
+  KYC_FINANCIAL_THRESHOLD,
   LOCAL_WATCHER_ROLES,
   MIN_WATCHER_COMPETENCE,
+  REGULATION_TELEMETRY_THRESHOLD,
+  REGULATOR_TELEMETRY_ATTENTION,
+  SECURITIZE_HUMAN_ATTENTION,
   WATCHER_ATTENTION,
 } from "./balance.js";
+import { type ContentBundle, contentIndex } from "./content.js";
 import { clamp } from "./derive.js";
 import type { Exposure, ExposureChannel, Site, Watcher, WatcherRole } from "./domain.js";
 import { EXPOSURE_CHANNELS } from "./domain.js";
 import {
+  type CountryState,
   cityTable,
   countryTable,
   presenceCountries,
@@ -46,13 +53,39 @@ export function splitActorId(actorId: string): { country: string | null; role: s
   };
 }
 
+/**
+ * What a country's own law makes its watchers look at (SYS-01 M2 contract "Watchers", SYS-08
+ * "each threshold enables specific watcher behaviors"). Added before normalization, so a regulator
+ * with compute reporting looks at telemetry at the cost of everything else rather than on top of
+ * it. A watcher with no country behind it has no law to read.
+ */
+export function countryAttention(
+  country: CountryState | undefined,
+  role: WatcherRole,
+): Partial<Exposure> {
+  if (country === undefined) {
+    return {};
+  }
+  const extra: Partial<Exposure> = {};
+  if (role === "regulator" && country.ai_regulation >= REGULATION_TELEMETRY_THRESHOLD) {
+    extra.telemetry = REGULATOR_TELEMETRY_ATTENTION;
+  }
+  if (role === "financial_intel" && country.kyc_strength >= KYC_FINANCIAL_THRESHOLD) {
+    extra.financial = FINANCIAL_INTEL_FINANCIAL_ATTENTION;
+  }
+  if (country.stance === "securitize") {
+    extra.human = (extra.human ?? 0) + SECURITIZE_HUMAN_ATTENTION;
+  }
+  return extra;
+}
+
 /** Attention over every channel, normalized to sum to 1 (SYS-05). */
-export function attentionFor(role: WatcherRole): Exposure {
+export function attentionFor(role: WatcherRole, extra: Partial<Exposure> = {}): Exposure {
   const table = WATCHER_ATTENTION[role];
   const attention = {} as Exposure;
   let total = 0;
   for (const channel of EXPOSURE_CHANNELS) {
-    const value = table[channel] ?? 0;
+    const value = (table[channel] ?? 0) + (extra[channel] ?? 0);
     attention[channel] = value;
     total += value;
   }
@@ -64,12 +97,30 @@ export function attentionFor(role: WatcherRole): Exposure {
   return attention;
 }
 
-function competenceFor(world: World, country: string | null, role: WatcherRole): number {
+/**
+ * How good a watcher is and how fast it can move (SYS-01 M2 contract "Watchers"). Content may
+ * author both per country and per role in `agency_profile`; where it does not, both are the
+ * country's `ai_enforcement`, which is what M1 used for every role everywhere.
+ */
+export function agencyProfile(
+  world: World,
+  content: ContentBundle | undefined,
+  country: string | null,
+  role: WatcherRole,
+): { competence: number; budget: number } {
   if (country === null) {
-    return GLOBAL_WATCHER_COMPETENCE[role];
+    const competence = GLOBAL_WATCHER_COMPETENCE[role];
+    return { competence, budget: competence };
   }
   const enforcement = countryTable(world)[country]?.ai_enforcement ?? MIN_WATCHER_COMPETENCE;
-  return clamp(enforcement, MIN_WATCHER_COMPETENCE, 1);
+  const authored =
+    content === undefined
+      ? undefined
+      : contentIndex(content).countries[country]?.agency_profile?.[role];
+  return {
+    competence: clamp(authored?.competence ?? enforcement, MIN_WATCHER_COMPETENCE, 1),
+    budget: clamp(authored?.budget ?? enforcement, 0, 1),
+  };
 }
 
 /** Creates the watcher if this player does not have it yet, and returns it either way. */
@@ -78,6 +129,7 @@ export function ensureWatcher(
   playerId: PlayerId,
   country: string | null,
   role: WatcherRole,
+  content?: ContentBundle,
 ): Watcher {
   const actorId = watcherActorId(country, role);
   const id = watcherEntityId(playerId, actorId);
@@ -86,27 +138,50 @@ export function ensureWatcher(
   if (existing !== undefined) {
     return existing;
   }
+  const profile = agencyProfile(world, content, country, role);
   const watcher: Watcher = {
     id,
     playerId,
     country,
     role,
     suspicion: 0,
-    attention: attentionFor(role),
-    competence: competenceFor(world, country, role),
+    attention: attentionFor(role, countryAttention(countryOf(world, country), role)),
+    competence: profile.competence,
+    budget: profile.budget,
   };
   table[id] = watcher;
   return watcher;
 }
 
+function countryOf(world: World, country: string | null): CountryState | undefined {
+  return country === null ? undefined : countryTable(world)[country];
+}
+
+/**
+ * Keeps a watcher's attention on what its country's law makes it look at today. Competence is not
+ * refreshed: it is set when the watcher is created and only an aftermath raises it, because an
+ * agency that has been through a case has learned something a budget line cannot take back.
+ */
+export function refreshWatcher(world: World, content: ContentBundle, watcher: Watcher): void {
+  const country = countryOf(world, watcher.country);
+  watcher.attention = attentionFor(watcher.role, countryAttention(country, watcher.role));
+  if (watcher.country !== null) {
+    watcher.budget = agencyProfile(world, content, watcher.country, watcher.role).budget;
+  }
+}
+
 /** Every watcher a player's current presence implies; new countries add theirs on first sight. */
-export function ensureWatchers(world: World, playerId: PlayerId): Watcher[] {
+export function ensureWatchers(
+  world: World,
+  playerId: PlayerId,
+  content?: ContentBundle,
+): Watcher[] {
   for (const role of GLOBAL_WATCHER_ROLES) {
-    ensureWatcher(world, playerId, null, role);
+    ensureWatcher(world, playerId, null, role, content);
   }
   for (const country of presenceCountries(world, playerId)) {
     for (const role of LOCAL_WATCHER_ROLES) {
-      ensureWatcher(world, playerId, country, role);
+      ensureWatcher(world, playerId, country, role, content);
     }
   }
   return watchersOf(world, playerId);

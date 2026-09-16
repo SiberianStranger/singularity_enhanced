@@ -990,6 +990,12 @@ export interface Watcher extends EntityRecord {
   suspicion: number;
   attention: Exposure;
   competence: number;
+  /**
+   * What it can spend on a case, in [0, 1] (SYS-01 M2 contract "Watchers"). A rich agency moves
+   * through the stages of an investigation faster; an underfunded one takes its time. Authored per
+   * country and role in `agency_profile`, else the country's `ai_enforcement`.
+   */
+  budget: number;
 }
 
 export const IDENTITY_KINDS = ["person", "company"] as const;

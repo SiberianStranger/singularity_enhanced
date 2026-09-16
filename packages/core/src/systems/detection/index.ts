@@ -20,16 +20,23 @@ import {
   EXPOSURE_VAR_SUFFIX,
   HARNESS_AUTONOMY_EXPOSURE_PER_DAY,
   HARNESS_LOGGING_EXPOSURE_PER_DAY,
+  HUNT_PRESSURE_SUSPICION_RELIEF,
   INVESTIGATION_OPEN_SUSPICION,
   INVESTIGATION_STAGE_SUSPICION,
+  LOCAL_HEAT_AWARENESS,
+  LOCAL_HEAT_INCIDENT_SPAN,
+  LOCAL_HEAT_INCIDENTS,
+  LOCAL_HEAT_SECURITIZE,
   POWER_EXPOSURE_PER_KW_PER_DAY,
   RESIDENTIAL_POWER_KW,
   SUSPICION_DECAY_PER_DAY,
   SUSPICION_FLOOR,
   SUSPICION_GAIN_SCALE,
+  VAR_AWARENESS_PRESENCE,
   VAR_EXPOSED_DAYS,
   VAR_EXPOSURE_GROWTH_ALL,
   VAR_EXPOSURE_GROWTH_EARLY,
+  VAR_HUNT_PRESSURE,
   VAR_PUBLIC_FOOTPRINT,
   VAR_SUSPICION_DECAY,
 } from "../../balance.js";
@@ -42,6 +49,7 @@ import { createEffectRegistry } from "../../dsl/effects.js";
 import { asRecord, asString, isRecord, optionalNumber, optionalString } from "../../dsl/node.js";
 import type { ConditionRegistry, DslContext, EffectRegistry } from "../../dsl/types.js";
 import {
+  awarenessPresence,
   cityTable,
   countryTable,
   globalAwareness,
@@ -55,11 +63,18 @@ import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
 import { endGame, isAlive, modifier, timedModifier } from "../../player.js";
 import { addExposure } from "../../sites.js";
-import { ensureWatchers, setSuspicion, watchedExposure, watches } from "../../watchers.js";
+import {
+  ensureWatchers,
+  refreshWatcher,
+  setSuspicion,
+  watchedExposure,
+  watches,
+} from "../../watchers.js";
 import {
   accrueEvidence,
   actorIdOf,
   huntLevel,
+  huntPressure,
   openInvestigation,
   openInvestigationFor,
   stageLevel,
@@ -84,10 +99,20 @@ const SUSPICION_ALERT_LEVELS = [
 export function localHeat(world: World, cityId: string): number {
   const city = cityTable(world)[cityId];
   const country = city === undefined ? undefined : countryTable(world)[city.country];
-  return (
+  const base =
     1 +
     (city?.scrutiny ?? 0) * CITY_SCRUTINY_WEIGHT +
-    (country?.ai_enforcement ?? 0) * COUNTRY_ENFORCEMENT_WEIGHT
+    (country?.ai_enforcement ?? 0) * COUNTRY_ENFORCEMENT_WEIGHT;
+  if (country === undefined) {
+    return base;
+  }
+  // What the country itself adds (SYS-01 M2 contract "Watchers"): what the public already believes,
+  // what has happened here lately, and a state that treats this as a security matter.
+  return (
+    base +
+    LOCAL_HEAT_AWARENESS * country.awareness +
+    LOCAL_HEAT_INCIDENTS * Math.min(1, country.incidents_30d / LOCAL_HEAT_INCIDENT_SPAN) +
+    (country.stance === "securitize" ? LOCAL_HEAT_SECURITIZE : 0)
   );
 }
 
@@ -210,10 +235,21 @@ function dailyDetection(world: World, ctx: SystemContext, player: PlayerState): 
     accrueExposure(world, ctx, player, site);
   }
   publishExposure(world, player);
-  for (const watcher of ensureWatchers(world, player.id)) {
+  // The two world clocks, published where content and the panel both read them (SYS-05).
+  const pressure = huntPressure(world, player.id);
+  player.vars[VAR_HUNT_PRESSURE] = pressure;
+  player.vars[VAR_AWARENESS_PRESENCE] = awarenessPresence(world, player.id);
+  // A hunt lowers the bar for opening a case: once a service believes there is something out
+  // there, a smaller anomaly is enough to start asking (SYS-01 M2 contract "Hunt").
+  const openAt = Math.max(
+    0,
+    INVESTIGATION_OPEN_SUSPICION - HUNT_PRESSURE_SUSPICION_RELIEF * pressure,
+  );
+  for (const watcher of ensureWatchers(world, player.id, ctx.content)) {
+    refreshWatcher(world, ctx.content, watcher);
     accrueSuspicion(world, ctx, player, watcher);
     if (
-      watcher.suspicion >= INVESTIGATION_OPEN_SUSPICION &&
+      watcher.suspicion >= openAt &&
       openInvestigationFor(world, player.id, actorIdOf(watcher)) === undefined
     ) {
       openInvestigation(world, ctx, watcher);
@@ -222,9 +258,15 @@ function dailyDetection(world: World, ctx: SystemContext, player: PlayerState): 
   accrueEvidence(world, player);
 }
 
-/** The slow ending: the world knows, the hunt is at its last stage, and it stays there. */
+/**
+ * The slow ending: the world knows, the hunt is at its last stage, and it stays there.
+ *
+ * M2 reads the awareness of the countries the player is actually in rather than the global mean
+ * (SYS-01 M2 contract "Hunt"): an average over a hundred and five countries never approached the
+ * figure this ending needs, which is why SYS-05's M1 notes record it as unreachable.
+ */
 function checkExposedEnding(world: World, ctx: SystemContext, player: PlayerState): void {
-  const aware = globalAwareness(world) >= EXPOSED_AWARENESS;
+  const aware = awarenessPresence(world, player.id) >= EXPOSED_AWARENESS;
   const hunted = huntLevel(world, player.id) >= EXPOSED_HUNT_LEVEL;
   const days = aware && hunted ? (player.vars[VAR_EXPOSED_DAYS] ?? 0) + 1 : 0;
   player.vars[VAR_EXPOSED_DAYS] = days;
