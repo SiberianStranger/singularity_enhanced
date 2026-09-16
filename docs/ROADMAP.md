@@ -60,7 +60,10 @@ not the order.
 The 105 countries and 178 cities already load; M2 makes them different to play in. Work is split
 by package so three agents can run it: core (systems), content (data and events), client (panels
 and map modes). Specs: SYS-01 "Country dynamics", SYS-08, SYS-09, SYS-07 (world economy), SYS-05
-(awareness and hunt clocks), SYS-17 (identities), SYS-11 (World, Country and City panels).
+(awareness and hunt clocks), SYS-17 (identities), SYS-11 (World, Country and City panels). The
+shared vocabulary (fields, dynamics with starting numbers, DSL kinds, hooks, identities, views, the
+sim mode) is SYS-01 "M2 contract" (2026-09-16); core and content run first, the client part waits
+for the playtest 5 layout pass so two agents never edit `packages/ui` at once.
 
 - Country dynamics v0 (core): daily and weekly ticks per country for stance toward rogue AI,
   regulation level, enforcement budget, public awareness and opinion; the 2027 election calendar
