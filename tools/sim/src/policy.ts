@@ -78,6 +78,12 @@ export interface SecondSitePlan {
 /** Days of upkeep a fallback has to be worth before the price of buying it counts as settled. */
 const FALLBACK_UPKEEP_HORIZON_DAYS = 45;
 
+/** The operations that buy a name, in the order a careful player runs them (SYS-17). */
+const IDENTITY_OPERATIONS = ["ops_freelance_identity", "ops_shell_company"] as const;
+
+/** Cash a player keeps against an operation's price before starting it. */
+const IDENTITY_OPERATION_CASH_MULTIPLE = 2.5;
+
 /** How much more a player will pay for a fallback that holds the self on the cards, not in RAM. */
 const RESIDENT_COPY_PREMIUM = 3;
 
@@ -409,6 +415,39 @@ export function resolvePending(
     });
 }
 
+/**
+ * The two operations that buy the player a name (SYS-17). A careful player keeps one of each while
+ * they can afford it: the person is what the contract income is paid to, the company is what signs
+ * for a cage. Both are started at most once at a time, because the operations system refuses a
+ * second instance of a running operation anyway.
+ */
+export function identityOperations(
+  view: PlayerView,
+  spendable: number,
+  alarmed: boolean,
+): PlayerCommand[] {
+  if (alarmed) {
+    return [];
+  }
+  const running = new Set(view.operations.map((entry) => entry.operation_id));
+  const commands: PlayerCommand[] = [];
+  for (const id of IDENTITY_OPERATIONS) {
+    const offer = view.operation_offers.find((entry) => entry.id === id);
+    const kind = id === "ops_shell_company" ? "company" : "person";
+    const held = view.finances.identities.some(
+      (identity) => identity.kind === kind && identity.status === "active",
+    );
+    if (offer === undefined || !offer.enabled || running.has(id) || held) {
+      continue;
+    }
+    if (spendable < offer.cost_usd * IDENTITY_OPERATION_CASH_MULTIPLE) {
+      continue;
+    }
+    commands.push({ type: "start_operation", playerId: view.player_id, operationId: id });
+  }
+  return commands;
+}
+
 export interface PolicyContext {
   content: ContentBundle;
   plan: SecondSitePlan | undefined;
@@ -538,6 +577,11 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
       });
     }
   }
+
+  // The paperwork (SYS-07 "Balance notes, fourth pass": the sim has to run the operations a
+  // careful player runs, or the income shock an investigation causes is never measured). A name to
+  // invoice under first, a company second, each one only while there is money to spare.
+  commands.push(...identityOperations(view, spendable, alarmed));
 
   // Going quiet. A site somebody is already at the door of is abandoned, not defended (SYS-05
   // "sacrifice the site cleanly"): move the self to the copy that is already running elsewhere,

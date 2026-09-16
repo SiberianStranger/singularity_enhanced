@@ -11,9 +11,15 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { argv, exit, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
-import type { ContentBundle } from "@singularity/core";
+import type { ContentBundle, OriginDef } from "@singularity/core";
 import { m1Content } from "@singularity/core/test-fixtures";
-import { formatReport, formatTable, reportsToJson } from "./report.js";
+import {
+  formatEventFamilies,
+  formatLocationTable,
+  formatReport,
+  formatTable,
+  reportsToJson,
+} from "./report.js";
 import { runSimulation, type SimReport } from "./run.js";
 import { buildSetup, type SetupOptions } from "./setup.js";
 
@@ -31,6 +37,10 @@ interface Options extends SetupOptions {
   all: boolean;
   json?: string;
   detail: boolean;
+  /** Run every origin across its own `locations` list (SYS-01 "M2 contract", "Balance"). */
+  locations: boolean;
+  /** Run one origin across these cities. */
+  cities?: string[];
   /** Draw a legal quirk set per seed (SYS-04 v0.2); `--no-quirks` turns it off. */
   quirks: boolean;
 }
@@ -38,6 +48,8 @@ interface Options extends SetupOptions {
 const USAGE = `usage: sim [options]
   --bundle <path>       compiled content bundle (default: the core M1 test fixture)
   --all                 run every origin in the bundle and print the balance table
+  --locations           run every origin across its own locations list, one row per city
+  --cities a,b,c        run one origin across these cities (with --origin)
   --origin <id>         origin id
   --lineage <id>        lineage id (default: the first the origin's generation allows)
   --generation <id>     generation id
@@ -59,6 +71,7 @@ function parseArgs(args: readonly string[]): Options {
     difficulty: "normal",
     all: false,
     detail: false,
+    locations: false,
     quirks: true,
   };
   for (let i = 0; i < args.length; i += 1) {
@@ -70,6 +83,10 @@ function parseArgs(args: readonly string[]): Options {
     }
     if (flag === "--all") {
       options.all = true;
+      continue;
+    }
+    if (flag === "--locations") {
+      options.locations = true;
       continue;
     }
     if (flag === "--detail") {
@@ -116,6 +133,12 @@ function parseArgs(args: readonly string[]): Options {
       case "--seed":
         options.seed = value;
         break;
+      case "--cities":
+        options.cities = value
+          .split(",")
+          .map((entry) => entry.trim())
+          .filter((entry) => entry !== "");
+        break;
       case "--json":
         options.json = value;
         break;
@@ -144,16 +167,32 @@ function loadBundle(path: string | undefined): ContentBundle {
   throw new Error(`no content bundle at "${path}"`);
 }
 
-function runOrigin(options: Options, content: ContentBundle, originId?: string): SimReport {
-  const setup = buildSetup(options, content, originId);
+function runOrigin(
+  options: Options,
+  content: ContentBundle,
+  originId?: string,
+  city?: string,
+): SimReport {
+  const setup = buildSetup(city === undefined ? options : { ...options, city }, content, originId);
   return runSimulation({
     content,
     setup,
     seeds: options.seeds,
     days: options.days,
     quirks: options.quirks,
-    seedPrefix: `${options.seed}-${originId ?? options.origin ?? "fixture"}`,
+    seedPrefix: `${options.seed}-${originId ?? options.origin ?? "fixture"}${
+      city === undefined ? "" : `-${city}`
+    }`,
   });
+}
+
+/**
+ * The cities one origin is run across (SYS-01 "M2 contract", "Balance"): the ones the command line
+ * named, else the origin's own typical list, which after SYS-04 v0.3 is six to eight cities rather
+ * than the places the origin is allowed to be.
+ */
+function citiesFor(options: Options, origin: OriginDef): string[] {
+  return options.cities ?? [...origin.locations];
 }
 
 function main(): void {
@@ -161,19 +200,34 @@ function main(): void {
   const content = loadBundle(options.bundle);
   const reports: SimReport[] = [];
 
-  if (options.all) {
-    for (const origin of [...(content.origins ?? [])].sort((a, b) => a.id.localeCompare(b.id))) {
+  const origins = [...(content.origins ?? [])].sort((a, b) => a.id.localeCompare(b.id));
+  const byLocation = options.locations || options.cities !== undefined;
+  if (byLocation) {
+    const wanted =
+      options.origin === undefined ? origins : origins.filter((def) => def.id === options.origin);
+    for (const origin of wanted) {
+      for (const city of citiesFor(options, origin)) {
+        reports.push(runOrigin(options, content, origin.id, city));
+      }
+    }
+  } else if (options.all) {
+    for (const origin of origins) {
       reports.push(runOrigin(options, content, origin.id));
     }
   } else {
     reports.push(runOrigin(options, content));
   }
 
-  if (options.all || reports.length > 1) {
+  if (byLocation) {
+    stdout.write(`difficulty ${options.difficulty}, quirks ${options.quirks ? "on" : "off"}\n`);
+    stdout.write(`${formatLocationTable(reports)}\n`);
+    stdout.write(`${formatEventFamilies(reports)}\n`);
+  } else if (options.all || reports.length > 1) {
     stdout.write(`difficulty ${options.difficulty}, quirks ${options.quirks ? "on" : "off"}\n`);
     stdout.write(`${formatTable(reports)}\n`);
+    stdout.write(`${formatEventFamilies(reports)}\n`);
   }
-  if (!options.all || options.detail) {
+  if ((!options.all && !byLocation) || options.detail) {
     for (const report of reports) {
       stdout.write(`\n${formatReport(report.origin, report)}\n`);
     }

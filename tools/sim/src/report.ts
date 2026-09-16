@@ -85,6 +85,60 @@ export function formatTable(reports: readonly SimReport[]): string {
   return lines.join("\n");
 }
 
+const LOCATION_HEADER =
+  "origin             city                  d90  d180   median   hunt   caught by                     losses";
+
+/**
+ * One line per starting city (SYS-01 "M2 contract", "Balance"): survival at day 90 and 180, the
+ * median, the loss split and the three watchers that ended the most runs. This is the table the M2
+ * definition of done is read off: San Jose, Shenzhen, Warsaw and Novosibirsk have to differ, and no
+ * location may dominate across origins.
+ */
+export function formatLocationTable(reports: readonly SimReport[]): string {
+  const lines: string[] = [LOCATION_HEADER];
+  for (const report of reports) {
+    const share = (day: number): string =>
+      percent(report.survival.find((point) => point.day === day)?.share ?? 0).padStart(5);
+    const causes = Object.entries(report.causes).sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+    );
+    const losses =
+      causes.length === 0
+        ? "survived"
+        : causes.map(([cause, count]) => `${cause} ${count}`).join(", ");
+    const caught =
+      report.top_watchers.length === 0
+        ? "nobody"
+        : report.top_watchers.map((entry) => `${entry.watcher} ${entry.runs}`).join(", ");
+    lines.push(
+      `${report.origin.padEnd(18)} ${(report.city ?? "-").padEnd(20)}${share(90)}${share(
+        180,
+      )}   ${String(report.median_days_survived).padStart(6)}   ${String(
+        report.median_max_hunt_level,
+      ).padStart(4)}   ${caught.padEnd(28).slice(0, 28)}  ${losses}`,
+    );
+  }
+  return lines.join("\n");
+}
+
+/** Events per run by family, summed over a whole sweep: which families are being played at all. */
+export function formatEventFamilies(reports: readonly SimReport[]): string {
+  const totals: Record<string, number> = {};
+  for (const report of reports) {
+    for (const [tag, perRun] of Object.entries(report.events_by_tag)) {
+      totals[tag] = (totals[tag] ?? 0) + perRun;
+    }
+  }
+  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  if (rows.length === 0) {
+    return "events per run: none";
+  }
+  const perSweep = rows
+    .map(([tag, total]) => `${tag} ${(total / Math.max(1, reports.length)).toFixed(1)}`)
+    .join("   ");
+  return `events per run   ${perSweep}`;
+}
+
 export function reportsToJson(reports: readonly SimReport[]): string {
   return `${JSON.stringify(reports, null, 2)}\n`;
 }

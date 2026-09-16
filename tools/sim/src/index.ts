@@ -2,6 +2,7 @@ export {
   cheapestUpgrade,
   DEFAULT_POLICY,
   dailyCommands,
+  identityOperations,
   isAlarmed,
   jobShare,
   maxIncomeUsdPerDay,
@@ -19,6 +20,8 @@ export {
 } from "./policy.js";
 export {
   formatCauses,
+  formatEventFamilies,
+  formatLocationTable,
   formatReport,
   formatTable,
   reportsToJson,
@@ -35,5 +38,6 @@ export {
   type SingleRun,
   SURVIVAL_DAYS,
   summarize,
+  TOP_WATCHERS,
 } from "./run.js";
 export { buildSetup, defaultLineage, type SetupOptions } from "./setup.js";

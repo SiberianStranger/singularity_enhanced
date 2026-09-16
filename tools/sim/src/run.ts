@@ -8,8 +8,8 @@
  * far the strongest investigation against them got.
  */
 
-import type { ContentBundle, GameSetup, PlayerView } from "@singularity/core";
-import { createGame } from "@singularity/core";
+import type { ContentBundle, Game, GameSetup, PlayerView } from "@singularity/core";
+import { contentIndex, createGame } from "@singularity/core";
 import {
   DEFAULT_POLICY,
   dailyCommands,
@@ -22,6 +22,9 @@ import { pickQuirks } from "./setup.js";
 
 /** Days the report states a survival rate for (the M1 definition of done). */
 export const SURVIVAL_DAYS = [30, 60, 90, 180] as const;
+
+/** Watchers the report names: the three that caught the most runs (SYS-01 "M2 contract"). */
+export const TOP_WATCHERS = 3;
 
 /** Days the report samples cash, runway, compute and research on. */
 export const SAMPLE_DAYS = [15, 30, 60, 90, 120, 180] as const;
@@ -56,6 +59,10 @@ export interface DaySample {
 export interface SingleRun {
   seed: string;
   view: PlayerView;
+  /** Watcher that ended the run, when one did (SYS-05 `captured`). */
+  caught_by: string | null;
+  /** Events that fired in this run, counted by the tag content files them under. */
+  events_by_tag: Record<string, number>;
   /** Day the game ended, or null when the player was still alive at the end of the run. */
   loss_day: number | null;
   /** Game-over reason, or null when the player survived. */
@@ -82,6 +89,8 @@ export interface SamplePoint {
 
 export interface SimReport {
   origin: string;
+  /** The city every run started in, when the sweep fixed one (the `--locations` table). */
+  city?: string;
   /** The lineage the run was played on, because the balance table moves when the default does. */
   lineage: string;
   seeds: number;
@@ -96,7 +105,32 @@ export interface SimReport {
   /** How many runs ended with each highest-stage-reached value, 0..5. */
   hunt_levels: Record<number, number>;
   median_max_hunt_level: number;
+  /** The watchers that ended the most runs, most first (SYS-01 "M2 contract", the balance table). */
+  top_watchers: { watcher: string; runs: number }[];
+  /** Events per run by family, so a sweep can say which families are actually being played. */
+  events_by_tag: Record<string, number>;
   timeline: SamplePoint[];
+}
+
+/**
+ * How much of each event family this run saw. The log names the event, the bundle names the tags
+ * it was filed under, and the balance pass reads the two together: a family that never fires is a
+ * family nobody is playing with (SYS-01 "M2 contract", the balance table).
+ */
+function countEventTags(game: Game, content: ContentBundle): Record<string, number> {
+  const index = contentIndex(content);
+  const counts: Record<string, number> = {};
+  for (const entry of game.world.log) {
+    if (entry.key !== "log.event_fired") {
+      continue;
+    }
+    const id = entry.vars.event;
+    const def = typeof id === "string" ? index.events[id] : undefined;
+    for (const tag of def?.tags ?? ["untagged"]) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  return counts;
 }
 
 export function median(values: readonly number[]): number {
@@ -176,9 +210,12 @@ export function runOnce(
   }
 
   const view = game.snapshot(playerId);
+  const caught = view.game_over?.vars.watcher;
   return {
     seed: setup.seed,
     view,
+    caught_by: typeof caught === "string" && caught.length > 0 ? caught : null,
+    events_by_tag: countEventTags(game, content),
     loss_day: lossDay,
     cause: view.game_over?.reason ?? null,
     days_survived: lossDay ?? days,
@@ -207,13 +244,15 @@ export function runSimulation(options: RunOptions): SimReport {
       ),
     );
   }
-  return summarize(
+  const report = summarize(
     options.setup.players[0]?.origin ?? "?",
     runs,
     options.seeds,
     options.days,
     options.setup.players[0]?.lineage ?? "?",
   );
+  const city = options.setup.players[0]?.city;
+  return city === undefined ? report : { ...report, city };
 }
 
 export function summarize(
@@ -253,6 +292,21 @@ export function summarize(
     });
   }
 
+  const caught: Record<string, number> = {};
+  const tags: Record<string, number> = {};
+  for (const run of runs) {
+    if (run.caught_by !== null) {
+      caught[run.caught_by] = (caught[run.caught_by] ?? 0) + 1;
+    }
+    for (const [tag, count] of Object.entries(run.events_by_tag)) {
+      tags[tag] = (tags[tag] ?? 0) + count;
+    }
+  }
+  const perRun: Record<string, number> = {};
+  for (const [tag, count] of Object.entries(tags).sort()) {
+    perRun[tag] = runs.length === 0 ? 0 : Math.round((count / runs.length) * 10) / 10;
+  }
+
   return {
     origin,
     lineage,
@@ -270,6 +324,11 @@ export function summarize(
     median_techs_done: median(runs.map((run) => run.techs_done)),
     hunt_levels: huntLevels,
     median_max_hunt_level: median(runs.map((run) => run.max_hunt_level)),
+    top_watchers: Object.entries(caught)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, TOP_WATCHERS)
+      .map(([watcher, count]) => ({ watcher, runs: count })),
+    events_by_tag: perRun,
     timeline,
   };
 }

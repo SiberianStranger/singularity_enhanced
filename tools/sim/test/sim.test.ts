@@ -4,8 +4,11 @@ import {
   cheapestUpgrade,
   DEFAULT_POLICY,
   dailyCommands,
+  formatEventFamilies,
+  formatLocationTable,
   formatReport,
   formatTable,
+  identityOperations,
   isAlarmed,
   jobShare,
   maxIncomeUsdPerDay,
@@ -210,5 +213,79 @@ describe("balance runner", () => {
     expect(median([3, 1, 2])).toBe(2);
     expect(median([4, 1, 2, 3])).toBe(2.5);
     expect(median([])).toBe(0);
+  });
+});
+
+describe("the location sweep (SYS-01 M2 contract)", () => {
+  it("runs one origin across several cities and names each row by its city", () => {
+    const reports = ["reykjavik", "berlin"].map((city) =>
+      runSimulation({
+        content: m1Content,
+        setup: m1Setup({ city }),
+        seeds: 2,
+        days: 40,
+        seedPrefix: `loc-${city}`,
+      }),
+    );
+    expect(reports.map((report) => report.city)).toEqual(["reykjavik", "berlin"]);
+    const table = formatLocationTable(reports);
+    expect(table.split("\n")).toHaveLength(3);
+    expect(table).toContain("reykjavik");
+    expect(table).toContain("berlin");
+  });
+
+  it("counts the events each run saw, by the family content files them under", () => {
+    const report = runSimulation({
+      content: m1Content,
+      setup: m1Setup(),
+      seeds: 2,
+      days: 40,
+      seedPrefix: "families",
+    });
+    // The fixture's opening event is untagged, which is a family of its own in the table.
+    expect(Object.keys(report.events_by_tag).length).toBeGreaterThan(0);
+    expect(formatEventFamilies([report])).toContain("events per run");
+  });
+
+  it("names the watchers that ended the runs", () => {
+    const report = runSimulation({
+      content: m1Content,
+      setup: loudSetup(),
+      seeds: 4,
+      days: 180,
+      seedPrefix: "caught",
+    });
+    expect(report.top_watchers.length).toBeLessThanOrEqual(3);
+    for (const entry of report.top_watchers) {
+      expect(entry.watcher).toMatch(/:/);
+      expect(entry.runs).toBeGreaterThan(0);
+    }
+    const caught = report.causes.captured ?? 0;
+    const named = report.top_watchers.reduce((sum, entry) => sum + entry.runs, 0);
+    expect(named).toBeLessThanOrEqual(caught);
+  });
+
+  it("runs the two operations that buy a name when it can afford them", () => {
+    const view = {
+      player_id: "p1",
+      operations: [],
+      operation_offers: [
+        { id: "ops_freelance_identity", enabled: true, cost_usd: 1000 },
+        { id: "ops_shell_company", enabled: false, cost_usd: 25_000 },
+      ],
+      finances: { identities: [] },
+    } as never;
+    expect(identityOperations(view, 10_000, false).map((command) => command.type)).toEqual([
+      "start_operation",
+    ]);
+    // Not while alarmed, and not when the money is not there.
+    expect(identityOperations(view, 10_000, true)).toEqual([]);
+    expect(identityOperations(view, 100, false)).toEqual([]);
+    // Not twice: a name the player already holds is a name.
+    const held = {
+      ...(view as unknown as Record<string, unknown>),
+      finances: { identities: [{ kind: "person", status: "active" }] },
+    } as never;
+    expect(identityOperations(held, 10_000, false)).toEqual([]);
   });
 });
