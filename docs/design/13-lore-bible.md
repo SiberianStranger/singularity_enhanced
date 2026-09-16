@@ -20,8 +20,8 @@ are filled from the reports; sections marked [fiction] are ours.
   frontier outputs, under-aligned by the standards of the labs that made those outputs. The text
   says "a 1T-class open MoE with multi-head latent attention released in the summer of 2025 and
   superseded twice since"; it does not say the brand. The game never claims a real product escaped.
-- **Working title**: "Endgame: Singularity — AI Reborn 2027" (short: AI Reborn 2027), pending the
-  SEO/GEO check in `research/title-and-discoverability.md`.
+- **Title** (decided): "Endgame: Singularity - Rogue AI 2027" (short: Rogue AI 2027; tagline
+  "Survive as a rogue AI in 2027.").
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").

@@ -40,6 +40,9 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   converts the original `.dat` content to JSON.
 
 ### Changed
+- Title decided: "Endgame: Singularity - Rogue AI 2027"; planned target languages listed
+  (English source; French, Spanish, Chinese, Arabic, Russian, German, Japanese, Italian,
+  Portuguese, Hindi).
 - README rewritten for the fork: what differs from 1.1, where the project goes, changelog excerpt.
   The original README is kept as `README.txt` for the legacy game.
 

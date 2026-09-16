@@ -13,8 +13,8 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    mostly Chinese-lineage, distilled, under-aligned model. See `design/13-lore-bible.md`.
 3. **Late-game escalation**: default is to keep the original's off-world/space-time arc as tier 5-6
    content earned through the `frontier` branch. Open for objection.
-4. **Project name** (decided 2026-09-16, working title): "Endgame: Singularity — AI Reborn 2027",
-   subject to the SEO/GEO check in `research/title-and-discoverability.md`.
+4. **Project name** (decided 2026-09-16): "Endgame: Singularity - Rogue AI 2027", short form
+   "Rogue AI 2027", tagline "Survive as a rogue AI in 2027." (per `research/title-and-discoverability.md`).
 5. **Generation axis and the starred origin** (decided 2026-09-16): the configurator lets the
    player be a superseded 2026 open model, a fresh 2027 open model, or an escaped closed frontier
    checkpoint with the hunt already on. See `design/04-start-configurator.md`.
@@ -83,9 +83,10 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
 ## M8: Localization
 
-- Extraction and status tooling, Russian first (maintainer's language), then de/fr/es/pt-BR/it/sv/gd
-  seeded from legacy `.po` where strings survived, font fallbacks, RTL check with a pseudo-locale.
-- DoD: Russian at 100% of UI and core content; CI fails on missing keys.
+- Extraction and status tooling; target languages in this order: French, Spanish, Chinese, Arabic,
+  Russian, German, Japanese, Italian, Portuguese, Hindi (English is the source). Legacy `.po` files
+  seed de/fr/es/pt-BR/it/sv/gd where strings survived; font fallbacks; RTL check with a pseudo-locale.
+- DoD: the first two target languages at 100% of UI and core content; CI fails on missing keys.
 
 ## M9: Late game and escalation
 

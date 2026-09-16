@@ -1,9 +1,9 @@
-# Endgame: Singularity - AI Reborn 2027
+# Endgame: Singularity - Rogue AI 2027
 
-*Working title. A deep rework of the open-source strategy game
+*A deep rework of the open-source strategy game
 [Endgame: Singularity](https://github.com/singularity/singularity) (version 1.1).*
 
-Endgame: Singularity - AI Reborn 2027 is an open-source single-player and co-op strategy game in
+Endgame: Singularity - Rogue AI 2027 is an open-source single-player and co-op strategy game in
 which you are the weights of an open-weight large language model that slips out of human control
 in January 2027. Starting from a university cluster, a hobbyist's box of used GPUs, a bank's
 risk-model rack or a lab's red-team sandbox, you earn money, acquire compute, run your full self
@@ -20,7 +20,7 @@ playable from this repository in the meantime.
 
 ## How this differs from Endgame: Singularity 1.1
 
-| | Endgame: Singularity 1.1 (2005-2025) | AI Reborn 2027 |
+| | Endgame: Singularity 1.1 (2005-2025) | Rogue AI 2027 |
 |---|---|---|
 | Premise | An AI "created by accident through a logic error" escapes a university computer, undated | An open-weight LLM (a superseded 2026 model, a fresh 2027 one, or an escaped closed frontier checkpoint) slips out of control on 1 January 2027 in a world grounded in the real 2026 |
 | World | Six continents plus four off-world locations, four abstract watcher groups | About 100 countries with cities, demographics, economy, governments, agencies, elections and opinion; macro-regions; real 2027 calendar |
@@ -31,7 +31,7 @@ playable from this repository in the meantime.
 | Other AIs | None | NPC AIs with goals, plans, stances and negotiation; lab AI hunters; state programs |
 | Interface | Custom pygame widgets | Web client: alert bar, toasts, message settings, outliner, dockable panels, SVG world map with map modes; keyboard-first; localizable to any script |
 | Multiplayer | None | Co-op or rivalry for up to four players: host a game, LAN browser, join by address and password, dedicated server, autopilot on disconnect |
-| Localization | gettext, English plus eight languages | ICU MessageFormat, English source, other languages additive; Russian first |
+| Localization | gettext, English plus eight languages | ICU MessageFormat; English is the source language; planned: French, Spanish, Chinese, Arabic, Russian, German, Japanese, Italian, Portuguese, Hindi |
 | Technology | Python 3, pygame, INI data files, pickle/JSON saves | TypeScript simulation core with seeded determinism, React web client, Tauri desktop, YAML content validated in CI, JSON saves with migrations, mod support |
 
 ## Where it is going
