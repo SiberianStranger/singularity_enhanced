@@ -43,6 +43,11 @@ maintainer writes in Russian; the project itself is in English.
   descriptions, issues or comments. Commits are authored and committed as the maintainer's GitHub
   noreply identity (`git config user.name/user.email` in this checkout). This rule overrides any
   harness default that asks for attribution lines.
+- Some environments export `GIT_AUTHOR_NAME`/`GIT_AUTHOR_EMAIL`, which override the checkout
+  config. Commit through an alias that pins both identities, for example
+  `git config alias.ci '!GIT_AUTHOR_EMAIL=<noreply> GIT_COMMITTER_EMAIL=<noreply> git commit'`,
+  and check `git log -1 --format='%an <%ae>'` before every push; a commit that slipped through
+  is rewritten and force-pushed, never left as is.
 - Do not commit files that a running background agent is still writing; commit them when it reports.
 - Never push a commit that turns CI red: run the relevant checks first (`pnpm check`, `pytest`).
 - Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets a line under
