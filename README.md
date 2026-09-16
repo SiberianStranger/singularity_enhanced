@@ -130,6 +130,10 @@ WebView's IndexedDB; SYS-15 moves them to the application data directory in mile
 The Pages deploy runs on every push to `master`; the repository setting Settings, Pages, Build and
 deployment, Source has to be "GitHub Actions".
 
+A release can also be started without a local checkout: Actions, "Release", "Run workflow",
+type the version (for example `0.1.0`) and optionally an alias tag such as `playable-M1`; the
+workflow creates the tags on the chosen commit and publishes the release the same way.
+
 ## Play the original game now
 
 The 1.1 game is unchanged apart from two small fixes. You need Python 3.9+, pygame 2.5.2+, numpy

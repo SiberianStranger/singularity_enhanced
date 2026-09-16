@@ -7,6 +7,18 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # "Run workflow" in the Actions tab does the same for a version typed by hand: the publish job
+  # creates the tag vX.Y.Z (and an optional alias tag such as playable-M1) on the chosen commit.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the v (for example 0.1.0)"
+        required: true
+        type: string
+      alias_tag:
+        description: "Optional second tag to move to the same commit (for example playable-M1)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -38,9 +50,21 @@ jobs:
           VITE_BASE: "./"
         run: pnpm --filter @singularity/ui build
 
+      - name: Work out the version
+        id: v
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
       - name: Zip the web client
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${{ steps.v.outputs.version }}"
           cd packages/ui/dist
           zip -qr "$GITHUB_WORKSPACE/web-$version.zip" .
 
@@ -136,24 +160,56 @@ jobs:
             fi
           done
 
+      - name: Work out the version
+        id: v
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Create the tags when started by hand
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TAG: ${{ steps.v.outputs.tag }}
+          ALIAS: ${{ inputs.alias_tag }}
+        run: |
+          git config user.name "SiberianStranger"
+          git config user.email "74363306+SiberianStranger@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG already exists; re-releasing an existing tag by hand is not supported"
+            exit 1
+          fi
+          git tag -a "$TAG" -m "Rogue AI 2027 $TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+          if [ -n "$ALIAS" ]; then
+            git tag -f -a "$ALIAS" -m "$ALIAS" "$GITHUB_SHA"
+            git push -f origin "refs/tags/$ALIAS"
+          fi
+
       - name: Extract the release notes
-        run: node tools/release-notes.mjs "$GITHUB_REF_NAME" > release-notes.md
+        run: node tools/release-notes.mjs "${{ steps.v.outputs.tag }}" > release-notes.md
 
       - name: Create or update the release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
         run: |
           prerelease=""
-          case "$GITHUB_REF_NAME" in
+          case "$TAG" in
             v0.*) prerelease="--prerelease" ;;
           esac
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
-            gh release upload "$GITHUB_REF_NAME" assets/* --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file release-notes.md
+            gh release upload "$TAG" assets/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" \
+            gh release create "$TAG" \
               --verify-tag \
-              --title "$GITHUB_REF_NAME" \
+              --title "$TAG" \
               --notes-file release-notes.md \
               $prerelease \
               assets/*
