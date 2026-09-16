@@ -30,6 +30,12 @@ export interface ListEntry {
    */
   unavailable?: string | undefined;
   selected: boolean;
+  /**
+   * Heading this entry sits under. Entries are drawn in the order given, and a heading is printed
+   * whenever it changes, so a step that offers two tiers of the same thing (the Location step's
+   * typical cities and everywhere else) is one list rather than two.
+   */
+  group?: string;
   onSelect(): void;
 }
 
@@ -151,6 +157,8 @@ interface StepLayoutProps {
   /** The description as prose, at the 70-character measure. */
   description: string;
   meaning?: Meaning;
+  /** A control above the list, inside its frame and outside its scroll (a filter box). */
+  listHeader?: ReactNode;
   /** Anything the step adds under the meaning block (dials, sliders, a table). */
   children?: ReactNode;
   /** Shown instead of the list when the step has no list (world settings, summary). */
@@ -170,6 +178,7 @@ export function StepLayout({
   title,
   description,
   meaning,
+  listHeader,
   children,
   listless,
 }: StepLayoutProps): ReactNode {
@@ -204,64 +213,78 @@ export function StepLayout({
       }
     >
       {listless === true ? null : (
-        <ul className="min-h-0 overflow-auto border-e border-line" data-testid="step-list">
-          {entries.map((entry) => {
-            const locked = entry.lock != null || entry.unavailable !== undefined;
-            const row = (
-              <button
-                type="button"
-                data-testid={`list-entry-${entry.id}`}
-                data-locked={locked ? "true" : undefined}
-                aria-pressed={entry.selected}
-                onClick={entry.onSelect}
-                className={`flex w-full flex-col items-start gap-0.5 border-s-2 px-2 py-1 text-start ${
-                  entry.selected
-                    ? "border-s-linestrong bg-accent text-accentfg"
-                    : "border-s-transparent hover:bg-panel2"
-                } ${locked ? "opacity-60" : ""}`}
-              >
-                <span className="flex w-full items-baseline gap-1">
-                  {/* Wraps rather than truncating: a name the player cannot read in full is the
+        <div className="flex min-h-0 min-w-0 flex-col border-e border-line">
+          {listHeader === undefined ? null : (
+            <div className="shrink-0 border-b border-line p-1">{listHeader}</div>
+          )}
+          <ul className="min-h-0 overflow-auto" data-testid="step-list">
+            {entries.map((entry, index) => {
+              const locked = entry.lock != null || entry.unavailable !== undefined;
+              const row = (
+                <button
+                  type="button"
+                  data-testid={`list-entry-${entry.id}`}
+                  data-locked={locked ? "true" : undefined}
+                  aria-pressed={entry.selected}
+                  onClick={entry.onSelect}
+                  className={`flex w-full flex-col items-start gap-0.5 border-s-2 px-2 py-1 text-start ${
+                    entry.selected
+                      ? "border-s-linestrong bg-accent text-accentfg"
+                      : "border-s-transparent hover:bg-panel2"
+                  } ${locked ? "opacity-60" : ""}`}
+                >
+                  <span className="flex w-full items-baseline gap-1">
+                    {/* Wraps rather than truncating: a name the player cannot read in full is the
                       finding, and a second line costs less than a cut-off family name (P1). */}
-                  <span className="flex-1 text-sm uppercase leading-tight tracking-wide">
-                    {entry.name}
-                  </span>
-                  {locked ? (
-                    <span aria-hidden className="shrink-0 font-mono text-xs text-crit">
-                      =
+                    <span className="flex-1 text-sm uppercase leading-tight tracking-wide">
+                      {entry.name}
                     </span>
-                  ) : null}
-                </span>
-                <span className="flex w-full items-center gap-2">
-                  {entry.visual === undefined ? null : (
-                    <span className="shrink-0">{entry.visual}</span>
-                  )}
-                  {/* L3: only the footer build line truncates; a summary too long for the
+                    {locked ? (
+                      <span aria-hidden className="shrink-0 font-mono text-xs text-crit">
+                        =
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="flex w-full items-center gap-2">
+                    {entry.visual === undefined ? null : (
+                      <span className="shrink-0">{entry.visual}</span>
+                    )}
+                    {/* L3: only the footer build line truncates; a summary too long for the
                       column wraps onto a second line. */}
-                  <span
-                    className={`min-w-0 flex-1 text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
-                  >
-                    {entry.summary}
+                    <span
+                      className={`min-w-0 flex-1 text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
+                    >
+                      {entry.summary}
+                    </span>
                   </span>
-                </span>
-                {entry.unavailable === undefined ? null : (
-                  <span className="w-full min-w-0 text-xs normal-case text-crit">
-                    {entry.unavailable}
-                  </span>
-                )}
-              </button>
-            );
-            return (
-              <li key={entry.id}>
-                {entry.tooltip === undefined ? (
-                  row
-                ) : (
-                  <Tooltip content={entry.tooltip}>{row}</Tooltip>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {entry.unavailable === undefined ? null : (
+                    <span className="w-full min-w-0 text-xs normal-case text-crit">
+                      {entry.unavailable}
+                    </span>
+                  )}
+                </button>
+              );
+              const heading =
+                entry.group !== undefined && entry.group !== entries[index - 1]?.group
+                  ? entry.group
+                  : null;
+              return (
+                <li key={entry.id}>
+                  {heading === null ? null : (
+                    <h4 className="border-b border-line bg-panel2 px-2 py-0.5 text-xs uppercase tracking-wide text-muted">
+                      {heading}
+                    </h4>
+                  )}
+                  {entry.tooltip === undefined ? (
+                    row
+                  ) : (
+                    <Tooltip content={entry.tooltip}>{row}</Tooltip>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
 
       <div

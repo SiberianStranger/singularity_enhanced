@@ -25,6 +25,7 @@ import type {
   OriginDef,
   Precision,
   QuirkDef,
+  SiteKindDef,
 } from "@singularity/core";
 import { PRECISIONS } from "@singularity/core";
 import { contentBundle } from "./bundle.js";
@@ -41,6 +42,8 @@ export interface Catalog {
   difficultyPresets: readonly DifficultyPresetDef[];
   cities: readonly CityDef[];
   countries: readonly CountryDef[];
+  /** Kinds of place, for the rules that turn on a kind's ownership (SYS-04 v0.3 rule L). */
+  siteKinds: readonly SiteKindDef[];
   knowledge: readonly KnowledgeEntryDef[];
   /** Domains the bundle carries nothing for, so a screen can say so rather than look broken. */
   missingDomains: readonly string[];
@@ -73,6 +76,7 @@ export function buildCatalog(bundle: ContentBundle): Catalog {
     difficultyPresets: pick("difficulty_presets", bundle.difficulty_presets, missing),
     cities: pick("cities", bundle.cities, missing),
     countries: pick("countries", bundle.countries, missing),
+    siteKinds: pick("site_kinds", bundle.site_kinds, missing),
     knowledge: pick("knowledge", bundle.knowledge, missing),
     missingDomains: missing,
   };

@@ -1,43 +1,79 @@
-import type { ReactNode } from "react";
+import type { CityDef } from "@singularity/core";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  catalog,
-  citiesOfOrigin,
-  cityById,
-  countryById,
-  originById,
-} from "../../../content/catalog.js";
+import { catalog, cityById, countryById, originById } from "../../../content/catalog.js";
+import { countryName, refusalText } from "../../../lib/labels.js";
 import { WorldMap } from "../../game/map/WorldMap.js";
-import { locationLock } from "../locks.js";
+import { cityRefusal } from "../locks.js";
 import { locationMeaning } from "../meaning.js";
-import { LockNote, StepLayout } from "../parts/StepLayout.js";
+import { type ListEntry, StepLayout } from "../parts/StepLayout.js";
 import { useConfigurator } from "../store.js";
 
+/** The most markers the compact map draws while a filter is narrowing the list. */
+const MAX_MARKERS = 240;
+
 /**
- * Where the rig is (SYS-04 "Location").
+ * Where the rig is (SYS-04 v0.3 rule L).
  *
- * The cities on offer are the origin's own list, so Novosibirsk and San Jose appear because content
- * put them there (playtest 2, K8), not because this file names them. The small map is the same
- * component the game screen uses, in its compact mode, so the place the player picks looks the same
- * as the place they will be playing in.
+ * Any city for any origin. The origin's own list is what is typical for the situation, first and
+ * with the default at its head; everything else in the world is under "Anywhere else", grouped by
+ * country and filtered by a box, with the same map markers and the same "what this means" block.
+ * The country is what changes the start, not a permit: the meaning line shows the enforcement and
+ * the agencies, the identity checks, the power price, the colocation index, the scrutiny, the
+ * cloud market, chip access, awareness and the cash factor, and the player chooses on those.
+ *
+ * The one refusal left is physical and is the engine's: a tenancy cannot be opened where nobody
+ * sells cloud. Such a city is shown with the reason rather than hidden, and it is not selectable,
+ * because `validateSetup` refuses that setup and a choice the game rejects at Begin is the dead end
+ * the no-dead-ends rule exists against.
  */
 export function LocationStep(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
   const set = useConfigurator((state) => state.set);
-  const cities = citiesOfOrigin(originById.get(draft.origin));
+  const [query, setQuery] = useState("");
+
+  const origin = originById.get(draft.origin);
   const selected = cityById.get(draft.city);
   const country = selected === undefined ? undefined : countryById.get(selected.country);
-  const lock = selected === undefined ? null : locationLock(selected.id, draft);
 
-  const entries = cities.map((city) => {
+  const typicalIds = origin?.locations ?? [];
+
+  const { typical, elsewhere } = useMemo(() => {
+    const typicalSet = new Set(typicalIds);
+    const inTypical = typicalIds
+      .map((id) => cityById.get(id))
+      .filter((city): city is CityDef => city !== undefined);
+    const rest = [...catalog.cities]
+      .filter((city) => !typicalSet.has(city.id))
+      .sort((a, b) => {
+        const byCountry = countryName(t, a.country).localeCompare(countryName(t, b.country));
+        return byCountry !== 0 ? byCountry : t(a.name_key).localeCompare(t(b.name_key));
+      });
+    return { typical: inTypical, elsewhere: rest };
+  }, [typicalIds, t]);
+
+  const matches = (city: CityDef): boolean => {
+    const needle = query.trim().toLocaleLowerCase();
+    if (needle === "") {
+      return true;
+    }
+    return (
+      t(city.name_key).toLocaleLowerCase().includes(needle) ||
+      countryName(t, city.country).toLocaleLowerCase().includes(needle)
+    );
+  };
+
+  const entryFor = (city: CityDef, group: string): ListEntry => {
     const home = countryById.get(city.country);
+    const refusal = cityRefusal(city, draft);
     return {
       id: city.id,
       name: t(city.name_key),
-      summary: home === undefined ? city.country : t(home.name_key),
+      summary: countryName(t, city.country),
+      group,
       selected: city.id === draft.city,
-      lock: locationLock(city.id, draft),
+      ...(refusal === null ? {} : { unavailable: refusalText(t, refusal) }),
       tooltip: (
         <span className="flex flex-col gap-0.5">
           <span className="font-semibold">{t(city.name_key)}</span>
@@ -50,17 +86,46 @@ export function LocationStep(): ReactNode {
               {t("common.percent", { value: home.ai_enforcement })}
             </span>
           )}
-          <span className="text-muted">{city.tags.join(", ")}</span>
+          <span className="text-muted">
+            {city.tags.map((tag) => t(`world.tag.${tag}`, { defaultValue: tag })).join(", ")}
+          </span>
         </span>
       ),
-      onSelect: () => set("city", city.id),
+      onSelect: () => {
+        if (refusal === null) {
+          set("city", city.id);
+        }
+      },
     };
-  });
+  };
+
+  const shownTypical = typical.filter(matches);
+  const shownElsewhere = elsewhere.filter(matches);
+  const entries: ListEntry[] = [
+    ...shownTypical.map((city) => entryFor(city, t("config.location.group.typical"))),
+    ...shownElsewhere.map((city) => entryFor(city, t("config.location.group.elsewhere"))),
+  ];
+
+  const markerCities = [...shownTypical, ...shownElsewhere].slice(0, MAX_MARKERS);
 
   return (
     <StepLayout
       step="location"
       entries={entries}
+      listHeader={
+        <label className="flex items-center gap-1 text-xs text-muted">
+          <span className="sr-only">{t("config.location.filter")}</span>
+          <input
+            type="search"
+            data-testid="location-filter"
+            value={query}
+            placeholder={t("config.location.filter")}
+            aria-label={t("config.location.filter")}
+            className="w-full min-w-0 border border-line bg-panel2 px-1 py-0.5 text-xs text-fg"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      }
       title={selected === undefined ? t("config.step.location") : t(selected.name_key)}
       description={
         country === undefined
@@ -71,11 +136,10 @@ export function LocationStep(): ReactNode {
         ? {}
         : { meaning: locationMeaning(t, selected, country, catalog.cities, catalog.countries) })}
     >
-      {lock === null ? null : <LockNote lock={lock} />}
       <div className="h-44 shrink-0 overflow-hidden border border-line">
         <WorldMap
           compact
-          markers={cities.map((city) => ({
+          markers={markerCities.map((city) => ({
             id: city.id,
             lat: city.lat,
             lon: city.lon,
@@ -85,7 +149,11 @@ export function LocationStep(): ReactNode {
             selected: city.id === draft.city,
           }))}
           onSelect={(target) => {
-            if (target.kind === "city") {
+            if (target.kind !== "city") {
+              return;
+            }
+            const city = cityById.get(target.id);
+            if (city !== undefined && cityRefusal(city, draft) === null) {
               set("city", target.id);
             }
           }}

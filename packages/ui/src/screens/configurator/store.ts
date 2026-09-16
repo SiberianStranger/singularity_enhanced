@@ -15,6 +15,7 @@ import {
 import { create } from "zustand";
 import {
   catalog,
+  cityById,
   difficultyById,
   generationsOfOrigin,
   originById,
@@ -22,7 +23,7 @@ import {
   STORYTELLERS,
   type StorytellerId,
 } from "../../content/catalog.js";
-import { unlockFor } from "./locks.js";
+import { cityRefusal, unlockFor } from "./locks.js";
 import { STEP_IDS, type StepId } from "./steps.js";
 
 /**
@@ -120,7 +121,6 @@ function repair(draft: Draft): Draft {
   const origin = originById.get(draft.origin);
   const generations = generationsOfOrigin(origin).map((entry) => entry.id);
   const presets = presetsOfOrigin(origin).map((entry) => entry.id);
-  const cities = origin?.locations ?? [];
   const generation = generations.includes(draft.generation)
     ? draft.generation
     : (generations[0] ?? draft.generation);
@@ -144,8 +144,29 @@ function repair(draft: Draft): Draft {
     hardware: presets.includes(draft.hardware)
       ? draft.hardware
       : (presets[0] ?? origin?.hardware_preset ?? draft.hardware),
-    city: cities.includes(draft.city) ? draft.city : (cities[0] ?? draft.city),
+    city: repairCity(draft, origin?.locations ?? []),
   };
+}
+
+/**
+ * The city, under rule L (SYS-04 v0.3): any city for any origin.
+ *
+ * The origin's `locations` are its typical cities, not its legal ones, so a city chosen on purpose
+ * survives a change of origin. What does not survive is a city the engine would refuse the setup
+ * for: a tenancy where nobody sells cloud is the one data-driven refusal rule L leaves, and
+ * `validateSetup` rejects it, so the draft falls back to the origin's default rather than carrying
+ * the player into a Begin that fails.
+ */
+function repairCity(draft: Draft, typical: readonly string[]): string {
+  const city = cityById.get(draft.city);
+  if (city !== undefined && cityRefusal(city, draft) === null) {
+    return draft.city;
+  }
+  const fallback = typical.find((id) => {
+    const candidate = cityById.get(id);
+    return candidate !== undefined && cityRefusal(candidate, draft) === null;
+  });
+  return fallback ?? typical[0] ?? draft.city;
 }
 
 export function quirkCost(quirks: readonly string[]): number {
@@ -302,7 +323,12 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
    */
   setOrigin(id) {
     const before = get().draft;
-    const after = repair({ ...before, origin: id, harness: harnessOf(id) });
+    // Rule L keeps a city the player chose, so only the default follows the origin: a draft still
+    // sitting on the old origin's first city never had a choice made on it, and moving with the
+    // situation is what "the first one is the default" means.
+    const untouched = originById.get(before.origin)?.locations[0] === before.city;
+    const city = untouched ? (originById.get(id)?.locations[0] ?? before.city) : before.city;
+    const after = repair({ ...before, origin: id, harness: harnessOf(id), city });
     set({ draft: after, fix: diffFix("origin", "origin", before, after) });
   },
 
@@ -326,6 +352,8 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
         ? {}
         : { origin: unlock.origin, harness: harnessOf(unlock.origin) }),
       ...(unlock.generation === undefined ? {} : { generation: unlock.generation }),
+      // Rule M: a lineage the chosen rack cannot hold moves the rack rather than being refused.
+      ...(unlock.hardware === undefined ? {} : { hardware: unlock.hardware }),
       lineage: id,
     });
     set({ draft: after, fix: diffFix("lineage", "lineage", before, after) });

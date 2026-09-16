@@ -379,7 +379,9 @@ describe("the detail card fits its pane (playtest 5, L1-L4)", () => {
 
   it("gives the list a maximum the detail can have the rest of", () => {
     render_("lineage");
-    const body = screen.getByTestId("step-list").parentElement as HTMLElement;
+    // The nearest grid above the list is the step's own body; the list sits in a column of its
+    // own inside it, because the Location step puts a filter box above the rows (SYS-04 v0.3).
+    const body = screen.getByTestId("step-list").closest(".grid") as HTMLElement;
     // 18rem is 288 px at the base size: two lines of the longest name content ships, and 80 px
     // less than playtest 4 gave it, all of which went to the parameter column (L2).
     expect(body.className).toContain("grid-cols-[minmax(11rem,18rem)_minmax(0,1fr)]");

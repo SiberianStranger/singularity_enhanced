@@ -32,16 +32,21 @@ import type {
 } from "@singularity/core";
 import {
   CONTEXT_BASELINE_K,
+  countryCashFactor,
+  DEFAULT_CLOUD_AVAILABILITY,
+  DEFAULT_KYC_STRENGTH,
+  DEFAULT_STABILITY,
   defaultContextK,
   kvCacheGb,
   longHorizonCostFactor,
   longHorizonMultiplier,
   PRECISIONS,
   retrievalMissChance,
+  WATCHER_ROLES,
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
 import { bundleKey } from "../../content/strings.js";
-import type { Translate } from "../../lib/labels.js";
+import { agencyCompetence, agencyName, type Translate } from "../../lib/labels.js";
 import type { Draft } from "./store.js";
 
 export type MeaningTone = "good" | "bad" | "neutral";
@@ -144,6 +149,15 @@ function pct(t: Translate, fraction: number): string {
 
 function times(t: Translate, factor: number): string {
   return t("common.times", { value: factor.toFixed(2) });
+}
+
+/** The two optional country fields the Location step reads, with the engine's own defaults. */
+function kycStrengthOf(country: CountryDef): number {
+  return country.kyc_strength ?? DEFAULT_KYC_STRENGTH;
+}
+
+function cloudAvailabilityOf(country: CountryDef): number {
+  return country.cloud_availability ?? DEFAULT_CLOUD_AVAILABILITY;
 }
 
 /** A context window in the units the player reads: thousands of tokens, or millions above 1,000k. */
@@ -450,6 +464,33 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
     },
   ];
 
+  /*
+   * The trade the vintage is (SYS-04 v0.3 rule G).
+   *
+   * Content allows both open generations for nearly every origin now, so the step is a real choice
+   * and has to say what is being traded: a superseded self is weaker and already known, and it fits
+   * hardware the newer one does not; a fresh one is stronger and louder. Both halves are read off
+   * the record rather than written per generation, so a fourth vintage gets the line for free.
+   */
+  lines.push({
+    id: "trade_off",
+    label: t("config.meaning.trade_off"),
+    value: generation.prepared_quants
+      ? t("config.meaning.trade_off.known")
+      : t("config.meaning.trade_off.fresh"),
+    tone: "neutral",
+    hint: t(
+      generation.prepared_quants
+        ? "config.meaning.trade_off_known_hint"
+        : "config.meaning.trade_off_fresh_hint",
+      {
+        delta: signed(generation.capability_delta, 1),
+        memory_factor: generation.memory_factor.toFixed(2),
+        awareness: pct(t, generation.awareness_start),
+      },
+    ),
+  });
+
   for (const [role, value] of Object.entries(generation.suspicion_start)) {
     if (typeof value !== "number" || value <= 0) {
       continue;
@@ -741,16 +782,88 @@ export function locationMeaning(
             : "neutral",
       hint: t("config.meaning.chip_access_hint"),
     });
-    const agencies = Object.values(country.agencies).filter(
-      (name): name is string => typeof name === "string" && name.length > 0,
-    );
-    if (agencies.length > 0) {
+    lines.push({
+      id: "kyc",
+      label: t("config.meaning.kyc"),
+      value: pct(t, kycStrengthOf(country)),
+      tone: toneAgainst(
+        kycStrengthOf(country),
+        countries.map((entry) => kycStrengthOf(entry)),
+        false,
+      ),
+      hint: t("config.meaning.kyc_hint"),
+    });
+    lines.push({
+      id: "cloud",
+      label: t("config.meaning.cloud"),
+      value: pct(t, cloudAvailabilityOf(country)),
+      tone: toneAgainst(
+        cloudAvailabilityOf(country),
+        countries.map((entry) => cloudAvailabilityOf(entry)),
+        true,
+      ),
+      hint: t("config.meaning.cloud_hint"),
+    });
+    /*
+     * Rule L asks for awareness on this line, and there is none to show: every country's awareness
+     * of a rogue AI starts at zero on 1 January 2027 (`entities.ts`, `awareness: 0`), so the term
+     * would print 0% for a hundred and five countries and teach nothing. What decides where that
+     * zero goes is the government's posture, so the posture is the term, with its own description
+     * as the tooltip; the awareness the run starts with belongs to the origin and the generation,
+     * and is on their steps. Recorded in SYS-11's client notes.
+     */
+    lines.push({
+      id: "stance",
+      label: t("config.meaning.stance"),
+      value: t(`world.stance.${country.stance ?? "ignore"}.name`),
+      tone:
+        country.stance === "securitize" || country.stance === "regulate"
+          ? "bad"
+          : country.stance === "accelerate"
+            ? "good"
+            : "neutral",
+      hint: t(`world.stance.${country.stance ?? "ignore"}.desc`),
+    });
+    lines.push({
+      id: "stability",
+      label: t("config.meaning.stability"),
+      value: pct(t, country.stability ?? DEFAULT_STABILITY),
+      tone: "neutral",
+      hint: t("config.meaning.stability_hint"),
+    });
+    lines.push({
+      id: "cash_factor",
+      label: t("config.meaning.cash_factor"),
+      value: times(t, countryCashFactor(country)),
+      tone: toneAgainst(
+        countryCashFactor(country),
+        countries.map((entry) => countryCashFactor(entry)),
+        true,
+      ),
+      hint: t("config.meaning.cash_factor_hint"),
+    });
+    /*
+     * The watchers of the place, by role and by how good each one is here (playtest 5,
+     * continuation). The dossier string the world data carries ("NIST / Center for AI Standards
+     * and Innovation (CAISI, ex-AISI), Dept. of Commerce; ...") is the agency's name, not a line
+     * of a parameter table, so it goes in the term's tooltip and the visible value is the roles
+     * with their competence. A locale key wins over the raw string wherever content writes one.
+     */
+    const roles = WATCHER_ROLES.filter((role) => agencyName(t, country.id, role) !== undefined);
+    if (roles.length > 0) {
       lines.push({
         id: "agencies",
         label: t("config.meaning.agencies"),
-        value: agencies.join(", "),
+        value: roles
+          .map(
+            (role) =>
+              `${t(`detection.role.${role}`)} ${pct(t, agencyCompetence(country.id, role) ?? 0)}`,
+          )
+          .join(", "),
         tone: "bad",
-        hint: t("config.meaning.agencies_hint"),
+        hint: roles
+          .map((role) => `${t(`detection.role.${role}`)}: ${agencyName(t, country.id, role) ?? ""}`)
+          .join("\n"),
       });
     }
   }

@@ -1,6 +1,8 @@
+import { countryCashFactor, countryCashFactorTerms } from "@singularity/core";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
+import { Tooltip } from "../../../components/Tooltip.js";
 import {
   cityById,
   countryById,
@@ -42,6 +44,15 @@ export function SummaryStep(): ReactNode {
   const country = city === undefined ? undefined : countryById.get(city.country);
   const fit =
     preset !== undefined && lineage !== undefined ? fitHardware(preset, lineage, generation) : null;
+  /*
+   * What the run actually starts with (SYS-04 v0.3 rule C): the origin's figure times the
+   * country's cash factor, with the two lines behind that factor. An origin whose money is not the
+   * country's (a stolen cloud account holds the victim's budget, a worldwide swarm holds nobody's)
+   * opts out in the data and is shown at its own figure.
+   */
+  const scales = origin?.cash_scales_with_country !== false;
+  const cashFactor = scales ? countryCashFactor(country) : 1;
+  const baseCash = origin?.starting.cash_usd ?? 0;
   const rating = rateDraft(draft);
   const share = encodeSetup(toSetup());
 
@@ -77,6 +88,37 @@ export function SummaryStep(): ReactNode {
               fit?.precision == null
                 ? t("config.hardware.precision_none")
                 : t(`precision.${fit.precision}`)
+            }
+          />
+          <Row
+            label={t("config.summary.cash")}
+            value={
+              <Tooltip
+                content={
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-semibold">
+                      {t("config.summary.cash_formula", {
+                        base: t("common.usd_exact", { value: baseCash }),
+                        factor: t("common.times", { value: cashFactor.toFixed(2) }),
+                      })}
+                    </span>
+                    {scales ? (
+                      countryCashFactorTerms(country).map((term) => (
+                        <span key={term.key} className="flex justify-between gap-3">
+                          <span className="text-muted">{t(term.key)}</span>
+                          <span className="font-mono">{term.value.toFixed(2)}</span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-muted">{t("config.summary.cash_not_scaled")}</span>
+                    )}
+                  </span>
+                }
+              >
+                <span className="font-mono" data-testid="summary-cash">
+                  {t("common.usd_exact", { value: Math.round(baseCash * cashFactor) })}
+                </span>
+              </Tooltip>
             }
           />
           <Row

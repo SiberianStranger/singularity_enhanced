@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { catalog, generationById, lineageById } from "../../../content/catalog.js";
-import { lineageLock, unlockHint } from "../locks.js";
+import { lineageLock, lineageMemoryLock, smallestPresetFor, unlockHint } from "../locks.js";
 import { contextLabel, lineageMeaning } from "../meaning.js";
 import { LockNote, StepLayout } from "../parts/StepLayout.js";
 import { LineageVisual } from "../parts/Visuals.js";
@@ -22,7 +22,13 @@ export function LineageStep(): ReactNode {
   const chooseLineage = useConfigurator((state) => state.chooseLineage);
   const selected = lineageById.get(draft.lineage);
   const generation = generationById.get(draft.generation);
-  const lock = selected === undefined ? null : lineageLock(selected, draft);
+  // Rule M (SYS-04 v0.3): two locks only, the fiction one and the physics one. The fiction lock
+  // is checked first because it is the larger of the two; a family that fits nowhere is still
+  // named by the rack it would need.
+  const lock =
+    selected === undefined
+      ? null
+      : (lineageLock(selected, draft) ?? lineageMemoryLock(selected, draft));
 
   /**
    * The display name of a lineage in the current generation.
@@ -50,8 +56,12 @@ export function LineageStep(): ReactNode {
   const ordered = [...catalog.lineages].sort((a, b) => b.params_total_b - a.params_total_b);
 
   const entries = ordered.map((lineage) => {
-    const entryLock = lineageLock(lineage, draft);
+    const memory = lineageMemoryLock(lineage, draft);
+    const entryLock = lineageLock(lineage, draft) ?? memory;
     const hint = unlockHint(lineage, draft);
+    // A family no rack this origin offers can hold is the one case rule M leaves as a wall: it is
+    // shown with the reason and cannot be chosen, because there is nothing to move to.
+    const impossible = memory !== null && smallestPresetFor(lineage, draft) === undefined;
     return {
       id: lineage.id,
       name: nameOf(lineage.id),
@@ -61,6 +71,9 @@ export function LineageStep(): ReactNode {
       }),
       selected: lineage.id === draft.lineage,
       lock: entryLock,
+      ...(impossible
+        ? { unavailable: t("config.lock.lineage_memory_none", { lineage: nameOf(lineage.id) }) }
+        : {}),
       visual: <LineageVisual lineage={lineage} generation={generation} />,
       // Hovering a lineage says what its parameters mean for the game (playtest 2, K2).
       tooltip: (
@@ -91,7 +104,11 @@ export function LineageStep(): ReactNode {
       ),
       // A locked lineage is chosen, not refused: `chooseLineage` moves the prerequisites and the
       // detail says what it moved (playtest 4, P3).
-      onSelect: () => chooseLineage(lineage.id),
+      onSelect: () => {
+        if (!impossible) {
+          chooseLineage(lineage.id);
+        }
+      },
     };
   });
 
