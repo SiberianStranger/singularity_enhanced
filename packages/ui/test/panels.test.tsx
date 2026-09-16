@@ -347,3 +347,38 @@ describe("event options explain themselves (C9)", () => {
     expect(tooltip).toHaveTextContent(i18next.t(first?.key ?? "", { ...first?.vars }));
   });
 });
+
+describe("the fixed regions stay put (U7, U8)", () => {
+  it("offers the collapse control exactly once", async () => {
+    await play();
+    expect(screen.getAllByRole("button", { name: "Collapse outliner" })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Expand outliner" })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Collapse outliner" }));
+    expect(screen.queryByRole("button", { name: "Collapse outliner" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Expand outliner" })).toHaveLength(1);
+    useUiStore.getState().setOutliner(true);
+  });
+
+  it("keeps the rows above the map from being squeezed into it", async () => {
+    await play();
+    // jsdom has no layout, so what is asserted is the rule that produced the overlap: the alert
+    // bar and the map-mode strip were shrinkable flex items in a full-height column.
+    expect(screen.getByRole("banner").className).toContain("shrink-0");
+    const strip = screen.getByRole("button", { name: "Presence" }).parentElement as HTMLElement;
+    expect(strip.className).toContain("shrink-0");
+  });
+
+  it("bounds the selection panel by the map region and collapses it to its title", async () => {
+    const live = await play();
+    useUiStore.getState().select({ kind: "site", id: live.view().sites[0]?.id ?? "" });
+    const selection = await screen.findByRole("region", { name: "Selection" });
+    // Measured against its container, not against the window, so it cannot run off the screen.
+    expect(selection.className).toContain("max-h-[calc(100%-1rem)]");
+    expect(within(selection).getByRole("tablist")).toBeInTheDocument();
+
+    await userEvent.click(within(selection).getByRole("button", { name: "Collapse" }));
+    expect(within(selection).queryByRole("tablist")).toBeNull();
+    expect(within(selection).getByRole("button", { name: "Expand" })).toBeInTheDocument();
+  });
+});

@@ -222,7 +222,10 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1 text-xs text-muted">
               {t("compute.precision")}
+              {/* The name is on the control: a label that wraps a select also contains the
+                  selected option's text, which is not the name of the control. */}
               <select
+                aria-label={t("compute.precision")}
                 className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
                 value={site.precision ?? ""}
                 onChange={(event) => {
@@ -243,6 +246,7 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
             <label className="flex items-center gap-1 text-xs text-muted">
               {t("compute.role")}
               <select
+                aria-label={t("compute.role")}
                 className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
                 value={site.role}
                 onChange={(event) => {

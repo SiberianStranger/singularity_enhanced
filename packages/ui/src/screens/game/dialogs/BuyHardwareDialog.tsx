@@ -108,6 +108,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("compute.site")}
             <select
+              aria-label={t("compute.site")}
               className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={site}
               onChange={(event) => setSite(event.target.value)}
@@ -122,6 +123,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("compute.vendor")}
             <select
+              aria-label={t("compute.vendor")}
               className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={vendor}
               onChange={(event) => setVendor(event.target.value)}
@@ -137,6 +139,7 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("compute.availability")}
             <select
+              aria-label={t("compute.availability")}
               className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={availability}
               onChange={(event) => setAvailability(event.target.value as Availability | "")}

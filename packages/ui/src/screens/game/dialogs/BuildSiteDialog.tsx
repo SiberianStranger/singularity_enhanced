@@ -77,6 +77,7 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("compute.city")}
             <select
+              aria-label={t("compute.city")}
               className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={where}
               onChange={(event) => setWhere(event.target.value)}
@@ -95,6 +96,7 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
           <label className="flex flex-col gap-1 text-xs text-muted">
             {t("config.step.hardware")}
             <select
+              aria-label={t("config.step.hardware")}
               className="rounded border border-line bg-panel2 px-2 py-1 text-sm text-fg"
               value={preset}
               onChange={(event) => setPreset(event.target.value)}

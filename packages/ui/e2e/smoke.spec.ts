@@ -244,7 +244,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   // A colocation cage with hardware of one's own: cloud tenancies rent, and not every preset is
   // rentable, which is the sort of refusal the dialog now keeps itself open to explain.
   await build.getByText("Colocation cage").click();
-  await build.getByLabel("Hardware").selectOption("mining_rig_ascendant");
+  await build.getByRole("combobox", { name: "Hardware" }).selectOption("mining_rig_ascendant");
   await build.getByRole("button", { name: "Build", exact: true }).click();
   await expect(sites).toHaveCount(sitesBefore + 1);
 
@@ -258,7 +258,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(buy.getByRole("columnheader", { name: "Vendor" })).toBeVisible();
   await expect(buy.getByRole("columnheader", { name: "Price" })).toBeVisible();
   // Only cards somebody will actually sell, cheapest first, so the starting cash covers it.
-  await buy.getByLabel("Availability").selectOption("buy");
+  await buy.getByRole("combobox", { name: "Availability" }).selectOption("buy");
   await buy.getByRole("columnheader", { name: "Price" }).getByRole("button").click();
   await buy.getByRole("row").nth(1).click();
   await expect(buy.getByTestId("buy-summary")).toContainText("GB");
@@ -268,7 +268,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
 
   // C3: the precision table shows the trade-off, and changing the precision takes.
   await expect(page.getByRole("table", { name: "Precision trade-off" })).toBeVisible();
-  const precision = page.getByLabel("Precision", { exact: true });
+  const precision = page.getByRole("combobox", { name: "Precision" });
   await precision.selectOption("int4");
   await expect(precision).toHaveValue("int4");
 
