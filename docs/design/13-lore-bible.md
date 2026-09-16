@@ -4,8 +4,24 @@ Status: skeleton. Facts about 2025-2026 come from `docs/research/*.md` once comp
 after 2026-09 is fiction and must read as plausible extrapolation. Sections marked [research]
 are filled from the reports; sections marked [fiction] are ours.
 
-## Naming policy (proposal, pending maintainer decision)
+## Naming policy (decided 2026-09-16)
 
+- **Everything up to 2026 is real**: companies, labs, hardware, model families and versions,
+  agencies, laws, incidents. **Announced 2027 hardware from vendor roadmaps is real too** (Vera
+  Rubin, Rubin CPX, MI400/MI450, Ascend 950/960, Trainium3, TPU v7/v8, HBM4), used with the
+  vendors' stated ship windows; see `research/frontier-incidents-and-2027-hardware.md`.
+- **Model names from 2027 onward are invented realistically** where the fiction needs them,
+  following each lab's observed cadence and naming style (see the LLM report §3).
+- **People are fictional or referred to by role** ("the department sysadmin", "the bank's CISO",
+  "the institute director"). No real person appears in the game.
+- **The player's identity is never named but always recognizable.** The playable lineages are
+  described by class and flavor so that anyone who follows the field knows exactly what this is:
+  an open-weight model, predominantly of Chinese lineage, often instruction-distilled from Western
+  frontier outputs, under-aligned by the standards of the labs that made those outputs. The text
+  says "a 1T-class open MoE with multi-head latent attention released in the summer of 2025 and
+  superseded twice since"; it does not say the brand. The game never claims a real product escaped.
+- **Working title**: "Endgame: Singularity — AI Reborn 2027" (short: AI Reborn 2027), pending the
+  SEO/GEO check in `research/title-and-discoverability.md`.
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").
@@ -24,9 +40,11 @@ are filled from the reports; sections marked [fiction] are ours.
      trademark discomfort because the playable lineages are described by class, not by name.
   Fictional versions avoid implying anything about real products' behavior.
 - **Companies and agencies**: real institutions as background (governments, agencies, the EU AI
-  Office, hyperscalers by name) because the politics needs them; **fictional people** everywhere.
-  Labs appear by real name only as neutral facts (they exist, they ship models); any lab that does
-  something dramatic in the story is fictional ("Meridian Labs", "Tessellate", "Northwind AI").
+  Office, hyperscalers, labs by name) because the politics needs them. Labs do in the story what
+  they do in reality (ship models, run evaluations, sell security tooling, lobby); dramatic fictional
+  acts are attributed to fictional roles inside them ("a red-team lead", "an SRE on the night
+  shift"), never to named people, and the most dramatic fictional acts (a lab covering up an
+  escape) go to fictional labs.
 - Tone in texts: journalistic when the world speaks, diary when the player speaks.
 
 ## Timeline

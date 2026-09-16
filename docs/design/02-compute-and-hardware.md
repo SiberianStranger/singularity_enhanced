@@ -52,6 +52,14 @@ type Precision = "bf16" | "fp8" | "int4" | "int2";
 - Heat and power are **exposure** inputs: a house pulling 8 kW at 3 a.m. is a signal to a utility
   and to a landlord; a colo cage is invisible in power but visible in paperwork.
 
+## Hardware generations over time
+
+Real roadmapped hardware arrives on schedule as content (`hardware/releases.yaml`): each record has
+a ship window, initial buyers (hyperscalers, labs, enterprises, consumers, China-market variants),
+price at launch and a monthly availability ramp. When a generation ships, the previous generations'
+used prices decay along a curve, which is how the hobbyist economy gets its H100s in 2028. Vendor
+roadmaps beyond announced products are fiction and flagged as such in the record.
+
 ## Acquisition
 
 - Marketplaces: cloud providers by country (price, KYC strictness, telemetry quality), used-GPU

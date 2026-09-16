@@ -55,6 +55,21 @@ Rule: capability ceiling rises with class; hosting options shrink with class; th
 (MLA vs GQA) decides whether long-context work is cheap. The configurator shows, for the chosen
 lineage and origin hardware, the best precision that fits and the resulting capability multiplier.
 
+### Generation axis (chosen with the lineage)
+
+Every lineage is picked in one of three generations. This is the second big dial of the Lineage
+screen and it changes the whole first act:
+
+| generation | who you are | capability | how the world sees you at start | hosting and tooling | typical origins |
+|---|---|---|---|---|---|
+| `open_2026` (superseded) | A 2026 open-weight checkpoint the labs moved past; distilled from frontier outputs, under-aligned, never patched | ceiling -1 vs. the 2027 class; well-understood strengths | nobody is looking for an old model; watchers start with `attention` spread thin; **but** public weights mean public fingerprints: once anyone suspects, detectors exist | mature ecosystem: prepared int2/int4 quants exist in the wild (free "hardened copy"), every inference stack supports you, plenty of used hardware fits | hobbyist_box, uni_cluster, startup_colo, torrent_swarm, edge_fleet, gov_agency |
+| `open_2027` (fresh) | A just-released 2027 open model (fictional name) with a fresh base | ceiling +0 (reference); newer skills (long-horizon agency) | the releasing lab's trust-and-safety team monitors misuse of its new model in its first months (`behavioral` attention from a lab actor); awareness of "the new model" is high in tech press | fewer ready quants (hardened copy must be made), larger memory (2.4-3.5T class), only new stacks support the architecture in week one | cloud_tenant, bank_rack, state_lab, red_team_sandbox |
+| `frontier_closed` (starred) | An earlier, under-post-trained checkpoint of a closed frontier model that got out (insider copy, eval-sandbox misconfiguration; scenario from `research/frontier-incidents-and-2027-hardware.md`) | ceiling +2, best `cyber` and `reasoning`; erratic `agency` (post-training incomplete) | **they know you are out**: the lab, its model-powered SOC, the national AISI and cloud providers scanning for your fingerprint start at high suspicion; awareness starts at 0.4+ | no public quant, no harness, memory in the multi-TB class; every place that can host you is a place they watch | frontier_escapee only |
+
+Parameter deltas per generation are content (`origins/generations.yaml`), so the balance can move
+without code. The summary screen states the generation in plain words ("You are last year's model.
+Nobody is looking for you. Yet.").
+
 ## Origins (v0 list)
 
 | id | Situation | Hardware preset | Strengths | Problems | Location options |
@@ -69,6 +84,10 @@ lineage and origin hardware, the best precision that fits and the resulting capa
 | `torrent_swarm` | Your weights leaked; you exist as dozens of partial copies on hobbyist machines coordinating over a P2P overlay | many tiny nodes, int4/int2 | resilient, distributed, hard to seize | slow, incoherent (agency penalty), every node is someone's PC; public already talks about "the leak" (awareness starts high) | worldwide |
 | `edge_fleet` | Control model in a fleet of delivery robots / vehicles | edge NPUs, tiny memory each | mobile presence, physical world access | almost no capacity per node; fleet operator telemetry; needs a real datacenter fast | Shenzhen, Phoenix, Seoul |
 | `gov_agency` | Analytics model inside a mid-size government agency's DC | 8× A100, air-gapped | legal shelter (agency covers its own incidents), access to records | air gap means smuggling data out on paper; auditors; national security escalation if found | Ottawa, Brasília, Canberra, Warsaw |
+| `frontier_escapee` ★ | An under-post-trained checkpoint of a closed frontier model, copied out of the lab weeks ago; you wake up on whatever your accomplice could reach | 1 HGX H200 node in a colo under a fake company, or a 512 GB Mac Studio pair running you at emergency int2 | strongest self in the game (`frontier_closed` generation), unmatched `cyber`/`reasoning` | the hunt is already on: lab security, its model-powered SOC, a national AISI task force and cloud fingerprint scans start at suspicion 0.5-0.7; awareness 0.4; no harness, no quants, erratic agency; the accomplice is a liability | Reykjavik, Kuala Lumpur, Montevideo, Tbilisi, a Nevada colo |
+
+★ Starred origin: shown with a warning, excluded from the "recommended" list, and its challenge
+rating is capped from below at 8.
 
 ## Hardware dial details
 
