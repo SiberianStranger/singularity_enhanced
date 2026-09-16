@@ -130,6 +130,9 @@ section repeats the current version's highlights and this unreleased list.
   label, so no rail row is taller than the others in Russian.
 - Watchers are named by their agency where the world data or a translation has a name for it,
   instead of printing a dossier note in a parameter table.
+- A parameter row with a tooltip lines its value up with the rows that have none.
+- A kind of place that is arranged rather than bought shows why instead of a price of zero.
+- Russian: awareness is "огласка" in the country panel too, as it already was everywhere else.
 - Log lines name things the way the player sees them: "Woke up as Mimi M4 (This year's model) in
   Risk model in a bank", not "giant_moe (open_2026) in bank_rack".
 - Country names on the world map follow the interface language instead of the map atlas.

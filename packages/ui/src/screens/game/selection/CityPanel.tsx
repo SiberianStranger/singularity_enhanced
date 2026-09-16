@@ -104,7 +104,14 @@ export function CityPanel({
                 <>
                   <Fact
                     label={t("compute.build_cost")}
-                    value={t("common.usd_exact", { value: kind.build_cost_usd })}
+                    // A kind nobody sells has no price, and the catalog says so with a zero; a
+                    // zero-dollar price tag on a campus slice would read as "free" rather than as
+                    // "not for sale", which is what the note under the row says instead.
+                    value={
+                      kind.build_cost_usd > 0
+                        ? t("common.usd_exact", { value: kind.build_cost_usd })
+                        : t("common.dash")
+                    }
                   />
                   <Fact
                     label={t("compute.upkeep")}
@@ -126,6 +133,16 @@ export function CityPanel({
               )}
               {entry.blocked_reason === null ? null : (
                 <p className="min-w-0 text-xs text-crit">{refusalText(t, entry.blocked_reason)}</p>
+              )}
+              {/*
+               * The catalog's own reason, when the city itself does not refuse the kind: it is why
+               * a stolen slice has no price and is arranged rather than bought, and it is the same
+               * key `build_site` would refuse with.
+               */}
+              {entry.blocked_reason !== null || kind?.blocked_reason === undefined ? null : (
+                <p className="min-w-0 text-xs text-muted">
+                  {refusalText(t, { key: kind.blocked_reason, vars: { kind: entry.kind } })}
+                </p>
               )}
             </div>
           );

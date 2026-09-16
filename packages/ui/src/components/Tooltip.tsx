@@ -76,7 +76,13 @@ export function Tooltip({ content, children, className, side = "top" }: TooltipP
       onFocusCapture={() => setOpen(true)}
       onBlurCapture={() => setOpen(false)}
     >
-      <span aria-describedby={open ? id : undefined} className="inline-flex">
+      {/*
+       * `flex-1` so the trigger fills the anchor: a tooltip wrapped around a parameter row asks
+       * for `w-full` on the anchor, and without this the row inside it shrank to its own content
+       * and its value stopped lining up with the rows that carry no tooltip. On an anchor sized by
+       * its content, which is every other use, filling it changes nothing.
+       */}
+      <span aria-describedby={open ? id : undefined} className="inline-flex min-w-0 flex-1">
         {children}
       </span>
       {open ? (
