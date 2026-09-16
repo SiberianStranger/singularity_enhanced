@@ -29,16 +29,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The workspace lands in a later commit than the workflow; until then the job is a no-op
+      # that reports success so doc-only changes are not blocked.
+      - name: Detect workspace
+        id: ws
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ] && [ -f package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No pnpm workspace at repository root; skipping checks."
+          fi
+
       - uses: pnpm/action-setup@v4
+        if: steps.ws.outputs.present == 'true'
         # version is taken from the "packageManager" field in package.json
 
       - uses: actions/setup-node@v4
+        if: steps.ws.outputs.present == 'true'
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install
+        if: steps.ws.outputs.present == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Lint, typecheck, test, content check
+        if: steps.ws.outputs.present == 'true'
         run: pnpm check
