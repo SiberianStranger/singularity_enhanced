@@ -15,3 +15,4 @@
 | R11 | The top bar is too thick: make it one flat row by packing label and value side by side (value to the right of its label, not under it) and redistributing the gauges. | open |
 | R12 | An opening in the model's own voice, as the original had: one or two event-style windows at the start with streamed text, per origin, describing what happened to it and what it must do now; skippable and replayable from the journal. | open |
 | R13 | The text size setting should be finer and more flexible than three steps: a slider from about 80% to 160% in small steps, separate for prose and for the angular labels if cheap, with a live preview. | open |
+| R14 | Pan the map with the mouse (drag) and the arrow keys, at least horizontally, and zoom with the wheel and the plus and minus keys; the primary panel currently covers the Americas with no way to move the map. Horizontal panning may wrap around the antimeridian. | open |
