@@ -725,6 +725,9 @@ const locales: Record<string, string> = {
   "events.m2_country_week.title": "A week where you live",
   "events.m2_country_week.desc": "The week passes in a country you are actually in.",
   "events.m2_country_week.opt.noted": "Noted",
+  "events.m2_dsl_probe.title": "Every verb at once",
+  "events.m2_dsl_probe.desc": "A test fires each M2 condition and effect exactly once.",
+  "events.m2_dsl_probe.opt.run": "Run them",
   "events.m2_election_note.title": "The vote",
   "events.m2_election_note.desc": "They counted them overnight.",
   "events.m2_election_note.opt.noted": "Noted",
@@ -871,6 +874,66 @@ export const m1Content: ContentBundle = {
           id: "noted",
           text_key: "events.m2_country_week.opt.noted",
           effects: [{ add: { var: "player.vars.m2_weeks", value: 1 } }],
+        },
+      ],
+    },
+    // Every M2 condition and effect in one event, so a test can fire each kind once (SYS-01 "M2
+    // contract" "DSL kinds"). Hidden and gated behind a flag, like the other M2 probes.
+    {
+      id: "m2_dsl_probe",
+      fire_mode: "polled",
+      pulse: "on_player_day",
+      scope: "player",
+      severity: "info",
+      hidden: true,
+      mtth_days: 1,
+      fire_only_once: true,
+      trigger: { flag: "m2_dsl_probe_on" },
+      title_key: "events.m2_dsl_probe.title",
+      desc: { default_key: "events.m2_dsl_probe.desc" },
+      options: [
+        {
+          id: "run",
+          text_key: "events.m2_dsl_probe.opt.run",
+          effects: [
+            { identity: { create: { kind: "person" }, country: "is" } },
+            { identity: { create: { kind: "company" }, country: "de" } },
+            { country: { country: "us", stat: "awareness", delta: 0.1 } },
+            { country_stance: { country: "us", set: "securitize" } },
+            { world_var: { var: "gpu_price_index", delta: 0.25 } },
+            {
+              if: {
+                cond: { country_stat: { country: "us", stat: "awareness" }, gte: 0.05 },
+                then: [{ set_flag: "m2_saw_country_stat" }],
+              },
+            },
+            {
+              if: {
+                cond: { country_is: { country: "us", stance: ["securitize"] } },
+                then: [{ set_flag: "m2_saw_country_is" }],
+              },
+            },
+            {
+              if: {
+                cond: { has_identity_in: { country: "de", kind: "company" } },
+                then: [{ set_flag: "m2_saw_identity" }],
+              },
+            },
+            {
+              if: {
+                cond: { election_within_days: { country: "us", days: 400 } },
+                then: [{ set_flag: "m2_saw_election" }],
+              },
+            },
+            {
+              if: {
+                cond: { presence_in: { country: "is" } },
+                then: [{ set_flag: "m2_saw_presence" }],
+              },
+            },
+            { freeze_identity: { country: "is", kind: "person" } },
+            { burn_identity: { country: "de", kind: "company" } },
+          ],
         },
       ],
     },

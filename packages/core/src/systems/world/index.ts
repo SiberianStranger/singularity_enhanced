@@ -37,6 +37,7 @@ import {
   entityList,
   governmentOf,
   identitiesOf,
+  identityTable,
   presenceCountriesOf,
   regulationTarget,
   watcherTable,
@@ -44,6 +45,7 @@ import {
 import {
   burnIdentity,
   createIdentity,
+  deriveIdentityFlags,
   freezeIdentity,
   identitiesIn,
   restoreIdentity,
@@ -237,6 +239,15 @@ function registerEffects(): EffectRegistry {
       return;
     }
     if (payload.restore === true) {
+      const bound = ctx.scope.identity;
+      const scoped =
+        isRecord(bound) && typeof bound.id === "string"
+          ? identityTable(ctx.world)[bound.id]
+          : undefined;
+      if (scoped !== undefined && scoped.owner === ctx.playerId) {
+        restoreIdentity(ctx.world, scoped);
+        return;
+      }
       const kind = optionalString(payload.kind, "identity.kind");
       for (const identity of identitiesIn(ctx.world, ctx.playerId, id)) {
         if (identity.status === "frozen" && (kind === undefined || identity.kind === kind)) {
@@ -289,15 +300,34 @@ function registerEffects(): EffectRegistry {
   return registry;
 }
 
+/**
+ * Which names an effect is about. A hook that bound one (`on_identity_check_failed` binds the name
+ * that failed) means that one, so "abandon the name" abandons the name the window is about rather
+ * than everything the player holds in the country; `{ burn_identity: "identity" }` and an explicit
+ * country or kind say otherwise.
+ */
 function forEachIdentity(
   node: Record<string, unknown>,
   ctx: DslContext,
   kind: string,
   apply: (identity: ReturnType<typeof identitiesOf>[number]) => void,
 ): void {
+  const raw = node[kind];
   const payload = payloadOf(node, kind);
-  const country = countryIdFor(ctx, optionalString(payload.country, `${kind}.country`));
+  const named =
+    typeof raw === "string" ? raw : optionalString(payload.identity, `${kind}.identity`);
+  const explicitCountry = optionalString(payload.country, `${kind}.country`);
   const wanted = optionalString(payload.kind, `${kind}.kind`);
+  const bound = named === undefined ? ctx.scope.identity : ctx.scope[named];
+  const scoped =
+    isRecord(bound) && typeof bound.id === "string"
+      ? identityTable(ctx.world)[bound.id]
+      : undefined;
+  if (scoped !== undefined && scoped.owner === ctx.playerId && explicitCountry === undefined) {
+    apply(scoped);
+    return;
+  }
+  const country = countryIdFor(ctx, explicitCountry);
   for (const identity of identitiesOf(ctx.world, ctx.playerId)) {
     if (country !== undefined && identity.country !== country) {
       continue;
@@ -426,6 +456,9 @@ export function createWorldSystem(): System {
         if (player === undefined || !isAlive(player)) {
           continue;
         }
+        // The two flags M1 content reads are the identity table's answer, recomputed every day so
+        // an identity burned by an investigation stops paying the same day (SYS-01 M2 contract).
+        deriveIdentityFlags(world, player);
         if (isWeekStart(world.clock)) {
           weeklyPresence(world, ctx, player);
         }

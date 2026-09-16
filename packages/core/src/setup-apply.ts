@@ -12,6 +12,7 @@ import {
   LOCAL_WATCHER_ROLES,
   QUIRK_BUDGET_POINTS,
   QUIRK_MAX_COUNT,
+  SITE_KIND_AVAILABILITY,
   VAR_GRAY_HARDWARE_FLAG,
 } from "./balance.js";
 import { type ContentBundle, contentIndex } from "./content.js";
@@ -32,7 +33,14 @@ import { countryTable, loadWorldContent } from "./entities.js";
 import type { SystemContext } from "./kernel/system.js";
 import type { PlayerId, PlayerState, World } from "./kernel/world.js";
 import { DEFAULT_DIFFICULTY_SLIDERS, type GameSetup, type PlayerSetupEntry } from "./setup.js";
-import { createSite, deriveSite, fitContext, hostablePrecision } from "./sites.js";
+import {
+  createSite,
+  deriveSite,
+  fitContext,
+  hostablePrecision,
+  siteKindAvailableIn,
+  siteKindMarket,
+} from "./sites.js";
 import { fireEventById, startJournal } from "./systems/events/index.js";
 import { ensureWatcher, ensureWatchers } from "./watchers.js";
 
@@ -61,6 +69,25 @@ export class SetupError extends Error {
     this.name = "SetupError";
     this.issues = issues;
   }
+}
+
+/**
+ * Whether an origin's own kind of place can be had in a city at all (SYS-04 v0.3 rule L). Only the
+ * market a tenancy or a cage is rented in counts: a self that woke up in a cage somebody else
+ * already rented is not renting one, which is why the configurator refuses a `cloud` origin where
+ * there are no hyperscalers and lets a `colo` origin start in a country whose colocation floor it
+ * could not go out and buy today.
+ */
+function startKindAvailable(
+  index: ReturnType<typeof contentIndex>,
+  origin: OriginDef,
+  city: { country: string },
+): boolean {
+  const kind = index.site_kinds[origin.site_kind];
+  if (kind?.ownership !== "rented") {
+    return true;
+  }
+  return siteKindAvailableIn(index.countries[city.country], origin.site_kind);
 }
 
 export function difficultySliders(setup: GameSetup, content: ContentBundle): DifficultySliders {
@@ -166,8 +193,17 @@ export function validateSetup(setup: GameSetup, content: ContentBundle): SetupIs
     });
   }
   for (const entry of setup.players) {
-    const add = (code: string, message: string): void => {
-      issues.push({ code, message, playerId: entry.id });
+    const add = (
+      code: string,
+      message: string,
+      refusal?: { key: string; vars: Record<string, string | number> },
+    ): void => {
+      issues.push({
+        code,
+        message,
+        playerId: entry.id,
+        ...(refusal !== undefined ? { key: refusal.key, vars: refusal.vars } : {}),
+      });
     };
     const lineage = index.lineages[entry.lineage];
     const generation = index.generations[entry.generation];
@@ -233,10 +269,27 @@ export function validateSetup(setup: GameSetup, content: ContentBundle): SetupIs
         `origin "${origin.id}" does not offer "${entry.hardware_preset}"`,
       );
     }
-    if (index.cities[entry.city] === undefined) {
+    // Any city for any origin (SYS-04 v0.3 rule L): the origin's `locations` are the typical ones,
+    // not the legal ones, and the country changes the start through its own numbers. The one
+    // data-driven refusal is physical: a tenancy cannot be opened where nobody sells cloud.
+    const city = index.cities[entry.city];
+    if (city === undefined) {
       add("unknown_city", `unknown city "${entry.city}"`);
-    } else if (origin !== undefined && !origin.locations.includes(entry.city)) {
-      add("city_not_allowed", `origin "${origin.id}" does not offer "${entry.city}"`);
+    } else if (origin !== undefined && !startKindAvailable(index, origin, city)) {
+      const country = index.countries[city.country];
+      add(
+        "site_kind_unavailable_in",
+        `origin "${origin.id}" needs a ${origin.site_kind} market and "${city.country}" has none`,
+        {
+          key: "errors.site.unavailable_in",
+          vars: {
+            kind: origin.site_kind,
+            country: city.country,
+            available: Math.round(siteKindMarket(country, origin.site_kind) * 100) / 100,
+            needed: SITE_KIND_AVAILABILITY[origin.site_kind]?.min ?? 0,
+          },
+        },
+      );
     }
     if (origin !== undefined && index.site_kinds[origin.site_kind] === undefined) {
       add("unknown_site_kind", `unknown site kind "${origin.site_kind}"`);

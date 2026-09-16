@@ -936,9 +936,25 @@ export const COUNTRY_STAT_RANGES: Readonly<Record<string, { min: number; max: nu
   ai_displacement: { min: 0, max: 1 },
   hardware_availability: { min: 0, max: 1 },
   kyc_strength: { min: 0, max: 1 },
+  cloud_availability: { min: 0, max: 1 },
+  colo_availability: { min: 0, max: 1 },
+  // Hours, not a share: a reporting duty is a countdown a law writes down (backlog D10).
+  incident_report_hours: { min: 0, max: 720 },
   power_price_index: { min: PRICE_INDEX_MIN, max: PRICE_INDEX_MAX },
   cloud_price_index: { min: PRICE_INDEX_MIN, max: PRICE_INDEX_MAX },
 };
+
+/**
+ * Numeric `CountryState` fields a condition may read (SYS-01 M2 contract: "`stat` is any numeric
+ * `CountryState` field"). Everything a rule or an effect writes, plus the counters that are read
+ * but never written by content.
+ */
+export const COUNTRY_READABLE_STATS: readonly string[] = [
+  ...Object.keys(COUNTRY_STAT_RANGES),
+  "incidents_30d",
+  "population",
+  "pinned_months",
+];
 
 /** Day of the last media publication about this player, so the story runs once a month. */
 export const VAR_LAST_PUBLICATION_DAY = "last_publication_day";

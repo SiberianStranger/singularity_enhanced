@@ -76,6 +76,15 @@ export interface CountryState extends EntityRecord {
   hardware_availability: number;
   /** [0, 1] how hard identity checks bite here; events move it. */
   kyc_strength: number;
+  /** [0, 1] hyperscaler and neocloud presence; a cloud tenancy needs a market to rent in. */
+  cloud_availability: number;
+  /** [0, 1] colocation market depth; a cage needs a floor to rent. */
+  colo_availability: number;
+  /**
+   * Hours a detected incident must be reported in (backlog D10), or 0 where there is no duty.
+   * A number rather than null, so `country_stat` can compare it like any other field.
+   */
+  incident_report_hours: number;
   /** Tick of the next election, or null where none is scheduled. */
   next_election_tick: number | null;
   /** What that election elects, for the country panel. */
@@ -401,6 +410,9 @@ export function initialCountryState(world: World, def: CountryDef): CountryState
     cloud_price_index: 1,
     hardware_availability: defaultHardwareAvailability(def),
     kyc_strength: def.kyc_strength ?? DEFAULT_KYC_STRENGTH,
+    cloud_availability: cloudAvailabilityOf(def),
+    colo_availability: coloAvailabilityOf(def),
+    incident_report_hours: def.incident_report_hours ?? 0,
     next_election_tick: election?.tick ?? null,
     next_election_kind: election?.kind ?? null,
     incidents_30d: 0,

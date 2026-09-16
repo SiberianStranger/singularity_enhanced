@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AWARENESS_DECAY_PER_DAY,
+  COUNTRY_STAT_RANGES,
   ENFORCEMENT_LAG_PER_MONTH,
   PIN_AT_BOUND_MONTHS,
   PRICE_INDEX_MAX,
@@ -16,7 +17,7 @@ import {
   VAR_AI_ADOPTION,
   VAR_GPU_PRICE_INDEX,
 } from "../src/balance.js";
-import { type CountryState, countryTable, entityList } from "../src/entities.js";
+import { type CountryState, countryTable, entityList, identitiesOf } from "../src/entities.js";
 import { createGame } from "../src/index.js";
 import { createRng } from "../src/kernel/rng.js";
 import { serialize } from "../src/kernel/save.js";
@@ -258,5 +259,44 @@ describe("country-scoped targets", () => {
     // Three countries in the fixture, one of which the player is in: the weekly pass is the rarer
     // of the two even though it comes round four times as often.
     expect(weeks.length).toBeLessThan(months.length * 3);
+  });
+});
+
+describe("the DSL kinds content writes", () => {
+  it("fires every condition and every effect once", () => {
+    const started = game({ seed: "dsl" });
+    started.world.flags.m2_dsl_probe_on = true;
+    started.tick(24 * 3);
+    const player = started.world.players.p1;
+    const countries = countryTable(started.world);
+    const identities = identitiesOf(started.world, "p1");
+
+    // Effects: two identities, a country stat, a stance, a world variable.
+    expect(identities).toHaveLength(2);
+    // 0.1 from the effect, less the daily decay since it ran.
+    expect(countries.us?.awareness).toBeGreaterThan(0.09);
+    expect(countries.us?.stance).toBe("securitize");
+    expect(started.world.vars[VAR_GPU_PRICE_INDEX]).toBeGreaterThan(1);
+    // ... and the two that take a name away.
+    expect(identities.find((entry) => entry.country === "is")?.status).toBe("frozen");
+    expect(identities.find((entry) => entry.country === "de")?.status).toBe("burned");
+
+    // Conditions: each one set its own flag while the effects ran.
+    for (const flag of [
+      "m2_saw_country_stat",
+      "m2_saw_country_is",
+      "m2_saw_identity",
+      "m2_saw_election",
+      "m2_saw_presence",
+    ]) {
+      expect(player?.flags[flag]).toBe(true);
+    }
+  });
+
+  it("refuses to write a country stat no rule keeps", () => {
+    // The content build reads the same table: a typo that would write nothing is a build failure
+    // rather than a silent no-op (ADR-002).
+    expect(Object.keys(COUNTRY_STAT_RANGES)).toContain("kyc_strength");
+    expect(Object.keys(COUNTRY_STAT_RANGES)).not.toContain("gdp");
   });
 });

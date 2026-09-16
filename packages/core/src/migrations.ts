@@ -8,6 +8,8 @@
 import {
   AI_ADOPTION_START,
   CLOUD_DEMAND_INDEX_START,
+  DEFAULT_CLOUD_AVAILABILITY,
+  DEFAULT_COLO_AVAILABILITY,
   DEFAULT_KYC_STRENGTH,
   DEFAULT_STABILITY,
   GPU_PRICE_INDEX_START,
@@ -104,6 +106,9 @@ export const migrationV2ToV3: Migration = {
       // on is the bundle it will be loaded with, so the unrestricted default is the honest one.
       country.hardware_availability ??= HARDWARE_AVAILABILITY_BY_CHIP_ACCESS.unrestricted;
       country.kyc_strength ??= DEFAULT_KYC_STRENGTH;
+      country.cloud_availability ??= DEFAULT_CLOUD_AVAILABILITY;
+      country.colo_availability ??= DEFAULT_COLO_AVAILABILITY;
+      country.incident_report_hours ??= 0;
       country.next_election_tick ??= null;
       country.next_election_kind ??= null;
       country.incidents_30d ??= 0;

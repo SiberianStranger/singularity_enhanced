@@ -27,6 +27,7 @@ import type { ExposureChannel, OperationDef, OperationInstance } from "../../dom
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
+import type { ScopeEnv } from "../../dsl/types.js";
 import { operationsOf, operationTable, siteTable, watchersOf } from "../../entities.js";
 import { daysToTicks, isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
@@ -136,6 +137,30 @@ function applyOperationExposure(
   }
 }
 
+/**
+ * What an operation's conditions and effects can see. Besides the operation itself, the target is
+ * bound under its own domain, so an outcome that registers an identity registers it in the country
+ * the operation was run against (SYS-01 "M2 contract": `ops_shell_company` creates a company in
+ * the operation's target country) and a site-scoped operation can read the site.
+ */
+export function operationBindings(
+  world: World,
+  def: OperationDef,
+  instance: OperationInstance,
+): ScopeEnv {
+  const bindings: ScopeEnv = {
+    operation: { id: def.id, instance_id: instance.id, target: instance.target?.id ?? "" },
+  };
+  const target = instance.target;
+  if (target !== undefined) {
+    const entity = world.entities[target.domain]?.[target.id];
+    if (entity !== undefined) {
+      bindings[target.domain] = entity;
+    }
+  }
+  return bindings;
+}
+
 /** Picks an outcome: legal ones only, with the first (best) one weighted by the operation's skill. */
 export function rollOutcome(
   world: World,
@@ -144,9 +169,7 @@ export function rollOutcome(
   def: OperationDef,
   instance: OperationInstance,
 ): number | undefined {
-  const dctx = dslFromSystemContext(world, ctx, player.id, {
-    operation: { id: def.id, instance_id: instance.id, target: instance.target?.id ?? "" },
-  });
+  const dctx = dslFromSystemContext(world, ctx, player.id, operationBindings(world, def, instance));
   const skill = effectiveCapabilityOf(world, ctx.content, player)[def.skill];
   const entries: { weight: number; index: number }[] = [];
   for (const [index, outcome] of def.outcomes.entries()) {
@@ -251,9 +274,12 @@ function completeOperation(
   const outcome = index === undefined ? undefined : def.outcomes[index];
   instance.status = "done";
   if (outcome !== undefined) {
-    const dctx = dslFromSystemContext(world, ctx, player.id, {
-      operation: { id: def.id, instance_id: instance.id, target: instance.target?.id ?? "" },
-    });
+    const dctx = dslFromSystemContext(
+      world,
+      ctx,
+      player.id,
+      operationBindings(world, def, instance),
+    );
     // A self that never doubts itself does not notice it has been caught until it has been caught
     // twice (SYS-04 v0.2 `overconfident`): a failing outcome leaves the suspicion it wrote, again.
     const before =

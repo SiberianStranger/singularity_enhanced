@@ -93,8 +93,15 @@ export function siteKindUnavailable(
     return null;
   }
   const city = cityTable(world)[cityId];
+  const state = city === undefined ? undefined : countryTable(world)[city.country];
   const def = city === undefined ? undefined : contentIndex(content).countries[city.country];
-  const available = siteKindMarket(def, kindId);
+  // The state carries what the market is today; events open and close it (SYS-08 export rules).
+  const available =
+    state === undefined
+      ? siteKindMarket(def, kindId)
+      : ((SITE_KIND_AVAILABILITY[kindId]?.stat === "cloud_availability"
+          ? state.cloud_availability
+          : state.colo_availability) ?? siteKindMarket(def, kindId));
   if (available >= rule.min) {
     return null;
   }

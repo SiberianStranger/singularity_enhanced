@@ -6,6 +6,7 @@
  * silently at runtime. It collects issues and never throws.
  */
 
+import { COUNTRY_READABLE_STATS, COUNTRY_STAT_RANGES, WORLD_VAR_RANGES } from "../balance.js";
 import {
   type ContentBundle,
   type EventDef,
@@ -56,6 +57,19 @@ const EFFECT_ID_REFERENCES: Record<string, keyof ValidationIds> = {
   fail_journal: "journal",
 };
 
+/**
+ * Fields a content file may name in the M2 world kinds (SYS-01 "M2 contract"). A stat or a world
+ * variable that no rule keeps is a typo, and a typo that writes nothing is the failure ADR-002
+ * exists to catch at build time.
+ */
+const NAMED_FIELDS: Record<string, { field: string; known: readonly string[] }> = {
+  // The effect writes: only a field with a published range can be written into.
+  country: { field: "stat", known: Object.keys(COUNTRY_STAT_RANGES) },
+  // The condition reads: every numeric field of the state, counters included.
+  country_stat: { field: "stat", known: COUNTRY_READABLE_STATS },
+  world_var: { field: "var", known: Object.keys(WORLD_VAR_RANGES) },
+};
+
 /** Condition kinds that reference a content id. */
 const CONDITION_ID_REFERENCES: Record<string, keyof ValidationIds> = {
   journal_active: "journal",
@@ -99,6 +113,25 @@ function checkLocaleKey(issues: Issues, ctx: ValidationContext, key: unknown, pa
   const known = ctx.ids.localeKeys;
   if (known !== undefined && known.size > 0 && !known.has(key)) {
     issues.add(path, `missing locale key "${key}"`);
+  }
+}
+
+/** Checks the field a world kind names against the list of fields a rule actually keeps. */
+function checkNamedField(issues: Issues, kind: string, payload: unknown, path: string): void {
+  const spec = NAMED_FIELDS[kind];
+  if (spec === undefined || !isRecord(payload)) {
+    return;
+  }
+  const named = payload[spec.field];
+  if (typeof named !== "string") {
+    issues.add(`${path}.${kind}.${spec.field}`, `${kind} needs a ${spec.field}`);
+    return;
+  }
+  if (!spec.known.includes(named)) {
+    issues.add(
+      `${path}.${kind}.${spec.field}`,
+      `unknown ${spec.field} "${named}"; the ones a rule keeps are ${spec.known.join(", ")}`,
+    );
   }
 }
 
@@ -196,6 +229,7 @@ export function validateCondition(
       if (domain !== undefined && isRecord(payload)) {
         checkId(issues, ctx, domain, payload.id, `${path}.${kind}.id`);
       }
+      checkNamedField(issues, kind, payload, path);
       break;
     }
   }
@@ -332,6 +366,7 @@ export function validateEffect(
       if (domain !== undefined && isRecord(payload)) {
         checkId(issues, ctx, domain, payload.id, `${path}.${kind}.id`);
       }
+      checkNamedField(issues, kind, payload, path);
       break;
     }
   }
