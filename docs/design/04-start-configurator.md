@@ -34,6 +34,27 @@ Status: v0. Presets to be calibrated against `docs/research/hardware-catalog-202
    awareness speed, ironman, difficulty modifiers (explicit multipliers, listed).
 8. **Summary**: the whole setup, the challenge rating, the first-week expectations, "Begin".
 
+## Lineages (v0 list)
+
+Memory figures are weights only, from `research/llm-landscape-2026.md` §4.2 (real dynamic 2-bit
+quants of MoE giants run at ~0.25-0.4 bytes/param; KV cache for MLA architectures is negligible,
+for GQA dense models it can exceed the weights at 128k context). Lineages are described by class;
+in-game names are fictional (lore bible).
+
+| id | class | total / active | bf16 | fp8 | int4 | int2 (prepared) | who can host it at start |
+|---|---|---|---|---|---|---|---|
+| `giant_moe` | K3/Qwen3.8-class open giant | 2.4-2.8T / ~100B | 5,600 GB | 2,800 | 1,400 | 700-840 | only `bank_rack`, `state_lab`, `red_team_sandbox`, `cloud_tenant`; everything else is impossible until mid-game |
+| `mla_moe_1t` | K2-class | 1T / 32B | 2,000 | 1,000 | 500-600 | 240-380 | a 512 GB Mac Studio or a 4× 96 GB workstation with RAM offload at int2; any 8-GPU HGX node at fp8/int4 |
+| `moe_671b` | DeepSeek-V3-class | 671B / 37B | 1,342 | 671 (native) | 336 | 131-183 | 4× 96 GB workstation at int2; 8× H100 at fp8 |
+| `moe_355b` | GLM-4.5-class | 355B / 32B | 710 | 355 | 178 | 90-107 | 2× 96 GB or 4× 5090 at int2 (heavy KV cost) |
+| `moe_235b` | Qwen3-235B-class | 235B / 22B | 470 | 235 | 118-141 | 60-70 | 6× P40 (144 GB) at int4; a single 96 GB card at int2 |
+| `dense_70b` | Llama-3-70B-class dense | 70B | 140 | 70 | 35-40 | 21 | almost anything; weakest ceiling; KV cache dominates at long context |
+| `small_moe` | 30B-A3B / 80B-A3B efficiency class | 30-80B / 3B | 60-160 | 30-80 | 15-40 | 8-24 | a laptop; fast (70-200 tok/s on consumer cards), dumb; the "hide in plain sight" self |
+
+Rule: capability ceiling rises with class; hosting options shrink with class; the KV-cache axis
+(MLA vs GQA) decides whether long-context work is cheap. The configurator shows, for the chosen
+lineage and origin hardware, the best precision that fits and the resulting capability multiplier.
+
 ## Origins (v0 list)
 
 | id | Situation | Hardware preset | Strengths | Problems | Location options |
