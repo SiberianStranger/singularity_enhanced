@@ -29,6 +29,9 @@
     all:
       - { investigation_stage: {}, gte: 3 }
       - { presence_in: {} }
+  # The hook fires on every stage change, and stages 4 and 5 are also at or above 3, so without a
+  # cooldown one investigation would start the clock three times in a fortnight.
+  cooldown_days: 25
   tags: [world, detection, politics]
   immediate:
     - { start_journal: { id: world_incident_report } }

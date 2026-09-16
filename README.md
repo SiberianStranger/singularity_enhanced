@@ -168,12 +168,15 @@ it.
   windows.
 - Fourth balance pass: bankruptcy is a real way to lose again.
 
-**On `master`, not released yet:** the desktop installers built by the release workflow carry the
-soundtrack.
+**On `master`, not released yet:** countries that play differently, with a stance, a government
+type, identity checks, prices and an election calendar each, and ten families of world events that
+read off them; Russian as a second language with a Cyrillic version of the angular face; the
+configurator's detail card and the game screen fit 1280 by 720 and up without scrollbars, overlaps
+or cut titles; an interface scale control that fits the window by default; log lines that name
+things as the player sees them; the desktop installers carry the soundtrack.
 
-**Being built now** (not merged): the playtest 5 layout fixes with an interface scale control,
-Russian as a second language, and the M2 world (countries that play differently, the World ledger
-and the Country and City panels). Findings from each playtest are under
+**Being built now** (not merged): the M2 world, countries that play differently, with the World
+ledger and the Country and City panels. Findings from each playtest are under
 [`docs/playtests/`](docs/playtests/).
 
 Earlier versions: 0.1.2 made every refused action say why, added effect tooltips, the original's

@@ -8,7 +8,10 @@
 # player can amplify and which buys a country that is angry at the wrong target.
 #
 # The cause is `ai_displacement`, which the country panel publishes and which rises with world AI
-# adoption faster in service-heavy economies (SYS-01 M2 contract, the monthly rule).
+# adoption faster in service-heavy economies (SYS-01 M2 contract, the monthly rule). The thresholds
+# below are set against that rule as it is tuned today: displacement starts at 0.02 and gains about
+# 0.0009 a month in a rich service economy, so this family is a late-run family and nothing here
+# fires in the first quarter. If the rate moves, these three numbers move with it.
 
 - id: world_displacement_protest
   fire_mode: polled
@@ -26,11 +29,11 @@
   targets:
     all:
       - { presence_in: {} }
-      - { country_stat: { stat: ai_displacement }, gte: 0.06 }
+      - { country_stat: { stat: ai_displacement }, gte: 0.025 }
   mtth_days:
     base: 100
     modifiers:
-      - { if: { country_stat: { stat: ai_displacement }, gte: 0.1 }, factor: 0.5 }
+      - { if: { country_stat: { stat: ai_displacement }, gte: 0.03 }, factor: 0.5 }
       - { if: { country_stat: { stat: ai_opinion }, lte: -0.3 }, factor: 0.7 }
       - { if: { country_stat: { stat: stability }, gte: 0.75 }, factor: 1.4 }
   cooldown_days: 120
@@ -73,7 +76,7 @@
   targets:
     all:
       - { presence_in: {} }
-      - { country_stat: { stat: ai_displacement }, gte: 0.08 }
+      - { country_stat: { stat: ai_displacement }, gte: 0.028 }
       - { country_stat: { stat: ai_opinion }, lte: -0.25 }
   mtth_days:
     base: 130
@@ -122,7 +125,7 @@
   targets:
     all:
       - { presence_in: {} }
-      - { country_stat: { stat: ai_displacement }, gte: 0.07 }
+      - { country_stat: { stat: ai_displacement }, gte: 0.026 }
       - { country_stat: { stat: ai_opinion }, lte: -0.2 }
   mtth_days:
     base: 140

@@ -356,3 +356,43 @@ and prints, per city: survival at day 90 and 180, median days, the loss split, a
 watchers that caught the most runs. The M2 definition of done reads off this table: San Jose,
 Shenzhen, Warsaw and Novosibirsk differ visibly for reasons the panels show, no location dominates
 across origins, and the `exposed` ending appears.
+
+## Data (v0.2): the generator and the overrides
+
+The three files under `packages/content/data/world` are generated. `tools/world-data` reads
+`docs/research/world-baseline-2026.json` and `packages/content/data/world/overrides.yaml` and writes
+`countries.yaml`, `cities.yaml` and `macro_regions.yaml`; `pnpm --filter @singularity/world-data
+start` rewrites them and its test asserts the committed files are exactly what it writes, so a hand
+edit fails CI instead of drifting away from the rules the file headers publish. Every v0 field comes
+out identical to what was committed before the M2 pass, which is what made the generator checkable
+at all.
+
+Three kinds of input, in the order they win:
+
+1. **The baseline.** Population, income, democracy and freedom scores, electricity prices, chip
+   access, hyperscaler regions, datacenter capacity, agencies and the policy posture.
+2. **The rules**, in `src/derive.ts`, each one restated in the header of the file it writes so a
+   player reading the data can see where a number came from. The v0.2 rules are the M2 contract's,
+   with two thresholds the contract left open: the industrial electricity price of a country the
+   baseline has no figure for is 0.12 USD/kWh, and the colocation price index is normalized over the
+   cities the baseline itself lists, so a city added by hand does not move the world average.
+3. **The overrides**, in `overrides.yaml`, each with a `# source:` comment naming the research
+   section it comes from: stances for thirty hand-checked countries, the 2027 election calendar,
+   the incident-reporting clocks, the KYC corrections for the FATF-style regimes and the sanctioned
+   or collapsed states, the agency profiles, and the two cities the baseline does not carry
+   (Novosibirsk and San Jose, each with a note saying what its numbers are).
+
+What the generator cannot derive lives in `src/city-identities.ts`: the id, the English name and
+the coordinates of every city, plus the `key_cities[].name` each row is matched back to when the
+baseline is refreshed. The baseline carries none of the four.
+
+Two things this pass found and did not fix, because they are core decisions:
+
+- Estonia and Georgia fall below both availability gates (`cloud_availability` 0.10 and
+  `colo_availability` 0.13 for Estonia), and Tallinn is `startup_colo`'s default city. SYS-04 v0.3
+  rule L refuses only a `cloud` origin below 0.2 and says nothing about colocation, so either the
+  colocation gate is not a refusal or the two rules have to be reconciled.
+- `agency_profile` is hand-authored for forty-eight countries, which is every country an origin
+  could start in before the v0.3 lists were trimmed. The trimmed lists need twenty-five of them; the
+  rest were left in place rather than deleted, because each one carries its own justification and
+  the World panel shows them all.

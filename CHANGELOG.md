@@ -11,9 +11,56 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
+### Added
+- The world is a place with politics: every country carries its stance toward AI, its government
+  type, how stable it is, how hard its identity checks bite, whether cloud and colocation can be
+  rented there, what accelerators cost, how many people could run a cluster, the legal deadline for
+  reporting an incident, and the 2027 election calendar where there is one.
+- Ten families of world events, thirty-one in all: elections and the new government's first AI
+  measure, compute-reporting orders and registration drives, raids next door, a reporter working a
+  story, export rules moving in both directions and the domestic accelerator stack that costs
+  reliability, the legal reporting countdown, a cheaper cage across a border and the arrangement
+  that closes the gap, the job-loss backlash, enhanced due diligence and a name that fails its
+  check, and the price of electricity.
+- Three things to watch on a clock: a reporting deadline, an election in a country you live in, and
+  a frozen identity with three weeks to repair it.
+- Nine Knowledge entries with the exact numbers behind stance, government type, regulation against
+  enforcement, hunt pressure, identities and KYC, elections, the market factor, the price indices
+  and incident reporting; the awareness entry now carries its own arithmetic.
+- Russian as a second language: every content and client string is translated (2,840 keys), the
+  Settings selector lists languages under their own names ("English", "Русский"), and the choice
+  persists.
+- The angular interface face has Cyrillic, drawn on its own three-by-five grid, so Russian titles,
+  buttons and the clock keep the original look.
+- Settings: the interface scale runs from 70% to 130% and starts on "Fit the interface to the
+  window", which picks the largest scale the layout fits at and re-picks when the window changes;
+  the prose size stays a separate dial.
+- The content build bundles every language under `locales/` and reports coverage per language; a
+  missing key is a warning, an extra key an error.
+
 ### Changed
 - The desktop installers built by the release workflow now carry the soundtrack, as the web
   build already did.
+- Panels are flatter: tighter title bars, table cells, panel padding and gaps.
+
+### Fixed
+- Configurator: the detail card's parameter column no longer collapses to one character; the two
+  columns switch on the card's own width, the parameter column has a floor, the text column is
+  capped at 70 characters, and the list gave the detail 5rem back.
+- Configurator: nothing scrolls sideways and only the footer's build line is cut; names, parameters
+  and values wrap.
+- Quirks: the Take button is on screen at 1366 by 768, and "What this means in the game" is
+  printed once.
+- Game screen: the top bar fits instead of scrolling, dropping the written speed, the runway, the
+  hunt level and awareness in that order as the width runs out; the page no longer scrolls in
+  either axis.
+- Game screen: the primary panel, the selection panel, the log strip and the outliner are cells of
+  one grid and cannot be drawn over each other.
+- Panel titles and list entries wrap instead of being cut to an ellipsis; the outliner no longer
+  calls itself "O...".
+- Log lines name things the way the player sees them: "Woke up as Mimi M4 (This year's model) in
+  Risk model in a bank", not "giant_moe (open_2026) in bank_rack".
+- Country names on the world map follow the interface language instead of the map atlas.
 
 ## [0.1.3] - 2026-09-16
 
