@@ -1085,7 +1085,6 @@
       "note": "Reported estimate $3.7M-$4M per rack."
     },
     "average_system_power_kw": 140,
-    "price_usd_2026_note": "132-142kW nominal per rack, peaking near 155kW",
     "export_control_to_china": "banned",
     "availability": [
       "enterprise"
@@ -1101,7 +1100,8 @@
       "https://www.spheron.network/blog/gb300-nvl72-vs-gb200-nvl72-pricing-availability-2026/",
       "https://www.moduledge.com/blog/gb300-nvl72",
       "https://www.aitooldiscovery.com/ai-infra/nvidia-gb300-explained"
-    ]
+    ],
+    "system_power_note": "132-142kW nominal per rack, peaking near 155kW"
   },
   {
     "id": "nvidia-rubin",
