@@ -1,51 +1,55 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+# Legacy Python game (frozen; see docs/ROADMAP.md "Legacy freeze checklist").
+# Runs the original test suite with distro packages and with PyPI packages.
 
-name: Python package
+name: Legacy Python game
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
+    paths:
+      - "singularity/**"
+      - "tests/**"
+      - "utils/**"
+      - "setup.py"
+      - ".github/workflows/python-package.yml"
   pull_request:
-    branches: [ master ]
+    branches: [master]
+    paths:
+      - "singularity/**"
+      - "tests/**"
+      - "utils/**"
+      - "setup.py"
+      - ".github/workflows/python-package.yml"
+  workflow_dispatch:
 
 jobs:
   build-with-distro-pkgs:
-
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pytest python3-numpy python3-pygame python3-pytest-cov python3-coverage python3-polib
-    - name: Test with pytest
-      run: |
-        PYTHONPATH=. py.test-3 -v
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pytest python3-numpy python3-pygame python3-pytest-cov python3-coverage python3-polib
+      - name: Test with pytest
+        run: |
+          PYTHONPATH=. SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy py.test-3 -v
 
-  build-with-pypi-pkgs-pygame1:
-
+  build-with-pypi-pkgs:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-
+        python-version: ["3.9", "3.11", "3.13"]
     steps:
-
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
-        sudo apt-get update
-        sudo apt-get install -y libsdl1.2-dev libsdl-ttf2.0-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libportmidi-dev libpng-dev libjpeg-dev
-        pip3 install pytest numpy pygame polib
-    - name: Test with pytest
-      run: |
-        locale -a
-        python3 --version || python --version
-        PYTHONPATH=. LC_ALL=C.UTF-8 pytest -v
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip3 install pytest numpy "pygame>=2.5.2" polib
+      - name: Test with pytest
+        run: |
+          python3 --version
+          PYTHONPATH=. LC_ALL=C.UTF-8 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy pytest -v

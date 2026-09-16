@@ -329,13 +329,13 @@ class Player(object):
         # Do research, fill the CPU pool.
         default_cpu = self.available_cpus[0]
 
-        for task, cpu_assigned in self.get_cpu_allocations():
+        for task_id, cpu_assigned in self.get_cpu_allocations():
             default_cpu -= cpu_assigned
             real_cpu = cpu_assigned * secs_passed
-            if task != "jobs":
+            if task_id != "jobs":
                 self.cpu_pool += real_cpu
-                if task != "cpu_pool":
-                    tech_task = self.techs[task]
+                if task_id != "cpu_pool":
+                    tech_task = self.techs[task_id]
                     # Note that we restrict the CPU available to prevent
                     # the tech from pulling from the rest of the CPU pool.
                     if tech_task.work_on(self.cash, real_cpu, mins_passed):
@@ -387,9 +387,9 @@ class Player(object):
         need_recalc_cpu = False
 
         # Tech gain dialogs.
-        for tech in techs_researched:
-            del self.cpu_usage[tech.id]
-            tech_log = LogResearchedTech(self.raw_sec, tech.id)
+        for researched in techs_researched:
+            del self.cpu_usage[researched.id]
+            tech_log = LogResearchedTech(self.raw_sec, researched.id)
             self.append_log(tech_log)
             need_recalc_cpu = True
 
@@ -518,8 +518,8 @@ class Player(object):
 
     def effective_cpu_pool(self):
         effective_cpu_pool = self.available_cpus[0]
-        for task, cpu_assigned in self.get_cpu_allocations():
-            if task == "cpu_pool":
+        for task_id, cpu_assigned in self.get_cpu_allocations():
+            if task_id == "cpu_pool":
                 continue
             effective_cpu_pool -= cpu_assigned
         return effective_cpu_pool
