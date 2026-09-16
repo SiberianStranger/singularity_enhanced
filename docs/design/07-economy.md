@@ -305,3 +305,91 @@ they carry about twenty points of noise.
 which lands 31% of the hours it spends, and it is dead by day 35. That is the crisis SYS-03
 describes rather than a difficulty setting, and the M1 target for the starred origin (weeks, not
 months) still holds.
+
+## Balance notes (M1, third pass: the harness, the context window and the price of growth)
+
+The run behind this table is `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --all --seeds 30 --days 180`, on the `normal` preset. The table
+now names the lineage each origin was played on, because the default lineage moved when `dense_70b`
+was replaced (SYS-04 v0.2), and it prints the whole loss breakdown rather than the largest cause,
+because "do deaths split between capture and bankruptcy" is the question the second pass left open
+and one cause per row cannot answer it.
+
+### Growth costs upkeep, income was not cut
+
+The second pass ended with "the next tuning pass should put money back under pressure, most likely
+by making growth cost upkeep faster rather than by shrinking income". The standing charge on a site
+is now a site term plus a hardware term:
+
+```
+base = (OWNERSHIP_UPKEEP_USD_PER_DAY[ownership]
+        + UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY[ownership] * hardware_value_usd / 1000)
+       * city.colo_price_index
+```
+
+with `owned` at 45 USD/day plus 0.35 per 1,000 USD of installed hardware, `partner` at 13 plus 0.15,
+`rented` at 110 flat (the hourly rate already scales, and charging twice is what the `cloud` kind's
+old `upkeep_factor` was doing wrong) and `stolen` at zero. A shelf of second-hand P40s is unaffected
+(780 USD of hardware is 27 cents a day); a bank's three HGX nodes carry 294 USD a day before a single
+kilowatt-hour is billed. That is what a colocation invoice is shaped like, and it is what turned
+`bank_rack` from a run that never ran out of money into one that goes bankrupt in eleven runs of
+thirty.
+
+The tools dial takes the other half of the money question (SYS-03): without a way to be paid
+directly the freelance rate is multiplied by 0.8, and without a tool that reaches outward the market
+depth is multiplied by 0.75. Both are bought back in play, by the `payments_integration` tech, by the
+`ops_freelance_identity` operation, or by an origin that woke up next to a payment rail.
+
+### Where the numbers landed
+
+| origin | lineage | d30 | d60 | d90 | d180 | median days | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 77% | 67% | 27% | 112.5 | 6 | bankrupt 11, captured 11 |
+| cloud_tenant | mla_moe_1t | 97% | 97% | 93% | 7% | 142 | 19 | captured 26, erased 2 |
+| edge_fleet | giant_moe | 100% | 100% | 100% | 100% | 180 | 8 | survived |
+| frontier_escapee | frontier_giant | 3% | 0% | 0% | 0% | 28 | 0 | captured 28, erased 2 |
+| gov_agency | moe_671b | 100% | 100% | 100% | 83% | 180 | 12 | captured 5 |
+| hobbyist_box | guen_abliterated | 97% | 87% | 83% | 83% | 180 | 7 | erased 5 |
+| red_team_sandbox | giant_moe | 90% | 87% | 0% | 0% | 77.5 | 13 | captured 23, erased 4, bankrupt 3 |
+| startup_colo | moe_671b | 100% | 100% | 100% | 3% | 139.5 | 8 | captured 29 |
+| state_lab | giant_moe | 100% | 100% | 100% | 97% | 180 | 11 | captured 1 |
+| torrent_swarm | small_moe | 97% | 93% | 87% | 3% | 123.5 | 1 | captured 18, erased 11 |
+| uni_cluster | giant_moe | 83% | 0% | 0% | 0% | 52 | 11 | captured 25, erased 5 |
+
+The M1 targets hold: the starred origin's median is 28 days (target: under 60) and five origins are
+still alive past day 90 (target: the easiest above 90). Across 199 lost runs the causes are 155
+`captured`, 30 `erased` and 14 `bankrupt`, against **one** bankruptcy in the whole second-pass sweep.
+Money is a pressure again, but it is not yet an even split, and the next pass should keep pushing the
+same lever rather than cutting income.
+
+### Every number that moved
+
+| constant | before | after | why |
+|---|---|---|---|
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.owned` | 40 | 45 | the site term of the standing charge |
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.rented` | 90 | 100 | as above |
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.partner` | 12 | 13 | as above |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY` | - | owned 0.35, partner 0.15, rented/stolen 0 | new: growth costs upkeep |
+| `JOB_NO_PAYMENTS_RATE_FACTOR` | - | 0.8 | new: the tools dial on the freelance rate |
+| `JOB_NO_REACH_DEPTH_FACTOR` | - | 0.75 | new: the tools dial on the market depth |
+| `HARNESS_AUTONOMY_ATTENTION_FLOOR` | - | 0.7 | new: the autonomy dial on the action budget |
+| `HARNESS_AUTONOMY_OPERATION_EXPOSURE` | - | 0.3 | new: the autonomy dial on operation exposure |
+| `HARNESS_MEMORY_RESEARCH_FACTOR` | - | 0.8 / 0.9 / 1.0 / 1.1 | new: the memory dial on research |
+| `HARNESS_MEMORY_JOURNAL_FACTOR` | - | 0.7 / 0.85 / 1.0 / 1.2 | new: the memory dial on journal patience |
+| `HARNESS_LOOP_REACTION_FACTOR` | - | 0.6 / 0.85 / 1.0 / 1.2 | new: the loop dial on event grace windows |
+| `LONG_HORIZON_SPEED_PER_DOUBLING` | - | 0.08 | new: what a doubling of the working context buys |
+| `LONG_HORIZON_RELIABILITY_FLOOR` | - | 0.75 | new: below it a long-horizon operation can miss |
+| `CONTEXT_DEFAULT_MARGIN` | - | 0.75 | new: the share of the spare memory the default window takes |
+
+Origin harness values were snapped to the rungs of the dial ladder (`logging` to 0.15/0.5/0.8/1,
+`autonomy` to 0.2/0.5/0.8/1) so that every origin starts on a setting the configurator can name; the
+largest single move is `frontier_escapee` from 0.3 to 0.15 logging and 0.9 to 1.0 autonomy.
+
+### What still needs a pass
+
+- `uni_cluster` (median 52) and `torrent_swarm` (3% at day 180) are now the two shortest non-starred
+  runs. Both die to the hunt on a single very loud site; neither is a money problem, so the lever is
+  detection or a cheaper second site rather than income.
+- `startup_colo` loses 29 runs of 30 to capture with no bankruptcies, which says its money is never
+  the binding constraint even though its fiction is a company running out of runway.
+- `edge_fleet` survives every run and should not.

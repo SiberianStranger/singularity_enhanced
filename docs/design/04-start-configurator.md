@@ -233,7 +233,32 @@ scrolls the page.
   lot) gets a speed bonus growing with the context and multiplied by the reliability, and costs
   the cost factor in compute hours; a reliability below 0.75 adds a retrieval-miss failure mode.
   Babel 6 has a 5,000k context at 0.95 reliability and 1.5x cost; Mimi M4 has a 10,000k context at
-  0.6 reliability and 2.0x cost; the others sit at 128k-256k, 0.9, 1.0.
+  0.6 reliability and 2.0x cost; every other lineage sits at 1,000k, 0.9, 1.0 (amended 2026-09-16:
+  nobody ships 256k any more, so a million tokens is the floor). The memory formula, the speed and
+  cost terms and the retrieval-miss rule are in SYS-03 "What a context window buys".
+
+### Implementation notes (M1.1)
+
+- The lineage table is nine records in `packages/content/data/lineages/lineages.yaml`: `moe_671b`
+  (Peepseek-P4.1 / Peepseek-P5), `mla_moe_1t` (Mimi M3), `giant_moe` (Mimi M4), `moe_235b`
+  (Guen 4.8), `small_moe` (Guen 4.8-Next-80B-A3B), `moe_355b` (BFM-5.5 / BFM-6.3), `moe_428b`
+  (HexaDeciMax H3.5, which replaces the removed `dense_70b`), `frontier_giant` (Babel 6) and
+  `guen_abliterated` (Guen4.8-Uncensored-Babel6-abliterated). A family that renumbers between
+  vintages carries `generation_name_keys`.
+- The lock between `frontier_giant` and `frontier_escapee` is data and runs both ways:
+  `lineage.origins_allowed` and `origin.lineages_allowed`, both enforced by `validateSetup` and
+  cross-checked by the content build, so the configurator can grey the choice and say why.
+- `giant_moe` no longer offers `frontier_closed`: the escaped checkpoint is `frontier_giant` alone.
+- The starred origin moved to a `stolen_time` site on a `stolen_hgx_node`, because stolen
+  credentials are stolen time in engine terms (the bill goes to whoever owns the account) and
+  because Babel 6 at int2 needs 1,950 GB, which nothing smaller than a real rack has.
+- Harness dials are content (`data/harness/dials.yaml`), one record per dial with an `effect_key`
+  naming the system that reads it; origins declare `harness_locks` with a reason key.
+  `SelfView.harness_dials` publishes the current setting, its effect lines and the lock.
+- Locations: `ru_novosibirsk` (Akademgorodok) and `us_san_jose` (Silicon Valley) are in the world
+  data and offered by `hobbyist_box` and `startup_colo` respectively.
+- Every origin carries `opening_story`, two locale keys in the model's own voice, published on
+  `SelfView.opening_story` and mirrored as a story section `opening_<origin>` (SYS-13).
 
 ### Quirk catalog (v0.2, designed 2026-09-16)
 
