@@ -32,6 +32,7 @@ grouped by owner. Status column: open, fixed (commit), by design (explained in t
 | U8 | The bottom-left selection panel runs off the screen. | open |
 | U9 | Use the original game's angular font (the Acknowledge TT face shipped with the legacy game) for headings, buttons, the clock and the numbers, keeping a readable text face for prose. | open |
 | U10 | The clock should show seconds ticking continuously, as the original's "DAY 0000, 00:00:30" did, even when seconds have no simulation meaning; the terminator moved smoothly in the original. | open |
+| U11 | Map look: build on the original's map (NASA Blue Marble day texture with the night texture and city lights showing on the dark side of the terminator), with country borders, map-mode tints and markers drawn as a carefully aligned vector layer on top; the pure vector map stays as the fallback theme. | open |
 
 ## Acceptance
 
