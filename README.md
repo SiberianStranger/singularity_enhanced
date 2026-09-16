@@ -148,8 +148,8 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 
 ## Recent changes
 
-Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record. Version 0.1.2 (2026-09-16) is
-the first playable preview, milestone M1, with the fixes from the first playtest.
+Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record. Version 0.1.3 (2026-09-16) is
+the first playable preview, milestone M1, after three playtests.
 
 Unreleased, from the first playtest: refused commands now say why in a language the client can
 translate, every effect list renders as a tooltip, the client gets catalogs of site kinds and
@@ -168,6 +168,11 @@ and income grows through the job ladder, a trading model and standing contracts.
   and Linux builds with the web bundle on a tag, the GitHub Pages deploy of the web client, and the
   headless balance runner (`tools/sim`) that plays every origin over many seeds and reports
   survival, causes of death and the state of the books over time.
+- Added in 0.1.3, the style pass: the original's blue console look with square frames, the angular
+  face and underlined hotkeys, the soundtrack, the configurator rebuilt (origin first, list and
+  detail, explanations, glyphs, no dead ends), parody model names with the real flagship classes
+  behind them, twenty-three quirks, harness dials and context windows that matter, the opening in
+  the model's voice, a map that pans, zooms and wraps, and the fourth balance pass.
 - Added in 0.1.2, playtest 1 fixes: refused actions say why, effect tooltips on every choice,
   hardware and research as sortable tables, a precision trade-off table, income sources with the
   job ladder and contracts, the original game's map textures and angular face, settings in the

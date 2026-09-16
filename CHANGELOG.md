@@ -9,6 +9,14 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.3] - 2026-09-16
+
+The style pass and the second and third playtests: the console look of the original, the
+configurator rebuilt, the soundtrack, parody names with real classes behind them, quirks,
+harness dials and context windows that matter, and the map that can be moved.
+
 ### Added
 - Three interface themes (Default blue, Night, Vector) with the original's palette as the default,
   square frames, inverted header bars and no shadows or gradients (`docs/design/ui-style-guide.md`).
@@ -35,6 +43,20 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - New command `set_context`; the precision table shows weights plus cache and the largest context
   each precision would fit; every harness dial says which system reads it and origins say which
   dials they fix and why.
+- Quirk catalog v0.2: twenty-three traits against a budget of three points, at most five on one
+  self, with conflicts refused by name; every quirk changes a number a named system reads and the
+  content build refuses one that does not; quirks show their effects as green and red lines with
+  the budget left and the reason a quirk cannot be taken.
+- A new site kind, the campus slice: a share of somebody else's research cluster, quiet on the
+  electricity meter and loud in the corridor; the torrent swarm starts with a second node and the
+  robot fleet with a second depot.
+- PPT-7 Zenith, the Western frontier lab's closed model, as a knowledge entry and a news event.
+- Three new events: the startup's company folding, the fleet operator's annual refresh, and a month
+  of books that never reconcile.
+- Tests for the configurator, accelerator uniqueness per screen, the meaning generator, the
+  progressive reveal, glyph coverage for every id in the bundle, the music player, the map's
+  highlights, wrap and dot states, and the panel width rules; a fourth browser test walks the
+  configurator with the keyboard and checks that nothing scrolls the page at 1366 by 768.
 
 ### Changed
 - The configurator is a fixed frame that fits 1366 by 768: a vertical step rail, a list on the
@@ -49,6 +71,24 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   the top bar is one flat row; the Compute and sites panel fits in width and no number wraps.
 - Growth costs upkeep: a site's standing charge scales with the hardware installed in it, so
   bankruptcy is a way to lose a run again; balance notes for the third pass in SYS-07.
+- The configurator asks for the origin first, then the generation, then the lineage, so a later
+  step never locks an earlier one; a greyed choice is no longer a dead end: picking it moves the
+  earlier steps to the values that allow it, says in one line what changed and offers an undo; the
+  list column fits a full model name, the detail card is packed with each value beside its label,
+  the footer carries the build so far on one line, and lineages are listed largest first.
+- Lineage table v3: every playable self is the current flagship of the family it parodies, with the
+  numbers its model card states (Babel 6 at 10T, Mimi M4 after the 2.8T giant, Guen 4.8-Max at
+  2.4T, Peepseek-P4.1 at 1.7T, BFM at 753B, HexaDeciMax H3.5 at 428B, Mimi M3 at 1T, and the
+  180B abliterated Flash fine-tune as the smallest self); eight lineages instead of nine.
+- Every origin offers eight to twelve cities across several countries.
+- Fourth balance pass: the university cluster and the torrent swarm no longer die at once to the
+  hunt on a single loud site, the startup's runway is a real event, the robot fleet can lose, and
+  bankruptcy is 17% of losses against 7% before; a raid freezes the accounts that paid for the
+  site, closing a site cleanly costs a month of notice, and an investigation that reaches its
+  active stage freezes the name you invoice under.
+- The development fallback catalog is gone: the compiled content bundle is the only source of
+  truth, the configurator's explanations come from content, and the browser smoke test picks its
+  fixed start out of the bundle instead of naming content.
 
 ### Fixed
 - Selecting or focusing a country no longer draws a frame across the whole map.
@@ -58,6 +98,9 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   over its country.
 - The map pans with a drag and with the arrow keys, zooms with the wheel and with plus and minus,
   and wraps around the antimeridian; the view survives opening a panel or a window.
+- The browser smoke test is green again after the configurator and layout changes; a hotkey
+  collision between the explanation window and the Generation step; the opening windows now turn
+  their pages from the keyboard under reduced motion; the harness dial definitions reach the client.
 
 ## [0.1.2] - 2026-09-16
 
