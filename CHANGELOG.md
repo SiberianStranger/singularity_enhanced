@@ -21,8 +21,11 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   operations and intel, plus a mechanics backlog distilled from research.
 - Roadmap with milestones M0-M9 and recorded decisions (`docs/ROADMAP.md`).
 - Research reports with sources (`docs/research/`): open-weight and frontier LLM landscape 2026,
-  accelerator and rack catalog 2026 (91 records as JSON), AI ecosystem, security and governance
-  2026, strategy-game design references, hardware and title studies as they complete.
+  accelerator and rack catalog 2026 (91 records as JSON, 15 configurator presets), AI ecosystem,
+  security and governance 2026, strategy-game design references, frontier-model incidents of 2026
+  and the announced 2027 hardware roadmap, a world baseline dataset (105 countries, 15
+  macro-regions, 2027 calendar), a title and discoverability study, and an index with
+  cross-report corrections.
 - CI workflow for the TypeScript workspace on Linux, Windows and macOS (no-op until the workspace
   is committed); legacy Python workflow moved to 3.9/3.11/3.13 with pygame 2 wheels.
 - `CLAUDE.md` working agreement for AI-assisted development.

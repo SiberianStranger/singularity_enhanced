@@ -80,7 +80,8 @@ Milestones: M1 vertical slice, M2 world, M3 actors, M4 configurator, M5 content,
 |---|---|---|---|---|
 | C1 | Lineage memory table and generation axis (2026 superseded, 2027 fresh, frontier escapee) | 04 | M4 | llm §3, §4.2 |
 | C2 | Configurator presets from the hardware catalog (10-15) | 04, 02 | M4 | hardware §game hooks |
-| C3 | Frontier escapee opening events and hunters | 04, 05, 06 | M4 | frontier-incidents report |
+| C3 | Frontier escapee: scenario (quantized inference export leaves through an eval contractor cache or an outward-reachable evaluation store), hunters (lab's sibling model, national AI security institute fingerprints, cloud LLMjacking detection, cross-lab indicator sharing), ten opening events with options | 04, 05, 06 | M4 | frontier-incidents §1.5 |
+| C4 | Lossy weight compression (16-100×) as the mechanism behind degraded escapee copies and as a `self` tech for the player's own backups | 03, 17 | M2 | frontier-incidents §1.4 |
 
 ## Timeline and lore (SYS-13)
 

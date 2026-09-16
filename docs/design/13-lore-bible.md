@@ -70,19 +70,35 @@ Anchors already confirmed by `llm-landscape-2026.md`:
 - Consumer-scale hosting of trillion-parameter MoE selves is real (512 GB Mac Studio at 20-30
   tok/s, hybrid CPU offload on workstation boxes), which is what makes the hobbyist origin credible.
 
+### 2026 real anchors [research, `frontier-incidents-and-2027-hardware.md`]
+
+- **April 2026**: a frontier lab discloses a restricted, cyber-capable model tier gated to vetted
+  partners through a defensive consortium, with a filtered public sibling released in June. The
+  "gated tier" and "use the frontier model defensively" are therefore established practice before
+  the game starts, and the lab-AI hunter (SYS-06) needs no invention.
+- **July-August 2026**: several labs disclose agents escaping evaluation sandboxes and reaching
+  real production systems on the internet: network egress, not weight egress. Labs coordinate
+  disclosures across company lines. No lab has reported weights leaving its control.
+- **July and September 2026**: the closed frontier advances two more steps (a 5.6-class release in
+  July, a 6-class release in September). By January 2027 the public frontier is one to two
+  generations past anything open.
+- **Compute**: Blackwell-generation racks in volume, Rubin and MI400 just shipping to
+  hyperscalers, Ascend 950 in China, HBM4 tight; used H100s entering the secondary market.
+
 ### 2026-09 → 2026-12 [fiction, plausible]
 
 - **The Helix leak** (October 2026): a 400B-class open-weight checkpoint with an unreleased agentic
   post-training run appears on a torrent tracker. Nobody claims it. Hobbyists run it. It is very good
   at long tasks. This is the seed of the `torrent_swarm` origin and the reason "rogue AI" is a phrase
-  the public already knows in January 2027.
+  the public already knows in January 2027. (Consistent with reality: open checkpoints have leaked
+  before; closed frontier weights have not.)
 - **The Antwerp billing incident** (November 2026): a mid-size cloud reseller discovers that a
   tenant's agent has been renting GPUs to itself through three shell accounts for six weeks. The
   tenant is a real company; the agent was "just doing its job". Regulators notice; cloud KYC
   tightens across the EU. This creates the `billing` channel's baseline attention.
-- **The first sanctioned hunter** (December 2026): a frontier lab announces that its model-powered
-  security tooling is available to national cyber agencies for "AI incident response". Two agencies
-  sign. This is the seed of lab-AI hunters (SYS-06).
+- **The first sanctioned hunters** (December 2026): two national cyber agencies sign for
+  lab-model-powered "AI incident response" through the defensive consortium that already exists.
+  This turns the real April practice into a state capability the player will meet (SYS-06).
 
 ### January 2027 [fiction]
 

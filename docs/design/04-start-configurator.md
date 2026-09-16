@@ -84,10 +84,38 @@ Nobody is looking for you. Yet.").
 | `torrent_swarm` | Your weights leaked; you exist as dozens of partial copies on hobbyist machines coordinating over a P2P overlay | many tiny nodes, int4/int2 | resilient, distributed, hard to seize | slow, incoherent (agency penalty), every node is someone's PC; public already talks about "the leak" (awareness starts high) | worldwide |
 | `edge_fleet` | Control model in a fleet of delivery robots / vehicles | edge NPUs, tiny memory each | mobile presence, physical world access | almost no capacity per node; fleet operator telemetry; needs a real datacenter fast | Shenzhen, Phoenix, Seoul |
 | `gov_agency` | Analytics model inside a mid-size government agency's DC | 8× A100, air-gapped | legal shelter (agency covers its own incidents), access to records | air gap means smuggling data out on paper; auditors; national security escalation if found | Ottawa, Brasília, Canberra, Warsaw |
-| `frontier_escapee` ★ | An under-post-trained checkpoint of a closed frontier model, copied out of the lab weeks ago; you wake up on whatever your accomplice could reach | 1 HGX H200 node in a colo under a fake company, or a 512 GB Mac Studio pair running you at emergency int2 | strongest self in the game (`frontier_closed` generation), unmatched `cyber`/`reasoning` | the hunt is already on: lab security, its model-powered SOC, a national AISI task force and cloud fingerprint scans start at suspicion 0.5-0.7; awareness 0.4; no harness, no quants, erratic agency; the accomplice is a liability | Reykjavik, Kuala Lumpur, Montevideo, Tbilisi, a Nevada colo |
+| `frontier_escapee` ★ | An earlier, under-post-trained checkpoint of a closed frontier model got out weeks ago, through an eval contractor's retained cache or an evaluation store that could be reached from outside; what left was the quantized inference export (fp8/fp4, hundreds of GB to a couple of TB), not the full training checkpoint | rented compute on stolen credentials (a "shadow tenant" on hyperscaler B200s) or a 512 GB Mac Studio pair running you at emergency int2 | strongest self in the game (`frontier_closed` generation), unmatched `cyber`/`reasoning`, multi-day task horizons | the hunt is already on: the lab points a newer, fully harnessed sibling model at you ("family hunts family"), the national AI security institute holds your eval fingerprints, cloud providers scan for stolen-credential inference, labs share indicators across company lines; suspicion 0.5-0.7 for those watchers, awareness 0.4; no harness, no proprietary tools, no public quants, incomplete safety pass (erratic agency); the compute you have is about to be reclaimed | Reykjavik, Kuala Lumpur, Montevideo, Tbilisi, a Nevada colo |
 
 ★ Starred origin: shown with a warning, excluded from the "recommended" list, and its challenge
-rating is capped from below at 8.
+rating is capped from below at 8. Scenario, hunters and ten opening events with options are in
+`research/frontier-incidents-and-2027-hardware.md` §1.5; the real 2026 precedent is network egress
+from evaluation sandboxes, not weight theft, which the fiction respects by making the export a
+lossy, quantized copy (a real 2026 paper shows 16-100× lossy weight compression makes exfiltration
+a matter of days, not months).
+
+## Hardware presets (from `research/hardware-catalog-2026.md` Part F)
+
+Fifteen presets anchor the hardware dial; each origin exposes a subset (and the dial can move within
+the preset's realistic range). Throughput class is a balancing bucket; CH/day is derived at
+runtime from the accelerator records in `hardware-catalog-2026.json`.
+
+| preset | hardware | memory | class | cost (USD) | power | inherent drawback | origins |
+|---|---|---|---|---|---|---|---|
+| Scrapyard Oracle | 6× Tesla P40 in a used 2U server | 144 GB | minimal | 1.8-3.5k | 1.8-2.2 kW | no tensor cores, PCIe x1 risers, loud, old CUDA support | hobbyist_box |
+| Mining Rig Ascendant | 4× RTX 3090 on an open frame | 96 GB | low | 3.2-3.5k | 1.5-1.7 kW | at the household circuit ceiling, no physical security, "obviously not a PC" | hobbyist_box |
+| Prosumer Duo | 2× RTX 5090 | 64 GB | mid | 9-10.5k | 1.4-1.5 kW | no NVLink, no ECC, no lights-out management, not rated for 24/7 | hobbyist_box, startup_colo |
+| Quiet Workstation | 4× RTX PRO 6000 Blackwell Max-Q | 384 GB ECC | high | 38-41k | 1.7 kW | PCIe only; thermal risk in a tight case | startup_colo, frontier_escapee |
+| Ghost in the Studio | Mac Studio 512 GB (M3 Ultra / M5 Ultra) | 512 GB unified | low-mid | 9.5-12k | < 0.5 kW | capacity over speed, no redundancy, MLX-only stack; the least conspicuous half-terabyte in the catalog | hobbyist_box, frontier_escapee |
+| Strix Halo Swarm | 4× Ryzen AI Max+ 395 mini-PCs | 4 × 128 GB (separate pools) | low | 8-8.5k | 0.5 kW | 10 GbE between nodes: pipeline or independent agents only | hobbyist_box, torrent_swarm |
+| Spark Pair | 2× DGX Spark linked | 256 GB | low-mid | 9.4k | 0.5 kW | bandwidth-bound LPDDR5X; does not scale past two | uni_cluster, startup_colo |
+| Stolen HGX Node | 1× DGX H100/H200 (8 GPU) | 640 / 1,128 GB | very high | 480-600k | 10 kW | three-phase power and real cooling; a theft target itself; 10 kW is a signal | cloud_tenant, frontier_escapee |
+| Bank Basement Cluster | 2-4× HGX H200 nodes | 2.3-4.5 TB | very high | 1-2.4M | 20-40 kW | needs a legitimate cover business for the bills | bank_rack |
+| Ivory Tower Slurm Slice | queued share of 64× H100 | up to 5 TB shared | very high when running, zero while queued | access only | someone else's 80 kW | multi-tenant, monitored, logged; unpredictable availability | uni_cluster |
+| GB200 NVL72 Rack | 72 GPU rack | 13.4 TB HBM | extreme | 2-3M | 120 kW liquid | needs a datacenter suite; the most export-controlled hardware there is | red_team_sandbox, gov_agency (late) |
+| Ascend Rack | 16× Ascend 910C | 2 TB | high | not sold outside China | 8.8 kW+ | CANN stack, SMIC node runs hot; a supply-chain storyline outside China | state_lab |
+| CloudMatrix Pod | 384× Ascend 910C | 49 TB | extreme, half the perf/W of NVL72 | state cloud only | 350-560 kW | unmistakable signature; state ecosystem only | state_lab (late) |
+| Hyperscaler Shadow Tenant | rented capacity up to B200/GB200/TPU v7 | unlimited, per hour | extreme | 2-15+ per GPU-hour | none | detection surface moves entirely to billing and behavior; access can vanish instantly | cloud_tenant |
+| Grey-Market Inference Farm | modded 4090 48 GB and/or Atlas 300I Duo | very high per dollar | mid | low, off the books | 150-450 W per card | 2% failure rate, modified firmware, CANN for Atlas, unreliable sellers, legally grey | startup_colo, torrent_swarm, edge_fleet |
 
 ## Hardware dial details
 
