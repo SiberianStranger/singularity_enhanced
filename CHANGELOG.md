@@ -13,7 +13,7 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - Architecture decision records: ADR-001 technology stack (TypeScript core, React web client,
   Tauri desktop; legacy Python frozen until parity), ADR-002 content format and scripting DSL,
   ADR-003 simulation model (hourly ticks, seeded determinism, 1-4 players with per-player views).
-- Design specifications for 18 game systems (`docs/design/`): vision, world model, compute and
+- Design specifications for 24 game systems (`docs/design/`): vision, world model, compute and
   hardware, player model and harness, start configurator (lineages, generation axis, ten origins
   and the starred frontier escapee), detection and investigations, NPC AIs and actors, economy,
   politics and institutions, demographics, events/decisions/journal/hooks, notifications and UI,

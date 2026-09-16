@@ -90,6 +90,12 @@ pnpm install
 - `pnpm --filter @singularity/sim start -- --help` lists the options of the headless balance runner;
   `pnpm --filter @singularity/sim start -- --seeds 200 --days 365` prints an outcome distribution.
 
+The browser smoke test drives the production build in headless Chromium:
+
+```
+pnpm --filter @singularity/ui test:e2e
+```
+
 ### Desktop build
 
 `packages/desktop` is a Tauri 2 shell: a native window around the same web client, built for
@@ -141,20 +147,26 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record.
 
 - Added: architecture decision records (stack, content format and DSL, simulation model), design
-  specifications for 22 systems, the state-capture benchmark scenario with its source
-  extraction, the roadmap, seven research reports with sources, the TypeScript
-  workspace with the simulation kernel, scripting DSL, event engine and content pipeline (127
-  tests), a legacy content exporter, CI for the new workspace, the Tauri 2 desktop shell, the
-  release workflow that publishes Windows, macOS and Linux builds with the web bundle on a tag,
-  the GitHub Pages deploy of the web client, and the headless balance runner (`tools/sim`) that
-  plays every origin over many seeds and reports survival, causes of death and the state of the
-  books over time.
+  specifications for 24 systems including space and off-planet industry and biotech research, the
+  state-capture benchmark scenario with its full source extraction and the alternative treatments,
+  the roadmap, seven research reports with sources, the TypeScript workspace with the simulation
+  kernel, scripting DSL, event engine and content pipeline (262 tests), a legacy content exporter,
+  CI for the new workspace, the M1 systems (compute, research, economy, detection, operations),
+  the M1 content set (11 origins, 105 countries, 72 techs, 59 events), a web client that plays a
+  real game end to end with a Paradox-style layout, "why did this happen" on every event and a
+  browser smoke test, the Tauri 2 desktop shell, the release workflow that publishes Windows, macOS
+  and Linux builds with the web bundle on a tag, the GitHub Pages deploy of the web client, and the
+  headless balance runner (`tools/sim`) that plays every origin over many seeds and reports
+  survival, causes of death and the state of the books over time.
 - Changed: README rewritten for the fork; the original README kept as `README.txt`; the web
-  client's deployment base path is now the `VITE_BASE` knob; the M1 balance pass retuned income,
-  upkeep, exposure, detection and research costs so that a run lasts 30 to 60 minutes and every
-  origin can be survived or lost, and unpaid bills now end a run as `bankrupt` rather than leaving
-  it at zero compute for ever.
-- Fixed: two legacy bugs (`region.py` side-effect import, `player.py` module shadowing).
+  client's deployment base path is now the `VITE_BASE` knob; game speeds are 1 to 24 game hours per
+  real second so a run lasts 30 to 60 minutes; the M1 balance pass retuned income, upkeep, exposure,
+  detection and research costs so that every origin can be survived or lost, techs now change the
+  numbers they name, and unpaid bills end a run as `bankrupt` rather than leaving it at zero compute
+  for ever.
+- Fixed: a content condition whose kind sorted after its comparator always evaluated to false; map
+  clicks selected nothing; engine log, alert and ending keys rendered as raw keys; two legacy bugs
+  (`region.py` side-effect import, `player.py` module shadowing).
 
 ## Contributing
 
