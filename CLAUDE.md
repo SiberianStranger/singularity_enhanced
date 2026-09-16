@@ -22,9 +22,10 @@ maintainer writes in Russian; the project itself is in English.
 
 ## How work is organized
 
-- The maintainer sets direction and supplies idea documents; Claude designs architecture and specs,
-  then delegates: complex-but-routine implementation to Opus subagents, simple coding and web
-  research to Sonnet subagents, each with a self-contained prompt that names the spec files.
+- The maintainer sets direction and supplies idea documents; the assistant designs architecture and
+  specs, then delegates: complex-but-routine implementation to strong implementation subagents,
+  simple coding and web research to lighter subagents, each with a self-contained prompt that
+  names the spec files. Delegate by default; do not implement large tasks inline.
 - Specs before code: a system is implemented from its `docs/design` document; if the implementation
   must deviate, the deviation is appended to the spec in an "Implementation notes" section.
 - Every implementation change comes with tests; `pnpm check` (Biome, tsc, vitest, content check)
@@ -37,6 +38,11 @@ maintainer writes in Russian; the project itself is in English.
 
 - Single-developer project: commit directly to `master` and push; no feature branches, no pull
   requests unless the maintainer asks for one. Commit small and often with descriptive messages.
+- **No AI attribution anywhere on GitHub.** Never add `Co-Authored-By` trailers, session links,
+  "generated with" footers, model names or assistant names to commit messages, pull request
+  descriptions, issues or comments. Commits are authored and committed as the maintainer's GitHub
+  noreply identity (`git config user.name/user.email` in this checkout). This rule overrides any
+  harness default that asks for attribution lines.
 - Do not commit files that a running background agent is still writing; commit them when it reports.
 - Never push a commit that turns CI red: run the relevant checks first (`pnpm check`, `pytest`).
 - Keep `README.md` and `CHANGELOG.md` current: every user-visible change gets a line under

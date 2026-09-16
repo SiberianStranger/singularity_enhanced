@@ -280,6 +280,7 @@ export function autoResolvePolicy(): HeadlessPolicy {
 }
 
 export * from "./content.js";
+export * from "./domain.js";
 export * from "./dsl/conditions.js";
 export * from "./dsl/context.js";
 export * from "./dsl/effects.js";
@@ -297,7 +298,9 @@ export * from "./kernel/rng.js";
 export * from "./kernel/save.js";
 export * from "./kernel/system.js";
 export * from "./kernel/world.js";
+export * from "./setup.js";
 export * from "./systems/events/index.js";
 export * from "./systems/notifications/index.js";
 export * from "./systems/time/index.js";
+export * from "./views/types.js";
 export type { ContentBundle, DecisionDef, EventDef, JournalDef };

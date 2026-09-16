@@ -2,7 +2,7 @@
 
 - Status: **proposed** (awaiting maintainer confirmation)
 - Date: 2026-09-16
-- Deciders: project maintainer, Claude (architecture)
+- Deciders: project maintainer
 
 ## Context
 

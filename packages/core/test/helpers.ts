@@ -1,11 +1,5 @@
-import type {
-  ContentBundle,
-  DecisionDef,
-  EventDef,
-  HookDef,
-  JournalDef,
-  TechDef,
-} from "../src/content.js";
+import type { ContentBundle, DecisionDef, EventDef, HookDef, JournalDef } from "../src/content.js";
+import type { TechDef } from "../src/domain.js";
 import { createConditionRegistry } from "../src/dsl/conditions.js";
 import { createDslContext, defaultHooks } from "../src/dsl/context.js";
 import { createEffectRegistry } from "../src/dsl/effects.js";

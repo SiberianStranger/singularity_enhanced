@@ -78,9 +78,8 @@ Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record.
 ## Contributing
 
 Issues and pull requests are welcome. Start with `docs/ROADMAP.md` and the design document of the
-system you want to touch; content is data (YAML and locale JSON) and is validated in CI. The
-working agreement for AI-assisted development is in `CLAUDE.md`. The original contribution notes,
-including translations for the legacy game, are in `CONTRIBUTING.md`.
+system you want to touch; content is data (YAML and locale JSON) and is validated in CI. The original contribution notes, including translations for the legacy game, are in
+`CONTRIBUTING.md`.
 
 ## License and credits
 

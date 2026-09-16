@@ -21,7 +21,41 @@ export type PlayerCommand =
   | (CommandBase & { type: "resolve_event"; instanceId: string; optionId: string })
   | (CommandBase & { type: "take_decision"; id: string })
   | (CommandBase & { type: "set_flag"; flag: string; value: boolean })
-  | (CommandBase & { type: "cheat_add_cash"; amount: number });
+  | (CommandBase & { type: "cheat_add_cash"; amount: number })
+  // M1 system commands (handled through the registry by the owning system):
+  | (CommandBase & {
+      type: "build_site";
+      kind: string;
+      city: string;
+      hardware_preset: string;
+      name?: string;
+    })
+  | (CommandBase & { type: "decommission_site"; siteId: string; mode: "clean" | "abandon" })
+  | (CommandBase & { type: "set_site_status"; siteId: string; status: "active" | "sleep" })
+  | (CommandBase & {
+      type: "set_site_role";
+      siteId: string;
+      role: "active_mind" | "standby" | "worker" | "none";
+    })
+  | (CommandBase & { type: "rename_site"; siteId: string; name: string })
+  | (CommandBase & { type: "buy_hardware"; siteId: string; accelerator: string; count: number })
+  | (CommandBase & {
+      type: "set_precision";
+      siteId: string;
+      precision: "bf16" | "fp8" | "int4" | "int2";
+    })
+  | (CommandBase & {
+      type: "set_research_allocation";
+      techId: string;
+      compute_hours_per_day: number;
+    })
+  | (CommandBase & { type: "set_job_allocation"; compute_hours_per_day: number })
+  | (CommandBase & {
+      type: "start_operation";
+      operationId: string;
+      target?: { domain: string; id: string };
+    })
+  | (CommandBase & { type: "abort_operation"; instanceId: string });
 
 export type CommandType = PlayerCommand["type"];
 
@@ -134,7 +168,18 @@ export function applyCommand(
       return OK;
     }
     case "resolve_event":
-    case "take_decision": {
+    case "take_decision":
+    case "build_site":
+    case "decommission_site":
+    case "set_site_status":
+    case "set_site_role":
+    case "rename_site":
+    case "buy_hardware":
+    case "set_precision":
+    case "set_research_allocation":
+    case "set_job_allocation":
+    case "start_operation":
+    case "abort_operation": {
       const handler = ctx.commands.get(command.type);
       if (handler === undefined) {
         return fail(`no system handles "${command.type}"`);

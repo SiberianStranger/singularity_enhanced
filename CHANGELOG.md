@@ -28,7 +28,6 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   cross-report corrections.
 - CI workflow for the TypeScript workspace on Linux, Windows and macOS (no-op until the workspace
   is committed); legacy Python workflow moved to 3.9/3.11/3.13 with pygame 2 wheels.
-- `CLAUDE.md` working agreement for AI-assisted development.
 - TypeScript workspace (pnpm, Biome, vitest, zod): `packages/core` with the simulation kernel
   (UTC clock with cadence hooks, seeded xoshiro RNG, world with 1-4 players, systems manifest,
   player commands, outbox, JSON saves with migrations), the scripting DSL (conditions, effects,

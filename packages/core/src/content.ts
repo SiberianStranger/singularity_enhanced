@@ -6,6 +6,23 @@
  * spelling one to one, so no case conversion happens at load time.
  */
 
+import type {
+  AcceleratorDef,
+  CityDef,
+  CountryDef,
+  DifficultyPresetDef,
+  GenerationDef,
+  HardwarePresetDef,
+  KnowledgeEntryDef,
+  LineageDef,
+  MacroRegionDef,
+  OperationDef,
+  OriginDef,
+  QuirkDef,
+  SiteKindDef,
+  StorySectionDef,
+  TechDef,
+} from "./domain.js";
 import type { Condition, Effect, ScriptLibrary } from "./dsl/types.js";
 import type { Weight } from "./dsl/weight.js";
 
@@ -185,18 +202,33 @@ export interface JournalDef {
   alert: JournalAlert;
 }
 
-/** Placeholder until the research system lands; only the id is used for `{ tech: "..." }`. */
-export interface TechDef {
-  id: string;
-  name_key?: string;
-}
-
+/**
+ * A content bundle: everything the engine needs, compiled by `@singularity/content`.
+ *
+ * The M1 domains (`domain.ts`) are optional here so a bundle that only carries events still loads;
+ * systems that need a domain treat a missing array as empty. Content domains become required as
+ * their systems land.
+ */
 export interface ContentBundle extends Partial<ScriptLibrary> {
   events: readonly EventDef[];
   decisions: readonly DecisionDef[];
   journal: readonly JournalDef[];
   hooks: readonly HookDef[];
   techs: readonly TechDef[];
+  lineages?: readonly LineageDef[];
+  generations?: readonly GenerationDef[];
+  origins?: readonly OriginDef[];
+  quirks?: readonly QuirkDef[];
+  difficulty_presets?: readonly DifficultyPresetDef[];
+  accelerators?: readonly AcceleratorDef[];
+  hardware_presets?: readonly HardwarePresetDef[];
+  site_kinds?: readonly SiteKindDef[];
+  macro_regions?: readonly MacroRegionDef[];
+  countries?: readonly CountryDef[];
+  cities?: readonly CityDef[];
+  knowledge?: readonly KnowledgeEntryDef[];
+  story?: readonly StorySectionDef[];
+  operations?: readonly OperationDef[];
   locales: { en: Record<string, string> } & Record<string, Record<string, string>>;
 }
 
