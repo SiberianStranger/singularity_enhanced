@@ -30,6 +30,8 @@ grouped by owner. Status column: open, fixed (commit), by design (explained in t
 | U6 | The day-night terminator moves in jumps instead of smoothly. | open |
 | U7 | The primary panel (Overview and the others) overlaps the map-mode strip; the outliner on the right overlaps it too. | open |
 | U8 | The bottom-left selection panel runs off the screen. | open |
+| U9 | Use the original game's angular font (the Acknowledge TT face shipped with the legacy game) for headings, buttons, the clock and the numbers, keeping a readable text face for prose. | open |
+| U10 | The clock should show seconds ticking continuously, as the original's "DAY 0000, 00:00:30" did, even when seconds have no simulation meaning; the terminator moved smoothly in the original. | open |
 
 ## Acceptance
 
