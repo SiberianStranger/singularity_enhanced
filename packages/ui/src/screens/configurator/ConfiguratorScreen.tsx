@@ -74,7 +74,13 @@ export function ConfiguratorScreen(): ReactNode {
         ) : null}
       </header>
 
-      <div className="grid min-h-0 grid-cols-[minmax(8rem,11rem)_minmax(0,1fr)]">
+      {/*
+       * The rail's column budget (playtest 5, continuation): 12rem holds the longest Russian step
+       * name, "ПРОИСХОЖДЕНИЕ", on one line at 1280 by 720 beside its key cap and its state mark,
+       * so no rail row is taller than the others. The rem it took came from the step frame, which
+       * still leaves the detail pane above the 44rem its two columns switch on.
+       */}
+      <div className="grid min-h-0 grid-cols-[minmax(8rem,12rem)_minmax(0,1fr)]">
         <StepRail />
         {CONTENT[id]}
       </div>
