@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start": "tsx src/main.ts",
+    "pretest": "pnpm --filter @singularity/content build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
@@ -18,6 +19,7 @@
     "@singularity/core": "workspace:*"
   },
   "devDependencies": {
+    "@singularity/content": "workspace:*",
     "@types/node": "22.20.3",
     "tsx": "4.23.13",
     "typescript": "5.9.3",

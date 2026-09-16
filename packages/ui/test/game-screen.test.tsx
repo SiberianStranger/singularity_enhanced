@@ -10,6 +10,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { GameScreen } from "../src/screens/game/GameScreen.js";
+import { DEFAULT_SPEED } from "../src/screens/game/useHotkeys.js";
 import { useGameStore } from "../src/store/gameStore.js";
 import { useUiStore } from "../src/store/uiStore.js";
 import { type LocalSession, startSession } from "./helpers.js";
@@ -31,6 +32,18 @@ function primaryPanel(): HTMLElement {
   return (
     screen.getByRole("tab", { selected: true }).closest("section") ?? screen.getByLabelText(tab)
   );
+}
+
+/** Answers every blocking event the core has queued, which is what unblocks the hotkeys. */
+async function resolveBlockingEvents(live: LocalSession): Promise<void> {
+  for (const choice of live.view().pending.filter((entry) => entry.blocking)) {
+    const option = choice.options.find((entry) => entry.enabled);
+    if (option !== undefined) {
+      await useGameStore
+        .getState()
+        .send({ type: "resolve_event", instanceId: choice.instanceId, optionId: option.id });
+    }
+  }
 }
 
 describe("game screen", () => {
@@ -90,6 +103,26 @@ describe("game screen", () => {
     (controls[0] as HTMLElement).focus();
     await userEvent.tab({ shift: true });
     expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+
+  it("resumes at the pace the balance runs settled on, and remembers a chosen speed", async () => {
+    const live = await start();
+    render(<GameScreen />);
+    await resolveBlockingEvents(live);
+
+    expect(live.view().speed).toBe(0);
+    await userEvent.keyboard(" ");
+    expect(live.view().speed).toBe(DEFAULT_SPEED);
+
+    await userEvent.keyboard(" ");
+    expect(live.view().speed).toBe(0);
+
+    await userEvent.keyboard("4");
+    expect(live.view().speed).toBe(4);
+    await userEvent.keyboard(" ");
+    expect(live.view().speed).toBe(0);
+    await userEvent.keyboard(" ");
+    expect(live.view().speed).toBe(4);
   });
 
   it("explains a gauge with the terms behind it", async () => {

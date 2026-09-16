@@ -36,3 +36,4 @@ export {
   SURVIVAL_DAYS,
   summarize,
 } from "./run.js";
+export { buildSetup, defaultLineage, type SetupOptions } from "./setup.js";

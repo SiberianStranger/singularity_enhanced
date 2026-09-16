@@ -167,6 +167,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
     devDependencies:
+      '@singularity/content':
+        specifier: workspace:*
+        version: link:../../packages/content
       '@types/node':
         specifier: 22.20.3
         version: 22.20.3

@@ -88,6 +88,10 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - Endings, alerts and log strings in English for every key the engine can emit, and a content-build
   check that fails when it can say something the content has no words for, when an origin opens
   with nothing, or when an event's only answer is losing a site.
+- A balance test over the shipped content (`tools/sim`): every origin is played to the end on four
+  seeds and the run asserts that no game ends for a reason the player has no words for, that every
+  death was announced by a warning event or an alert first, and that the starred origin's median run
+  is the shortest while an easy origin's passes three months.
 
 ### Changed
 - Title decided: "Endgame: Singularity - Rogue AI 2027"; planned target languages listed

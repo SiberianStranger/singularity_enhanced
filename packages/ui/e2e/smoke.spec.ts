@@ -200,9 +200,10 @@ test("the panels the player needs all render", async ({ page }) => {
   await expect(selection).toBeVisible();
   await expect(selection.getByRole("heading")).toContainText(/london/i);
 
-  // And to a country, which is the other half of what the map selects.
-  await map.locator('[data-testid="country-paths"] [role="button"]').first().click();
-  await expect(selection.getByRole("heading")).not.toContainText(/london/i);
+  // And to a country, which is the other half of what the map selects. Brazil is a big solid
+  // shape whose centre is inside it, unlike the slivers around the antimeridian.
+  await map.getByRole("button", { name: "Brazil", exact: true }).click();
+  await expect(selection.getByRole("heading")).toContainText(/brazil/i);
 
   expect(failures.list, "no uncaught errors were logged").toEqual([]);
 });

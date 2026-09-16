@@ -182,6 +182,10 @@ The host emits at most 20 views a second at any speed, and a frame may replay at
 (`MAX_TICKS_PER_FRAME`), so a tab that was throttled in the background catches up without skipping
 past an event the player should have seen.
 
+A new game starts paused on its opening events. Space resumes at the speed the player last chose,
+and at speed 2 on a game where they have not chosen one yet (`DEFAULT_SPEED` in
+`packages/ui/src/screens/game/useHotkeys.ts`), which is the pace the balance runs below ask for.
+
 ### Pace (from the balance runs)
 
 The ladder above is confirmed by the M1 balance runs, and the default speed follows from them. On
