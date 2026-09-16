@@ -171,6 +171,72 @@ describe("effect summary", () => {
     expect(summarizeCost({ cash: 0 })).toEqual([]);
   });
 
+  it('names a country statistic, a stance, a name and a world price (SYS-01 "M2 contract")', () => {
+    expect(
+      summarizeEffects(
+        [
+          { country: { country: "de", stat: "awareness", delta: 0.05 } },
+          { country: { country: "de", stat: "stability", delta: -0.1 } },
+          { country: { country: "de", stat: "regulation", set: 0.4 } },
+          { country_stance: { country: "de", set: "securitize" } },
+          { identity: { country: "de", create: { kind: "company" } } },
+          { identity: { country: "de", restore: true, kind: "company" } },
+          { freeze_identity: { country: "de", kind: "company" } },
+          { burn_identity: "identity" },
+          { world_var: { var: "gpu_price_index", delta: 0.1 } },
+        ],
+        content,
+      ),
+    ).toEqual([
+      {
+        key: "effects.country.up",
+        vars: { stat: "awareness", where: "de", delta: 0.05 },
+        text: "de awareness +0.05",
+      },
+      {
+        key: "effects.country.down",
+        vars: { stat: "stability", where: "de", delta: 0.1 },
+        text: "de stability -0.1",
+      },
+      {
+        key: "effects.country.set",
+        vars: { stat: "regulation", where: "de", value: 0.4 },
+        text: "de regulation = 0.4",
+      },
+      {
+        key: "effects.country_stance",
+        vars: { where: "de", stance: "securitize" },
+        text: "de takes the securitize line",
+      },
+      {
+        key: "effects.identity",
+        vars: { kind: "company", where: "de" },
+        text: "registers a company in de",
+      },
+      {
+        key: "effects.identity",
+        vars: { kind: "company", where: "de" },
+        text: "restores a company in de",
+      },
+      {
+        key: "effects.freeze_identity",
+        vars: { kind: "company", where: "de" },
+        text: "freezes a company in de",
+      },
+      // A bare string names the identity the hook bound, which a tooltip can only call "a name".
+      {
+        key: "effects.burn_identity",
+        vars: { kind: "name", where: "here" },
+        text: "burns a name in here",
+      },
+      {
+        key: "effects.world_var",
+        vars: { var: "gpu_price_index", value: 0.1 },
+        text: "gpu_price_index +0.1 worldwide",
+      },
+    ]);
+  });
+
   it("never renders an effect list as nothing at all", () => {
     expect(summarizeEffects(undefined, content)).toEqual([]);
     for (const effect of [

@@ -153,6 +153,41 @@ function awarenessLine(spec: Record<string, unknown>): EffectSummaryView {
   return line(key, `${where} awareness ${signed(delta)}`, { where, delta: round(Math.abs(delta)) });
 }
 
+/** One country statistic moving (SYS-01 "M2 contract"): a stat, a place and a direction. */
+function countryLine(spec: Record<string, unknown>): EffectSummaryView {
+  const stat = stringAt(spec.stat, "?");
+  const where = stringAt(spec.country, "here");
+  if (spec.set !== undefined) {
+    const value = numberAt(spec.set);
+    return line(`effects.country.set`, `${where} ${stat} = ${round(value)}`, {
+      stat,
+      where,
+      value: round(value),
+    });
+  }
+  const delta = numberAt(spec.delta);
+  const key = delta >= 0 ? "effects.country.up" : "effects.country.down";
+  return line(key, `${where} ${stat} ${signed(delta)}`, {
+    stat,
+    where,
+    delta: round(Math.abs(delta)),
+  });
+}
+
+/** A name registered, frozen or burned (SYS-07, SYS-17). */
+function identityLine(kind: string, spec: Record<string, unknown>): EffectSummaryView {
+  const where = stringAt(spec.country, "here");
+  const create = isRecord(spec.create) ? spec.create : undefined;
+  const which = stringAt(create?.kind ?? spec.kind, "name");
+  const verb =
+    kind === "identity"
+      ? spec.restore === true
+        ? "restores"
+        : "registers"
+      : `${kind.split("_")[0]}s`;
+  return line(`effects.${kind}`, `${verb} a ${which} in ${where}`, { kind: which, where });
+}
+
 function flagLine(node: Effect, kind: "set_flag" | "clear_flag"): EffectSummaryView {
   const raw = node[kind];
   const flag = typeof raw === "string" ? raw : isRecord(raw) ? stringAt(raw.flag, "?") : "?";
@@ -217,6 +252,33 @@ function walk(
     case "awareness":
       out.push(awarenessLine(payload));
       return;
+    case "country":
+      out.push(countryLine(payload));
+      return;
+    case "country_stance":
+      out.push(
+        line(
+          "effects.country_stance",
+          `${stringAt(payload.country, "here")} takes the ${stringAt(payload.set, "?")} line`,
+          { where: stringAt(payload.country, "here"), stance: stringAt(payload.set, "?") },
+        ),
+      );
+      return;
+    case "identity":
+    case "burn_identity":
+    case "freeze_identity":
+      out.push(identityLine(kind, payload));
+      return;
+    case "world_var": {
+      const value = payload.set === undefined ? numberAt(payload.delta) : numberAt(payload.set);
+      out.push(
+        line("effects.world_var", `${stringAt(payload.var, "?")} ${signed(value)} worldwide`, {
+          var: stringAt(payload.var, "?"),
+          value: round(value),
+        }),
+      );
+      return;
+    }
     case "lose_site":
       out.push(
         line("effects.lose_site", "a site is lost", {
@@ -445,12 +507,15 @@ export function variableTone(name: string, value: number): EffectTone | undefine
 const KEY_TONE: Readonly<Record<string, EffectTone>> = {
   "effects.awareness.down": "good",
   "effects.awareness.up": "bad",
+  "effects.burn_identity": "bad",
   "effects.cash.cost": "bad",
   "effects.cash.gain": "good",
   "effects.complete_journal": "good",
   "effects.exposure.down": "good",
   "effects.exposure.up": "bad",
   "effects.fail_journal": "bad",
+  "effects.freeze_identity": "bad",
+  "effects.identity": "good",
   "effects.lose_site": "bad",
   "effects.suspicion.down": "good",
   "effects.suspicion.up": "bad",
