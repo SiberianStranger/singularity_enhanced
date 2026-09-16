@@ -1,4 +1,5 @@
 import type { ContributionView, PlayerView } from "@singularity/core";
+import { EXPOSED_AWARENESS, EXPOSED_DAYS, EXPOSED_HUNT_LEVEL } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
@@ -25,7 +26,16 @@ interface BreakdownLine {
  * A gauge's tooltip: a headline and the terms behind the number, as Paradox panels do it. Every
  * line is already localized by the caller, so this only lays them out.
  */
-function Breakdown({ title, lines }: { title: string; lines: BreakdownLine[] }): ReactNode {
+function Breakdown({
+  title,
+  lines,
+  note,
+}: {
+  title: string;
+  lines: BreakdownLine[];
+  /** A sentence under the terms: the rule behind them, or the threshold they are heading for. */
+  note?: ReactNode;
+}): ReactNode {
   return (
     <span className="flex flex-col gap-0.5">
       <span className="font-semibold">{title}</span>
@@ -39,6 +49,7 @@ function Breakdown({ title, lines }: { title: string; lines: BreakdownLine[] }):
           ))}
         </span>
       )}
+      {note === undefined ? null : <span className="mt-1 text-muted">{note}</span>}
     </span>
   );
 }
@@ -198,9 +209,30 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
           label={t("game.hunt")}
           value={t("game.hunt_value", { value: view.detection.hunt_level })}
           breakdown={
+            /*
+             * The gauge says the stage; the tooltip says how fast the world is moving toward the
+             * ending that stage leads to (SYS-01 M2 contract, SYS-05 "Global pressure"). The
+             * thresholds are the engine's own constants, so the clock is readable rather than
+             * guessed at.
+             */
             <Breakdown
               title={huntLines.length === 0 ? t("game.no_contributions") : t("detection.why_hunt")}
-              lines={huntLines}
+              lines={[
+                ...huntLines,
+                {
+                  label: t("world.hunt_pressure"),
+                  value: t("common.percent", { value: view.detection.hunt_pressure }),
+                },
+                {
+                  label: t("world.awareness_presence"),
+                  value: t("common.percent", { value: view.detection.awareness_presence }),
+                },
+              ]}
+              note={t("world.exposed_threshold", {
+                awareness: t("common.percent", { value: EXPOSED_AWARENESS }),
+                hunt: EXPOSED_HUNT_LEVEL,
+                days: EXPOSED_DAYS,
+              })}
             />
           }
           meter={view.detection.hunt_level / 5}

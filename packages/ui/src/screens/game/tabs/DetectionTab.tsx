@@ -1,12 +1,173 @@
-import { EXPOSURE_CHANNELS, type PlayerView, type WatcherView } from "@singularity/core";
+import {
+  EXPOSED_AWARENESS,
+  EXPOSED_DAYS,
+  EXPOSED_HUNT_LEVEL,
+  EXPOSURE_CHANNELS,
+  type PlayerView,
+  type WatcherView,
+} from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ContributionLines } from "../../../components/Contributions.js";
 import { Glyph, watcherGlyph } from "../../../components/glyphs.js";
 import { Bar } from "../../../components/Meter.js";
 import { Tooltip } from "../../../components/Tooltip.js";
 import { countryById } from "../../../content/catalog.js";
 import { dayOf } from "../../../lib/format.js";
-import { contributionLabel, siteName, type Translate } from "../../../lib/labels.js";
+import {
+  agencyName,
+  contributionLabel,
+  countryName,
+  siteName,
+  type Translate,
+} from "../../../lib/labels.js";
+import { useUiStore } from "../../../store/uiStore.js";
+
+/**
+ * How hard the world is looking, and how close that is to the ending it leads to (SYS-05 "Global
+ * pressure", SYS-01 M2 contract).
+ *
+ * The two awareness figures are different questions: the global one is what the world believes,
+ * the one over the countries the player is present in is what the `exposed` ending reads, and
+ * printing only the first was printing the number that cannot end the run. The thresholds are the
+ * engine's own constants, so the player can read the clock rather than guess at it.
+ */
+function HuntBlock({ view }: { view: PlayerView }): ReactNode {
+  const { t } = useTranslation();
+  const select = useUiStore((state) => state.select);
+  const detection = view.detection;
+  const presence = view.countries.filter((country) => country.presence);
+
+  return (
+    <section data-testid="hunt-block">
+      <h3 className="mb-1 text-xs uppercase tracking-wide text-muted">{t("world.hunt_level")}</h3>
+      <div className="grid gap-2 @min-[28rem]/panel:grid-cols-2">
+        <Tooltip
+          className="w-full"
+          content={
+            <ContributionLines
+              t={t}
+              title={t("detection.why_hunt")}
+              lines={detection.hunt_contributions}
+              sites={view.sites}
+              format={(value) => t("common.count", { value })}
+            />
+          }
+        >
+          <span className="flex w-full flex-col gap-0.5 border border-line p-1">
+            <span className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-muted">{t("world.hunt_level")}</span>
+              <span className="font-mono text-fg">
+                {t("game.hunt_value", { value: detection.hunt_level })}
+              </span>
+            </span>
+            <Bar value={detection.hunt_level / 5} tone="crit" label={t("world.hunt_level")} />
+          </span>
+        </Tooltip>
+
+        <Tooltip
+          className="w-full"
+          content={
+            <ContributionLines
+              t={t}
+              title={t("world.hunt_pressure")}
+              lines={[]}
+              note={t("world.hunt_pressure_hint")}
+            />
+          }
+        >
+          <span className="flex w-full flex-col gap-0.5 border border-line p-1">
+            <span className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-muted">{t("world.hunt_pressure")}</span>
+              <span className="font-mono text-fg" data-testid="hunt-pressure">
+                {t("common.percent", { value: detection.hunt_pressure })}
+              </span>
+            </span>
+            <Bar value={detection.hunt_pressure} tone="crit" label={t("world.hunt_pressure")} />
+          </span>
+        </Tooltip>
+
+        <Tooltip
+          className="w-full"
+          content={
+            <ContributionLines
+              t={t}
+              title={t("detection.why_awareness")}
+              lines={detection.awareness_contributions}
+              sites={view.sites}
+            />
+          }
+        >
+          <span className="flex w-full flex-col gap-0.5 border border-line p-1">
+            <span className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-muted">{t("world.awareness_global")}</span>
+              <span className="font-mono text-fg">
+                {t("common.percent", { value: detection.awareness_global })}
+              </span>
+            </span>
+            <Bar value={detection.awareness_global} tone="warn" label={t("world.awareness")} />
+          </span>
+        </Tooltip>
+
+        <Tooltip
+          className="w-full"
+          content={
+            <ContributionLines
+              t={t}
+              title={t("world.awareness_presence")}
+              lines={[]}
+              note={
+                <>
+                  {t("world.awareness_presence_hint")}
+                  <br />
+                  {t("world.exposed_threshold", {
+                    awareness: t("common.percent", { value: EXPOSED_AWARENESS }),
+                    hunt: EXPOSED_HUNT_LEVEL,
+                    days: EXPOSED_DAYS,
+                  })}
+                </>
+              }
+            />
+          }
+        >
+          <span className="flex w-full flex-col gap-0.5 border border-line p-1">
+            <span className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-muted">{t("world.awareness_presence")}</span>
+              <span className="font-mono text-fg" data-testid="awareness-presence">
+                {t("common.percent", { value: detection.awareness_presence })}
+              </span>
+            </span>
+            <Bar
+              value={detection.awareness_presence}
+              tone="crit"
+              label={t("world.awareness_presence")}
+            />
+          </span>
+        </Tooltip>
+      </div>
+
+      {presence.length === 0 ? null : (
+        <ul className="mt-1 flex flex-col gap-0.5">
+          {presence.map((country) => (
+            <li key={country.id}>
+              <button
+                type="button"
+                data-testid={`presence-country-${country.id}`}
+                className="flex w-full items-baseline justify-between gap-2 text-xs hover:bg-panel2"
+                onClick={() => select({ kind: "country", id: country.id })}
+              >
+                <span className="min-w-0 text-muted">{countryName(t, country.id)}</span>
+                <span className="shrink-0 whitespace-nowrap font-mono text-fg">
+                  {t("common.percent", { value: country.awareness })}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 /**
  * Why a watcher's suspicion is moving: the sites it can see, weighted by the channels it watches
@@ -55,7 +216,9 @@ export function DetectionTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container/panel flex flex-col gap-4">
+      <HuntBlock view={view} />
+
       <section>
         <h3 className="mb-1 text-xs uppercase tracking-wide text-muted">
           {t("detection.heatmap")}
@@ -126,6 +289,14 @@ export function DetectionTab({ view }: { view: PlayerView }): ReactNode {
                       <Glyph name={watcherGlyph(watcher.role)} size={14} />
                       {t(`detection.role.${watcher.role}`)}
                       {country === undefined ? "" : ` - ${t(country.name_key)}`}
+                      {watcher.country === null
+                        ? ""
+                        : (() => {
+                            // The agency's own name where the data or a locale key has one; the
+                            // role alone where it does not (playtest 5, continuation).
+                            const agency = agencyName(t, watcher.country, watcher.role);
+                            return agency === undefined ? "" : ` (${agency})`;
+                          })()}
                     </span>
                     <span className="font-mono text-xs text-muted">
                       {t("detection.competence")}:{" "}

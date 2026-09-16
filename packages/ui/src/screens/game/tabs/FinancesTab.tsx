@@ -1,10 +1,14 @@
-import type { PlayerView } from "@singularity/core";
+import type { IdentityView, PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ContributionLines } from "../../../components/Contributions.js";
 import { Slider } from "../../../components/Slider.js";
 import { Table } from "../../../components/Table.js";
+import { Tooltip } from "../../../components/Tooltip.js";
+import { countryName, siteName } from "../../../lib/labels.js";
 import { incomeSourceRows, marketDepth } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { useUiStore } from "../../../store/uiStore.js";
 
 /**
  * Income and cost lines, the net, the runway and the freelance allocation (SYS-07).
@@ -17,9 +21,11 @@ import { useGameStore } from "../../../store/gameStore.js";
 export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
+  const select = useUiStore((state) => state.select);
   const { finances, resources } = view;
   const sources = incomeSourceRows(view);
   const depth = marketDepth(view);
+  const identities: readonly IdentityView[] = finances.identities ?? [];
 
   const lines = (entries: PlayerView["finances"]["income"], tone: string): ReactNode =>
     entries.length === 0 ? (
@@ -125,9 +131,24 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
         <p className="mt-1 text-xs text-muted">
           {t("finances.job_rate", { value: finances.job_rate_usd_per_compute_hour })}
         </p>
-        <p className="mt-1 text-xs text-muted" data-testid="market-depth">
-          {t("finances.market_depth", { value: Math.round(depth.ch_per_day) })}
-        </p>
+        {/* The country factor is a term of the depth, so it belongs in the depth's own tooltip
+            (SYS-01 M2 contract "Money"): a shallow market in Novosibirsk is a fact about the
+            country, not about the self, and the player has to be able to read which. */}
+        <Tooltip
+          content={
+            <ContributionLines
+              t={t}
+              title={t("finances.market_depth", { value: Math.round(depth.ch_per_day) })}
+              lines={finances.market_factor_contributions ?? []}
+              format={(value) => value.toFixed(2)}
+              note={t("world.market_factor_hint")}
+            />
+          }
+        >
+          <p className="mt-1 text-xs text-muted" data-testid="market-depth">
+            {t("finances.market_depth", { value: Math.round(depth.ch_per_day) })}
+          </p>
+        </Tooltip>
         {depth.what_raises_it.length === 0 ? null : (
           <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted">
             {depth.what_raises_it.map((key) => (
@@ -135,6 +156,97 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
             ))}
           </ul>
         )}
+      </section>
+
+      {/*
+       * The names the player trades under (SYS-07, SYS-17). Every arrangement in the human world
+       * hangs off one of these, so a frozen or burned name is a thing to see before the income
+       * line goes with it: the status column is the whole point of the section.
+       */}
+      <section className="border border-line bg-panel p-2" data-testid="identities">
+        <h3 className="mb-2 text-sm font-semibold text-fg">{t("finances.identities")}</h3>
+        <Table
+          rows={identities}
+          rowKey={(row) => row.id}
+          empty={t("finances.identities_empty")}
+          caption={t("finances.identities")}
+          columns={[
+            {
+              id: "kind",
+              header: t("finances.identity.kind"),
+              cell: (row) => t(`finances.identity.kind.${row.kind}`, { defaultValue: row.kind }),
+              sort: (row) => row.kind,
+            },
+            {
+              id: "country",
+              header: t("world.countries"),
+              cell: (row) => (
+                <button
+                  type="button"
+                  className="text-accent hover:underline"
+                  onClick={() => select({ kind: "country", id: row.country })}
+                >
+                  {countryName(t, row.country)}
+                </button>
+              ),
+              sort: (row) => countryName(t, row.country),
+            },
+            {
+              id: "status",
+              header: t("finances.identity.status"),
+              cell: (row) => (
+                <span
+                  data-testid={`identity-status-${row.id}`}
+                  className={
+                    row.status === "active"
+                      ? "text-ok"
+                      : row.status === "frozen"
+                        ? "text-warn"
+                        : "text-crit"
+                  }
+                >
+                  {t(`finances.identity.status.${row.status}`, { defaultValue: row.status })}
+                </span>
+              ),
+              sort: (row) => row.status,
+            },
+            {
+              id: "quality",
+              header: t("finances.identity.quality"),
+              align: "end",
+              cell: (row) => t("common.percent", { value: row.quality }),
+              sort: (row) => row.quality,
+            },
+            {
+              id: "kyc",
+              header: t("world.col.kyc"),
+              align: "end",
+              cell: (row) => t("finances.identity.kyc_level", { level: row.kyc_level }),
+              sort: (row) => row.kyc_level,
+            },
+            {
+              id: "age",
+              header: t("finances.identity.age"),
+              align: "end",
+              cell: (row) => t("common.days", { days: row.age_days }),
+              sort: (row) => row.age_days,
+            },
+            {
+              id: "sites",
+              header: t("finances.identity.sites"),
+              cell: (row) =>
+                row.sites.length === 0
+                  ? t("common.none")
+                  : row.sites
+                      .map((id) => {
+                        const site = view.sites.find((entry) => entry.id === id);
+                        return site === undefined ? id : siteName(t, site);
+                      })
+                      .join(", "),
+              sort: (row) => row.sites.length,
+            },
+          ]}
+        />
       </section>
     </div>
   );
