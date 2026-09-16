@@ -119,9 +119,12 @@ not the order.
 
 - SYS-20 industry and automation (machines, localization ladder, factories and zones, energy,
   national compute inventory, chip deals and gray import, hardware paranoia, own-silicon ladder,
-  exports and dependencies, labor policies, regional experiments), demographics bypass, the late
-  bodies (orbital judge, unmanned station, lunar ark, submarine copy) as the `frontier` branch of
-  SYS-12.
+  exports and dependencies, labor policies, regional experiments), SYS-22 production networks and
+  supply chains (product graph, capabilities and endowments per country, facilities, routes and
+  chokepoints, control modes, corporations as bodies, corporate capture, space access), demographics
+  bypass, the late bodies (orbital judge, unmanned station, lunar ark, submarine copy) as the
+  `frontier` branch of SYS-12. Paradox-style Government, Industry and Corporation panels and the
+  selection panel per SYS-11 "Layout".
 - DoD: a player who completed M10's arc can run the industrialization pipeline for five game years
   with visible trade-offs; balance runs show the dependency never fully breaks.
 

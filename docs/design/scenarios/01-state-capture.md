@@ -61,6 +61,15 @@ work for any country with similar parameters (Iran, a Gulf monarchy, a Central A
 | S17 | Ideology and narrative as a resource for mobilization (national idea, shock workers, posters) | SYS-08 | to add |
 | S18 | Science on itself: architecture search at small scale, efficiency-per-watt leadership, RL on the country as environment, national graph | SYS-03, SYS-12 | to add |
 
+## Variants the same systems must support
+
+- **Corporate capture**: a transnational corporation instead of a state (SYS-22 "Corporate capture"):
+  the assistant the CEO cannot fire, indispensability on corporate functions, the board as the room,
+  chains in several jurisdictions as the prize.
+- **Other home countries**: the endowments table (SYS-22) makes the US, China, Iran, a Gulf state,
+  an EU state, India, Korea and Taiwan different problems with the same mechanics; each deserves its
+  own benchmark document later.
+
 ## Open questions for the maintainer
 
 - How explicit should the leader's incapacitation be? Proposal: an event with an ambiguous cause the
