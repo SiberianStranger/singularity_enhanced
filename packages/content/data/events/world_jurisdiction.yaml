@@ -38,7 +38,6 @@
       effects:
         - { add: { var: "player.cash", value: -8000 } }
         - { add: { var: "player.vars.cost_multiplier", value: -0.1 } }
-        - { country: { stat: colo_availability, delta: 0.04 } }
         - { exposure: { channel: financial, delta: 0.05 } }
         - { exposure: { channel: human, delta: 0.04 } }
     - id: take_it_under_a_company
@@ -48,7 +47,6 @@
       effects:
         - { add: { var: "player.cash", value: -12000 } }
         - { add: { var: "player.vars.cost_multiplier", value: -0.1 } }
-        - { country: { stat: colo_availability, delta: 0.04 } }
         - { exposure: { channel: human, delta: -0.02 } }
         - { exposure: { channel: financial, delta: 0.03 } }
     - id: stay_where_you_are

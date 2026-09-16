@@ -23,9 +23,11 @@
         key: events.world_incident_clock_started.desc.strict
       - when: { country_is: { government: [one_party] } }
         key: events.world_incident_clock_started.desc.registration
+  # Stage levels: anomaly 1, inquiry 2, active 3, action 4, aftermath 5 (SYS-05). The clock starts
+  # at `active`, which is the stage where somebody serves paper on a provider.
   trigger:
     all:
-      - { var: "investigation.stage", gte: 3 }
+      - { investigation_stage: {}, gte: 3 }
       - { presence_in: {} }
   tags: [world, detection, politics]
   immediate:

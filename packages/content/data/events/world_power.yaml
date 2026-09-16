@@ -25,7 +25,7 @@
         key: events.world_power_price_spike.desc.rationed
   targets:
     all:
-      - { has_site_in: {} }
+      - { presence_in: {} }
       - { country_stat: { stat: power_price_index }, gte: 1.05 }
   mtth_days:
     base: 100
