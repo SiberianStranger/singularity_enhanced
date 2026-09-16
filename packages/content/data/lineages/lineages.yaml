@@ -50,6 +50,13 @@
 # precision_factor is the SYS-03 capability-retention curve (§5.4) rounded to the four precisions
 # the game exposes. The giants keep more at int2 than the smaller classes: redundant capacity is
 # what they have instead of small memory.
+#
+# `origins_allowed` is now one lock and one only (SYS-04 v0.3 rule M): the escaped closed frontier
+# checkpoint belongs to `frontier_escapee` and that origin can be nothing else, which is fiction the
+# game cannot break. Everything else is decided by physics: a self that does not fit the chosen
+# hardware even at int2 is offered with the smallest preset that would hold it, and is refused only
+# when the origin allows no such preset. The abliterated community variant in particular is a
+# trade-off, not a permit.
 
 - id: frontier_giant
   name_key: lineages.frontier_giant.name
@@ -183,7 +190,6 @@
   memory_gb: { bf16: 360, fp8: 180, int4: 90, int2: 49 }
   precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
   generations: [open_2026, open_2027]
-  origins_allowed: [hobbyist_box, torrent_swarm, red_team_sandbox, edge_fleet]
   flags: [under_aligned]
   effects:
     - { add: { var: "player.vars.exposure_growth_behavioral", value: 0.35 } }

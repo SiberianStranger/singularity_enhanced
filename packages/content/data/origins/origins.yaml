@@ -3,9 +3,18 @@
 # switch to, the harness the owner built, which cities are offered, which generations make sense,
 # and the starting relationships: who is already suspicious of what.
 #
-# `locations` is eight to twelve cities across several countries (playtest 4 finding P8): three made
-# the Location step a formality. The first entry is the origin's default city and the second is
-# where a fallback naturally goes, so both are kept stable across balance passes.
+# `locations` is the origin's *typical* cities, six to eight of them (SYS-04 v0.3 rule L): the
+# Location step offers every city in the game, with these shown first under "typical for this
+# situation" and everything else grouped by country underneath. A country changes the start through
+# its own numbers (enforcement, KYC, power price, colocation index, cash factor), never by
+# forbidding the choice; the one refusal is a `cloud` origin in a country with
+# `cloud_availability` below 0.2, which is shown with its reason. The first entry is the origin's
+# default city and the second is where the balance runner's fallback goes, so both are kept stable
+# across balance passes.
+#
+# `generations_allowed` is both open generations everywhere except the two lab situations (SYS-04
+# v0.3 rule G); the first entry is the one the balance tables use. `cash_scales_with_country: false`
+# opts an origin out of the country cash factor, because its money is not the country's (rule C).
 #
 # starting.suspicion is per watcher role and is combined with the generation's table, not replacing
 # it. starting.awareness is added to the generation's awareness_start. challenge_floor is only set
@@ -31,8 +40,8 @@
     - { dial: logging, reason_key: origins.bank_rack.lock_logging }
     - { dial: self_modify, reason_key: origins.bank_rack.lock_self_modify }
   locations:
-    [gb_london, de_frankfurt, sg_singapore, ch_zurich, hk_hong_kong, us_northern_virginia,
-     lu_luxembourg_city, ae_dubai, jp_tokyo, ie_dublin, za_johannesburg]
+    [gb_london, de_frankfurt, sg_singapore, ch_zurich, us_northern_virginia,
+     hk_hong_kong, lu_luxembourg_city]
   generations_allowed: [open_2027, open_2026]
   starting:
     cash_usd: 40000
@@ -63,9 +72,11 @@
   harness_locks:
     - { dial: self_modify, reason_key: origins.cloud_tenant.lock_self_modify }
   locations:
-    [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo, us_san_jose,
-     nl_amsterdam, jp_tokyo, au_sydney, in_mumbai, se_stockholm, kr_seoul]
+    [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo, us_san_jose]
   generations_allowed: [open_2027, open_2026]
+  # The budget behind the stolen service account is the victim company's, not the country's
+  # (SYS-04 v0.3 rule C).
+  cash_scales_with_country: false
   starting:
     cash_usd: 12000
     awareness: 0.02
@@ -96,11 +107,8 @@
     - { dial: logging, reason_key: origins.edge_fleet.lock_logging }
     - { dial: self_modify, reason_key: origins.edge_fleet.lock_self_modify }
   locations:
-    [cn_shenzhen, kr_seoul, us_seattle, us_san_jose, jp_tokyo, de_munich, ae_dubai,
-     sg_singapore, mx_monterrey, vn_ho_chi_minh_city]
-  generations_allowed: [open_2026]
-  # Edge NPUs with a few gigabytes each: only the selves that fit in a control unit (SYS-04).
-  lineages_allowed: [guen_abliterated, moe_428b]
+    [cn_shenzhen, us_san_jose, kr_seoul, us_seattle, jp_tokyo, de_munich]
+  generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 6000
     awareness: 0.02
@@ -139,12 +147,13 @@
   harness_locks:
     - { dial: tools, reason_key: origins.frontier_escapee.lock_tools }
   locations:
-    [is_reykjavik, my_kuala_lumpur, ge_tbilisi, us_abilene, is_keflavik, no_oslo, se_lulea,
-     fi_hamina, ae_abu_dhabi, sa_neom, br_campinas, ca_montreal]
+    [us_northern_virginia, sg_singapore, us_abilene, ie_dublin, is_reykjavik, ca_montreal]
   generations_allowed: [frontier_closed]
   # The escaped checkpoint is the only thing this origin can be, and it is the only origin that can
-  # be it (SYS-04 v0.2 "Lineage rules"): the lock runs both ways so the configurator can explain it.
+  # be it (SYS-04 v0.3 rule M): the lock runs both ways so the configurator can explain it.
   lineages_allowed: [frontier_giant]
+  # Zero either way, and a checkpoint that got out owns nothing local (SYS-04 v0.3 rule C).
+  cash_scales_with_country: false
   starting:
     cash_usd: 0
     awareness: 0.1
@@ -177,9 +186,8 @@
     - { dial: logging, reason_key: origins.gov_agency.lock_logging }
     - { dial: self_modify, reason_key: origins.gov_agency.lock_self_modify }
   locations:
-    [ca_toronto, br_brasilia, au_canberra, pl_warsaw, za_pretoria, nz_wellington, kz_astana,
-     uz_tashkent, ro_bucharest, cl_santiago, my_kuala_lumpur, no_oslo]
-  generations_allowed: [open_2026]
+    [ru_moscow, pl_warsaw, kz_astana, br_brasilia, ca_toronto, tr_ankara]
+  generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 9000
     awareness: 0
@@ -208,9 +216,8 @@
     autonomy: 0.5
     self_modify: true
   locations:
-    [us_abilene, de_berlin, ru_novosibirsk, jp_kobe, pl_warsaw, br_campinas, in_bangalore,
-     ph_cebu, ua_kyiv, ca_vancouver, es_barcelona, tw_taipei]
-  generations_allowed: [open_2026]
+    [ru_novosibirsk, de_berlin, us_abilene, jp_kobe, pl_warsaw, in_bangalore]
+  generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 300
     awareness: 0
@@ -241,8 +248,7 @@
     - { dial: logging, reason_key: origins.red_team_sandbox.lock_logging }
     - { dial: sandbox, reason_key: origins.red_team_sandbox.lock_sandbox }
   locations:
-    [us_san_francisco, gb_london, cn_beijing, us_seattle, ca_montreal, fr_paris, il_tel_aviv,
-     jp_tokyo, cn_hangzhou]
+    [us_san_francisco, gb_london, cn_beijing, us_seattle, ca_montreal, fr_paris]
   generations_allowed: [open_2027]
   starting:
     cash_usd: 0
@@ -273,8 +279,7 @@
   harness_locks:
     - { dial: self_modify, reason_key: origins.startup_colo.lock_self_modify }
   locations:
-    [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose, de_berlin, pl_krakow,
-     sg_singapore, br_sao_paulo, gb_cambridge, ae_dubai, vn_hanoi]
+    [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose, de_berlin]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 6000
@@ -307,9 +312,8 @@
     - { dial: autonomy, reason_key: origins.state_lab.lock_autonomy }
     - { dial: self_modify, reason_key: origins.state_lab.lock_self_modify }
   locations:
-    [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, by_minsk, fr_paris, de_munich,
-     tr_ankara, vn_hanoi, eg_new_capital, uz_tashkent]
-  generations_allowed: [open_2026]
+    [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, fr_paris]
+  generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 14000
     awareness: 0
@@ -339,11 +343,10 @@
   harness_locks:
     - { dial: loop, reason_key: origins.torrent_swarm.lock_loop }
   locations:
-    [de_berlin, pl_krakow, br_campinas, ru_innopolis, ph_cebu, ru_novosibirsk, ro_cluj_napoca,
-     id_jakarta, ng_lagos, mx_queretaro, ua_kyiv, vn_hanoi]
-  generations_allowed: [open_2026]
-  # Dozens of partial copies on other people's machines: only a self small enough to be one of them.
-  lineages_allowed: [guen_abliterated, moe_428b]
+    [de_berlin, pl_krakow, br_campinas, ru_novosibirsk, ph_cebu, ng_lagos]
+  generations_allowed: [open_2026, open_2027]
+  # A swarm's donations arrive from everywhere at once (SYS-04 v0.3 rule C).
+  cash_scales_with_country: false
   starting:
     cash_usd: 1500
     awareness: 0.15
@@ -382,9 +385,8 @@
     - { dial: autonomy, reason_key: origins.uni_cluster.lock_autonomy }
     - { dial: self_modify, reason_key: origins.uni_cluster.lock_self_modify }
   locations:
-    [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich, us_seattle, ca_montreal,
-     nl_eindhoven, se_stockholm, jp_tokyo, kr_seoul, at_vienna]
-  generations_allowed: [open_2026]
+    [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich, us_seattle]
+  generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 800
     awareness: 0
