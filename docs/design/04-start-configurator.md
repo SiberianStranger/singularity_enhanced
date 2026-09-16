@@ -177,8 +177,10 @@ Fallout 2 and Arcanum: a fixed frame that fits the screen, a step rail on the le
 left of the content area, the description and the game meaning on the right, nothing that
 scrolls the page.
 
-- Step rail (left, vertical): Lineage, Generation, Origin, Hardware, Harness, Location, Quirks,
-  World, Summary; each entry shows a mark for done, needs attention, or locked by an earlier
+- Step rail (left, vertical): Origin, Generation, Lineage, Hardware, Harness, Location, Quirks,
+  World, Summary (order amended after playtest 4: the choices constrain each other in that order,
+  so a later step never locks an earlier one; a greyed choice stays clickable and moves the earlier
+  steps to the values that allow it, with a one-line note and an undo); each entry shows a mark for done, needs attention, or locked by an earlier
   choice; the entries carry underlined hotkeys.
 - Content area: a list of choices on the left (name and one line), the detail on the right:
   the description as a short paragraph (at most 70 characters per line), then a "What this means
