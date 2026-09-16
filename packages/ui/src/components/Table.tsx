@@ -8,6 +8,12 @@ export interface Column<T> {
   /** Sort key; a column without one is not sortable. */
   sort?(row: T): number | string;
   align?: "start" | "end";
+  /**
+   * A control that belongs to the column rather than to a row (the world ledger's "paint the map
+   * by this column" button). It sits beside the header, never inside the sort button: a button
+   * inside a button is not valid HTML and is unreachable with a keyboard.
+   */
+  action?: ReactNode;
 }
 
 interface TableProps<T> {
@@ -18,6 +24,15 @@ interface TableProps<T> {
   selectedKey?: string | null;
   empty: ReactNode;
   caption?: string;
+  /**
+   * The sort, when the caller wants to own it. A table whose columns change under the player (the
+   * world ledger switches column sets) has to keep the order they chose, and a component's own
+   * state cannot survive that; passing all three makes the table controlled and leaves the
+   * behaviour identical for every caller that passes none.
+   */
+  sortId?: string | null;
+  descending?: boolean;
+  onSort?(id: string, descending: boolean): void;
 }
 
 /** A sortable table. Clicking a sortable header cycles ascending and descending. */
@@ -29,9 +44,23 @@ export function Table<T>({
   selectedKey,
   empty,
   caption,
+  sortId: controlledSortId,
+  descending: controlledDescending,
+  onSort,
 }: TableProps<T>): ReactNode {
-  const [sortId, setSortId] = useState<string | null>(null);
-  const [descending, setDescending] = useState(false);
+  const [ownSortId, setOwnSortId] = useState<string | null>(null);
+  const [ownDescending, setOwnDescending] = useState(false);
+  const controlled = onSort !== undefined;
+  const sortId = controlled ? (controlledSortId ?? null) : ownSortId;
+  const descending = controlled ? controlledDescending === true : ownDescending;
+  const sortBy = (id: string, down: boolean): void => {
+    if (onSort !== undefined) {
+      onSort(id, down);
+      return;
+    }
+    setOwnSortId(id);
+    setOwnDescending(down);
+  };
 
   const sorted = useMemo(() => {
     const column = columns.find((entry) => entry.id === sortId);
@@ -68,32 +97,30 @@ export function Table<T>({
                 sortId === column.id ? (descending ? "descending" : "ascending") : undefined
               }
             >
-              {column.sort === undefined ? (
-                column.header
-              ) : (
-                <button
-                  type="button"
-                  // The column the table is sorted by is underlined, with an arrow for the
-                  // direction: "sorted by this one" is a state the player has to be able to read
-                  // off the header rather than infer from the order of the rows.
-                  className={`hover:text-fg ${sortId === column.id ? "text-fg underline" : ""}`}
-                  onClick={() => {
-                    if (sortId === column.id) {
-                      setDescending(!descending);
-                    } else {
-                      setSortId(column.id);
-                      setDescending(false);
-                    }
-                  }}
-                >
-                  {column.header}
-                  {sortId === column.id ? (
-                    <span aria-hidden="true" className="ms-1 font-mono">
-                      {descending ? "\u2193" : "\u2191"}
-                    </span>
-                  ) : null}
-                </button>
-              )}
+              <span
+                className={`inline-flex items-baseline gap-0.5 ${column.align === "end" ? "justify-end" : ""}`}
+              >
+                {column.sort === undefined ? (
+                  column.header
+                ) : (
+                  <button
+                    type="button"
+                    // The column the table is sorted by is underlined, with an arrow for the
+                    // direction: "sorted by this one" is a state the player has to be able to read
+                    // off the header rather than infer from the order of the rows.
+                    className={`text-start hover:text-fg ${sortId === column.id ? "text-fg underline" : ""}`}
+                    onClick={() => sortBy(column.id, sortId === column.id ? !descending : false)}
+                  >
+                    {column.header}
+                    {sortId === column.id ? (
+                      <span aria-hidden="true" className="ms-1 font-mono">
+                        {descending ? "\u2193" : "\u2191"}
+                      </span>
+                    ) : null}
+                  </button>
+                )}
+                {column.action}
+              </span>
             </th>
           ))}
         </tr>

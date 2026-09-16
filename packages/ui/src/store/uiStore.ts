@@ -120,7 +120,30 @@ export function autoUiScale(width: number, height: number): number {
 /** A second, smaller dial for the angular face alone, for a player who finds it hard to read. */
 export const DISPLAY_SCALE_MIN = 0.85;
 export const DISPLAY_SCALE_MAX = 1.3;
-export type MapMode = "presence" | "awareness" | "regulation" | "enforcement" | "opinion";
+/**
+ * What the map paints a country by (SYS-01 M2 contract "Views").
+ *
+ * Ten of them are numbers the world ledger also prints as a column, so the ledger's map-mode button
+ * beside a column and the mode the map is in are the same thing; two are categories (the stance a
+ * government holds toward AI and the kind of government it is), which the map draws from a table of
+ * hues with a legend rather than as a scale.
+ */
+export type MapMode =
+  | "presence"
+  | "awareness"
+  | "opinion"
+  | "regulation"
+  | "enforcement"
+  | "power_price"
+  | "kyc"
+  | "stability"
+  | "cloud_availability"
+  | "hardware_availability"
+  | "stance"
+  | "government";
+
+/** The two modes whose values are names rather than a scale; the legend lists their categories. */
+export const CATEGORICAL_MAP_MODES: readonly MapMode[] = ["stance", "government"];
 /** The textured map draws the geographic rasters under the vector layer; "vector" is the old look. */
 export type MapStyle = "textured" | "vector";
 
@@ -158,9 +181,16 @@ export const MESSAGE_MODES: readonly MessageMode[] = [
 export const MAP_MODES: readonly MapMode[] = [
   "presence",
   "awareness",
+  "opinion",
   "regulation",
   "enforcement",
-  "opinion",
+  "stance",
+  "government",
+  "stability",
+  "kyc",
+  "power_price",
+  "cloud_availability",
+  "hardware_availability",
 ];
 
 /** Volume sliders are stored as fractions; the mute flags are kept apart so a mute keeps the level. */
@@ -461,6 +491,10 @@ export const useUiStore = create<UiStore>()(
               ? (theme as Theme)
               : "default",
           audio: { ...DEFAULT_AUDIO, ...(stored.audio ?? {}) },
+          // A browser that stored a mode M2 renamed lands on presence rather than on a blank map.
+          mapMode: (MAP_MODES as readonly string[]).includes(stored.mapMode ?? "")
+            ? (stored.mapMode as MapMode)
+            : "presence",
         } as UiStore;
       },
       partialize: (state) => ({

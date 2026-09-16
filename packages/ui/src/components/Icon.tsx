@@ -120,6 +120,18 @@ export function PlusIcon(props: IconProps): ReactNode {
   return svg(<path d="M8 3.5 V12.5 M3.5 8 H12.5" />, props);
 }
 
+/** The button beside a ledger column that paints the map by it: a globe with a meridian. */
+export function MapModeIcon(props: IconProps): ReactNode {
+  return svg(
+    <>
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M2.5 8 H13.5" />
+      <path d="M8 2.5 C10 4.5 10 11.5 8 13.5 C6 11.5 6 4.5 8 2.5 Z" />
+    </>,
+    props,
+  );
+}
+
 export function SiteIcon(props: IconProps): ReactNode {
   return svg(
     <>

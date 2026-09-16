@@ -6,7 +6,13 @@
  * as an argument rather than calling a hook, so tables and tooltips can use it inside a loop.
  */
 
-import type { ContributionView, SiteView, TextVar } from "@singularity/core";
+import type {
+  ContributionView,
+  CountryAgencies,
+  SiteView,
+  TextVar,
+  WatcherRole,
+} from "@singularity/core";
 import type { TFunction } from "i18next";
 import { contentBundle } from "../content/bundle.js";
 import { acceleratorById, cityById, countryById } from "../content/catalog.js";
@@ -55,6 +61,59 @@ export function siteName(t: Translate, site: Pick<SiteView, "name" | "kind" | "c
 }
 
 /**
+ * Which display name in `CountryDef.agencies` belongs to a watcher role.
+ *
+ * The two tables were written apart: the roles are the engine's (`WATCHER_ROLES`) and the names are
+ * the world data's, which calls the cyber agency `cyber` and carries nothing at all for the four
+ * roles that are not a national institution (a lab's own security, an AI institute, a cloud
+ * provider, the press). A role with no entry has no agency name here, which is not a gap: those
+ * watchers are named by their role everywhere in the game.
+ */
+const AGENCY_FIELD: Readonly<Record<string, keyof CountryAgencies>> = {
+  cyber_agency: "cyber",
+  intelligence: "intelligence",
+  police: "police",
+  regulator: "regulator",
+  financial_intel: "financial_intel",
+};
+
+/**
+ * What a country's watcher of this role is called (playtest 5, continuation).
+ *
+ * The world data carries raw display strings ("NIST / Center for AI Standards and Innovation
+ * (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"), which stay English in
+ * Russian and read as a dossier note in English. A locale key wins whenever content writes one, so
+ * the panels are ready for `world.country.<id>.agency.<role>` on the day the content pass adds it
+ * and use the raw string until then. A role the data names nothing for returns nothing, and the
+ * caller prints the role.
+ */
+export function agencyName(t: Translate, countryId: string, role: string): string | undefined {
+  const written = keyed(t, `world.country.${countryId}.agency.${role}`);
+  if (written !== undefined) {
+    return written;
+  }
+  const field = AGENCY_FIELD[role];
+  if (field === undefined) {
+    return undefined;
+  }
+  const raw = countryById.get(countryId)?.agencies?.[field];
+  return typeof raw === "string" && raw !== "" ? raw : undefined;
+}
+
+/**
+ * How good that watcher is here: the country's own profile for the role, and its `ai_enforcement`
+ * for a role the data gives no profile for, which is the rule the core follows when it builds the
+ * watcher (SYS-01 M2 contract, "How countries reach the player").
+ */
+export function agencyCompetence(countryId: string, role: string): number | undefined {
+  const def = countryById.get(countryId);
+  if (def === undefined) {
+    return undefined;
+  }
+  return def.agency_profile?.[role as WatcherRole]?.competence ?? def.ai_enforcement;
+}
+
+/**
  * One line of a "where did this number come from" tooltip. Contributions name a locale key and may
  * name a subject; the subject is resolved here so the same code serves sites, countries and actors.
  */
@@ -73,6 +132,31 @@ export function contributionLabel(
           ? countryName(t, contribution.id)
           : contribution.id;
   return t(contribution.key, { subject });
+}
+
+/**
+ * A refusal as prose, with the ids in it replaced by names (SYS-11 "A refused command says why").
+ *
+ * `CommandError` is a locale key and the numbers that explain it, and some of those numbers are
+ * ids: `errors.site.unavailable_in` names a country and a kind of place. The same refusal is shown
+ * on a greyed provider row, in the configurator's Location step and in the toast a refused command
+ * raises, so it is named in one place rather than three.
+ */
+export function refusalText(
+  t: Translate,
+  error: { key: string; vars?: Readonly<Record<string, TextVar>> },
+): string {
+  const vars: Record<string, TextVar> = { ...(error.vars ?? {}) };
+  if (typeof vars.country === "string") {
+    vars.country = countryName(t, vars.country);
+  }
+  if (typeof vars.city === "string") {
+    vars.city = cityName(t, vars.city);
+  }
+  if (typeof vars.kind === "string") {
+    vars.kind = keyed(t, `sites.${vars.kind}.name`) ?? vars.kind;
+  }
+  return t(error.key, vars);
 }
 
 /**

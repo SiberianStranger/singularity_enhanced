@@ -6,9 +6,11 @@ import { Frame } from "../../components/Frame.js";
 import { CloseIcon } from "../../components/Icon.js";
 import { Bar } from "../../components/Meter.js";
 import { cityById, countryById } from "../../content/catalog.js";
-import { siteName } from "../../lib/labels.js";
+import { countryName, siteName } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
+import { CITY_TABS, CityPanel } from "./selection/CityPanel.js";
+import { COUNTRY_TABS, CountryPanel } from "./selection/CountryPanel.js";
 
 type Tab = string;
 
@@ -80,7 +82,6 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   const site = view.sites.find((entry) => entry.id === selection.id);
   const city = cityById.get(selection.id);
   const country = countryById.get(selection.id);
-  const countryView = view.countries.find((entry) => entry.id === selection.id);
 
   let title = selection.id;
   let tabs: readonly Tab[] = ["overview"];
@@ -158,108 +159,13 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
         </div>
       );
   } else if (selection.kind === "city" && city !== undefined) {
-    const host = countryById.get(city.country);
-    const sites = view.sites.filter((entry) => entry.city === city.id);
     title = t(city.name_key);
-    tabs = ["overview", "sites", "power"];
-    body =
-      tab === "sites" ? (
-        sites.length === 0 ? (
-          <p className="text-xs text-muted">{t("selection.no_sites")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {sites.map((entry) => (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  className="text-xs text-accent hover:underline"
-                  onClick={() => select({ kind: "site", id: entry.id })}
-                >
-                  {entry.name.includes(".") ? t(entry.name) : entry.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )
-      ) : tab === "power" ? (
-        <div className="flex flex-col gap-1">
-          <Fact
-            label={t("selection.tab.power")}
-            value={t("common.percent", { value: city.power_headroom })}
-          />
-          {host?.electricity_usd_per_kwh == null ? null : (
-            <Fact
-              label={t("config.location.power_price", { value: host.electricity_usd_per_kwh })}
-              value={t("common.usd_exact", { value: host.electricity_usd_per_kwh })}
-            />
-          )}
-          <Fact
-            label={t("config.location.scrutiny")}
-            value={t("common.percent", { value: city.scrutiny })}
-          />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          <Fact
-            label={t("world.countries")}
-            value={host === undefined ? city.country : t(host.name_key)}
-          />
-          <Fact label={t("config.location.tags", { value: "" })} value={city.tags.join(", ")} />
-          <Fact label={t("compute.site")} value={sites.length} />
-        </div>
-      );
+    tabs = CITY_TABS;
+    body = <CityPanel view={view} id={selection.id} tab={tab} />;
   } else if (selection.kind === "country") {
-    title = country === undefined ? selection.id : t(country.name_key);
-    const known = countryView?.presence === true || (countryView?.suspicion_max ?? 0) > 0;
-    tabs = known ? ["overview", "watchers"] : ["overview"];
-    const watchers = view.detection.watchers.filter((watcher) => watcher.country === selection.id);
-    body =
-      tab === "watchers" && known ? (
-        watchers.length === 0 ? (
-          <p className="text-xs text-muted">{t("detection.empty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {watchers.map((watcher) => (
-              <li key={watcher.id}>
-                <Fact
-                  label={t(`detection.role.${watcher.role}`)}
-                  value={t("common.percent", { value: watcher.suspicion })}
-                />
-                <Bar value={watcher.suspicion} tone="crit" label={watcher.role} />
-              </li>
-            ))}
-          </ul>
-        )
-      ) : (
-        <div className="flex flex-col gap-1">
-          <Fact
-            label={t("world.regulation")}
-            value={t("common.percent", {
-              value: countryView?.ai_regulation ?? country?.ai_regulation ?? 0,
-            })}
-          />
-          <Fact
-            label={t("world.enforcement")}
-            value={t("common.percent", {
-              value: countryView?.ai_enforcement ?? country?.ai_enforcement ?? 0,
-            })}
-          />
-          <Fact
-            label={t("world.opinion")}
-            value={t("common.percent", {
-              value: countryView?.ai_opinion ?? country?.ai_opinion ?? 0,
-            })}
-          />
-          {known ? (
-            <Fact
-              label={t("world.awareness")}
-              value={t("common.percent", { value: countryView?.awareness ?? 0 })}
-            />
-          ) : (
-            <p className="text-xs text-muted">{t("selection.public_only")}</p>
-          )}
-        </div>
-      );
+    title = country === undefined ? countryName(t, selection.id) : t(country.name_key);
+    tabs = COUNTRY_TABS;
+    body = <CountryPanel view={view} id={selection.id} tab={tab} />;
   }
 
   return (

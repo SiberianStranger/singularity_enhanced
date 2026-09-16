@@ -7,7 +7,20 @@ interface ModalProps {
   /** Blocking dialogs ignore Escape (SYS-11); everything else closes on it. */
   onClose?: () => void;
   wide?: boolean;
+  /**
+   * How much width the window asks for. "ledger" is the widest: the world ledger prints a table of
+   * ten columns, and at 1280 by 720 that needs the whole window minus its own margin. Every size
+   * is a maximum on a `w-full` box, so a narrow window or a large interface scale shrinks it
+   * rather than pushing it off the screen (the layout contract).
+   */
+  size?: "normal" | "wide" | "ledger";
 }
+
+const WIDTHS: Readonly<Record<"normal" | "wide" | "ledger", string>> = {
+  normal: "max-w-xl",
+  wide: "max-w-3xl",
+  ledger: "max-w-[74rem]",
+};
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
@@ -30,7 +43,7 @@ function focusable(root: HTMLElement): HTMLElement[] {
  * blocking event window (SYS-11 "Accessibility"). Focus goes to the dialog itself rather than to
  * its first control, so a screen reader announces the title before the options.
  */
-export function Modal({ title, children, footer, onClose, wide }: ModalProps): ReactNode {
+export function Modal({ title, children, footer, onClose, wide, size }: ModalProps): ReactNode {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,7 +94,7 @@ export function Modal({ title, children, footer, onClose, wide }: ModalProps): R
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden border border-line bg-panel ${wide === true ? "max-w-3xl" : "max-w-xl"}`}
+        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden border border-line bg-panel ${WIDTHS[size ?? (wide === true ? "wide" : "normal")]}`}
       >
         <h2 className="border-b border-line bg-accent px-3 py-1 text-sm uppercase tracking-wide text-accentfg">
           {title}

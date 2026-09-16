@@ -1,75 +1,12 @@
 import type { PlayerView } from "@singularity/core";
-import { type ReactNode, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
-import { MAP_MODES, type Overlay, useUiStore } from "../../store/uiStore.js";
+import { type Overlay, useUiStore } from "../../store/uiStore.js";
 import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
 import { LogTab } from "./tabs/LogTab.js";
-import { WorldTab } from "./tabs/WorldTab.js";
-
-/** Tabs of the world ledger (SYS-11 amendments, R10). Treaties join them when SYS-08 lands. */
-const LEDGER_TABS = ["countries", "map_modes"] as const;
-type LedgerTab = (typeof LEDGER_TABS)[number];
-
-/**
- * The world ledger: the countries table and the map modes in one centered window (playtest 3, R10).
- *
- * The map modes were a strip pinned under the top bar, which cost a row of the screen forever to
- * offer five buttons the player presses twice a session. They are a page of the ledger now, and
- * the ledger is a window like a Paradox ledger: opened, read, closed.
- */
-function WorldLedger({ view }: { view: PlayerView }): ReactNode {
-  const { t } = useTranslation();
-  const [tab, setTab] = useState<LedgerTab>("countries");
-  const mode = useUiStore((state) => state.mapMode);
-  const setMode = useUiStore((state) => state.setMapMode);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div role="tablist" aria-label={t("panel.world")} className="flex gap-0.5">
-        {LEDGER_TABS.map((entry) => (
-          <button
-            key={entry}
-            type="button"
-            role="tab"
-            aria-selected={entry === tab}
-            className={`border px-2 py-1 text-sm uppercase tracking-wide ${
-              entry === tab
-                ? "border-linestrong bg-accent text-accentfg"
-                : "border-line text-muted hover:text-fg"
-            }`}
-            onClick={() => setTab(entry)}
-          >
-            {t(`world.ledger.${entry}`)}
-          </button>
-        ))}
-      </div>
-
-      {tab === "countries" ? (
-        <div className="overflow-x-auto">
-          <WorldTab view={view} />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <p className="prose text-muted">{t("world.map_mode_help")}</p>
-          <div className="flex flex-wrap gap-1">
-            {MAP_MODES.map((entry) => (
-              <Button
-                key={entry}
-                variant={mode === entry ? "primary" : "default"}
-                aria-pressed={mode === entry}
-                onClick={() => setMode(entry)}
-              >
-                {t(`world.map_mode.${entry}`)}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import { WorldLedger } from "./tabs/WorldTab.js";
 
 const TITLE_KEY: Readonly<Record<Overlay, string>> = {
   log: "panel.log",
@@ -95,7 +32,9 @@ export function GameOverlays({ view }: { view: PlayerView }): ReactNode {
 
   return (
     <Modal
-      wide
+      // The ledger is the widest window in the game: it prints ten columns of a hundred rows, and
+      // a narrower frame would mean either a sideways scrollbar or headers cut to three letters.
+      size={overlay === "world" ? "ledger" : "wide"}
       title={t(TITLE_KEY[overlay])}
       onClose={close}
       footer={

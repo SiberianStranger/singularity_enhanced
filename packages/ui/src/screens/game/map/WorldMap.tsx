@@ -88,11 +88,59 @@ interface WorldMapProps {
 const MODE_HUE: Record<MapMode, string> = {
   presence: "87 168 255",
   awareness: "237 184 74",
+  opinion: "76 196 130",
   regulation: "137 122 255",
   enforcement: "255 112 98",
-  opinion: "76 196 130",
+  power_price: "255 176 82",
+  kyc: "198 126 255",
+  stability: "120 206 255",
+  cloud_availability: "124 214 209",
+  hardware_availability: "168 200 108",
+  stance: "87 168 255",
+  government: "87 168 255",
 };
 
+/**
+ * The hue each category of a categorical mode is painted in (SYS-01 M2 contract "Views").
+ *
+ * A stance and a government type are names, not places on a scale, so shading them from nothing to
+ * everything would invent an order the model does not have. Each one gets a hue of its own and the
+ * legend names them; a value the table does not know is drawn as land, which is what a country the
+ * bundle does not model already looks like.
+ */
+const CATEGORY_HUE: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  stance: {
+    accelerate: "124 214 209",
+    regulate: "137 122 255",
+    securitize: "255 112 98",
+    ignore: "160 160 190",
+  },
+  government: {
+    liberal_democracy: "120 206 255",
+    illiberal_democracy: "168 200 108",
+    hybrid: "237 184 74",
+    one_party: "255 112 98",
+    military: "198 126 255",
+    monarchy: "124 214 209",
+  },
+};
+
+/** The categories of a categorical mode, in the order the legend lists them. */
+export function categoriesOf(mode: MapMode): readonly string[] {
+  return Object.keys(CATEGORY_HUE[mode] ?? {});
+}
+
+/** The category a country falls in, for a categorical mode; empty when the mode is a scale. */
+function categoryOf(mode: MapMode, country: CountryView): string {
+  return mode === "stance" ? country.stance : mode === "government" ? country.government : "";
+}
+
+/**
+ * The raw number a scale mode reads off a country.
+ *
+ * Everything but the power price is already a share in [0, 1]; the price is dollars per kilowatt
+ * hour, which `modeScale` normalizes against the field rather than against a number invented here.
+ */
 function modeValue(mode: MapMode, country: CountryView): number {
   switch (mode) {
     case "presence":
@@ -103,9 +151,35 @@ function modeValue(mode: MapMode, country: CountryView): number {
       return country.ai_regulation;
     case "enforcement":
       return country.ai_enforcement;
+    case "kyc":
+      return country.kyc_strength;
+    case "stability":
+      return country.stability;
+    case "cloud_availability":
+      return country.cloud_availability;
+    case "hardware_availability":
+      return country.hardware_availability;
+    case "power_price":
+      return country.electricity_usd_per_kwh ?? 0;
     default:
       return country.ai_opinion;
   }
+}
+
+/**
+ * What a full tint means in this mode: 1 for every share, and the highest published price for the
+ * power price, so the darkest country on the map is the dearest one rather than one the client
+ * picked a ceiling for.
+ */
+export function modeScale(mode: MapMode, countries: readonly CountryView[]): number {
+  if (mode !== "power_price") {
+    return 1;
+  }
+  let top = 0;
+  for (const country of countries) {
+    top = Math.max(top, country.electricity_usd_per_kwh ?? 0);
+  }
+  return top > 0 ? top : 1;
 }
 
 /**
@@ -116,7 +190,12 @@ function modeValue(mode: MapMode, country: CountryView): number {
  */
 const UNMODELLED_FILL_TEXTURED = "rgb(160 160 190 / 8%)";
 
-function fillFor(mode: MapMode, country: CountryView | undefined, textured: boolean): string {
+function fillFor(
+  mode: MapMode,
+  country: CountryView | undefined,
+  textured: boolean,
+  scale = 1,
+): string {
   const base = textured ? "transparent" : "var(--c-map-land)";
   if (country === undefined) {
     return textured ? UNMODELLED_FILL_TEXTURED : "var(--c-map-land)";
@@ -124,12 +203,17 @@ function fillFor(mode: MapMode, country: CountryView | undefined, textured: bool
   if (mode === "presence") {
     return country.presence ? `rgb(${MODE_HUE.presence} / 70%)` : base;
   }
+  const categories = CATEGORY_HUE[mode];
+  if (categories !== undefined) {
+    const hue = categories[categoryOf(mode, country)];
+    return hue === undefined ? base : `rgb(${hue} / 60%)`;
+  }
   if (mode === "opinion") {
     const value = Math.min(1, Math.abs(country.ai_opinion));
     const hue = country.ai_opinion >= 0 ? MODE_HUE.opinion : MODE_HUE.enforcement;
     return value <= 0.01 ? base : `rgb(${hue} / ${Math.round(value * 75)}%)`;
   }
-  const value = Math.min(1, Math.max(0, modeValue(mode, country)));
+  const value = Math.min(1, Math.max(0, modeValue(mode, country) / (scale || 1)));
   return value <= 0.01 ? base : `rgb(${MODE_HUE[mode]} / ${Math.round(value * 80)}%)`;
 }
 
@@ -236,11 +320,16 @@ export function WorldMap({
       (countries ?? [])
         .map(
           (country) =>
-            `${country.id}:${country.presence ? 1 : 0}:${country.awareness.toFixed(2)}:${country.ai_opinion.toFixed(2)}:${country.ai_regulation.toFixed(2)}:${country.ai_enforcement.toFixed(2)}`,
+            `${country.id}:${country.presence ? 1 : 0}:${country.awareness.toFixed(2)}:${country.ai_opinion.toFixed(2)}:${country.ai_regulation.toFixed(2)}:${country.ai_enforcement.toFixed(2)}:${country.stance}:${country.government}:${country.stability.toFixed(2)}:${country.kyc_strength.toFixed(2)}:${(country.electricity_usd_per_kwh ?? 0).toFixed(3)}:${country.cloud_availability.toFixed(2)}:${country.hardware_availability.toFixed(2)}`,
         )
         .join("|"),
     [countries],
   );
+
+  // A full tint in this mode; 1 for every share, the dearest published price for the power price.
+  const scale = useMemo(() => modeScale(mode, countries ?? []), [mode, countries]);
+  /** The categories the legend names; empty for a mode that shades a scale. */
+  const categories = categoriesOf(mode);
 
   const paths = useMemo(() => {
     // Referenced only so this memo depends on `fingerprint` (see the comment above it); `byId`'s
@@ -256,7 +345,7 @@ export function WorldMap({
           key={shape.featureId}
           className={`map-country ${id === null ? "" : "cursor-pointer"}`}
           d={shape.path}
-          fill={fillFor(mode, country, textured)}
+          fill={fillFor(mode, country, textured, scale)}
           stroke={textured ? "var(--c-map-border)" : "var(--c-map-line)"}
           strokeWidth={selected ? 1.4 : textured ? 0.3 : 0.4}
           strokeOpacity={selected ? 1 : textured ? 0.45 : 1}
@@ -297,7 +386,7 @@ export function WorldMap({
         </path>
       );
     });
-  }, [mode, textured, selectedCountry, onSelect, onContext, fingerprint, t]);
+  }, [mode, scale, textured, selectedCountry, onSelect, onContext, fingerprint, t]);
 
   const onWheel = (event: ReactWheelEvent<SVGSVGElement>): void => {
     if (compact === true) {
@@ -638,19 +727,40 @@ export function WorldMap({
         <>
           <section
             aria-label={t("map.legend")}
-            className="pointer-events-none absolute bottom-2 start-2 flex items-center gap-2 border border-line bg-panel/85 px-2 py-1 text-xs text-muted"
+            data-testid="map-legend"
+            data-mode={mode}
+            // A categorical mode names six things rather than shading one, so the legend wraps
+            // inside a width of its own instead of running off the side of the map (L3).
+            className="pointer-events-none absolute bottom-2 start-2 flex max-w-[28rem] flex-wrap items-center gap-x-2 gap-y-0.5 border border-line bg-panel/85 px-2 py-1 text-xs text-muted"
           >
-            <span>{t(`world.map_mode.${mode}`)}</span>
-            <span aria-hidden="true" className="flex items-center gap-0.5">
-              {[0.15, 0.4, 0.65, 0.9].map((step) => (
-                <span
-                  key={step}
-                  className="block h-2 w-3"
-                  style={{ background: `rgb(${MODE_HUE[mode]} / ${Math.round(step * 80)}%)` }}
-                />
-              ))}
-            </span>
-            <span>{t(mode === "presence" ? "map.legend.presence" : "map.legend.scale")}</span>
+            <span className="text-fg">{t(`world.map_mode.${mode}`)}</span>
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <span key={category} className="flex items-center gap-1">
+                  <span
+                    aria-hidden="true"
+                    className="block h-2 w-3 border border-line"
+                    style={{
+                      background: `rgb(${CATEGORY_HUE[mode]?.[category] ?? "160 160 190"} / 60%)`,
+                    }}
+                  />
+                  <span>{t(`world.${mode}.${category}.name`)}</span>
+                </span>
+              ))
+            ) : (
+              <>
+                <span aria-hidden="true" className="flex items-center gap-0.5">
+                  {[0.15, 0.4, 0.65, 0.9].map((step) => (
+                    <span
+                      key={step}
+                      className="block h-2 w-3"
+                      style={{ background: `rgb(${MODE_HUE[mode]} / ${Math.round(step * 80)}%)` }}
+                    />
+                  ))}
+                </span>
+                <span>{t(mode === "presence" ? "map.legend.presence" : "map.legend.scale")}</span>
+              </>
+            )}
           </section>
           <div className="absolute bottom-2 end-2 flex gap-1">
             <Button aria-label={t("map.zoom_in")} onClick={() => zoomBy(1.4)}>
