@@ -9,3 +9,7 @@
 | R5 | Settings needs a visible switch between the angular and the regular face. | open |
 | R6 | Some countries are uncolored and show a letter code instead of a name (Libya shows "LY"). Every country on the map gets a name (fallback from the atlas) and a neutral fill. | open |
 | R7 | City dots should not all glow all the time: only the player's active sites glow; hovering a country lights its dots; a dot with the player's site can carry a small block with numbers or icons. | open |
+| R8 | The log is a strip at the bottom center of the screen, as in Paradox games, showing the last one or two lines with their dates; it is not a tab in the primary panel (a click opens the full log). | open |
+| R9 | Knowledge is a window opened from a button in the top-right corner, drawn on top of everything; it is not one of the primary panels on the left. | open |
+| R10 | World is a separate ledger window, as in Paradox games: centered, on top, with its own tabs (countries table, map modes, treaties); opened from a button at the right edge of the screen (bottom-right), not a primary panel. | open |
+| R11 | The top bar is too thick: make it one flat row by packing label and value side by side (value to the right of its label, not under it) and redistributing the gauges. | open |

@@ -456,3 +456,18 @@ relocation, and one test per playtest finding against the real core through `Loc
 Playwright smoke test now builds a site, buys hardware, changes the precision, starts an operation,
 takes a decision, carries a tech to its result text and reads an event option's effect tooltip, and
 still fails on any console error.
+
+### Layout amendments after playtest 3 (2026-09-16)
+
+- The top bar is one flat row: each indicator is a label and its value side by side, the speed
+  control and the alert icons packed on the same row; nothing stacks vertically.
+- The log is a strip at the bottom center of the map, one or two lines high, showing the latest
+  entries with their dates; clicking it opens the full log as a window. Log is no longer a tab of
+  the primary panel.
+- Knowledge opens from a button in the top-right corner as a window drawn on top of everything.
+- World is the ledger: a centered window on top of the map with its own tabs (countries table,
+  map modes, treaties later), opened from a button at the right edge of the screen (bottom-right)
+  and by hotkey. It is not a primary panel.
+- The primary panel keeps Overview, Compute and sites, Research, Finances, Detection, Operations,
+  Journal and decisions; Settings and Message settings live in the menu; Log, Knowledge and World
+  live as described above.
