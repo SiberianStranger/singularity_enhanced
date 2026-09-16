@@ -1,7 +1,7 @@
 prefs.dat
 dist/
 build/
-saves/
+/saves/
 *.egg-info/
 *.pyc
 *.ogg
