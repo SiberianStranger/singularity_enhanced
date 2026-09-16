@@ -144,7 +144,8 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 
 ## Recent changes
 
-Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record.
+Mirrored from [`CHANGELOG.md`](CHANGELOG.md), which is the full record. Version 0.1.0 (2026-09-16) is
+the first playable preview, milestone M1.
 
 - Added: architecture decision records (stack, content format and DSL, simulation model), design
   specifications for 24 systems including space and off-planet industry and biotech research, the

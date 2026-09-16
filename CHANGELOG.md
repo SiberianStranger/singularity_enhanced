@@ -9,6 +9,13 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-09-16
+
+The first playable preview of the rebuilt game (milestone M1): a vertical slice in the browser and
+as desktop installers. Balance, content depth and the world systems are still to come.
+
 ### Added
 - Architecture decision records: ADR-001 technology stack (TypeScript core, React web client,
   Tauri desktop; legacy Python frozen until parity), ADR-002 content format and scripting DSL,
