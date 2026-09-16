@@ -32,6 +32,9 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   HexaDeciMax, Babel 6), the Babel 6 super-lineage for the escaped-checkpoint origin only, the
   community variant Guen4.8-Uncensored-Babel6-abliterated, harness dials wired to engine effects,
   context windows as a mechanic, and the cities Novosibirsk and San Jose.
+- New command `set_context`; the precision table shows weights plus cache and the largest context
+  each precision would fit; every harness dial says which system reads it and origins say which
+  dials they fix and why.
 
 ### Changed
 - The configurator is a fixed frame that fits 1366 by 768: a vertical step rail, a list on the
@@ -44,6 +47,8 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - The log is a strip at the bottom of the map that opens the full log as a window; Knowledge opens
   from the top-right corner; the world ledger opens from the right edge and carries the map modes;
   the top bar is one flat row; the Compute and sites panel fits in width and no number wraps.
+- Growth costs upkeep: a site's standing charge scales with the hardware installed in it, so
+  bankruptcy is a way to lose a run again; balance notes for the third pass in SYS-07.
 
 ### Fixed
 - Selecting or focusing a country no longer draws a frame across the whole map.

@@ -7,26 +7,26 @@ recorded in `docs/design/ui-style-guide.md` and in SYS-04 "Configurator screen (
 
 | # | finding | status |
 |---|---|---|
-| S1 | The original soundtrack, used as in the original (shuffled during play, ending tracks at the endings), with music and interface sounds switchable and volume-adjustable in Settings. | open |
-| S2 | The original's blue minimalism (white text on blue, the DEFCON and hacker spirit of a futuristic AI as imagined around 1999) should be adapted rather than lost; the M1 look is banal. | open |
-| S3 | Underlined hotkey letters on buttons and tabs, as in the original. | open |
-| S4 | Square fonts (Acknowledge TT) for identity text. | open |
-| S5 | No rounded corners on windows. | open |
-| S6 | Text blocks are too wide; long wide walls are hard to read. Limit the measure. | open |
+| S1 | The original soundtrack, used as in the original (shuffled during play, ending tracks at the endings), with music and interface sounds switchable and volume-adjustable in Settings. | fixed (0.1.3) |
+| S2 | The original's blue minimalism (white text on blue, the DEFCON and hacker spirit of a futuristic AI as imagined around 1999) should be adapted rather than lost; the M1 look is banal. | fixed (0.1.3) |
+| S3 | Underlined hotkey letters on buttons and tabs, as in the original. | fixed (0.1.3) |
+| S4 | Square fonts (Acknowledge TT) for identity text. | fixed (0.1.3) |
+| S5 | No rounded corners on windows. | fixed (0.1.3) |
+| S6 | Text blocks are too wide; long wide walls are hard to read. Limit the measure. | fixed (0.1.3) |
 
 ## Configurator
 
 | # | finding | status |
 |---|---|---|
-| K1 | The lineage screen is crude and does not fit the screen; every configurator screen must fit without page scroll. | open |
-| K2 | Hovering a model needs a tooltip that explains technically what its parameters mean for the game, with colored pluses and minuses. | open |
-| K3 | Model names should be stronger allusions to real models with a light jab (Peepseek-V5, Mimi-M4, Guen 4.9, Babel 6) and community-style derivative names (Guen4.9-Uncensored-Babel6-abliterated). Refresh the August-September 2026 landscape first. | open |
-| K4 | Step navigation vertical on the left, in the spirit of the Stellaris empire creation screen. | open |
-| K5 | Generation, origin and the other steps scroll heavily; wanted: list on the left, description on the right, pros and cons below it; clicking the list changes the right side only. | open |
-| K6 | More explanation per screen: an initial centered popup saying what this screen decides and why, and tooltips on everything. | open |
-| K7 | Harness: nothing is understandable: what is blocked and why, what each dial gives, what to click, whether it connects to anything in the game. | open |
-| K8 | Locations: add Novosibirsk and a Silicon Valley city. | open |
-| K9 | Lineages should hint at their prototypes; the closed frontier class (Babel 6) is missing as a playable super-lineage for the hardest origin only. Approved names recorded in the lore bible. | open |
+| K1 | The lineage screen is crude and does not fit the screen; every configurator screen must fit without page scroll. | fixed (0.1.3) |
+| K2 | Hovering a model needs a tooltip that explains technically what its parameters mean for the game, with colored pluses and minuses. | fixed (0.1.3) |
+| K3 | Model names should be stronger allusions to real models with a light jab (Peepseek-V5, Mimi-M4, Guen 4.9, Babel 6) and community-style derivative names (Guen4.9-Uncensored-Babel6-abliterated). Refresh the August-September 2026 landscape first. | fixed (0.1.3) |
+| K4 | Step navigation vertical on the left, in the spirit of the Stellaris empire creation screen. | fixed (0.1.3) |
+| K5 | Generation, origin and the other steps scroll heavily; wanted: list on the left, description on the right, pros and cons below it; clicking the list changes the right side only. | fixed (0.1.3) |
+| K6 | More explanation per screen: an initial centered popup saying what this screen decides and why, and tooltips on everything. | fixed (0.1.3) |
+| K7 | Harness: nothing is understandable: what is blocked and why, what each dial gives, what to click, whether it connects to anything in the game. | fixed (0.1.3) |
+| K8 | Locations: add Novosibirsk and a Silicon Valley city. | fixed (0.1.3) |
+| K9 | Lineages should hint at their prototypes; the closed frontier class (Babel 6) is missing as a playable super-lineage for the hardest origin only. Approved names recorded in the lore bible. | fixed (0.1.3) |
 
 ## Gameplay depth
 
