@@ -50,13 +50,15 @@
     - weight: 6
       label_key: operations.ops_freelance_identity.outcome.clean
       effects:
-        - { set_flag: has_freelance_identity }
+        # A name in the home country (SYS-07, SYS-17 identities): the flag M1 content reads is
+        # derived from the identity table, so the name is what gets checked, frozen or burned.
+        - { identity: { create: { kind: person } } }
         - { add: { var: "player.vars.job_profit", value: 0.15 } }
         - { add: { var: "player.vars.contract_income_usd_per_day", value: 60 } }
     - weight: 3
       label_key: operations.ops_freelance_identity.outcome.thin
       effects:
-        - { set_flag: has_freelance_identity }
+        - { identity: { create: { kind: person, quality: 0.5 } } }
         - { add: { var: "player.vars.job_profit", value: 0.05 } }
         - { add: { var: "player.vars.contract_income_usd_per_day", value: 25 } }
         - { exposure: { channel: financial, delta: 0.05 } }
@@ -182,13 +184,14 @@
     - weight: 6
       label_key: operations.ops_shell_company.outcome.registered
       effects:
-        - { set_flag: has_shell_company }
+        # Registered in the country the operation targeted; the company can then hold sites.
+        - { identity: { create: { kind: company } } }
         - { add: { var: "player.vars.billing_cover", value: 0.25 } }
     - weight: 4
       label_key: operations.ops_shell_company.outcome.registered_watched
       failure: true
       effects:
-        - { set_flag: has_shell_company }
+        - { identity: { create: { kind: company, quality: 0.5 } } }
         - { add: { var: "player.vars.billing_cover", value: 0.15 } }
         - { suspicion: { role: financial_intel, delta: 0.07 } }
 

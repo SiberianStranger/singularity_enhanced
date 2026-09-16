@@ -118,3 +118,12 @@ cooldown table the way decisions do. An operation that should not be repeatable 
   kind of name (SYS-07 "Balance notes (M1, fourth pass)" asked for exactly this). It buys them out
   of the cash on hand rather than the spare cash, because a player short of money is the player who
   needs a name.
+
+### The identity operations create identities (M2)
+
+`ops_freelance_identity` and `ops_shell_company` run the `identity` effect (`create` with the kind
+and, for the watched outcomes, quality 0.5) instead of setting `has_freelance_identity` and
+`has_shell_company`; the flags are derived from the identity table every day, so the M1 content
+that reads them keeps working and the monthly KYC checks, freezes and burns of SYS-07 apply to the
+name the operation made. The freelance name lands in the home country (the operation has no
+target); the company lands in the country the operation targeted.
