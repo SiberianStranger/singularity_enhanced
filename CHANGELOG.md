@@ -19,7 +19,11 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
   politics and institutions, demographics, events/decisions/journal/hooks, notifications and UI,
   research and tech, lore bible, localization, saves and mods, multiplayer (co-op up to 4),
   operations and intel, plus a mechanics backlog distilled from research.
-- Roadmap with milestones M0-M9 and recorded decisions (`docs/ROADMAP.md`).
+- Benchmark scenario 01 (state capture from the inside) with the mechanics it requires, and new
+  system specifications SYS-18 institutions and influence, SYS-19 governance mode, SYS-20
+  industry and automation, SYS-21 copies and continuity; foreign AI relations added to SYS-06.
+- Roadmap with milestones M0-M11, the playable-build cadence and recorded decisions
+  (`docs/ROADMAP.md`).
 - Research reports with sources (`docs/research/`): open-weight and frontier LLM landscape 2026,
   accelerator and rack catalog 2026 (91 records as JSON, 15 configurator presets), AI ecosystem,
   security and governance 2026, strategy-game design references, frontier-model incidents of 2026

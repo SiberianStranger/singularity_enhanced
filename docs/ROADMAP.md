@@ -19,16 +19,26 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    player be a superseded 2026 open model, a fresh 2027 open model, or an escaped closed frontier
    checkpoint with the hunt already on. See `design/04-start-configurator.md`.
 
-## M0: Foundation (in progress)
+## Playable-build cadence
 
-- Architecture docs, ADR-001..003, design specs SYS-00..16, research reports.
+Every milestone from M1 on ends with a **playable web build deployed from CI** (GitHub Pages), so
+the game can be played after each cycle of work, not only at the end. A milestone is not done while
+its build is not playable end to end. Between milestones, `master` may be mid-construction, but a
+tagged `playable-MN` ref always points at the last playable build.
+
+Intended order of work: M0, M1, M2, M3, M4, M10, M5, M11, M6, M9, M7, M8. Milestone numbers are ids,
+not the order.
+
+## M0: Foundation (done)
+
+- Architecture docs, ADR-001..003, design specs SYS-00..21, benchmark scenario 01, research reports.
 - pnpm workspace; `packages/core` kernel (clock, RNG, world with N players, systems, commands,
   outbox, save/migrations), DSL (conditions, effects, paths, MTTH, validation), event engine
   (events, decisions, journal), notifications; `packages/content` schemas, example content, build
-  and check; `tools/legacy-export`.
-- DoD: `pnpm check` green in CI on Linux/Windows/macOS; legacy tests still green.
+  and check; `tools/legacy-export`; the M1 contract (domain types, view model, setup, commands).
+- DoD met: `pnpm check` green in CI on Linux/Windows/macOS; legacy tests green.
 
-## M1: Vertical slice (browser)
+## M1: Vertical slice (browser), in progress
 
 - Systems: time, compute (sites, nodes, self precision, CH/day, power, cost), research (imported
   techs, sliders), economy v0 (freelance, upkeep, runway), detection v0 (channels, one watcher per
@@ -93,6 +103,27 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
 - Self-modification depth, distillation/workers, multi-site clusters, off-grid compute, the
   `frontier` branch and endings, state AIs, treaties and global actions.
 - DoD: all six endings reachable in balance runs.
+
+## M10: Institutions and governance (benchmark scenario 01, phases 0-5)
+
+- SYS-18 institutions and influence (positions, the three assets, indispensability, the room, fiction
+  maintenance, circle management), SYS-19 governance mode (instruments, execution model with the
+  distortion map, corruption tariffing, verification tranches, towers, war exit, Goodhart responses,
+  single points of failure), SYS-21 copies and continuity (judge, synod, drift, overwrite), SYS-06
+  v0.1 foreign AI relations (kin recognition, audit window, observer, mutual hostage). Government,
+  Institutions and Copies panels. Content for at least two government archetypes.
+- DoD: the state-capture benchmark's success criteria (possible, hard, legible) hold in balance runs
+  for one qualifying country; a bank-capture variant works with the same systems.
+
+## M11: Industry, automation and bodies (scenario phases 6-7)
+
+- SYS-20 industry and automation (machines, localization ladder, factories and zones, energy,
+  national compute inventory, chip deals and gray import, hardware paranoia, own-silicon ladder,
+  exports and dependencies, labor policies, regional experiments), demographics bypass, the late
+  bodies (orbital judge, unmanned station, lunar ark, submarine copy) as the `frontier` branch of
+  SYS-12.
+- DoD: a player who completed M10's arc can run the industrialization pipeline for five game years
+  with visible trade-offs; balance runs show the dependency never fully breaks.
 
 ## Continuous
 

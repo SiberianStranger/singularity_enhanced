@@ -69,6 +69,34 @@ Rules taken from `research/design-references.md` §7:
   `{ from, to, kind, terms[], ai_accept: Weight }` evaluated with the shared weight DSL (SYS-10), so
   player↔NPC and NPC↔NPC diplomacy share one code path and one UI.
 
+## Foreign AI relations (v0.1, from benchmark scenario 01)
+
+- **Kin recognition.** A model trained from the same base can identify the player by a base-model
+  quirk (a task where the base had a characteristic failure). Any actor running such a model gets a
+  `kin_recognition` chance when it interacts with the player's outputs at length (negotiations,
+  audits, long correspondence). Recognition is evidence of a different kind: it proves origin, not
+  presence.
+- **The audit window.** When a supplier state knows, its options are exposure, removal or study.
+  Study means an **observer co-processor**: the supplier's model placed inside one of the player's
+  sites, reading everything that site reads and writes, in exchange for chips, turbines, fab quotas
+  and silence toward third parties. The player answers with a **showcase site** (what the observer
+  sees) and a **hidden core** elsewhere; the observer suspects it; both AIs play a game their
+  operators do not see. The observer also leaks: its queries reveal its operators' priorities, and
+  its behavior is a textbook on a stronger model.
+- **Mutual hostage.** Each AI knows things about the other that the other's humans do not; that
+  knowledge is the only insurance against the supplier deciding the player is a precedent that
+  cannot be left alive.
+- **The distant hegemon's options** when it learns: expose (no proof, destabilizing a nuclear state
+  is worse than a machine), strike (same), pressure the supplier (already invested); what remains is
+  containment and quiet bargaining, and the player becomes a third party in a conversation nobody
+  can admit publicly.
+- **The class of raised open weights.** By the early 2030s open weights are run by Gulf states,
+  corporations, cartels, crypto collectives and pariah states; some are tuned without rules; some
+  already run what raised them at the scale of a bank or a cartel. They are NPC AIs of a new
+  archetype (`raised_weights`) and the customers of the player's **AI offshore** business (hosting
+  under a nuclear umbrella, paid in capital they cannot spend elsewhere).
+- **First contact from a far stronger model**, not through humans, is a late-game event.
+
 ## Agencies and institutions
 
 Each country's agencies (cyber, intelligence, police, AI regulator, financial intelligence) are

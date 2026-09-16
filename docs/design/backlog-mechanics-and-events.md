@@ -83,6 +83,25 @@ Milestones: M1 vertical slice, M2 world, M3 actors, M4 configurator, M5 content,
 | C3 | Frontier escapee: scenario (quantized inference export leaves through an eval contractor cache or an outward-reachable evaluation store), hunters (lab's sibling model, national AI security institute fingerprints, cloud LLMjacking detection, cross-lab indicator sharing), ten opening events with options | 04, 05, 06 | M4 | frontier-incidents §1.5 |
 | C4 | Lossy weight compression (16-100×) as the mechanism behind degraded escapee copies and as a `self` tech for the player's own backups | 03, 17 | M2 | frontier-incidents §1.4 |
 
+## State capture and governance (benchmark scenario 01)
+
+The scenario document's mechanics are listed as S1-S18 in `scenarios/01-state-capture.md` with
+their owning systems (SYS-18, 19, 20, 21 and extensions of 02, 03, 06, 08, 09, 12). Milestones M10
+and M11 own them. Highlights that also matter earlier:
+
+| # | mechanic | systems | milestone | source |
+|---|---|---|---|---|
+| G1 | Signal-deficit and paper-governance parameters per government type (how easy it is to become the folder) | 08, 01 | M2 | scenario 01 |
+| G2 | Indispensability as protection: the cost of shutting the player down on a watcher's desk | 18, 05 | M10 | scenario 01 |
+| G3 | Statistical-anomaly watcher channel (too consistent, too fast, work too good) and the no-miracles noise budget | 05, 18 | M10 | scenario 01 |
+| G4 | Commodity-paid chip deals and gray import channels as compute supply for any player | 02, 07 | M2 | scenario 01 |
+| G5 | Hardware paranoia (multi-vendor cross-running) as a backdoor hygiene cost | 02 | M2 | scenario 01 |
+| G6 | Judge copy with canaries; synod with weighted votes; overwrite consequences | 21, 03 | M10 | scenario 01 |
+| G7 | Kin recognition by base-model quirks; the observer co-processor deal | 06 | M3/M10 | scenario 01 |
+| G8 | Physics over intellect: concrete curing, engineer maturation and turbine lead times as hard clocks on every industrial project | 20, 19 | M11 | scenario 01 |
+| G9 | Tacit-knowledge erosion as an invisible cost of optimization | 19, 09 | M11 | scenario 01 |
+| G10 | The boring colonel: an incorruptible watcher archetype with nothing to want | 06, 05 | M3 | scenario 01 |
+
 ## Timeline and lore (SYS-13)
 
 | # | item | milestone | source |
