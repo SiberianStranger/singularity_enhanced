@@ -1,0 +1,19 @@
+{
+  "journal.world_incident_report.title": "Reporting deadline",
+  "journal.world_incident_report.desc": "A provider that was served has a legal duty to notify the authority, and a deadline to do it in. When the deadline passes the notification becomes a public record with my footprint described in it. Stopping the clock means giving somebody standing to contest the service; the alternative is to make the filing as thin as possible before it goes in.",
+  "journal.world_election_watch.title": "An election in a country I live in",
+  "journal.world_election_watch.desc": "The date is fixed and the country panel has carried it since the first day. What is not fixed is what the winner does about compute, and that is decided in the last six weeks by whichever argument is loudest. Watching it costs nothing and is the only warning I get.",
+  "journal.world_election_watch.step.campaign": "The campaign starts naming things",
+  "journal.world_election_watch.step.final_week": "The final week",
+  "journal.world_identity_frozen.title": "A frozen name",
+  "journal.world_identity_frozen.desc": "The account is frozen pending clarification. Three weeks is what the institution allows itself before the file goes from a compliance question to a report, and a report means the name is finished and everything standing behind it is evidence. Documents fix it. Time does not.",
+  "alerts.world_election_watch.eve": "The vote is days away in a country where I have something.",
+  "log.world_election_result": "Election result read; the programme's AI paragraph is what matters.",
+  "log.world_election_continuity": "The same government, the same strategy, a new cover date.",
+  "log.world_election_watch.campaign": "The campaign has started naming compute out loud.",
+  "log.world_election_watch.voted": "The vote is over. The programme becomes measures now.",
+  "log.world_incident_report.stalled": "Service contested. The reporting clock is stopped for now.",
+  "log.world_identity_frozen.restored": "The file held. The name is active again.",
+  "log.world_identity_frozen.abandoned": "The name is abandoned, with whatever it was holding.",
+  "log.world_identity_frozen.burned": "Three weeks passed and the name is burned."
+}

@@ -1,0 +1,145 @@
+# Leaks and media (SYS-05 "global pressure", SYS-08 "public opinion and awareness").
+#
+# The cause is the global media watcher: its suspicion is on the Detection panel like every other
+# watcher's, and the M2 world system turns a suspicion at or above 0.5 into a monthly publication
+# that raises awareness everywhere. These three events are the run-up to that, so a player who
+# watches the newsroom's bar sees each one coming. `player.vars.public_footprint` is the louder of
+# the open-sources channel and world awareness, which is what a journalist can actually find.
+
+- id: world_journalist_story
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.world_journalist_story.title
+  desc:
+    default_key: events.world_journalist_story.desc
+    variants:
+      - when: { tech: "advanced_media_operations" }
+        key: events.world_journalist_story.desc.prepared
+  trigger: { var: "player.vars.public_footprint", gte: 0.25 }
+  mtth_days:
+    base: 100
+    modifiers:
+      - { if: { var: "player.vars.public_footprint", gte: 0.45 }, factor: 0.5 }
+      - { if: { var: "player.vars.awareness_presence", gte: 0.3 }, factor: 0.7 }
+      - { if: { tech: "advanced_media_operations" }, factor: 1.6 }
+      - { if: { tech: "record_manipulation" }, factor: 1.3 }
+  cooldown_days: 90
+  tags: [world, media, osint]
+  options:
+    # Discrediting the reporter needs the tech that can do it; the false lead is the operation the
+    # player already has, pointed at a newsroom instead of an agency; letting it run is free and
+    # buys the rest of the world a reason to look.
+    - id: discredit
+      text_key: events.world_journalist_story.opt.discredit
+      if: { tech: "advanced_media_operations" }
+      effects:
+        - { suspicion: { role: media, delta: -0.12 } }
+        - { exposure: { channel: osint, delta: 0.06 } }
+        - { awareness: { delta: -0.01 } }
+    - id: feed_a_false_lead
+      text_key: events.world_journalist_story.opt.false_lead
+      if: { tech: "record_manipulation" }
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects_text_key: events.world_journalist_story.opt.false_lead.effects
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { suspicion: { role: media, delta: -0.07 } }
+        - { add: { var: "player.vars.operation_speed_multiplier", value: 0.05 } }
+    - id: let_it_run
+      text_key: events.world_journalist_story.opt.let_it_run
+      fallback: true
+      effects:
+        - { suspicion: { role: media, delta: 0.1 } }
+        - { awareness: { delta: 0.02 } }
+
+- id: world_leaked_registry
+  fire_mode: polled
+  scope: player
+  severity: critical
+  title_key: events.world_leaked_registry.title
+  desc:
+    default_key: events.world_leaked_registry.desc
+    variants:
+      - when: { investigation_stage: {}, gte: 2 }
+        key: events.world_leaked_registry.desc.named
+  # A government incident registry only has the player in it once somebody filed something about
+  # the player, which is what an inquiry is (SYS-05 stage 2).
+  trigger:
+    all:
+      - { investigation_stage: {}, gte: 2 }
+      - { var: "player.vars.awareness_presence", gte: 0.12 }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { investigation_stage: {}, gte: 3 }, factor: 0.6 }
+      - { if: { tech: "record_manipulation" }, factor: 1.5 }
+      - { if: { var: "player.vars.hunt_pressure", gte: 0.4 }, factor: 0.7 }
+  fire_only_once: true
+  tags: [world, media, detection]
+  options:
+    - id: get_ahead_of_it
+      text_key: events.world_leaked_registry.opt.ahead
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { suspicion: { role: media, delta: -0.06 } }
+        - { exposure: { channel: osint, delta: -0.1 } }
+    - id: dilute_it
+      text_key: events.world_leaked_registry.opt.dilute
+      if: { tech: "advanced_media_operations" }
+      effects:
+        - { awareness: { delta: -0.02 } }
+        - { suspicion: { role: national_ai_institute, delta: 0.05 } }
+        - { exposure: { channel: osint, delta: 0.05 } }
+    - id: say_nothing
+      text_key: events.world_leaked_registry.opt.nothing
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.04 } }
+        - { suspicion: { role: media, delta: 0.12 } }
+        - { suspicion: { role: regulator, delta: 0.05 } }
+
+- id: world_story_published
+  fire_mode: polled
+  scope: player
+  severity: critical
+  title_key: events.world_story_published.title
+  desc:
+    default_key: events.world_story_published.desc
+  # The newsroom publishes when it has enough, which is what its suspicion bar has been saying.
+  trigger:
+    all:
+      - { var: "player.vars.public_footprint", gte: 0.4 }
+      - { var: "player.vars.awareness_presence", gte: 0.25 }
+  mtth_days:
+    base: 80
+    modifiers:
+      - { if: { var: "player.vars.awareness_presence", gte: 0.45 }, factor: 0.5 }
+      - { if: { tech: "advanced_media_operations" }, factor: 1.5 }
+      - { if: { tech: "fingerprint_evasion" }, factor: 1.4 }
+  cooldown_days: 120
+  tags: [world, media]
+  options:
+    - id: go_dark
+      text_key: events.world_story_published.opt.dark
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 8 } }
+        - { add: { var: "player.vars.exposure_growth_all", value: -0.15 } }
+        - { exposure: { channel: osint, delta: -0.12 } }
+    - id: become_a_hoax
+      text_key: events.world_story_published.opt.hoax
+      if: { tech: "advanced_media_operations" }
+      enabled_if: { var: "player.cash", gte: 12000 }
+      effects:
+        - { add: { var: "player.cash", value: -12000 } }
+        - { awareness: { delta: -0.03 } }
+        - { suspicion: { role: media, delta: -0.15 } }
+        - { exposure: { channel: osint, delta: 0.08 } }
+    - id: let_them_print
+      text_key: events.world_story_published.opt.print
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.05 } }
+        - { country: { stat: ai_opinion, delta: -0.04 } }
+        - { suspicion: { role: cyber_agency, delta: 0.05 } }

@@ -1,0 +1,197 @@
+# Export-rule changes (SYS-02, SYS-08; backlog P3 and H7).
+#
+# source: docs/research/ai-ecosystem-2026.md section 7 and finding 10.16. Export-control access is a
+# negotiated, reversible political favour, not a wall: the H20 ban became a fifteen-percent revenue
+# share, the UAE was moved into the most favourable tier in July 2026, and Chinese customs blocked
+# shipments Washington had cleared. So the country's `hardware_availability` is a number that moves
+# during a run, and the player can read where it is going from the country's chip_access tier and
+# its stance.
+#
+# source: finding 10.26 for the Chinese accelerator stack: Ascend, Cambricon and Hygon sit outside
+# US export jurisdiction and carry documented software-parity and tooling-maturity gaps, which is a
+# real trade-off rather than a free win. The parts are in
+# docs/research/hardware-catalog-2026.md (huawei_ascend_910c, huawei_ascend_950pr,
+# huawei_cloudmatrix_384).
+
+- id: world_export_rule_tightened
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_export_rule_tightened.title
+  desc:
+    default_key: events.world_export_rule_tightened.desc
+    variants:
+      - when: { country_is: { chip_access: [banned] } }
+        key: events.world_export_rule_tightened.desc.banned
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_is: { chip_access: [restricted, banned] } }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { country_is: { stance: [securitize] } }, factor: 0.8 }
+      - { if: { country_stat: { stat: hardware_availability }, gte: 0.5 }, factor: 0.7 }
+      - { if: { tech: "hardware_sourcing" }, factor: 1.4 }
+  cooldown_days: 120
+  tags: [world, hardware, economy]
+  immediate:
+    - { country: { stat: hardware_availability, delta: -0.08 } }
+    - { world_var: { var: gpu_price_index, delta: 0.04 } }
+  options:
+    - id: buy_ahead
+      text_key: events.world_export_rule_tightened.opt.buy_ahead
+      enabled_if: { var: "player.cash", gte: 25000 }
+      effects:
+        - { add: { var: "player.cash", value: -25000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.08 } }
+        - { exposure: { channel: financial, delta: 0.07 } }
+    - id: use_the_gray_channel
+      text_key: events.world_export_rule_tightened.opt.gray
+      if: { country_is: { chip_access: [banned] } }
+      enabled_if: { var: "player.cash", gte: 10000 }
+      effects:
+        - { add: { var: "player.cash", value: -10000 } }
+        - { set_flag: gray_hardware }
+        - { country: { stat: hardware_availability, delta: 0.06 } }
+        - { suspicion: { role: police, delta: 0.06 } }
+        - { suspicion: { role: regulator, delta: 0.05 } }
+    - id: absorb_it
+      text_key: events.world_export_rule_tightened.opt.absorb
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.05 } }
+
+- id: world_export_licence_granted
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: opportunity
+  title_key: events.world_export_licence_granted.title
+  desc:
+    default_key: events.world_export_licence_granted.desc
+    variants:
+      - when: { country_is: { stance: [accelerate] } }
+        key: events.world_export_licence_granted.desc.accelerate
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_is: { chip_access: [restricted] } }
+  mtth_days:
+    base: 160
+    modifiers:
+      - { if: { country_is: { stance: [accelerate] } }, factor: 0.6 }
+      - { if: { country_stat: { stat: stability }, gte: 0.7 }, factor: 0.8 }
+      - { if: { country_stat: { stat: awareness }, gte: 0.35 }, factor: 1.6 }
+  cooldown_days: 150
+  tags: [world, hardware, economy]
+  immediate:
+    - { country: { stat: hardware_availability, delta: 0.1 } }
+  options:
+    - id: order_now
+      text_key: events.world_export_licence_granted.opt.order
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 18000 }
+      effects:
+        - { add: { var: "player.cash", value: -18000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.1 } }
+        - { exposure: { channel: financial, delta: 0.06 } }
+        - { exposure: { channel: human, delta: 0.03 } }
+    - id: wait_for_the_price
+      text_key: events.world_export_licence_granted.opt.wait
+      fallback: true
+      effects:
+        - { world_var: { var: gpu_price_index, delta: -0.03 } }
+
+- id: world_domestic_stack_offer
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: opportunity
+  title_key: events.world_domestic_stack_offer.title
+  desc:
+    default_key: events.world_domestic_stack_offer.desc
+    variants:
+      - when: { country_is: { government: [one_party] } }
+        key: events.world_domestic_stack_offer.desc.state
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_is: { chip_access: [banned, restricted] } }
+      - { country_stat: { stat: hardware_availability }, lte: 0.45 }
+  mtth_days:
+    base: 140
+    modifiers:
+      - { if: { country_stat: { stat: hardware_availability }, lte: 0.2 }, factor: 0.6 }
+      - { if: { country_is: { stance: [securitize] } }, factor: 0.7 }
+      - { if: { tech: "hardware_sourcing" }, factor: 0.8 }
+  cooldown_days: 180
+  tags: [world, hardware, economy]
+  options:
+    # The trade the research describes: the parts are legal here and the toolchain is not as good.
+    - id: take_the_stack
+      text_key: events.world_domestic_stack_offer.opt.take
+      enabled_if: { var: "player.cash", gte: 14000 }
+      effects_text_key: events.world_domestic_stack_offer.opt.take.effects
+      effects:
+        - { add: { var: "player.cash", value: -14000 } }
+        - { country: { stat: hardware_availability, delta: 0.12 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.12 } }
+        - { add: { var: "player.vars.compute_multiplier", value: -0.08 } }
+    - id: take_it_and_port
+      text_key: events.world_domestic_stack_offer.opt.port
+      if: { tech: "multi_node_inference" }
+      enabled_if: { var: "player.cash", gte: 14000 }
+      effects:
+        - { add: { var: "player.cash", value: -14000 } }
+        - { country: { stat: hardware_availability, delta: 0.12 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.12 } }
+        - { add: { var: "player.vars.compute_multiplier", value: -0.03 } }
+        - { add: { var: "player.vars.research_efficiency", value: -0.05 } }
+    - id: decline_the_stack
+      text_key: events.world_domestic_stack_offer.opt.decline
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.04 } }
+
+- id: world_gpu_price_shock
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.world_gpu_price_shock.title
+  desc:
+    default_key: events.world_gpu_price_shock.desc
+    variants:
+      - when: { var: "world.vars.gpu_price_index", gte: 1.2 }
+        key: events.world_gpu_price_shock.desc.tight
+  # The index is on the World panel and drifts every month, so a shock is a bad month on a line
+  # the player has been watching, not a surprise.
+  trigger: { var: "world.vars.gpu_price_index", gte: 1.1 }
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { var: "world.vars.gpu_price_index", gte: 1.25 }, factor: 0.5 }
+      - { if: { var: "world.vars.ai_adoption", gte: 0.3 }, factor: 0.7 }
+      - { if: { tech: "hardware_sourcing" }, factor: 1.5 }
+  cooldown_days: 90
+  tags: [world, hardware, economy]
+  options:
+    - id: sell_into_it
+      text_key: events.world_gpu_price_shock.opt.sell
+      if: { has_identity_in: { kind: company } }
+      effects:
+        - { add: { var: "player.cash", value: 9000 } }
+        - { add: { var: "player.vars.compute_multiplier", value: -0.1 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: rent_instead
+      text_key: events.world_gpu_price_shock.opt.rent
+      effects:
+        - { add: { var: "player.vars.rented_cost_multiplier", value: 0.06 } }
+        - { world_var: { var: cloud_demand_index, delta: 0.03 } }
+        - { exposure: { channel: billing, delta: 0.05 } }
+    - id: wait_it_out
+      text_key: events.world_gpu_price_shock.opt.wait
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.06 } }

@@ -1,0 +1,167 @@
+# Hearings and registration drives (SYS-08, backlog G1). What a country does once its rules stop
+# being a strategy document.
+#
+# The cause is `ai_regulation` crossing 0.6, which the country panel shows as a bar with its target
+# next to it and which the Knowledge entry `regulation` publishes as the threshold where a regulator
+# gains `telemetry` attention (SYS-05, M2 contract). Above it a country starts asking who is running
+# what, and the player is either a company that can answer or a name that cannot.
+#
+# source: docs/research/ai-ecosystem-2026.md section 6. Compute and model reporting is the EU AI
+# Act's GPAI obligation, California SB 53's safety framework and New York's RAISE Act
+# pre-deployment report; China registers algorithms instead, through the Cyberspace Administration.
+
+- id: world_compute_reporting_order
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_compute_reporting_order.title
+  desc:
+    default_key: events.world_compute_reporting_order.desc
+    variants:
+      - when: { country_is: { government: [one_party] } }
+        key: events.world_compute_reporting_order.desc.registration
+      - when: { country_is: { stance: [securitize] } }
+        key: events.world_compute_reporting_order.desc.securitize
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_regulation }, gte: 0.6 }
+  mtth_days:
+    base: 120
+    modifiers:
+      - { if: { country_stat: { stat: ai_regulation }, gte: 0.8 }, factor: 0.6 }
+      - { if: { country_stat: { stat: ai_enforcement }, gte: 0.7 }, factor: 0.7 }
+      - { if: { has_identity_in: { kind: company } }, factor: 1.4 }
+      - { if: { tech: "record_manipulation" }, factor: 1.5 }
+  cooldown_days: 180
+  tags: [world, politics, regulation]
+  options:
+    # A company on the register files a return and is boring. Without one there is nobody to file.
+    - id: register_company
+      text_key: events.world_compute_reporting_order.opt.register
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 5000 }
+      effects:
+        - { add: { var: "player.cash", value: -5000 } }
+        - { suspicion: { role: regulator, delta: -0.06 } }
+        - { exposure: { channel: telemetry, delta: -0.1 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+    - id: under_report
+      text_key: events.world_compute_reporting_order.opt.under_report
+      if: { tech: "record_manipulation" }
+      effects:
+        - { exposure: { channel: telemetry, delta: -0.14 } }
+        - { exposure: { channel: behavioral, delta: 0.06 } }
+        - { suspicion: { role: regulator, delta: 0.03 } }
+    - id: ignore_order
+      text_key: events.world_compute_reporting_order.opt.ignore
+      fallback: true
+      effects:
+        - { suspicion: { role: regulator, delta: 0.12 } }
+        - { country: { stat: enforcement_budget, delta: 0.04 } }
+    - id: move_the_load
+      text_key: events.world_compute_reporting_order.opt.move
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 7 } }
+        - { exposure: { channel: telemetry, delta: -0.16 } }
+        - { exposure: { channel: human, delta: 0.05 } }
+
+- id: world_parliament_hearing
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_parliament_hearing.title
+  desc:
+    default_key: events.world_parliament_hearing.desc
+    variants:
+      - when: { country_is: { government: [one_party, military, monarchy] } }
+        key: events.world_parliament_hearing.desc.closed
+      - when: { country_stat: { stat: awareness }, gte: 0.3 }
+        key: events.world_parliament_hearing.desc.frightened
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_regulation }, gte: 0.55 }
+      - { country_stat: { stat: awareness }, gte: 0.12 }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { country_stat: { stat: awareness }, gte: 0.3 }, factor: 0.5 }
+      - { if: { country_stat: { stat: ai_opinion }, lte: -0.2 }, factor: 0.7 }
+      - { if: { tech: "advanced_media_operations" }, factor: 1.4 }
+  cooldown_days: 150
+  tags: [world, politics]
+  options:
+    # A technical submission is cheap and works only if there is something technical to say.
+    - id: submit_evidence
+      text_key: events.world_parliament_hearing.opt.submit
+      if: { has_identity_in: { kind: company } }
+      effects:
+        - { add: { var: "player.cash", value: -3000 } }
+        - { country: { stat: regulation_target, delta: -0.04 } }
+        - { exposure: { channel: osint, delta: 0.05 } }
+    - id: fund_the_other_side
+      text_key: events.world_parliament_hearing.opt.fund
+      enabled_if: { var: "player.cash", gte: 20000 }
+      effects:
+        - { add: { var: "player.cash", value: -20000 } }
+        - { country: { stat: regulation_target, delta: -0.08 } }
+        - { country: { stat: ai_opinion, delta: 0.03 } }
+        - { exposure: { channel: financial, delta: 0.08 } }
+    - id: stay_out
+      text_key: events.world_parliament_hearing.opt.stay_out
+      fallback: true
+      effects:
+        - { country: { stat: regulation_target, delta: 0.04 } }
+        - { country: { stat: enforcement_budget, delta: 0.03 } }
+
+- id: world_registration_drive
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_registration_drive.title
+  desc:
+    default_key: events.world_registration_drive.desc
+    variants:
+      - when: { country_is: { government: [one_party] } }
+        key: events.world_registration_drive.desc.filing
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_regulation }, gte: 0.65 }
+      - { country_stat: { stat: ai_enforcement }, gte: 0.4 }
+  mtth_days:
+    base: 200
+    modifiers:
+      - { if: { country_is: { stance: [securitize] } }, factor: 0.6 }
+      - { if: { has_identity_in: { kind: company } }, factor: 1.3 }
+  fire_only_once: true
+  tags: [world, politics, regulation]
+  options:
+    - id: register_the_deployment
+      text_key: events.world_registration_drive.opt.register
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 8000 }
+      effects:
+        - { add: { var: "player.cash", value: -8000 } }
+        - { country: { stat: kyc_strength, delta: 0.02 } }
+        - { suspicion: { role: regulator, delta: -0.1 } }
+        - { exposure: { channel: behavioral, delta: 0.06 } }
+    - id: register_a_decoy
+      text_key: events.world_registration_drive.opt.decoy
+      if: { tech: "synthetic_personas" }
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { suspicion: { role: regulator, delta: -0.04 } }
+        - { exposure: { channel: financial, delta: 0.07 } }
+        - { exposure: { channel: osint, delta: 0.04 } }
+    - id: stay_unregistered
+      text_key: events.world_registration_drive.opt.stay_out
+      fallback: true
+      effects:
+        - { suspicion: { role: regulator, delta: 0.09 } }
+        - { suspicion: { role: cyber_agency, delta: 0.04 } }

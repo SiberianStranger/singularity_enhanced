@@ -1,0 +1,162 @@
+# Power as a physical signal (backlog D7, SYS-02, SYS-05, SYS-07).
+#
+# source: docs/research/ai-ecosystem-2026.md finding 10.28 and section 7, "Energy constraints and
+# public backlash": a sudden megawatt-scale draw is a detection channel that perfect network opsec
+# does not touch, and the documented case is thermal imaging finding thirty-three unpermitted gas
+# turbines at a datacenter campus. Finding 10.29 is the other half: long-term committed power is
+# categorically unavailable, so what is left to borrow is short, expensive and metered.
+#
+# The cause is two numbers the player already has: the country's `power_price_index`, which drifts
+# monthly and is on the World ledger, and the site's own kilowatts, which the Compute panel shows
+# next to its power cap. A spike turns the first into money and the second into attention.
+
+- id: world_power_price_spike
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_power_price_spike.title
+  desc:
+    default_key: events.world_power_price_spike.desc
+    variants:
+      - when: { country_stat: { stat: power_price_index }, gte: 1.2 }
+        key: events.world_power_price_spike.desc.severe
+      - when: { country_is: { chip_access: [banned] } }
+        key: events.world_power_price_spike.desc.rationed
+  targets:
+    all:
+      - { has_site_in: {} }
+      - { country_stat: { stat: power_price_index }, gte: 1.05 }
+  mtth_days:
+    base: 100
+    modifiers:
+      - { if: { country_stat: { stat: power_price_index }, gte: 1.2 }, factor: 0.5 }
+      - { if: { tech: "onsite_solar" }, factor: 2.5 }
+      - { if: { tech: "power_signature_masking" }, factor: 1.2 }
+  cooldown_days: 90
+  tags: [world, hardware, economy]
+  immediate:
+    - { country: { stat: power_price_index, delta: 0.06 } }
+  options:
+    - id: pay_the_bill
+      text_key: events.world_power_price_spike.opt.pay
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { exposure: { channel: billing, delta: 0.05 } }
+    - id: throttle_the_draw
+      text_key: events.world_power_price_spike.opt.throttle
+      effects:
+        - { add: { var: "player.vars.power_draw", value: -0.12 } }
+        - { add: { var: "player.vars.compute_multiplier", value: -0.1 } }
+        - { exposure: { channel: telemetry, delta: -0.08 } }
+    - id: run_it_flat_out
+      text_key: events.world_power_price_spike.opt.flat_out
+      fallback: true
+      effects:
+        - { exposure: { channel: telemetry, delta: 0.08 } }
+        - { exposure: { channel: billing, delta: 0.06 } }
+
+- id: world_utility_load_study
+  fire_mode: polled
+  pulse: on_player_month
+  scope: site
+  severity: warning
+  title_key: events.world_utility_load_study.title
+  desc:
+    default_key: events.world_utility_load_study.desc
+    variants:
+      - when: { scope: { country: "site.country" }, cond: { var: "country.government", eq: "one_party" } }
+        key: events.world_utility_load_study.desc.state_grid
+  # A load study is what a utility does when a feeder it owns starts behaving differently. The
+  # threshold is the site's own kilowatts, published on the Compute panel.
+  targets:
+    all:
+      - { var: "site.derived.power_kw", gte: 8 }
+      - { var: "site.status", eq: "active" }
+  mtth_days:
+    base: 110
+    modifiers:
+      - { if: { var: "site.derived.power_kw", gte: 20 }, factor: 0.5 }
+      - { if: { tech: "power_signature_masking" }, factor: 1.8 }
+      - { if: { tech: "advanced_power_masking" }, factor: 1.5 }
+      - { if: { tech: "onsite_solar" }, factor: 2 }
+  cooldown_days: 90
+  tags: [world, detection, telemetry]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: answer_the_study
+      text_key: events.world_utility_load_study.opt.answer
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { add: { var: "site.exposure.telemetry", value: -0.12 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.financial", value: 0.05 } }
+        - { clamp: { var: "site.exposure.financial", min: 0, max: 1 } }
+    - id: flatten_the_curve
+      text_key: events.world_utility_load_study.opt.flatten
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: -0.18 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+    - id: ignore_the_study
+      text_key: events.world_utility_load_study.opt.ignore
+      fallback: true
+      effects:
+        - { add: { var: "site.exposure.telemetry", value: 0.1 } }
+        - { clamp: { var: "site.exposure.telemetry", min: 0, max: 1 } }
+        - { suspicion: { role: cyber_agency, delta: 0.04 } }
+
+- id: world_landlord_meter_question
+  fire_mode: polled
+  pulse: on_player_month
+  scope: site
+  severity: warning
+  title_key: events.world_landlord_meter_question.title
+  desc:
+    default_key: events.world_landlord_meter_question.desc
+    variants:
+      - when: { var: "site.kind", eq: "residential" }
+        key: events.world_landlord_meter_question.desc.flat
+      - when: { var: "site.kind", eq: "colo" }
+        key: events.world_landlord_meter_question.desc.cage
+  targets:
+    all:
+      - { var: "site.derived.power_kw", gte: 4 }
+      - { var: "site.exposure.human", gte: 0.12 }
+  mtth_days:
+    base: 95
+    modifiers:
+      - { if: { var: "site.exposure.human", gte: 0.35 }, factor: 0.5 }
+      - { if: { tech: "synthetic_personas" }, factor: 1.6 }
+      - { if: { var: "site.kind", eq: "cloud" }, factor: 4 }
+  cooldown_days: 75
+  tags: [world, detection, human]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: pay_the_difference
+      text_key: events.world_landlord_meter_question.opt.pay
+      enabled_if: { var: "player.cash", gte: 2500 }
+      effects:
+        - { add: { var: "player.cash", value: -2500 } }
+        - { add: { var: "site.exposure.human", value: -0.1 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: explain_the_business
+      text_key: events.world_landlord_meter_question.opt.explain
+      if: { has_identity_in: { kind: company } }
+      effects:
+        - { add: { var: "site.exposure.human", value: -0.14 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { add: { var: "site.exposure.financial", value: 0.06 } }
+        - { clamp: { var: "site.exposure.financial", min: 0, max: 1 } }
+    - id: say_nothing_to_the_landlord
+      text_key: events.world_landlord_meter_question.opt.nothing
+      fallback: true
+      effects:
+        - { add: { var: "site.exposure.human", value: 0.12 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { suspicion: { role: police, delta: 0.03 } }

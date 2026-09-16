@@ -1,0 +1,62 @@
+# M2 world hooks (SYS-10, SYS-01 "M2 contract"). Where the ten world event families are evaluated.
+#
+# Two shapes, for the reason hooks/m1.yaml gives:
+#
+#   - a family aimed at one country, one site or one identity declares its own `pulse` (or is fired
+#     by an engine hook) and is polled there with its own MTTH, so a utility load study never has to
+#     win a weighted draw against a newspaper. The country pulse is evaluated once per country
+#     (M2 contract, "Country-scoped events"), which is what makes the same month different in
+#     Warsaw and in Shenzhen;
+#   - a family aimed at the player as a whole goes through a pool below, where the weights say how
+#     often the world interrupts and the `null` bucket is the explicit chance of a quiet week.
+#
+# Families polled at their own pulse: hearings and registration drives, raids and seizures,
+# export-rule changes, jurisdiction and mutual assistance (the country half), job-loss backlash and
+# the power price spike, all on `on_country_month`; the utility and landlord follow-ups on
+# `on_player_month`, because they are aimed at one site.
+
+- id: hook_election_world
+  extends: on_election
+  scope: country
+  # The result is news for anyone present; it schedules its own follow-up, because `election.changed`
+  # is bound only while the result is being read.
+  events:
+    - { id: world_election_result }
+
+- id: hook_investigation_stage_world
+  extends: on_investigation_stage
+  scope: player
+  # The reporting clock starts when an investigation reaches `active` in a country that has one.
+  # The event's own trigger checks the stage, so the hook stays cheap.
+  events:
+    - { id: world_incident_clock_started }
+
+- id: hook_identity_check_world
+  extends: on_identity_check_failed
+  scope: player
+  events:
+    - { id: world_identity_check_failed }
+
+- id: hook_player_week_world
+  extends: on_player_week
+  scope: player
+  random_events:
+    chance_to_happen: 1
+    pool:
+      - { weight: { base: 70 }, id: world_journalist_story }
+      - { weight: { base: 40 }, id: world_story_published }
+      - { weight: { base: 30 }, id: world_leaked_registry }
+      - { weight: { base: 55 }, id: world_cheap_colo_next_door }
+      - { weight: { base: 35 }, id: world_gpu_price_shock }
+      - { weight: { base: 25 }, id: world_geneva_registry_pact }
+      - { weight: { base: 520 }, id: null }
+
+- id: hook_player_month_world
+  extends: on_player_month
+  scope: player
+  random_events:
+    chance_to_happen: 1
+    pool:
+      - { weight: { base: 90 }, id: world_enhanced_due_diligence }
+      - { weight: { base: 60 }, id: world_annual_filing }
+      - { weight: { base: 250 }, id: null }

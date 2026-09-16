@@ -1,0 +1,75 @@
+# M2 world journal entries (SYS-10, SYS-01 "M2 contract"). Three processes the player watches a
+# clock on: a legal reporting deadline, an election in a country of presence, and an identity that
+# has been frozen and is either repaired or lost.
+
+# The incident-reporting countdown (backlog D10). The country's `incident_report_hours` is in the
+# country panel from the first day; this entry is what it looks like when the clock is running
+# against the player. Three days is the 72-hour figure of the RAISE Act and of the EU regime, which
+# is the shortest clock that binds anybody in the countries the player can start in
+# (docs/research/ai-ecosystem-2026.md section 6).
+- id: world_incident_report
+  title_key: journal.world_incident_report.title
+  desc_key: journal.world_incident_report.desc
+  scope: player
+  alert: pinned
+  timeout_days: 3
+  complete_if: { flag: incident_report_stalled }
+  on_complete:
+    - { clear_flag: incident_report_stalled }
+    - { log: { key: log.world_incident_report.stalled } }
+  on_timeout:
+    - { awareness: { delta: 0.06 } }
+    - { suspicion: { role: regulator, delta: 0.08 } }
+    - { suspicion: { role: media, delta: 0.06 } }
+    - { fire_event: { id: world_incident_report_public } }
+
+# An election the player can see coming, in a country of presence. The date is published in the
+# country panel from day one, so what this adds is the reading of the campaign rather than the news
+# of the result: the two steps are the two moments when the answer to "what will this cost me"
+# changes, and the entry closes on polling day.
+- id: world_election_watch
+  title_key: journal.world_election_watch.title
+  desc_key: journal.world_election_watch.desc
+  scope: country
+  alert: normal
+  start_if:
+    all:
+      - { presence_in: {} }
+      - { election_within_days: { days: 90 } }
+  progress:
+    steps:
+      - id: campaign
+        title_key: journal.world_election_watch.step.campaign
+        complete_if: { election_within_days: { days: 60 } }
+      - id: final_week
+        title_key: journal.world_election_watch.step.final_week
+        complete_if: { election_within_days: { days: 7 } }
+  stages:
+    - threshold: 0.5
+      on_enter:
+        - { log: { key: log.world_election_watch.campaign } }
+    - threshold: 1
+      on_enter:
+        - { notify: { severity: warning, key: alerts.world_election_watch.eve, link: { panel: world } } }
+  complete_if: { not: { election_within_days: { days: 2 } } }
+  on_complete:
+    - { log: { key: log.world_election_watch.voted } }
+
+# A frozen identity (SYS-07 identities). The check failed, the name is frozen, and what is on the
+# clock is whether the paperwork holds. `world_identity_check_failed` starts it and its options
+# close it: documents complete it, contesting lets it run, abandoning fails it on the spot.
+- id: world_identity_frozen
+  title_key: journal.world_identity_frozen.title
+  desc_key: journal.world_identity_frozen.desc
+  scope: player
+  alert: pinned
+  timeout_days: 21
+  on_complete:
+    - { log: { key: log.world_identity_frozen.restored } }
+  on_fail:
+    - { log: { key: log.world_identity_frozen.abandoned } }
+  on_timeout:
+    - { burn_identity: {} }
+    - { suspicion: { role: financial_intel, delta: 0.08 } }
+    - { exposure: { channel: financial, delta: 0.1 } }
+    - { log: { key: log.world_identity_frozen.burned } }

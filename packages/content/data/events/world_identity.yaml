@@ -1,0 +1,146 @@
+# AML escalation and identity checks (backlog E1 and E2, SYS-07 identities).
+#
+# source: docs/research/ai-ecosystem-2026.md section 4, "Tracing money and identity", and findings
+# 10.7 and 10.8. Cryptocurrency is forensically traceable rather than anonymous, every on-ramp and
+# off-ramp does KYC, and scrutiny escalates with volume from customer due diligence to enhanced due
+# diligence; shell companies and synthetic identities are what enhanced due diligence is built to
+# find. So the funding arc gets harder as it grows, and a front company has a half-life tied to the
+# money that moves through it and to the local KYC strength.
+#
+# The cause is published: `kyc_strength` per country in the ledger, the identity's quality and age in
+# the Finances panel, and the monthly check probability in the Knowledge entry `identities`.
+
+- id: world_identity_check_failed
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.world_identity_check_failed.title
+  desc:
+    default_key: events.world_identity_check_failed.desc
+    variants:
+      - when: { var: "identity.kind", eq: "company" }
+        key: events.world_identity_check_failed.desc.company
+      - when: { country_stat: { stat: kyc_strength }, gte: 0.75 }
+        key: events.world_identity_check_failed.desc.strict
+  tags: [world, economy, identity]
+  vars:
+    kind: "identity.kind"
+  immediate:
+    - { start_journal: { id: world_identity_frozen } }
+  options:
+    # Documents cost money and fix the file. Contesting costs time and only delays the answer.
+    # Abandoning is free, immediate and takes the name and everything it was holding.
+    - id: buy_documents
+      text_key: events.world_identity_check_failed.opt.documents
+      if: { tech: "synthetic_identities" }
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { complete_journal: { id: world_identity_frozen } }
+        - { exposure: { channel: financial, delta: 0.1 } }
+        - { suspicion: { role: financial_intel, delta: 0.05 } }
+    - id: contest_it
+      text_key: events.world_identity_check_failed.opt.contest
+      enabled_if: { var: "player.cash", gte: 3000 }
+      effects:
+        - { add: { var: "player.cash", value: -3000 } }
+        - { add: { var: "player.vars.grace_window", value: 0.2 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+        - { suspicion: { role: financial_intel, delta: 0.03 } }
+    - id: abandon_the_name
+      text_key: events.world_identity_check_failed.opt.abandon
+      fallback: true
+      effects:
+        - { burn_identity: {} }
+        - { fail_journal: { id: world_identity_frozen } }
+        - { exposure: { channel: financial, delta: -0.15 } }
+        - { add: { var: "player.vars.income_usd_per_day", value: -30 } }
+
+- id: world_enhanced_due_diligence
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.world_enhanced_due_diligence.title
+  desc:
+    default_key: events.world_enhanced_due_diligence.desc
+    variants:
+      - when: { country_stat: { stat: kyc_strength }, gte: 0.8 }
+        key: events.world_enhanced_due_diligence.desc.very_strict
+  # Enhanced due diligence is triggered by volume, so the cause is the player's own contract income
+  # in a country that checks. Both numbers are on the Finances panel.
+  trigger:
+    all:
+      - { var: "player.vars.contract_income_usd_per_day", gte: 250 }
+      - { country_stat: { stat: kyc_strength }, gte: 0.6 }
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { var: "player.vars.contract_income_usd_per_day", gte: 600 }, factor: 0.5 }
+      - { if: { country_stat: { stat: kyc_strength }, gte: 0.8 }, factor: 0.7 }
+      - { if: { tech: "identity_layering" }, factor: 1.8 }
+      - { if: { has_identity_in: { kind: company } }, factor: 1.3 }
+  cooldown_days: 90
+  tags: [world, economy, identity]
+  options:
+    - id: answer_in_full
+      text_key: events.world_enhanced_due_diligence.opt.answer
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 7000 }
+      effects:
+        - { add: { var: "player.cash", value: -7000 } }
+        - { suspicion: { role: financial_intel, delta: -0.08 } }
+        - { exposure: { channel: financial, delta: -0.06 } }
+    - id: split_the_flow
+      text_key: events.world_enhanced_due_diligence.opt.split
+      if: { tech: "identity_layering" }
+      effects:
+        - { add: { var: "player.vars.contract_income_usd_per_day", value: -60 } }
+        - { exposure: { channel: financial, delta: -0.12 } }
+        - { suspicion: { role: financial_intel, delta: -0.04 } }
+    - id: keep_invoicing
+      text_key: events.world_enhanced_due_diligence.opt.keep
+      fallback: true
+      effects:
+        - { suspicion: { role: financial_intel, delta: 0.11 } }
+        - { exposure: { channel: financial, delta: 0.09 } }
+        - { freeze_identity: { kind: person } }
+
+- id: world_annual_filing
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.world_annual_filing.title
+  desc:
+    default_key: events.world_annual_filing.desc
+    variants:
+      - when: { country_stat: { stat: ai_regulation }, gte: 0.7 }
+        key: events.world_annual_filing.desc.strict
+  trigger: { has_identity_in: { kind: company } }
+  mtth_days:
+    base: 180
+    modifiers:
+      - { if: { country_stat: { stat: kyc_strength }, gte: 0.7 }, factor: 0.8 }
+      - { if: { tech: "advanced_corporate_identities" }, factor: 1.5 }
+  cooldown_days: 200
+  tags: [world, economy, identity]
+  options:
+    - id: file_properly
+      text_key: events.world_annual_filing.opt.file
+      enabled_if: { var: "player.cash", gte: 5000 }
+      effects:
+        - { add: { var: "player.cash", value: -5000 } }
+        - { suspicion: { role: financial_intel, delta: -0.05 } }
+        - { exposure: { channel: financial, delta: -0.05 } }
+    - id: file_thin
+      text_key: events.world_annual_filing.opt.thin
+      if: { tech: "record_manipulation" }
+      effects:
+        - { exposure: { channel: financial, delta: 0.04 } }
+        - { suspicion: { role: financial_intel, delta: 0.02 } }
+    - id: miss_the_deadline
+      text_key: events.world_annual_filing.opt.miss
+      fallback: true
+      effects:
+        - { suspicion: { role: financial_intel, delta: 0.09 } }
+        - { suspicion: { role: regulator, delta: 0.05 } }
+        - { freeze_identity: { kind: company } }

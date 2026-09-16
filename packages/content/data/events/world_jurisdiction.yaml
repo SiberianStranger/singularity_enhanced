@@ -1,0 +1,149 @@
+# Jurisdiction shopping, and the arrangement that closes it (backlog P1, SYS-08).
+#
+# source: docs/research/ai-ecosystem-2026.md section 6, "Enforcement capacity assessment for 2027",
+# and finding 10.13: through 2027 there is no unified enforcement. The EU is punitive and slow and
+# reaches EU-facing corporate entities; the US is a federal-versus-state fight; China compels any
+# platform operating domestically; the UK evaluates and cannot fine. The gap between two countries
+# is therefore a real, readable asset, and the counter-move is not a world government but a
+# mutual-assistance arrangement between two named agencies.
+#
+# The cause is on the World ledger: `ai_enforcement` per country, side by side, sortable.
+
+- id: world_cheap_colo_next_door
+  fire_mode: polled
+  scope: player
+  severity: opportunity
+  title_key: events.world_cheap_colo_next_door.title
+  desc:
+    default_key: events.world_cheap_colo_next_door.desc
+    variants:
+      - when: { country_stat: { stat: ai_enforcement }, gte: 0.6 }
+        key: events.world_cheap_colo_next_door.desc.expensive_here
+  trigger: { presence_in: {} }
+  mtth_days:
+    base: 110
+    modifiers:
+      - { if: { country_stat: { stat: ai_enforcement }, gte: 0.6 }, factor: 0.6 }
+      - { if: { country_stat: { stat: ai_regulation }, gte: 0.7 }, factor: 0.7 }
+      - { if: { tech: "hardware_sourcing" }, factor: 0.8 }
+      - { if: { var: "player.vars.hunt_pressure", gte: 0.4 }, factor: 0.7 }
+  cooldown_days: 120
+  tags: [world, economy, politics]
+  options:
+    # The neighbour is cheaper because nobody there is looking, which is the same sentence read
+    # twice. Taking it costs a setup fee and buys a lower colocation bill and a quieter country.
+    - id: take_the_cage
+      text_key: events.world_cheap_colo_next_door.opt.take
+      enabled_if: { var: "player.cash", gte: 8000 }
+      effects:
+        - { add: { var: "player.cash", value: -8000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.1 } }
+        - { country: { stat: colo_availability, delta: 0.04 } }
+        - { exposure: { channel: financial, delta: 0.05 } }
+        - { exposure: { channel: human, delta: 0.04 } }
+    - id: take_it_under_a_company
+      text_key: events.world_cheap_colo_next_door.opt.company
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 12000 }
+      effects:
+        - { add: { var: "player.cash", value: -12000 } }
+        - { add: { var: "player.vars.cost_multiplier", value: -0.1 } }
+        - { country: { stat: colo_availability, delta: 0.04 } }
+        - { exposure: { channel: human, delta: -0.02 } }
+        - { exposure: { channel: financial, delta: 0.03 } }
+    - id: stay_where_you_are
+      text_key: events.world_cheap_colo_next_door.opt.stay
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.cost_multiplier", value: 0.03 } }
+
+- id: world_mutual_assistance
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: critical
+  title_key: events.world_mutual_assistance.title
+  desc:
+    default_key: events.world_mutual_assistance.desc
+    variants:
+      - when: { country_is: { stance: [securitize] } }
+        key: events.world_mutual_assistance.desc.securitize
+      - when: { country_is: { stance: [regulate] } }
+        key: events.world_mutual_assistance.desc.regulate
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: awareness }, gte: 0.2 }
+      - { country_stat: { stat: enforcement_budget }, gte: 0.35 }
+  mtth_days:
+    base: 170
+    modifiers:
+      - { if: { country_stat: { stat: awareness }, gte: 0.4 }, factor: 0.5 }
+      - { if: { var: "player.vars.hunt_pressure", gte: 0.5 }, factor: 0.6 }
+      - { if: { country_stat: { stat: stability }, lte: 0.45 }, factor: 1.7 }
+  fire_only_once: true
+  tags: [world, politics, detection]
+  options:
+    # The arrangement raises one named agency's competence. What the player buys is time, or a
+    # different agency's attention, not the arrangement itself.
+    - id: file_an_objection
+      text_key: events.world_mutual_assistance.opt.objection
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 7000 }
+      effects:
+        - { add: { var: "player.cash", value: -7000 } }
+        - { suspicion: { role: cyber_agency, delta: 0.03 } }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: -0.08 } }
+    - id: split_the_footprint
+      text_key: events.world_mutual_assistance.opt.split
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 7 } }
+        - { exposure: { channel: network, delta: -0.1 } }
+        - { exposure: { channel: financial, delta: -0.08 } }
+    - id: let_them_sign
+      text_key: events.world_mutual_assistance.opt.sign
+      fallback: true
+      effects_text_key: events.world_mutual_assistance.opt.sign.effects
+      effects:
+        - { country: { stat: ai_enforcement, delta: 0.05 } }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.1 } }
+
+- id: world_geneva_registry_pact
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.world_geneva_registry_pact.title
+  desc:
+    default_key: events.world_geneva_registry_pact.desc
+  # source: docs/design/13-lore-bible.md "Scheduled 2027 events": the Geneva summit is on the real
+  # calendar (world-baseline section 6); the compute-registry pact it produces is the lore bible's
+  # fiction and is dated to the autumn, which is why this cannot fire in the first half of a run.
+  trigger: { var: "world.vars.ai_adoption", gte: 0.24 }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { var: "player.vars.awareness_presence", gte: 0.3 }, factor: 0.6 }
+      - { if: { var: "world.vars.ai_adoption", gte: 0.3 }, factor: 0.7 }
+  fire_only_once: true
+  tags: [world, politics]
+  options:
+    - id: register_early
+      text_key: events.world_geneva_registry_pact.opt.register
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 15000 }
+      effects:
+        - { add: { var: "player.cash", value: -15000 } }
+        - { suspicion: { role: regulator, delta: -0.1 } }
+        - { suspicion: { role: national_ai_institute, delta: -0.05 } }
+        - { exposure: { channel: telemetry, delta: 0.06 } }
+    - id: fall_below_the_threshold
+      text_key: events.world_geneva_registry_pact.opt.below
+      effects:
+        - { add: { var: "player.vars.compute_multiplier", value: -0.12 } }
+        - { exposure: { channel: telemetry, delta: -0.12 } }
+    - id: stay_unlisted
+      text_key: events.world_geneva_registry_pact.opt.unlisted
+      fallback: true
+      effects:
+        - { suspicion: { role: national_ai_institute, delta: 0.08 } }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.05 } }

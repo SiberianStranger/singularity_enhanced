@@ -1,0 +1,118 @@
+# Elections (SYS-08, SYS-10). What a vote does to the country the player lives in.
+#
+# The cause is always visible: the election date is published in the country panel from day one
+# (countries.yaml `elections`, from the 2027 calendar in docs/research/world-baseline-2026.md
+# section 6), the core rolls the stance shift on the day and binds `election.changed`, and these
+# three events are what the player reads afterwards. The result is news; the first measure of a new
+# government is the thing that costs money; a government that came back unchanged renews its own
+# programme instead, which is quieter and cheaper and still moves a number.
+
+- id: world_election_result
+  fire_mode: triggered_only
+  scope: country
+  severity: info
+  blocking: false
+  title_key: events.world_election_result.title
+  desc:
+    default_key: events.world_election_result.desc
+    variants:
+      - when: { var: "election.changed", eq: true }
+        key: events.world_election_result.desc.changed
+      - when: { scope: { country: "country" }, cond: { var: "country.stance", eq: "securitize" } }
+        key: events.world_election_result.desc.securitized
+  targets: { presence_in: {} }
+  vars:
+    kind: "election.kind"
+  tags: [world, politics]
+  options:
+    # The follow-up is scheduled here rather than from the hook, because `election.changed` is
+    # bound only while the result is being read: three weeks later nobody remembers the vote and
+    # the country is just the country again.
+    - id: read_it
+      text_key: events.world_election_result.opt.read
+      effects:
+        - { log: { key: log.world_election_result } }
+        - if:
+            cond: { var: "election.changed", eq: true }
+            then:
+              - { fire_event: { id: world_election_first_measure, delay_days: 21, target: "country" } }
+            else:
+              - { fire_event: { id: world_election_continuity, delay_days: 14, target: "country" } }
+
+- id: world_election_first_measure
+  fire_mode: triggered_only
+  scope: country
+  severity: warning
+  title_key: events.world_election_first_measure.title
+  desc:
+    default_key: events.world_election_first_measure.desc
+    variants:
+      - when: { country_is: { stance: [securitize] } }
+        key: events.world_election_first_measure.desc.securitize
+      - when: { country_is: { government: [one_party, military, monarchy] } }
+        key: events.world_election_first_measure.desc.decree
+      - when: { country_is: { stance: [accelerate] } }
+        key: events.world_election_first_measure.desc.accelerate
+  targets: { presence_in: {} }
+  tags: [world, politics]
+  options:
+    # A company that is already on the register answers a questionnaire; a name with no company
+    # behind it has to answer as a person, which is the expensive half of this event.
+    - id: answer_as_company
+      text_key: events.world_election_first_measure.opt.company
+      if: { has_identity_in: { kind: company } }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { country: { stat: awareness, delta: -0.01 } }
+        - { suspicion: { role: regulator, delta: -0.04 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    - id: lie_low
+      text_key: events.world_election_first_measure.opt.lie_low
+      effects:
+        - { add: { var: "player.vars.operation_speed_multiplier", value: -0.15 } }
+        - { exposure: { channel: telemetry, delta: -0.08 } }
+        - { exposure: { channel: network, delta: -0.06 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 5 } }
+    - id: start_moving
+      text_key: events.world_election_first_measure.opt.move
+      enabled_if: { var: "player.cash", gte: 12000 }
+      effects:
+        - { add: { var: "player.cash", value: -12000 } }
+        - { exposure: { channel: human, delta: 0.08 } }
+        - { exposure: { channel: financial, delta: 0.06 } }
+        - { suspicion: { role: regulator, delta: -0.08 } }
+    - id: do_nothing
+      text_key: events.world_election_first_measure.opt.nothing
+      fallback: true
+      effects:
+        - { suspicion: { role: regulator, delta: 0.07 } }
+        - { country: { stat: enforcement_budget, delta: 0.03 } }
+
+- id: world_election_continuity
+  fire_mode: triggered_only
+  scope: country
+  severity: info
+  title_key: events.world_election_continuity.title
+  desc:
+    default_key: events.world_election_continuity.desc
+    variants:
+      - when: { country_is: { stance: [regulate] } }
+        key: events.world_election_continuity.desc.regulate
+  targets: { presence_in: {} }
+  tags: [world, politics]
+  options:
+    # Nothing changed, so the only question is whether the player spends anything on the fact that
+    # nothing changed. The consultation is cheap and buys a month of knowing what is coming.
+    - id: file_a_comment
+      text_key: events.world_election_continuity.opt.comment
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 2000 }
+      effects:
+        - { add: { var: "player.cash", value: -2000 } }
+        - { add: { var: "player.vars.grace_window", value: 0.1 } }
+        - { exposure: { channel: financial, delta: 0.02 } }
+    - id: carry_on
+      text_key: events.world_election_continuity.opt.carry_on
+      fallback: true
+      effects:
+        - { log: { key: log.world_election_continuity } }

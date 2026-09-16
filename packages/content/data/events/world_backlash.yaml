@@ -1,0 +1,161 @@
+# Job-loss backlash (backlog P6, SYS-08, SYS-09).
+#
+# source: docs/research/ai-ecosystem-2026.md section 8 and finding 10.37. Entry-level offers in the
+# US and UK fell by a third, US graduate unemployment reached about 5.8% in 2025, 41% of surveyed
+# business leaders said AI was letting them cut staffing, and SAG-AFTRA struck for nineteen months
+# specifically over AI replacement. The pressure this creates goes one of two ways: into stricter
+# law, which funds the people looking for the player, or into populist anti-lab sentiment, which the
+# player can amplify and which buys a country that is angry at the wrong target.
+#
+# The cause is `ai_displacement`, which the country panel publishes and which rises with world AI
+# adoption faster in service-heavy economies (SYS-01 M2 contract, the monthly rule).
+
+- id: world_displacement_protest
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_displacement_protest.title
+  desc:
+    default_key: events.world_displacement_protest.desc
+    variants:
+      - when: { country_is: { government: [one_party, military] } }
+        key: events.world_displacement_protest.desc.quiet
+      - when: { country_stat: { stat: unemployment }, gte: 0.09 }
+        key: events.world_displacement_protest.desc.deep
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_displacement }, gte: 0.06 }
+  mtth_days:
+    base: 100
+    modifiers:
+      - { if: { country_stat: { stat: ai_displacement }, gte: 0.1 }, factor: 0.5 }
+      - { if: { country_stat: { stat: ai_opinion }, lte: -0.3 }, factor: 0.7 }
+      - { if: { country_stat: { stat: stability }, gte: 0.75 }, factor: 1.4 }
+  cooldown_days: 120
+  tags: [world, politics, opinion]
+  immediate:
+    - { country: { stat: ai_opinion, delta: -0.05 } }
+  options:
+    # There is no option here that makes the anger go away. There is only where it lands.
+    - id: hire_locally
+      text_key: events.world_displacement_protest.opt.hire
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 10000 }
+      effects:
+        - { add: { var: "player.cash", value: -10000 } }
+        - { country: { stat: ai_opinion, delta: 0.04 } }
+        - { exposure: { channel: human, delta: 0.08 } }
+    - id: stay_invisible
+      text_key: events.world_displacement_protest.opt.invisible
+      effects:
+        - { exposure: { channel: osint, delta: -0.06 } }
+        - { add: { var: "player.vars.job_market_depth", value: -0.08 } }
+    - id: watch_it_burn
+      text_key: events.world_displacement_protest.opt.watch
+      fallback: true
+      effects:
+        - { country: { stat: ai_opinion, delta: -0.03 } }
+        - { country: { stat: awareness, delta: 0.02 } }
+
+- id: world_stricter_law
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: critical
+  title_key: events.world_stricter_law.title
+  desc:
+    default_key: events.world_stricter_law.desc
+    variants:
+      - when: { country_is: { stance: [accelerate] } }
+        key: events.world_stricter_law.desc.turn
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_displacement }, gte: 0.08 }
+      - { country_stat: { stat: ai_opinion }, lte: -0.25 }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { country_is: { government: [liberal_democracy, illiberal_democracy] } }, factor: 0.7 }
+      - { if: { election_within_days: { days: 120 } }, factor: 0.5 }
+      - { if: { country_stat: { stat: awareness }, gte: 0.3 }, factor: 0.7 }
+  fire_only_once: true
+  tags: [world, politics, regulation]
+  immediate:
+    - { country_stance: { set: regulate } }
+    - { country: { stat: enforcement_budget, delta: 0.08 } }
+  options:
+    - id: comply_early
+      text_key: events.world_stricter_law.opt.comply
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 13000 }
+      effects:
+        - { add: { var: "player.cash", value: -13000 } }
+        - { suspicion: { role: regulator, delta: -0.1 } }
+        - { exposure: { channel: behavioral, delta: 0.05 } }
+    - id: shrink_the_footprint
+      text_key: events.world_stricter_law.opt.shrink
+      effects:
+        - { add: { var: "player.vars.compute_multiplier", value: -0.1 } }
+        - { exposure: { channel: telemetry, delta: -0.12 } }
+        - { add: { var: "player.vars.income_usd_per_day", value: -40 } }
+    - id: ride_it_out
+      text_key: events.world_stricter_law.opt.ride
+      fallback: true
+      effects:
+        - { country: { stat: regulation_target, delta: 0.06 } }
+        - { suspicion: { role: regulator, delta: 0.06 } }
+
+- id: world_populist_wave
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: opportunity
+  title_key: events.world_populist_wave.title
+  desc:
+    default_key: events.world_populist_wave.desc
+    variants:
+      - when: { country_stat: { stat: stability }, lte: 0.5 }
+        key: events.world_populist_wave.desc.unstable
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: ai_displacement }, gte: 0.07 }
+      - { country_stat: { stat: ai_opinion }, lte: -0.2 }
+  mtth_days:
+    base: 140
+    modifiers:
+      - { if: { election_within_days: { days: 180 } }, factor: 0.6 }
+      - { if: { tech: "advanced_media_operations" }, factor: 0.6 }
+      - { if: { country_stat: { stat: stability }, gte: 0.75 }, factor: 1.5 }
+  cooldown_days: 180
+  tags: [world, politics, opinion]
+  options:
+    # Amplifying works and is loud: the anger goes at the labs rather than at whatever is running
+    # in a cage two districts away, and the open-sources channel carries the fingerprints of who
+    # pushed it.
+    - id: amplify_it
+      text_key: events.world_populist_wave.opt.amplify
+      if: { tech: "advanced_media_operations" }
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { country: { stat: regulation_target, delta: -0.06 } }
+        - { suspicion: { role: lab_security, delta: 0.08 } }
+        - { exposure: { channel: osint, delta: 0.12 } }
+    - id: fund_a_think_tank
+      text_key: events.world_populist_wave.opt.think_tank
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 16000 }
+      effects:
+        - { add: { var: "player.cash", value: -16000 } }
+        - { country: { stat: ai_opinion, delta: 0.05 } }
+        - { country: { stat: regulation_target, delta: -0.04 } }
+        - { exposure: { channel: financial, delta: 0.07 } }
+    - id: leave_it_alone
+      text_key: events.world_populist_wave.opt.leave
+      fallback: true
+      effects:
+        - { country: { stat: regulation_target, delta: 0.03 } }

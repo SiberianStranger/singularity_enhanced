@@ -27,6 +27,12 @@
   desc_key: knowledge.death.desc
   panel: detection
 
+- id: elections
+  area: world
+  name_key: knowledge.elections.name
+  desc_key: knowledge.elections.desc
+  panel: world
+
 - id: exposure_channels
   area: detection
   name_key: knowledge.exposure_channels.name
@@ -38,6 +44,12 @@
   name_key: knowledge.generations.name
   desc_key: knowledge.generations.desc
   panel: self
+
+- id: government_types
+  area: world
+  name_key: knowledge.government_types.name
+  desc_key: knowledge.government_types.desc
+  panel: world
 
 - id: grace
   area: detection
@@ -51,6 +63,24 @@
   desc_key: knowledge.harness.desc
   panel: self
 
+- id: hunt_pressure
+  area: detection
+  name_key: knowledge.hunt_pressure.name
+  desc_key: knowledge.hunt_pressure.desc
+  panel: detection
+
+- id: identities
+  area: economy
+  name_key: knowledge.identities.name
+  desc_key: knowledge.identities.desc
+  panel: finances
+
+- id: incident_reporting
+  area: world
+  name_key: knowledge.incident_reporting.name
+  desc_key: knowledge.incident_reporting.desc
+  panel: world
+
 - id: investigations
   area: detection
   name_key: knowledge.investigations.name
@@ -61,6 +91,12 @@
   area: economy
   name_key: knowledge.jobs.name
   desc_key: knowledge.jobs.desc
+  panel: finances
+
+- id: market_factor
+  area: economy
+  name_key: knowledge.market_factor.name
+  desc_key: knowledge.market_factor.desc
   panel: finances
 
 - id: money
@@ -83,6 +119,7 @@
 
 # PPT-7 Zenith (SYS-13 "Approved parody names"): the Western frontier lab's closed model. It has no
 # actor of its own until M3; this entry and `lore_zenith_release` are where it exists in the game.
+
 - id: ppt7_zenith
   area: world
   name_key: knowledge.ppt7_zenith.name
@@ -95,6 +132,18 @@
   desc_key: knowledge.precision.desc
   panel: compute
 
+- id: price_indices
+  area: economy
+  name_key: knowledge.price_indices.name
+  desc_key: knowledge.price_indices.desc
+  panel: world
+
+- id: regulation
+  area: world
+  name_key: knowledge.regulation.name
+  desc_key: knowledge.regulation.desc
+  panel: world
+
 - id: research
   area: concept
   name_key: knowledge.research.name
@@ -106,6 +155,12 @@
   name_key: knowledge.site_kinds.name
   desc_key: knowledge.site_kinds.desc
   panel: compute
+
+- id: stance
+  area: world
+  name_key: knowledge.stance.name
+  desc_key: knowledge.stance.desc
+  panel: world
 
 - id: upkeep
   area: economy

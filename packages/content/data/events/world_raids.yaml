@@ -1,0 +1,146 @@
+# Raids and seizures elsewhere (SYS-05, SYS-08). Somebody else gets caught in the country the
+# player lives in, and the country reacts.
+#
+# The cause is `incidents_30d`, which the country panel publishes: raids, seizures and investigation
+# aftermaths in this country in the last thirty days, the player's own included. A securitize stance
+# makes every one of them louder. Nothing here targets the player directly; what it does is raise
+# the price of the place, which is the point: a country becomes expensive before it becomes fatal.
+
+- id: world_raid_next_door
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_raid_next_door.title
+  desc:
+    default_key: events.world_raid_next_door.desc
+    variants:
+      - when: { country_is: { stance: [securitize] } }
+        key: events.world_raid_next_door.desc.securitize
+      - when: { country_is: { government: [liberal_democracy] } }
+        key: events.world_raid_next_door.desc.press
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: incidents_30d }, gte: 1 }
+  mtth_days:
+    base: 60
+    modifiers:
+      - { if: { country_stat: { stat: incidents_30d }, gte: 3 }, factor: 0.5 }
+      - { if: { country_is: { stance: [securitize] } }, factor: 0.7 }
+      - { if: { tech: "socioanalytics" }, factor: 1.3 }
+  cooldown_days: 60
+  tags: [world, detection]
+  options:
+    # Pulling back is the honest answer and it costs work; the auction is the greedy one and it
+    # puts the player's money next to a case file that is already open.
+    - id: pull_back
+      text_key: events.world_raid_next_door.opt.pull_back
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+        - { exposure: { channel: network, delta: -0.1 } }
+        - { exposure: { channel: telemetry, delta: -0.08 } }
+        - { country: { stat: awareness, delta: 0.02 } }
+    - id: buy_the_seized_lot
+      text_key: events.world_raid_next_door.opt.auction
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 15000 }
+      effects:
+        - { add: { var: "player.cash", value: -15000 } }
+        - { world_var: { var: gpu_price_index, delta: -0.01 } }
+        - { exposure: { channel: financial, delta: 0.1 } }
+        - { suspicion: { role: police, delta: 0.06 } }
+    - id: watch_and_learn
+      text_key: events.world_raid_next_door.opt.watch
+      fallback: true
+      effects:
+        - { country: { stat: awareness, delta: 0.03 } }
+        - { country: { stat: ai_opinion, delta: -0.02 } }
+        - { suspicion: { role: cyber_agency, delta: 0.03 } }
+
+- id: world_seizure_list_published
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.world_seizure_list_published.title
+  desc:
+    default_key: events.world_seizure_list_published.desc
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: incidents_30d }, gte: 2 }
+      - { country_stat: { stat: awareness }, gte: 0.15 }
+  mtth_days:
+    base: 110
+    modifiers:
+      - { if: { country_is: { government: [liberal_democracy] } }, factor: 0.7 }
+      - { if: { country_stat: { stat: awareness }, gte: 0.35 }, factor: 0.6 }
+      - { if: { tech: "traffic_rerouting" }, factor: 1.4 }
+  cooldown_days: 120
+  tags: [world, detection, osint]
+  options:
+    - id: check_yourself
+      text_key: events.world_seizure_list_published.opt.check
+      if: { tech: "socioanalytics" }
+      effects:
+        - { exposure: { channel: osint, delta: -0.06 } }
+        - { add: { var: "player.vars.grace_window", value: 0.15 } }
+    - id: move_the_addresses
+      text_key: events.world_seizure_list_published.opt.move
+      enabled_if: { var: "player.cash", gte: 7000 }
+      effects:
+        - { add: { var: "player.cash", value: -7000 } }
+        - { exposure: { channel: network, delta: -0.12 } }
+        - { exposure: { channel: osint, delta: -0.08 } }
+    - id: read_it_later
+      text_key: events.world_seizure_list_published.opt.later
+      fallback: true
+      effects:
+        - { exposure: { channel: osint, delta: 0.06 } }
+        - { country: { stat: awareness, delta: 0.02 } }
+
+- id: world_task_force_formed
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: critical
+  title_key: events.world_task_force_formed.title
+  desc:
+    default_key: events.world_task_force_formed.desc
+    variants:
+      - when: { country_is: { stance: [securitize] } }
+        key: events.world_task_force_formed.desc.securitize
+  targets:
+    all:
+      - { presence_in: {} }
+      - { country_stat: { stat: incidents_30d }, gte: 3 }
+      - { country_stat: { stat: enforcement_budget }, gte: 0.4 }
+  mtth_days:
+    base: 90
+    modifiers:
+      - { if: { country_stat: { stat: awareness }, gte: 0.3 }, factor: 0.6 }
+      - { if: { country_stat: { stat: stability }, lte: 0.4 }, factor: 1.6 }
+  fire_only_once: true
+  tags: [world, detection]
+  options:
+    # The task force is coming either way. What the player buys here is which desk it starts at.
+    - id: give_them_a_target
+      text_key: events.world_task_force_formed.opt.target
+      if: { tech: "record_manipulation" }
+      effects:
+        - { suspicion: { role: cyber_agency, delta: -0.08 } }
+        - { exposure: { channel: osint, delta: 0.08 } }
+        - { country: { stat: enforcement_budget, delta: 0.05 } }
+    - id: cut_the_local_footprint
+      text_key: events.world_task_force_formed.opt.cut
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 10 } }
+        - { exposure: { channel: telemetry, delta: -0.15 } }
+        - { exposure: { channel: human, delta: -0.1 } }
+    - id: carry_on_regardless
+      text_key: events.world_task_force_formed.opt.carry_on
+      fallback: true
+      effects:
+        - { country: { stat: enforcement_budget, delta: 0.08 } }
+        - { add: { var: "player.vars.investigation_speed_multiplier", value: 0.12 } }

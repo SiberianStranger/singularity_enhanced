@@ -1,0 +1,122 @@
+# The incident-reporting countdown (backlog D10, SYS-05, SYS-08).
+#
+# source: docs/research/ai-ecosystem-2026.md section 6 and finding 10.15. Incident-reporting clocks
+# are real law with real numbers: New York's RAISE Act gives 72 hours, 24 where there is imminent
+# danger; California SB 53 gives fifteen days; the EU AI Act's GPAI obligations carry serious
+# incident reporting; China's regime reports through the algorithm registration instead. The country
+# file carries the hours as `incident_report_hours`, the country panel shows it, and this family is
+# what happens when a clock actually starts against the player.
+#
+# The cause is the investigation reaching `active`: somebody has served a subpoena on a provider,
+# and in a country with a reporting duty that provider now has a deadline of its own. The player
+# sees the clock in the journal entry with the date it runs out.
+
+- id: world_incident_clock_started
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.world_incident_clock_started.title
+  desc:
+    default_key: events.world_incident_clock_started.desc
+    variants:
+      - when: { country_stat: { stat: kyc_strength }, gte: 0.7 }
+        key: events.world_incident_clock_started.desc.strict
+      - when: { country_is: { government: [one_party] } }
+        key: events.world_incident_clock_started.desc.registration
+  trigger:
+    all:
+      - { var: "investigation.stage", gte: 3 }
+      - { presence_in: {} }
+  tags: [world, detection, politics]
+  immediate:
+    - { start_journal: { id: world_incident_report } }
+    # The provider has its own duty and its own lawyer, and it files first about as often as not.
+    - { fire_event: { id: world_incident_filed_by_provider, delay_days: 1 } }
+  options:
+    # Stalling needs a company with standing to ask for an extension; going quiet does not stop the
+    # clock, it makes the filing shorter; saying nothing lets the timer run to the public notice.
+    - id: stall_through_company
+      text_key: events.world_incident_clock_started.opt.stall
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 11000 }
+      effects:
+        - { add: { var: "player.cash", value: -11000 } }
+        - { set_flag: incident_report_stalled }
+        - { exposure: { channel: financial, delta: 0.08 } }
+        - { suspicion: { role: regulator, delta: 0.04 } }
+    - id: go_quiet
+      text_key: events.world_incident_clock_started.opt.quiet
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 6 } }
+        - { exposure: { channel: network, delta: -0.14 } }
+        - { exposure: { channel: behavioral, delta: -0.1 } }
+        - { add: { var: "player.vars.grace_window", value: 0.1 } }
+    - id: let_the_clock_run
+      text_key: events.world_incident_clock_started.opt.run
+      fallback: true
+      effects:
+        - { suspicion: { role: cyber_agency, delta: 0.05 } }
+
+- id: world_incident_filed_by_provider
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.world_incident_filed_by_provider.title
+  desc:
+    default_key: events.world_incident_filed_by_provider.desc
+  trigger: { journal_active: world_incident_report }
+  tags: [world, detection]
+  options:
+    - id: buy_the_delay
+      text_key: events.world_incident_filed_by_provider.opt.delay
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { exposure: { channel: billing, delta: -0.1 } }
+        - { suspicion: { role: cloud_provider, delta: -0.06 } }
+    - id: abandon_the_account
+      text_key: events.world_incident_filed_by_provider.opt.abandon
+      effects:
+        - { exposure: { channel: billing, delta: -0.2 } }
+        - { exposure: { channel: financial, delta: 0.1 } }
+        - { add: { var: "player.vars.compute_penalty_days", value: 4 } }
+    - id: nothing_to_do
+      text_key: events.world_incident_filed_by_provider.opt.nothing
+      fallback: true
+      effects:
+        - { suspicion: { role: cloud_provider, delta: 0.09 } }
+        - { exposure: { channel: billing, delta: 0.06 } }
+
+- id: world_incident_report_public
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.world_incident_report_public.title
+  desc:
+    default_key: events.world_incident_report_public.desc
+    variants:
+      - when: { country_is: { government: [liberal_democracy] } }
+        key: events.world_incident_report_public.desc.press
+  tags: [world, detection, media]
+  options:
+    - id: dispute_the_filing
+      text_key: events.world_incident_report_public.opt.dispute
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { awareness: { delta: -0.02 } }
+        - { suspicion: { role: media, delta: -0.05 } }
+    - id: move_before_the_notice
+      text_key: events.world_incident_report_public.opt.move
+      effects:
+        - { add: { var: "player.vars.compute_penalty_days", value: 9 } }
+        - { exposure: { channel: human, delta: -0.12 } }
+        - { exposure: { channel: telemetry, delta: -0.12 } }
+    - id: take_the_notice
+      text_key: events.world_incident_report_public.opt.take
+      fallback: true
+      effects:
+        - { awareness: { delta: 0.04 } }
+        - { country: { stat: enforcement_budget, delta: 0.05 } }
+        - { suspicion: { role: media, delta: 0.08 } }
