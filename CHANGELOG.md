@@ -64,8 +64,38 @@ section repeats the current version's highlights and this unreleased list.
   the prose size stays a separate dial.
 - The content build bundles every language under `locales/` and reports coverage per language; a
   missing key is a warning, an extra key an error.
+- The world ledger has three pages: the countries table, the map modes and the world's own figures.
+- The countries table carries every column of the world model, in three families to switch between,
+  sortable by any of them, filtered by macro-region and by presence.
+- A button beside every numeric column paints the map by that column; the map has twelve modes, two
+  of them categorical with a legend of their own.
+- The world page shows awareness in the world and where I am, the hunt level and its pressure, AI
+  adoption, the accelerator price and cloud demand, each with what is behind it.
+- Clicking a country opens it with tabs: Overview, Politics, Economy, Watchers and Cities.
+- Clicking a city opens it with tabs: Overview, Sites, Providers, Power and Scrutiny.
+- A provider a city cannot offer is greyed with the reason the engine would refuse it for.
+- Finances lists the names I trade under, with their country, status, quality, KYC tier, age and
+  the sites held under each one.
+- The market depth says how much of it is the country I sell from.
+- Detection opens with the hunt: the level, the pressure, awareness in the world and where I am,
+  and the countries I am in listed under them.
+- The hunt gauge and the Detection panel print the thresholds the exposed ending needs, so the
+  clock can be read rather than guessed at.
+- The Location step offers every city in the world: the situation's own first, everything else
+  grouped by country behind a filter.
+- Every city says what its country does to the start: identity checks, the cloud market, the
+  posture toward AI, stability, the power price, the colocation index, scrutiny, chip access and
+  the cash factor.
+- A city where the situation cannot rent its kind of place is shown with the reason rather than
+  hidden.
+- The Generation step says what the vintage trades.
+- A family the chosen rack cannot hold names the smallest rack that would hold it, and choosing it
+  switches to that rack.
+- The Summary step shows the starting cash as the situation's figure times the country's factor.
 
 ### Changed
+- The freelance identity and the shell company are real identities now: the two operations
+  create a name in a country, and that name is what the monthly KYC checks freeze or burn.
 - Any city is legal for any origin: the origin's locations are the typical ones, and the only
   refusal left is physical, a cloud origin where nobody sells cloud (SYS-04 v0.3 rule L).
 - The freelance market is deeper per point of skill, because the country factor multiplies it; a
@@ -96,6 +126,10 @@ section repeats the current version's highlights and this unreleased list.
   one grid and cannot be drawn over each other.
 - Panel titles and list entries wrap instead of being cut to an ellipsis; the outliner no longer
   calls itself "O...".
+- The configurator's step rail shows each step's key as a key cap instead of spelling it into the
+  label, so no rail row is taller than the others in Russian.
+- Watchers are named by their agency where the world data or a translation has a name for it,
+  instead of printing a dossier note in a parameter table.
 - Log lines name things the way the player sees them: "Woke up as Mimi M4 (This year's model) in
   Risk model in a bank", not "giant_moe (open_2026) in bank_rack".
 - Country names on the world map follow the interface language instead of the map atlas.

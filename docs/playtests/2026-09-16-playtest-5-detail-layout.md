@@ -45,20 +45,9 @@ viewport gives it at 100%, and it does not reflow when it has less. Two fixes, n
 
 ## Continuation list after the layout pass
 
-- The step rail wraps "ПРОИСХОЖДЕНИЕ (O)" onto two lines in Russian, so the first rail row is
-  taller than the rest; the word cannot get shorter without becoming a different term. Either the
-  rail gets a wider column budget in Russian or the hotkey moves off the label (below).
-- Hotkeys are Latin letters, so a Russian label shows them bracketed after the word ("ЖЕЛЕЗО (H)")
-  instead of underlining a letter inside it. Decide whether Russian gets its own hotkey letters
-  (underlined in the Russian word) or keeps the bracket; the bracket is what makes rail entries
-  long enough to wrap.
-- The Location step shows every 0..1 country and city figure a hundred times too large
-  ("Watcher competence 7,400%", "Local scrutiny 5,500%") in both languages: the meaning
-  generator rounds the fraction to whole percent and then formats it with an ICU `percent`
-  style, which multiplies again. One caller passes the fraction, the other the percent; settle
-  `common.percent` on one convention and fix the callers.
-- Agency names on the Location step and in the country panel are raw display strings from the
-  world data ("NIST / Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce;
-  White House OSTP sets policy"), so they stay English in Russian and read as a dossier note in
-  English. They become locale keys with a short name per agency when the M2 agency profiles land
-  in the client (SYS-01 "M2 contract", agency_profile).
+| finding | status |
+|---|---|
+| The step rail wraps "ПРОИСХОЖДЕНИЕ (O)" onto two lines in Russian, so the first rail row is taller than the rest; the word cannot get shorter without becoming a different term. Either the rail gets a wider column budget in Russian or the hotkey moves off the label (below). | fixed (M2 client pass): both halves. The accelerator moved off the label into a key cap in the rail's leading slot, where the ordinal was, and the rail's column budget went from 11rem to 12rem, which holds the longest Russian label on one line at 1280 by 720. Written up in SYS-11, "Implementation notes (client, M2)". |
+| Hotkeys are Latin letters, so a Russian label shows them bracketed after the word ("ЖЕЛЕЗО (H)") instead of underlining a letter inside it. Decide whether Russian gets its own hotkey letters (underlined in the Russian word) or keeps the bracket; the bracket is what makes rail entries long enough to wrap. | decided (M2 client pass): neither. Russian keeps the Latin keys, and the rail draws them as a key cap in a slot of its own rather than spelling them into the label; the button carries `aria-keyshortcuts`, so the key is announced rather than written. The underline stays everywhere else, where labels are short and mostly carry their letter. |
+| The Location step shows every 0..1 country and city figure a hundred times too large ("Watcher competence 7,400%", "Local scrutiny 5,500%") in both languages: the meaning generator rounds the fraction to whole percent and then formats it with an ICU `percent` style, which multiplies again. One caller passes the fraction, the other the percent; settle `common.percent` on one convention and fix the callers. | fixed on master before the M2 client pass (commit "Configurator: a 0..1 figure was printed a hundred times too large"): `common.percent` takes the fraction, and every caller passes one. |
+| Agency names on the Location step and in the country panel are raw display strings from the world data ("NIST / Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets policy"), so they stay English in Russian and read as a dossier note in English. They become locale keys with a short name per agency when the M2 agency profiles land in the client (SYS-01 "M2 contract", agency_profile). | fixed (M2 client pass), and ready for the keys: `agencyName` takes `world.country.<id>.agency.<role>` when content writes one and the raw string until then. The visible value on the Location step and in the country panel is the watcher role with the competence the country's `agency_profile` gives it; the dossier string moved into the term's tooltip, where a long name belongs. The content pass that writes the keys needs no client change. |

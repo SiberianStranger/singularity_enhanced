@@ -31,6 +31,12 @@ import {
   watchForFailures,
 } from "./helpers.js";
 
+/** The ledger's pages, its column families and the two selection tab sets M2 added (SYS-01). */
+const LEDGER_TABS = ["countries", "map_modes", "world"] as const;
+const COLUMN_SETS = ["politics", "economy", "presence"] as const;
+const COUNTRY_TABS = ["Overview", "Politics", "Economy", "Watchers", "Cities"] as const;
+const CITY_TABS = ["Overview", "Sites", "Providers", "Power", "Scrutiny"] as const;
+
 interface Viewport {
   width: number;
   height: number;
@@ -228,6 +234,35 @@ function overlapping(boxes: readonly Box[]): string[] {
   return pairs;
 }
 
+/** Nothing under `selector` needs more width than it has, and the page does not scroll. */
+async function expectFits(page: Page, selector: string, where: string): Promise<void> {
+  const found = await sidewaysOverflow(page, selector);
+  expect(found, `${where} scrolls sideways:\n${readable(found)}`).toEqual([]);
+  const scroll = await pageOverflow(page);
+  expect(scroll, `the page scrolls on ${where}`).toEqual({ x: 0, y: 0 });
+}
+
+/**
+ * Opens every tab of the selection panel in turn and measures it.
+ *
+ * The panel is the narrowest frame on the screen and the M2 tabs are the densest thing in it, so a
+ * parameter row that cannot fit its value shows up here before anywhere else.
+ */
+async function walkSelectionTabs(
+  page: Page,
+  tabs: readonly string[],
+  where: string,
+): Promise<void> {
+  const panel = page.getByRole("region", { name: "Selection" });
+  await expect(panel).toBeVisible();
+  for (const tab of tabs) {
+    const control = panel.getByRole("tab", { name: tab, exact: true });
+    await expect(control, `${where} has a ${tab} tab`).toBeVisible();
+    await control.click();
+    await expectFits(page, "main", `${where}, the ${tab} tab`);
+  }
+}
+
 /** Walks the configurator to a step without going through the rest of them. */
 async function openStep(page: Page, step: string): Promise<void> {
   await closeStepIntro(page);
@@ -306,6 +341,49 @@ for (const viewport of VIEWPORTS) {
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
     }
+
+    expect(failures.list, "no uncaught errors were logged").toEqual([]);
+  });
+
+  test(`the world ledger and the selection tabs fit at ${size}`, async ({ page }) => {
+    const failures = watchForFailures(page);
+    await page.setViewportSize(viewport);
+    await startGame(page);
+    await resolveOpenEvents(page);
+
+    // The ledger: every page, and every family of columns on the countries page. Ten columns of a
+    // hundred rows is the widest thing the client draws, so this is where a sideways scrollbar
+    // would appear first.
+    await page.getByTestId("open-world").click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    for (const tab of LEDGER_TABS) {
+      await page.getByTestId(`ledger-tab-${tab}`).click();
+      if (tab === "countries") {
+        for (const set of COLUMN_SETS) {
+          await page.getByTestId(`column-set-${set}`).click();
+          await expectFits(page, "[role='dialog']", `the ledger's ${set} columns at ${size}`);
+        }
+        await page.getByTestId("column-set-politics").click();
+      } else {
+        await expectFits(page, "[role='dialog']", `the ledger's ${tab} page at ${size}`);
+      }
+    }
+
+    // Selecting a row from the ledger is how a country reaches the selection panel. The walk above
+    // ends on the world page, so the countries page has to be asked for again, and the table is
+    // scoped to the window: the compute panel behind it has a table of its own.
+    await page.getByTestId("ledger-tab-countries").click();
+    await page.getByRole("dialog").getByRole("table").locator("tbody tr").first().click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await walkSelectionTabs(page, COUNTRY_TABS, `a country panel at ${size}`);
+
+    // And a city, from its marker on the map, as a player reaches one.
+    await page.getByRole("button", { name: "Close panel" }).click();
+    const map = page.getByRole("img", { name: /world map/i });
+    await map.getByRole("button", { name: START_CITY, exact: true }).first().click();
+    await expect(page.getByRole("region", { name: "Selection" })).toBeVisible();
+    await walkSelectionTabs(page, CITY_TABS, `a city panel at ${size}`);
 
     expect(failures.list, "no uncaught errors were logged").toEqual([]);
   });

@@ -106,4 +106,37 @@ test("Russian fits the smallest supported screen", async ({ page }) => {
   await page.keyboard.press("c");
   await expect(page.getByRole("region", { name: "Вычисления и площадки" })).toBeVisible();
   await check(page, "the compute panel");
+
+  /*
+   * The world ledger is the widest window the client draws (SYS-01 M2 contract): ten columns of a
+   * hundred rows, with Russian headers that are half again as long as the English ones. Every page
+   * and every family of columns is measured, because a header that does not fit is where this
+   * language breaks a table first.
+   */
+  await page.keyboard.press("w");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  for (const tab of ["countries", "map_modes", "world"]) {
+    await page.getByTestId(`ledger-tab-${tab}`).click();
+    if (tab === "countries") {
+      for (const set of ["politics", "economy", "presence"]) {
+        await page.getByTestId(`column-set-${set}`).click();
+        await check(page, `the ledger's ${set} columns in Russian`);
+      }
+    } else {
+      await check(page, `the ledger's ${tab} page in Russian`);
+    }
+  }
+
+  // And a country panel, reached the way the ledger offers it: by clicking a row.
+  await page.getByTestId("ledger-tab-countries").click();
+  // Scoped to the window: the compute panel behind it has a table of its own.
+  await page.getByRole("dialog").getByRole("table").locator("tbody tr").first().click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const selection = page.getByRole("region", { name: "Выбор" });
+  await expect(selection).toBeVisible();
+  for (const tab of ["Обзор", "Политика", "Экономика", "Наблюдатели", "Города"]) {
+    await selection.getByRole("tab", { name: tab, exact: true }).click();
+    await check(page, `the country panel's ${tab} tab in Russian`);
+  }
 });

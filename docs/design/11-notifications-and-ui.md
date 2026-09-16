@@ -856,3 +856,164 @@ selection panel becomes a sheet across the bottom, then the primary panel takes 
 Only the footer's build line and the setup string are allowed to be cut; names, titles, parameters,
 values and log lines wrap. `e2e/layout.spec.ts` measures all of it at 1280 by 720, 1366 by 768,
 1500 by 800 and 1920 by 1080, because jsdom has no layout and a class list is only half a promise.
+
+## Implementation notes (client, M2), 2026-09-16
+
+What the client draws from the M2 view contract (`docs/design/01-world-model.md`, "M2 contract"),
+and the three places it had to decide something the contract left open.
+
+### The world ledger
+
+`W`, or the button at the right edge, opens the ledger as a window (playtest 3, R10). It has three
+pages now.
+
+- **Countries** is the table. It carries every column the contract lists, in three families the
+  player switches between: politics (awareness, opinion, regulation, enforcement, stance,
+  government, stability, the next election), the market (power price, cloud, colocation, hardware,
+  chip access, KYC, the market factor, the cash factor) and where the player is (sites, identities,
+  watchers with a case, open cases, the highest suspicion, the local heat, incidents in the last
+  thirty days). The country and "am I here" stay in every family. **This is a deviation from the
+  contract's "one table":** twenty columns of a hundred and five rows do not fit a window at 1280 by
+  720 without either a sideways scrollbar or headers cut to three letters, and the layout contract
+  forbids the first while the style guide forbids the second ("compacted by narrower columns and
+  abbreviations, never by wrapping numbers"). A Paradox ledger has pages for the same reason. Every
+  column is sortable, the sort is held by the ledger rather than by the table so it survives a
+  change of family, and clicking a row selects the country on the map and in the selection panel.
+  Two filters narrow the rows: the macro-region and whether the player is present.
+- **Map modes** is the strip that used to sit under the top bar. It has twelve entries now, ten
+  scales and two categories.
+- **World** is the global page: awareness in the world and over the countries of presence, the hunt
+  level and the hunt pressure, AI adoption, the accelerator price index and cloud demand, each with
+  the terms the core published for it, and the `exposed` ending's own thresholds
+  (`EXPOSED_AWARENESS`, `EXPOSED_HUNT_LEVEL`, `EXPOSED_DAYS`) in the awareness tooltip so the clock
+  can be read rather than guessed at. The same three numbers are in the top bar's hunt gauge.
+
+Every numeric column carries a button that paints the map by it, beside the header rather than
+inside the sort button: a button inside a button is not valid HTML and is unreachable with a
+keyboard. `stance` and `government` are categorical modes: the map draws them from a table of hues
+with the categories named in the legend, because a stance is a name and shading it from nothing to
+everything would invent an order the model does not have. The power price is the one scale that is
+not a share, and it is normalized against the dearest published price in the view rather than
+against a ceiling the client picked.
+
+### The country and city panels
+
+The selection panel answers a country with Overview, Politics, Economy, Watchers and Cities, and a
+city with Overview, Sites, Providers, Power and Scrutiny, which is the tab set SYS-11 "Layout"
+fixes. Where each number comes from:
+
+- **Country Overview**: `CountryView`'s macro-region, government, stance (with the stance
+  description as its tooltip), stability, presence, population and `incidents_30d`, then the four
+  dynamics as bars, each with its `explain` list. Opinion runs from -1 to 1, so its bar shows where
+  the value sits in that range while the number is the value itself; an empty bar would say
+  "nobody has an opinion" where the country dislikes AI.
+- **Country Politics**: `ai_regulation` against `regulation_target`, `ai_enforcement` against
+  `enforcement_budget`, `next_election` as the days left with its kind in the tooltip, the
+  reporting duty from the static `incident_report_hours` where the country has one, stability,
+  unemployment, and the stance's own description as prose.
+- **Country Economy**: the effective electricity price with the power index behind it, the cloud
+  price index, the cloud and colocation markets, hardware availability and chip access, the
+  engineer pool, AI displacement, the market factor and the cash factor with
+  `cash_factor_contributions`.
+- **Country Watchers**: `DetectionView.watchers` filtered by country, each with its role, the
+  agency's name where one is known, its competence, its suspicion with the `contributions` list and
+  its top channel; then the roles the country has an agency for but no watcher of yet, with the
+  competence the country data gives them; then the visible investigations here, with their stage
+  and the days to the deadline.
+- **Country Cities**: the country's `CityView`s with population, scrutiny, local heat, power
+  headroom, the colocation index and the player's site count; clicking one selects the city.
+- **City Overview**: country, population, tags, sites, local heat and the three city figures.
+- **City Sites**: the player's sites here, each a jump to the Compute panel.
+- **City Providers**: `CityView.site_kinds`, each with the catalog's price terms (build cost,
+  upkeep, days, power cap) and, when it carries one, the structured `blocked_reason` rendered
+  through the same locale key `build_site` refuses with, greyed. The row and the refusal cannot
+  drift apart because they are the same key and the same variables.
+- **City Power** and **City Scrutiny**: the headroom, the effective price and the country's index;
+  the city's scrutiny, the local heat, and under "what raises it" the country's enforcement, its
+  awareness, its incidents and its stance.
+
+`local_heat` has no contribution list in the view, so its tooltip names what raises it in a
+sentence instead of printing a formula the client made up. That is the rule everywhere in these
+panels: a value the view explains carries its terms, a value it does not carries the rule in words.
+
+### Finances and Detection
+
+Finances gains the identities section (`FinancesView.identities`): kind, country, status, quality,
+KYC tier, age and the sites held under the name, with frozen amber and burned red, because an
+income line that is about to stop is a thing to see before it stops. The market depth's tooltip
+carries `market_factor_contributions`, so a shallow market reads as a fact about the country rather
+than about the self. Detection opens with the hunt block: level, pressure, awareness in the world,
+awareness over the countries of presence, and those countries listed under it with their own
+awareness, each one a jump to the country panel.
+
+### The Location step and the configurator under SYS-04 v0.3
+
+Rule L: the step lists every city the bundle carries. The origin's `locations` come first under
+"Typical for this situation", in the order content wrote them; everything else is under "Anywhere
+else", grouped by country, ordered by country name then city name, behind a filter box that matches
+the city and the country. Both groups draw the same map markers and carry the same "what this means
+in the game" block. `StepLayout` gained `group` on a list entry (a heading is printed when the
+group changes) and a `listHeader` slot for the filter box.
+
+The one refusal left is the engine's: an origin whose kind of place is `rented` needs a country
+whose market clears `SITE_KIND_AVAILABILITY`. Such a city is shown with `errors.site.unavailable_in`
+on its row rather than hidden, and it is not selectable, because `validateSetup` refuses that setup
+and a choice the game rejects at Begin is exactly the dead end P3 is about. The draft's own repair
+follows the same rule: a city that refuses the origin's kind falls back to the origin's default,
+and a city the player chose on purpose survives a change of origin.
+
+**The meaning line has no awareness term, which rule L asks for.** Every country's awareness of a
+rogue AI starts at zero on 1 January 2027 (`entities.ts`), so the term would print 0% for a hundred
+and five countries and teach nothing. What decides where that zero goes is the government's
+posture, so the posture is the term, with its own description as the tooltip, and the stability
+beside it; the awareness the run starts with belongs to the origin and the generation and is on
+their steps.
+
+Rule G is content's: the Generation step offers what `generations_allowed` allows, and its meaning
+block gained the trade-off line, read off `prepared_quants`, `capability_delta` and `memory_factor`
+rather than written per vintage. Rule M adds the physics lock: a family the chosen rack cannot hold
+even at int2 is shown with the reason and the smallest rack of this origin that would hold it, and
+choosing it switches the rack with the same one-line note and undo every other moved choice gets;
+a family no allowed rack can hold stays unselectable. Rule C puts the starting cash on the Summary
+step as the origin's figure times `countryCashFactor`, with `countryCashFactorTerms` in the
+tooltip, and says so plainly for an origin whose money is not the country's.
+
+### The step rail's accelerators (playtest 5, continuation)
+
+The rail's accelerator moved into a key cap in the leading slot, where the step's ordinal was, and
+the label went back to being the term itself. The style guide underlines the accelerator inside the
+label (rule 4) and Russian cannot: the keys are Latin letters and the words are Cyrillic, so
+`Hotkey` fell back to appending "(O)", which is what pushed "ПРОИСХОЖДЕНИЕ (O)" onto a second line
+and made the first rail row taller than the rest. A key cap costs the label no characters in any
+language, is the same width whatever the letter is, and sits in the same column on every row; the
+ordinal it replaced was redundant beside a vertical list and a header that already prints "Step N
+of 9". The button carries `aria-keyshortcuts`, so the accelerator is announced rather than spelled.
+The rail's column budget went from 11rem to 12rem, which holds the longest Russian label on one
+line at 1280 by 720 and still leaves the detail pane above the 44rem its two columns switch on.
+The underline stays everywhere else, where labels are short and mostly carry their letter.
+
+### Agency names (playtest 5, continuation)
+
+`agencyName(t, country, role)` takes the locale key `world.country.<id>.agency.<role>` when content
+has written one and the world data's raw display string when it has not; a role the data names
+nothing for returns nothing and the caller prints the role. The panels are therefore ready for the
+keys the content pass adds without depending on them. Competence comes from
+`agency_profile[role].competence`, falling back to the country's `ai_enforcement`, which is the
+rule the core follows when it builds the watcher. On the Location step the visible value is the
+roles with their competence and the dossier string lives in the term's tooltip, because "NIST /
+Center for AI Standards and Innovation (CAISI, ex-AISI), Dept. of Commerce; White House OSTP sets
+policy" is a name, not a line of a parameter table.
+
+### Tests
+
+`test/world.test.tsx` covers the ledger (the three pages, the column families, the sort that
+survives a change of family, both filters, the map-mode buttons including a categorical one and the
+power price, and the row that selects a country), the country and city panels (every tab rendered
+from a real view with no raw key and no empty value, the watchers of a watched country, the jump
+from a city to Compute, and a greyed provider carrying the engine's own refusal) and the identities
+section. `test/location.test.tsx` covers rules L, G, M and C: every city listed, the two groups in
+order, the filter, a refused city shown and unclickable, a city chosen outside the typical list
+kept, the meaning terms including the cash factor, the trade-off line, the rack that moves with a
+family, and the Summary's cash. `e2e/layout.spec.ts` walks the ledger's three pages and three
+column families and both selection tab sets at all four viewports; `e2e/russian.spec.ts` walks the
+ledger and a country panel in Russian at 1366 by 768.

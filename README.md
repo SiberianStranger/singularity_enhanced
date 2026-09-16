@@ -172,14 +172,16 @@ it.
 type, identity checks, prices and an election calendar each, and ten families of world events that
 read off them; countries that move on their own, with elections that change a government's line on
 AI, a newsroom that publishes once it believes, identities that can be checked, frozen and burned,
-agencies with a budget as well as a competence, and an `exposed` ending that can finally happen; Russian as a second language with a Cyrillic version of the angular face; the
-configurator's detail card and the game screen fit 1280 by 720 and up without scrollbars, overlaps
-or cut titles; an interface scale control that fits the window by default; log lines that name
-things as the player sees them; the desktop installers carry the soundtrack.
+agencies with a budget as well as a competence, and an `exposed` ending that can finally happen; a
+world ledger with a sortable table of every country and twelve map modes; country and city panels
+with politics, markets, watchers and providers, every number carrying what is behind it; the names
+you trade under, with their status; a Location step that offers every city in the world and says
+what each country does to the start; Russian as a second language with a Cyrillic version of the
+angular face; the configurator's detail card and the game screen fit 1280 by 720 and up without
+scrollbars, overlaps or cut titles; an interface scale control that fits the window by default; log
+lines that name things as the player sees them; the desktop installers carry the soundtrack.
 
-**Being built now** (not merged): the M2 world, countries that play differently, with the World
-ledger and the Country and City panels. Findings from each playtest are under
-[`docs/playtests/`](docs/playtests/).
+Findings from each playtest are under [`docs/playtests/`](docs/playtests/).
 
 Earlier versions: 0.1.2 made every refused action say why, added effect tooltips, the original's
 Earth textures, the job ladder, trading and contracts; 0.1.1 fixed the release workflow so the
