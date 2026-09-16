@@ -131,6 +131,11 @@ jobs:
       # bundles are uploaded as workflow artifacts by the next step and the publish job attaches
       # them to the release. The web client is rebuilt here by the beforeBuildCommand hook of
       # tauri.conf.json.
+      - name: Fetch the music pack
+        # The desktop bundles carry the soundtrack too; the script clones it into
+        # packages/ui/public/music before the beforeBuildCommand hook builds the web client.
+        run: node packages/ui/scripts/fetch-music.mjs
+
       - uses: tauri-apps/tauri-action@v0
         with:
           projectPath: packages/desktop
