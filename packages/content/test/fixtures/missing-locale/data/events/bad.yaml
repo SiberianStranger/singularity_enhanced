@@ -1,0 +1,9 @@
+- id: missing_locale
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.missing_locale.title
+  desc: { default_key: events.missing_locale.desc }
+  options:
+    - id: ok
+      text_key: events.missing_locale.opt.ok

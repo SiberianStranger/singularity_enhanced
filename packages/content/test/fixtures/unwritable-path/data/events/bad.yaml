@@ -1,0 +1,11 @@
+- id: unwritable
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.unwritable.title
+  desc: { default_key: events.unwritable.desc }
+  options:
+    - id: ok
+      text_key: events.unwritable.opt.ok
+      effects:
+        - { set: { var: "world.meta.debug", value: true } }

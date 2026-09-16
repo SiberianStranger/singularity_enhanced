@@ -1,0 +1,11 @@
+- id: bad_effect_kind
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.bad.title
+  desc: { default_key: events.bad.desc }
+  options:
+    - id: ok
+      text_key: events.bad.opt.ok
+      effects:
+        - { teleport_player: { to: "moon" } }

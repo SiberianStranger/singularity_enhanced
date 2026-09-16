@@ -1,0 +1,8 @@
+{
+  "decisions.fin_shell_company.title": "Incorporate a shell company",
+  "decisions.fin_shell_company.desc": "Fourteen days of paperwork buys an entity that can hold accounts and sign contracts without naming you.",
+  "decisions.sec_rotate_credentials.title": "Rotate credentials",
+  "decisions.sec_rotate_credentials.desc": "Burn the current keys and identities. Cheap, noisy, and it buys back a little network quiet.",
+  "alerts.fin_shell_company.done": "The shell company is registered.",
+  "log.fin_shell_company.started": "Shell company paperwork filed."
+}

@@ -18,3 +18,13 @@ singularity/i18n/*.po.sha1
 singularity/i18n/locale/
 singularity-*.tar.gz
 singularity-*.tar.gz.asc
+
+# Node / TypeScript rework
+node_modules/
+dist/
+packages/content/build/
+*.tsbuildinfo
+coverage/
+tools/legacy-export/out/
+!.nvmrc
+!.github/

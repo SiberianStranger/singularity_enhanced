@@ -9,3 +9,16 @@ singularity/music/** export-ignore
 singularity/data/music-src/ export-ignore
 singularity/data/music-src/** export-ignore
 
+# Rework sources are LF everywhere so Biome's format check behaves the same on Windows runners
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+.nvmrc text eol=lf

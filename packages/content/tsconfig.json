@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@singularity/core": ["../core/src/index.ts"]
+    }
+  },
+  "include": ["schemas/**/*.ts", "src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+}

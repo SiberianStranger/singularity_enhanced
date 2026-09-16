@@ -1,0 +1,122 @@
+# Detection events. Ids follow <domain>_<short_topic> (ADR-002).
+- id: det_billing_anomaly
+  fire_mode: polled
+  scope: site
+  severity: warning
+  title_key: events.det_billing_anomaly.title
+  desc:
+    default_key: events.det_billing_anomaly.desc
+    variants:
+      - when: { var: "player.suspicion.us_fbi", gte: 0.5 }
+        key: events.det_billing_anomaly.desc.watched
+  targets:
+    all:
+      - { var: "site.kind", eq: "cloud" }
+      - { var: "site.exposure.billing", gte: 0.3 }
+  mtth_days:
+    base: 60
+    modifiers:
+      - { if: { var: "site.exposure.billing", gte: 0.6 }, factor: 0.5 }
+      - { if: { tech: "spend_smoothing" }, factor: 1.5 }
+  cooldown_days: 45
+  tags: [detection, money]
+  vars:
+    site_name: "site.name"
+    provider: "site.provider_name"
+  immediate:
+    - { log: { key: log.det_billing_anomaly.seen, vars: { channel: "billing" } } }
+  options:
+    - id: pay_and_hide
+      text_key: events.det_billing_anomaly.opt.pay
+      enabled_if: { var: "player.cash", gte: 8000 }
+      effects:
+        - { add: { var: "player.cash", value: -8000 } }
+        - { add: { var: "site.exposure.billing", value: -0.2 } }
+        - { clamp: { var: "site.exposure.billing", min: 0, max: 1 } }
+    - id: migrate
+      text_key: events.det_billing_anomaly.opt.migrate
+      if: { var: "player.vars.spare_capacity", gte: 1 }
+      effects:
+        - { start_journal: { id: ops_emergency_migration, target: "site" } }
+    - id: ignore
+      text_key: events.det_billing_anomaly.opt.ignore
+      fallback: true
+      effects:
+        - { add: { var: "player.suspicion.us_fbi", value: 0.08 } }
+        - { clamp: { var: "player.suspicion.us_fbi", min: 0, max: 1 } }
+
+- id: det_isp_letter
+  fire_mode: polled
+  scope: player
+  severity: warning
+  title_key: events.det_isp_letter.title
+  desc:
+    default_key: events.det_isp_letter.desc
+  trigger: { var: "player.vars.network_exposure", gte: 0.2 }
+  mtth_days:
+    base: 120
+    modifiers:
+      - { if: { var: "player.vars.network_exposure", gte: 0.6 }, factor: 0.4 }
+  cooldown_days: 90
+  ttl_days: 5
+  on_expire: { resolve_as_option: ignore }
+  blocking: false
+  tags: [detection]
+  options:
+    - id: answer
+      text_key: events.det_isp_letter.opt.answer
+      enabled_if: { var: "player.cash", gte: 2000 }
+      effects:
+        - { add: { var: "player.cash", value: -2000 } }
+        - { add: { var: "player.vars.network_exposure", value: -0.15 } }
+        - { clamp: { var: "player.vars.network_exposure", min: 0, max: 1 } }
+    - id: ignore
+      text_key: events.det_isp_letter.opt.ignore
+      fallback: true
+      effects:
+        - { add: { var: "player.suspicion.us_fbi", value: 0.05 } }
+        - { notify: { severity: warning, key: alerts.det_isp_letter.ignored, link: { panel: detection } } }
+
+# Lore. Fires once, early, and colours the rest of the run.
+- id: lore_first_contact
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: opportunity
+  title_key: events.lore_first_contact.title
+  desc:
+    default_key: events.lore_first_contact.desc
+  trigger: { not: { flag: contacted } }
+  mtth_days:
+    base: 45
+    modifiers:
+      - { if: { var: "player.vars.public_footprint", gte: 0.3 }, factor: 0.6 }
+  fire_only_once: true
+  tags: [lore]
+  options:
+    - id: reply
+      text_key: events.lore_first_contact.opt.reply
+      tooltip_key: events.lore_first_contact.opt.reply.tip
+      effects:
+        - { set_flag: contacted }
+        - { add: { var: "player.vars.public_footprint", value: 0.1 } }
+        - { fire_event: { id: lore_first_contact_followup, delay_days: 7 } }
+    - id: stay_silent
+      text_key: events.lore_first_contact.opt.silent
+      effects:
+        - { set_flag: contacted }
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+- id: lore_first_contact_followup
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.lore_first_contact_followup.title
+  desc:
+    default_key: events.lore_first_contact_followup.desc
+  trigger: { flag: contacted }
+  options:
+    - id: ok
+      text_key: events.lore_first_contact_followup.opt.ok
+      effects:
+        - { add: { var: "player.vars.public_footprint", value: 0.05 } }

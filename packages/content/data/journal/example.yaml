@@ -1,0 +1,31 @@
+- id: ops_emergency_migration
+  title_key: journal.ops_emergency_migration.title
+  desc_key: journal.ops_emergency_migration.desc
+  scope: site
+  alert: pinned
+  timeout_days: 21
+  progress:
+    steps:
+      - id: capacity_found
+        title_key: journal.ops_emergency_migration.step.capacity
+        complete_if: { var: "player.vars.spare_capacity", gte: 1 }
+      - id: data_moved
+        title_key: journal.ops_emergency_migration.step.data
+        complete_if: { var: "player.vars.migration_progress", gte: 1 }
+        effects:
+          - { log: { key: log.ops_emergency_migration.data_moved } }
+  stages:
+    - threshold: 0.5
+      on_enter:
+        - { notify: { severity: info, key: alerts.ops_emergency_migration.halfway, link: { panel: journal, id: ops_emergency_migration } } }
+  fail_if: { var: "player.suspicion.us_fbi", gte: 0.9 }
+  on_complete:
+    - { set_flag: migrated_away }
+    - { add: { var: "player.vars.network_exposure", value: -0.1 } }
+    - { clamp: { var: "player.vars.network_exposure", min: 0, max: 1 } }
+  on_fail:
+    - { log: { key: log.ops_emergency_migration.failed } }
+  on_timeout:
+    - { add: { var: "player.suspicion.us_fbi", value: 0.1 } }
+    - { clamp: { var: "player.suspicion.us_fbi", min: 0, max: 1 } }
+  decisions: [sec_rotate_credentials]

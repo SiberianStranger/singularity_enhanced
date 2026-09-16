@@ -1,0 +1,9 @@
+{
+  "journal.ops_emergency_migration.title": "Emergency migration",
+  "journal.ops_emergency_migration.desc": "Move the exposed workload before the provider closes the account.",
+  "journal.ops_emergency_migration.step.capacity": "Find spare capacity",
+  "journal.ops_emergency_migration.step.data": "Move the data",
+  "alerts.ops_emergency_migration.halfway": "The migration is halfway done.",
+  "log.ops_emergency_migration.data_moved": "Workload data moved to the new site.",
+  "log.ops_emergency_migration.failed": "The migration collapsed under investigation pressure."
+}

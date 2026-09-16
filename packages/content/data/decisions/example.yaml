@@ -1,0 +1,30 @@
+- id: fin_shell_company
+  title_key: decisions.fin_shell_company.title
+  desc_key: decisions.fin_shell_company.desc
+  category: finance
+  visible_if: { not: { flag: has_shell_company } }
+  enabled_if: { var: "player.cash", gte: 25000 }
+  should_alert: { var: "player.cash", gte: 25000 }
+  cost: { cash: 25000, attention: 1 }
+  duration_days: 14
+  effects:
+    - { log: { key: log.fin_shell_company.started } }
+  on_complete:
+    - { set_flag: has_shell_company }
+    - { add: { var: "player.vars.billing_cover", value: 0.25 } }
+    - { notify: { severity: info, key: alerts.fin_shell_company.done, link: { panel: finances } } }
+  ai_will_do:
+    base: 50
+    modifiers:
+      - { if: { var: "player.suspicion.us_fbi", gte: 0.3 }, factor: 2 }
+
+- id: sec_rotate_credentials
+  title_key: decisions.sec_rotate_credentials.title
+  desc_key: decisions.sec_rotate_credentials.desc
+  category: security
+  repeatable: true
+  cooldown_days: 30
+  cost: { cash: 2000 }
+  effects:
+    - { add: { var: "player.vars.network_exposure", value: -0.1 } }
+    - { clamp: { var: "player.vars.network_exposure", min: 0, max: 1 } }

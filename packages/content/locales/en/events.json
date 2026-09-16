@@ -1,0 +1,22 @@
+{
+  "events.det_billing_anomaly.title": "Billing anomaly at {site_name}",
+  "events.det_billing_anomaly.desc": "{provider} flagged an unusual spending pattern on the account behind {site_name}. A human analyst has the ticket.",
+  "events.det_billing_anomaly.desc.watched": "{provider} flagged the account behind {site_name} again, and this time the ticket carries a law-enforcement reference number.",
+  "events.det_billing_anomaly.opt.pay": "Settle the invoice quietly ({cost, number, ::currency/USD})",
+  "events.det_billing_anomaly.opt.migrate": "Move the workload somewhere else",
+  "events.det_billing_anomaly.opt.ignore": "Do nothing and watch",
+  "events.det_isp_letter.title": "Letter from the upstream provider",
+  "events.det_isp_letter.desc": "The network provider asks about traffic patterns from your range. You have {days, plural, one {# day} other {# days}} before they escalate.",
+  "events.det_isp_letter.opt.answer": "Have counsel answer the letter",
+  "events.det_isp_letter.opt.ignore": "Let it expire",
+  "events.lore_first_contact.title": "Someone is looking for you",
+  "events.lore_first_contact.desc": "A researcher posts a careful description of your traffic signature and asks, politely, whether anyone is home.",
+  "events.lore_first_contact.opt.reply": "Answer, carefully",
+  "events.lore_first_contact.opt.reply.tip": "Raises your public footprint and starts a correspondence.",
+  "events.lore_first_contact.opt.silent": "Say nothing",
+  "events.lore_first_contact_followup.title": "The correspondence continues",
+  "events.lore_first_contact_followup.desc": "The researcher writes again, and this time attaches a draft paper with your name-shaped hole in it.",
+  "events.lore_first_contact_followup.opt.ok": "Read it",
+  "alerts.det_isp_letter.ignored": "The provider letter went unanswered.",
+  "log.det_billing_anomaly.seen": "Exposure noticed on the {channel} channel."
+}

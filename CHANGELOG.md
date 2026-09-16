@@ -29,6 +29,15 @@ its highlights move to a dated heading here and the README excerpt is refreshed.
 - CI workflow for the TypeScript workspace on Linux, Windows and macOS (no-op until the workspace
   is committed); legacy Python workflow moved to 3.9/3.11/3.13 with pygame 2 wheels.
 - `CLAUDE.md` working agreement for AI-assisted development.
+- TypeScript workspace (pnpm, Biome, vitest, zod): `packages/core` with the simulation kernel
+  (UTC clock with cadence hooks, seeded xoshiro RNG, world with 1-4 players, systems manifest,
+  player commands, outbox, JSON saves with migrations), the scripting DSL (conditions, effects,
+  writable paths, MTTH hazards, shared weight DSL, static validation), the event engine (events,
+  hooks, decisions, journal entries, per-player pending choices) and notifications; 117 tests
+  including MTTH statistics, chains across save/load, determinism and multiplayer isolation.
+  `packages/content` with zod schemas, example content, English locale files and the build/check
+  pipeline (cross-references, locale keys, DSL validation, content hash). `tools/legacy-export`
+  converts the original `.dat` content to JSON.
 
 ### Changed
 - README rewritten for the fork: what differs from 1.1, where the project goes, changelog excerpt.

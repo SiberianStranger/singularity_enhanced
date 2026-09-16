@@ -1,0 +1,5 @@
+- id: missing_fields
+  fire_mode: sometimes
+  scope: player
+  severity: info
+  title_key: events.bad.title

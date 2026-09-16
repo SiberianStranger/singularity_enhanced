@@ -1,0 +1,12 @@
+# Content appends to the engine hook: one detection event per day at most, with an explicit
+# "nothing happens" bucket (SYS-10 v0.1).
+- id: hook_player_day_detection
+  extends: on_player_day
+  scope: player
+  trigger: { count: { kind: site, where: { var: "site.status", eq: "active" } }, gte: 1 }
+  random_events:
+    chance_to_happen: 1.0
+    pool:
+      - { weight: { base: 100 }, id: det_billing_anomaly }
+      - { weight: { base: 60 }, id: det_isp_letter }
+      - { weight: { base: 400 }, id: null }
