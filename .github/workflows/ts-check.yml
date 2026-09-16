@@ -1,0 +1,44 @@
+name: TypeScript workspace
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "singularity/**"
+      - "tests/**"
+      - "utils/**"
+      - "docs/**"
+      - "*.txt"
+      - "*.md"
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # version is taken from the "packageManager" field in package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint, typecheck, test, content check
+        run: pnpm check

@@ -19,7 +19,7 @@
 # This file contains the Region class.
 
 import random
-from singularity import g
+from singularity.code import g
 
 
 class RegionSpec(object):

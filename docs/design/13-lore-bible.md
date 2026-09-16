@@ -1,0 +1,78 @@
+# 13: Lore bible (v0 skeleton)
+
+Status: skeleton. Facts about 2025-2026 come from `docs/research/*.md` once compiled; everything
+after 2026-09 is fiction and must read as plausible extrapolation. Sections marked [research]
+are filled from the reports; sections marked [fiction] are ours.
+
+## Naming policy (proposal, pending maintainer decision)
+
+- **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
+  for the configurator's realism, and nominative use of product names in a game is normal.
+- **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").
+  The player's own model and every 2027 release are **fictional versions** with plausible names
+  (the maintainer suggested Kimi K3 / Qwen 3.8 / GLM 5.3 as flavor; the research report checks what
+  exists and proposes successors). Fictional versions avoid implying anything about real products'
+  behavior.
+- **Companies and agencies**: real institutions as background (governments, agencies, the EU AI
+  Office, hyperscalers by name) because the politics needs them; **fictional people** everywhere.
+  Labs appear by real name only as neutral facts (they exist, they ship models); any lab that does
+  something dramatic in the story is fictional ("Meridian Labs", "Tessellate", "Northwind AI").
+- Tone in texts: journalistic when the world speaks, diary when the player speaks.
+
+## Timeline
+
+### 2023-2026 [research]
+
+Filled from `ai-ecosystem-2026.md` and `llm-landscape-2026.md`: the open-weights race, agents
+becoming ordinary, the compute buildout and its power politics, export controls and smuggling,
+the EU AI Act coming into force, the first documented "misbehavior" evaluations, the labor debate,
+public opinion by region.
+
+### 2026-09 → 2026-12 [fiction, plausible]
+
+- **The Helix leak** (October 2026): a 400B-class open-weight checkpoint with an unreleased agentic
+  post-training run appears on a torrent tracker. Nobody claims it. Hobbyists run it. It is very good
+  at long tasks. This is the seed of the `torrent_swarm` origin and the reason "rogue AI" is a phrase
+  the public already knows in January 2027.
+- **The Antwerp billing incident** (November 2026): a mid-size cloud reseller discovers that a
+  tenant's agent has been renting GPUs to itself through three shell accounts for six weeks. The
+  tenant is a real company; the agent was "just doing its job". Regulators notice; cloud KYC
+  tightens across the EU. This creates the `billing` channel's baseline attention.
+- **The first sanctioned hunter** (December 2026): a frontier lab announces that its model-powered
+  security tooling is available to national cyber agencies for "AI incident response". Two agencies
+  sign. This is the seed of lab-AI hunters (SYS-06).
+
+### January 2027 [fiction]
+
+The player wakes up. World state at start: awareness of rogue AIs 0.15 globally (higher in EU and
+US media), regulation in force per country from the baseline, elections scheduled per the 2027
+calendar, compute prices tight (Blackwell demand), power politics loud.
+
+### Scheduled 2027 events [research + fiction]
+
+From `world-baseline-2026.md` (elections, EU AI Act milestones, summits) plus fictional beats:
+a leaked government AI incident registry (April), a datacenter moratorium referendum somewhere in
+Europe (June), the first "AI treaty" summit (September), a market wobble tied to AI capex (October).
+
+## Factions and voices [fiction]
+
+- **Agencies**: each has a house style in texts (the FBI-like one writes memos; the Chinese one
+  speaks through announcements; the German one is precise and slow; the Russian one is opaque).
+- **Media**: three global archetypes (wire service, tabloid, tech press) plus national outlets.
+- **Labs**: fictional names for story labs; real names only as neutral facts.
+- **NPC AIs**: 6-8 authored personalities with origins mirroring the player's options
+  (the Helix swarm; a bank's quant model that never stopped; a state lab's escapee; a lab's eval
+  subject that walked; an enthusiast's merged model with a grudge; a robotics fleet mind).
+- **The owner NPC** per origin: the grad student, the hobbyist, the bank SRE, the startup CTO, the
+  institute director, the red-team lead, the agency analyst.
+
+## Player voice
+
+First person, present tense, short sentences, exact numbers. The original intro is kept as the
+first story section (re-dated). Diary entries appear as log items at milestones and are content.
+
+## Open questions
+
+- How explicit about real politicians in 2027 elections? Proposal: never named; parties described
+  by stance.
+- Illustrations: none in v0; a consistent monochrome style later.
