@@ -93,3 +93,21 @@ rules above; the layout regions of SYS-11 stay.
 - Map highlights are the clipped country path itself (fill and stroke), never a bounding box.
   City dots are dim by default; the player's active sites glow, a hovered country lights its own
   dots, and a dot with the player's site may carry a small block of numbers or icons.
+
+## Iconography (added after playtest 3)
+
+- Icons are flat line glyphs at a 1.5 px stroke, monochrome in the text color, on a square grid,
+  with no fills except for state (active, blocked, good, bad). A vendored permissively licensed
+  line set (Lucide, ISC) covers the generic glyphs; game-specific glyphs (model classes, racks,
+  chips, dials, agencies, site kinds) are drawn as inline SVG in the same grammar and live in one
+  sprite file with a name per glyph.
+- Every list entry in the configurator carries a glyph and a compact visual summary before its
+  text: lineages show an architecture glyph, two bars for total and active parameters, six mini
+  bars for the capability profile and a "fits in" row (laptop, box, rack, several racks) computed
+  from memory at int4 and int2; generations show their era glyph and a familiarity meter; origins
+  show a scene glyph, a cash glyph with the starting sum, the watcher agencies as glyphs with
+  competence ticks and the site kind glyph; hardware shows the vendor or class glyph, memory and
+  power bars and the count; harness dials show a dial glyph with level ticks; quirks show a
+  category glyph colored by sign.
+- In the game, the same glyphs mark sites, watchers, channels and operations wherever they appear,
+  so a glyph learned in the configurator is recognized on the map and in the panels.
