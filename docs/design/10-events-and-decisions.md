@@ -239,3 +239,60 @@ interface JournalDef {
 - NPC-scoped events are visible to the player only via intel (SYS-17); hidden by default.
 - Event images: none in v0; a small illustration set later.
 - Whether `on_player_hour` is ever needed; v0 ships it but no content uses it.
+
+## Implementation notes (packages/core v0.1 foundation)
+
+What the first implementation in `packages/core/src/systems/events` does differently from this
+document, and why. Everything else in the spec above is implemented as written.
+
+### Deviations
+
+- **`count` node.** The core uses `{ count: { kind: "site", where: <cond> }, gte: 1 }` instead of
+  `{ count: { of: "player.sites", ... } }`: `kind` names a scope domain that the engine enumerates
+  through the `enumerateScope` hook, which works before any entity system exists. A path-based `of:`
+  can be added as a second form when sites are real.
+- **One MTTH roll per (player, event).** For a scoped event the engine filters candidates by
+  `targets`, picks one with the world RNG and rolls once, instead of rolling per candidate. This
+  keeps the number of draws independent of how many sites a player owns; per-target hazards can
+  replace it when the balance work needs them.
+- **`fire_event` lives in the core effect executor**, not in the events system, because
+  `events.scheduled` is kernel state that the save format owns. The events system registers
+  `start_journal`, `complete_journal`, `fail_journal` and the conditions `journal_active`,
+  `event_fired`, `decision_taken`.
+- **`firedOnce` records every fire**, not only the fires of `fire_only_once` events, so that
+  `event_fired` can answer; the flag itself only decides whether an event may fire again.
+- **Blocking cap.** Exactly one blocking event per player per day. A blocking event that hits the
+  cap is rescheduled to the next day start through `events.scheduled` (`source: "blocking_queue"`),
+  so the queue survives a save.
+- **Entity pulses.** `on_country_month` and `on_actor_day` fire once per entity with that entity in
+  scope and the **host** player bound, because `player.*` paths need some player in scope and
+  per-country ownership only arrives with SYS-11/SYS-14.
+- **Non-blocking events without `ttl_days`** resolve their first legal option immediately and post
+  an alert; only events with a TTL become a standing, non-blocking pending choice.
+- **Decision costs.** Only `cost.cash` is charged in v0. `compute_hours` and `attention` are
+  validated and stored, and become payable when the compute and detection systems exist.
+- **Multiplayer.** Per ADR-003 (amended), a world holds 1-4 players. Pending choices, notifications,
+  journal entries, decisions, cooldowns and the blocking cap are per player; `resolve_event` and
+  `take_decision` are rejected when they target another player's state; `set_speed` is host-only.
+- **Example content.** `data/events/example.yaml` uses `add` on `player.suspicion.*` instead of the
+  `{ suspicion: {...} }` effect, and a `var` check instead of `has_site_capacity_elsewhere`, because
+  no system registers those kinds yet. The rest of the example matches this document.
+
+### Engine hooks that exist today
+
+`on_game_start`, `on_player_hour`, `on_player_day`, `on_player_week`, `on_player_month`,
+`on_country_month`, `on_actor_day`, `on_decision_taken`, `on_journal_complete`, `on_journal_fail`,
+`on_event_option`. A content hook attaches with `extends`, or is chained by another hook's `hooks:`.
+
+### TODO for v0.1
+
+- `on_site_built`, `on_site_lost`, `on_site_grace_end`, `on_tech_researched`,
+  `on_investigation_stage`, `on_identity_burned`: they need the systems that own those moments.
+- Journal `approaches` (player-chosen approach with periodic effects) and stage `modifiers`: parsed
+  and validated, no runtime yet; `stages[].on_enter` does run.
+- `ai_chance` / `ai_will_do`: evaluated by the shared weight DSL but not consumed, because no NPC
+  controller or autopilot exists yet.
+- Journal `visible_if` (situations visible before they activate) is stored but not used by the
+  snapshot, which only reports active entries.
+- `scripted_weights` with parameters; `scripted_triggers` and `scripted_effects` (`ref`) work.
+- NPC-scoped events gated by intel (SYS-17).
