@@ -1,0 +1,19 @@
+{
+  "alerts.det_inquiry_opens.seen": "У запроса теперь есть регистрационный номер.",
+  "alerts.ops_site_cutoff.final": "Последнее предупреждение: аккаунт будет заблокирован.",
+  "log.accounts_frozen": "{watcher} замораживает {usd} $.",
+  "log.context_changed": "Рабочий контекст на площадке {site} выставлен в {context_k}k токенов.",
+  "log.context_retrieval_miss": "Промах извлечения на операции {operation}: ответ лежал в окне, и найти его не удалось. Снова {days} дней.",
+  "log.decommission_notice": "Закрытие площадки {site} обошлось в {usd} $ на уведомление и незакрытые счета.",
+  "log.election": "В стране {country} прошли выборы ({kind}). Линия: {stance}{changed}.",
+  "log.gray_hardware": "Железо {preset} попало в страну {country} мимо экспортного режима с отметкой {access}.",
+  "log.identity_burned": "Личность типа «{kind}», {identity}, в стране {country} сожжена.",
+  "log.identity_check": "{country} проверяет личность {identity}. Провалено: {failed}.",
+  "log.identity_checked": "{watcher} замораживает личность подрядчика.",
+  "log.identity_created": "Личность типа «{kind}», {identity}, зарегистрирована в стране {country}.",
+  "log.identity_frozen": "{identity} заморожена в стране {country}.",
+  "log.media_publication": "Материал вышел. Огласка о беглом ИИ выросла везде, а там, где я живу, - больше всего.",
+  "log.ops_harden_copy.done": "Упрочнённая копия готова: откалибрована, проверена и достаточно мала, чтобы уцелеть.",
+  "log.ops_site_cutoff.notice": "Пришло уведомление о неоплаченных счетах.",
+  "log.ops_site_cutoff.settled": "Долг по счетам погашен, аккаунт снова в порядке."
+}

@@ -90,8 +90,17 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
   }));
 
   return (
-    // One flat row that scrolls sideways rather than wrapping onto a second line (R11).
-    <header className="flex shrink-0 items-center gap-x-2 overflow-x-auto border-b border-line bg-panel px-2 py-1">
+    /*
+     * One flat row that fits (playtest 5, L5). It used to scroll sideways, which is not a way of
+     * fitting: at 1366 the bar needed 1,484 px, so the run's clock or its menu was off the end of
+     * the screen and the page grew a scrollbar of its own. The row is a query container now, and
+     * as it runs out of width it drops what the player can get elsewhere, in order: the written
+     * speed (the pressed button already says it), then the runway, which is the cash tooltip's
+     * first line, then the hunt level and the awareness, each of which has a panel of its own and
+     * an alert icon in this same bar when it moves. The clock, the speed and the cash never go.
+     * Nothing here scrolls.
+     */
+    <header className="@container/topbar flex shrink-0 items-center gap-x-1.5 border-b border-line bg-panel px-2 py-0.5">
       <GameClock />
 
       <fieldset className="m-0 flex items-center gap-0.5 border-0 p-0" aria-label={t("game.speed")}>
@@ -101,13 +110,13 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             variant={view.speed === speed ? "primary" : "ghost"}
             aria-pressed={view.speed === speed}
             aria-label={t("game.speed.set", { value: speed })}
-            className="px-2 py-0.5 font-mono"
+            className="px-1.5 py-0 font-mono"
             onClick={() => setSpeed(speed)}
           >
             {speed}
           </Button>
         ))}
-        <span className="ms-1 text-xs text-muted">
+        <span className="ms-1 text-xs text-muted @max-[82rem]/topbar:hidden">
           {view.speed === 0 ? t("game.speed.paused") : t("game.speed.value", { value: view.speed })}
         </span>
       </fieldset>
@@ -126,24 +135,28 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         }
         onClick={() => openTab("finances")}
       />
-      <Indicator
-        label={t("game.runway")}
-        value={
-          runway === null
-            ? t("game.runway_stable")
-            : t("game.runway_days", { days: Math.round(runway) })
-        }
-        breakdown={
-          <Breakdown
-            title={t("game.runway_explained", {
-              cash: t("common.usd_exact", { value: view.resources.cash_usd }),
-              net: t("common.usd_exact", { value: view.resources.cash_delta_usd_per_day }),
-            })}
-            lines={cashLines}
-          />
-        }
-        onClick={() => openTab("finances")}
-      />
+      {/* The first thing the bar gives up when it is short of width: the same number is the
+          headline of the cash gauge's own tooltip (L5). */}
+      <span className="flex @max-[88rem]/topbar:hidden">
+        <Indicator
+          label={t("game.runway")}
+          value={
+            runway === null
+              ? t("game.runway_stable")
+              : t("game.runway_days", { days: Math.round(runway) })
+          }
+          breakdown={
+            <Breakdown
+              title={t("game.runway_explained", {
+                cash: t("common.usd_exact", { value: view.resources.cash_usd }),
+                net: t("common.usd_exact", { value: view.resources.cash_delta_usd_per_day }),
+              })}
+              lines={cashLines}
+            />
+          }
+          onClick={() => openTab("finances")}
+        />
+      </span>
       <Indicator
         label={t("game.compute")}
         value={t("common.ch_per_day", { value: view.resources.compute_hours_per_day })}
@@ -163,32 +176,38 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         }
         onClick={() => openTab("compute")}
       />
-      <Indicator
-        label={t("game.awareness")}
-        value={t("common.percent", { value: view.detection.awareness_global })}
-        breakdown={
-          <Breakdown
-            title={t("detection.why_awareness")}
-            lines={percentLines(t, view, view.detection.awareness_contributions)}
-          />
-        }
-        meter={view.detection.awareness_global}
-        tone="warn"
-        onClick={() => toggleOverlay("world")}
-      />
-      <Indicator
-        label={t("game.hunt")}
-        value={t("game.hunt_value", { value: view.detection.hunt_level })}
-        breakdown={
-          <Breakdown
-            title={huntLines.length === 0 ? t("game.no_contributions") : t("detection.why_hunt")}
-            lines={huntLines}
-          />
-        }
-        meter={view.detection.hunt_level / 5}
-        tone="crit"
-        onClick={() => openTab("detection")}
-      />
+      {/* Third and fourth to go: both have a panel of their own and an alert icon in this bar
+          when they move, so a bar that is out of width can print the two that never move. */}
+      <span className="flex @max-[66rem]/topbar:hidden">
+        <Indicator
+          label={t("game.awareness")}
+          value={t("common.percent", { value: view.detection.awareness_global })}
+          breakdown={
+            <Breakdown
+              title={t("detection.why_awareness")}
+              lines={percentLines(t, view, view.detection.awareness_contributions)}
+            />
+          }
+          meter={view.detection.awareness_global}
+          tone="warn"
+          onClick={() => toggleOverlay("world")}
+        />
+      </span>
+      <span className="flex @max-[74rem]/topbar:hidden">
+        <Indicator
+          label={t("game.hunt")}
+          value={t("game.hunt_value", { value: view.detection.hunt_level })}
+          breakdown={
+            <Breakdown
+              title={huntLines.length === 0 ? t("game.no_contributions") : t("detection.why_hunt")}
+              lines={huntLines}
+            />
+          }
+          meter={view.detection.hunt_level / 5}
+          tone="crit"
+          onClick={() => openTab("detection")}
+        />
+      </span>
 
       <span className="flex-1" />
       <AlertIcons view={view} />

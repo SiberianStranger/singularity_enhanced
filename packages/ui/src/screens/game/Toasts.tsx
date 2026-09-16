@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CloseIcon, CogIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js";
+import { logVars } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
 import type { Toast, ToastApi } from "./useToasts.js";
@@ -57,7 +58,9 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
           <span className="text-crit">
             <SeverityIcon severity="critical" />
           </span>
-          <span className="flex-1 text-start text-sm text-fg">{t(notice.key, notice.vars)}</span>
+          <span className="flex-1 text-start text-sm text-fg">
+            {t(notice.key, logVars(t, notice.key, notice.vars, view ?? undefined))}
+          </span>
           <button
             type="button"
             aria-label={t("common.close")}
@@ -87,7 +90,9 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
                 api.dismiss(toast.id);
               }}
             >
-              <span className="block">{t(toast.key, toast.vars)}</span>
+              <span className="block">
+                {t(toast.key, logVars(t, toast.key, toast.vars, view ?? undefined))}
+              </span>
               {resultKey === "" ? null : (
                 <span className="mt-0.5 block text-xs text-muted">{t(resultKey)}</span>
               )}

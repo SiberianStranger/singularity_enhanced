@@ -837,3 +837,22 @@ picks them out of the compiled bundle now: the first ordinary origin by id that 
 and can host a lineage, that origin's own rack, and its first city. The run is still the same run
 every time, the assertions read their expected text out of the bundle's locale, and content is free to
 rename or retire anything in it.
+
+## The layout contract (playtest 5, 2026-09-16)
+
+The client is drawn for a window of 1280 by 720 CSS pixels and sized entirely in rem against the
+root font size, so one number, the interface scale, moves all of it; Settings offers that scale as
+a slider from 70% to 130% with an "auto" default that picks the largest scale the design still fits
+the window at and re-picks, debounced, on resize. Nothing in the configurator or on the game screen
+scrolls sideways and the page itself never scrolls in either axis: every flex and grid child that
+holds text carries `min-width: 0`, a measure is a maximum and never a width, and a region that runs
+out of room reflows rather than overflowing. Where two things share a screen they are areas of one
+grid, never cards positioned against corners: the configurator's detail card is a text column
+capped at 70ch beside a parameter column with a floor of 18rem, switched on the pane's own width by
+a container query rather than on the window's, and the game screen is a three-column grid whose
+left column is the primary panel with the selection panel under it, whose middle column ends in the
+log strip and whose right column is the outliner, which collapses to its title bar first, then the
+selection panel becomes a sheet across the bottom, then the primary panel takes the whole region.
+Only the footer's build line and the setup string are allowed to be cut; names, titles, parameters,
+values and log lines wrap. `e2e/layout.spec.ts` measures all of it at 1280 by 720, 1366 by 768,
+1500 by 800 and 1920 by 1080, because jsdom has no layout and a class list is only half a promise.

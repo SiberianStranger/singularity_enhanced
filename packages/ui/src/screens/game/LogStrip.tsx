@@ -2,6 +2,7 @@ import type { PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { dayOf, hourOf } from "../../lib/format.js";
+import { logLine } from "../../lib/labels.js";
 import { useUiStore } from "../../store/uiStore.js";
 
 /** How many lines the strip shows. Two is the Paradox height: enough for a cause and its effect. */
@@ -33,17 +34,25 @@ export function LogStrip({ view }: { view: PlayerView }): ReactNode {
       aria-label={t("log.open_full")}
       title={t("log.open_full")}
       onClick={() => openOverlay("log")}
-      className="pointer-events-auto absolute bottom-2 start-1/2 z-30 flex w-[min(44rem,calc(100%-20rem))] -translate-x-1/2 flex-col gap-0.5 border border-line bg-panel/92 px-2 py-1 text-start hover:border-linestrong"
+      // The middle column of the screen grid, at its foot: whatever the panels on either side are
+      // doing, the strip has the width they leave and no more, so it can no longer run under the
+      // selection panel (L8).
+      className="pointer-events-auto col-start-2 row-start-2 flex w-full max-w-[44rem] min-w-0 flex-col gap-0.5 self-end justify-self-center border border-line bg-panel/92 px-2 py-0.5 text-start hover:border-linestrong"
     >
       {entries.map((entry) => (
         <span
           key={`${entry.tick}-${entry.key}-${JSON.stringify(entry.vars)}`}
-          className="flex gap-2 truncate text-sm"
+          className="flex min-w-0 gap-2 text-sm"
         >
           <span className="shrink-0 font-mono text-xs text-muted">
             {t("log.entry_time", { day: dayOf(entry.tick), hour: hourOf(entry.tick) })}
           </span>
-          <span className="truncate text-fg">{t(entry.key, entry.vars)}</span>
+          {/*
+           * L7: the line wraps. It used to be cut with an ellipsis, and a log line is a sentence
+           * whose end carries the news ("...was cut off for unpaid bills"), so the cut took the
+           * half that mattered. The strip holds the last two entries either way.
+           */}
+          <span className="min-w-0 text-fg">{logLine(t, entry, view)}</span>
         </span>
       ))}
     </button>

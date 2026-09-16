@@ -85,9 +85,37 @@ export type FontFace = "original" | "plain";
  * between `UI_SCALE_MIN` and `UI_SCALE_MAX` now, and because everything in the client is sized in
  * rem, moving it scales the tables, the panels and the angular labels together.
  */
-export const UI_SCALE_MIN = 0.8;
-export const UI_SCALE_MAX = 1.6;
+export const UI_SCALE_MIN = 0.7;
+export const UI_SCALE_MAX = 1.3;
 export const UI_SCALE_STEP = 0.05;
+
+/**
+ * The window the client's layout is drawn for, in CSS pixels at scale 1 (playtest 5, L11).
+ *
+ * Every panel, rail and column is sized in rem against this, so "does the layout fit" is one
+ * division rather than a judgement: at scale `s` the client has `width / s` by `height / s` design
+ * pixels to lay itself out in, and it fits while that is at least this.
+ */
+export const DESIGN_WIDTH = 1280;
+export const DESIGN_HEIGHT = 720;
+
+/**
+ * The largest scale at which the design still fits the window (playtest 5, L12).
+ *
+ * This is the "auto" the interface-scale setting starts on, and it is what the maintainer was
+ * doing by hand with the browser's zoom: a 1500 by 800 window gets 1.15, a 1920 by 1080 one the
+ * 1.3 ceiling, and a window narrower than the design shrinks the interface until it fits rather
+ * than pushing half of it off the edge. It snaps *down* onto the slider's 5% grid, because a step
+ * up from a scale that fits is a scale that does not.
+ */
+export function autoUiScale(width: number, height: number): number {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return 1;
+  }
+  const fits = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+  const stepped = Math.floor(fits / UI_SCALE_STEP) * UI_SCALE_STEP;
+  return Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, Math.round(stepped * 100) / 100));
+}
 
 /** A second, smaller dial for the angular face alone, for a player who finds it hard to read. */
 export const DISPLAY_SCALE_MIN = 0.85;
@@ -169,6 +197,8 @@ export function clampScale(value: number, min: number, max: number): number {
 interface UiStore {
   theme: Theme;
   uiScale: number;
+  /** True while the scale follows the window instead of the slider (playtest 5, L12). */
+  uiScaleAuto: boolean;
   displayScale: number;
   fontFace: FontFace;
   language: string;
@@ -206,6 +236,9 @@ interface UiStore {
 
   setTheme(theme: Theme): void;
   setUiScale(scale: number): void;
+  setUiScaleAuto(auto: boolean): void;
+  /** What the auto mode writes; unlike `setUiScale` it does not switch auto off. */
+  setUiScaleFromWindow(scale: number): void;
   setDisplayScale(scale: number): void;
   setFontFace(face: FontFace): void;
   setLanguage(language: string): void;
@@ -241,6 +274,7 @@ export const useUiStore = create<UiStore>()(
     (set, get) => ({
       theme: "default",
       uiScale: 1,
+      uiScaleAuto: true,
       displayScale: 1,
       fontFace: "original",
       language: "en",
@@ -269,7 +303,17 @@ export const useUiStore = create<UiStore>()(
         set({ theme });
       },
       setUiScale(scale) {
-        set({ uiScale: clampScale(scale, UI_SCALE_MIN, UI_SCALE_MAX) });
+        // Moving the slider is the player taking the wheel: auto stops steering.
+        set({ uiScale: clampScale(scale, UI_SCALE_MIN, UI_SCALE_MAX), uiScaleAuto: false });
+      },
+      setUiScaleAuto(uiScaleAuto) {
+        set({ uiScaleAuto });
+      },
+      setUiScaleFromWindow(scale) {
+        const next = clampScale(scale, UI_SCALE_MIN, UI_SCALE_MAX);
+        if (get().uiScale !== next) {
+          set({ uiScale: next });
+        }
       },
       setDisplayScale(scale) {
         set({ displayScale: clampScale(scale, DISPLAY_SCALE_MIN, DISPLAY_SCALE_MAX) });
@@ -406,6 +450,12 @@ export const useUiStore = create<UiStore>()(
             DISPLAY_SCALE_MIN,
             DISPLAY_SCALE_MAX,
           ),
+          // A browser that stored a scale before auto existed kept a number it chose on purpose,
+          // so it keeps steering by hand; a fresh one starts on auto.
+          uiScaleAuto:
+            typeof stored.uiScaleAuto === "boolean"
+              ? stored.uiScaleAuto
+              : typeof stored.uiScale !== "number",
           theme:
             theme !== undefined && (THEMES as readonly string[]).includes(theme)
               ? (theme as Theme)
@@ -416,6 +466,7 @@ export const useUiStore = create<UiStore>()(
       partialize: (state) => ({
         theme: state.theme,
         uiScale: state.uiScale,
+        uiScaleAuto: state.uiScaleAuto,
         displayScale: state.displayScale,
         fontFace: state.fontFace,
         language: state.language,

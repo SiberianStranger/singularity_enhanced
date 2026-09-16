@@ -74,7 +74,7 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <p className="font-mono text-sm text-fg">
         {t("research.total", { used: Math.round(allocated), total: Math.round(total) })}
       </p>

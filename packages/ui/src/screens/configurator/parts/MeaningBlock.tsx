@@ -25,25 +25,28 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
   }
 
   return (
-    <div className="flex flex-col gap-3" data-testid="meaning-block">
+    // The block is its own query container: how many columns of terms fit is a question about the
+    // parameter column's width, not about the window's (L1).
+    <div className="@container/params flex min-w-0 flex-col gap-3" data-testid="meaning-block">
       <section>
         <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
           {t("config.meaning.title")}
         </h4>
         {/*
-         * P2: the value sits right after its label, and the terms are packed into two columns.
-         * The old two-column grid stretched every label to the full width and pushed its value to
-         * the far edge, which put an inch of nothing between "Coding" and "7.2".
+         * P2: the value sits right after its label, and the terms are packed into two columns when
+         * the column is wide enough for two. L3: neither half truncates any more. A row is a
+         * wrapping flex line, so a long value moves under its label instead of printing over the
+         * next term, which is what a fixed `truncate` did once the column was 18 px wide.
          */}
-        <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+        <dl className="grid gap-x-6 gap-y-0.5 @min-[30rem]/params:grid-cols-2">
           {meaning.lines.map((line) => (
             <div
               key={line.id}
-              className="flex min-w-0 items-baseline gap-2"
+              className="flex min-w-0 flex-wrap items-baseline gap-x-2"
               data-line={line.id}
               data-tone={line.tone}
             >
-              <dt className="min-w-0 truncate text-sm text-muted">
+              <dt className="min-w-0 text-sm text-muted">
                 {line.hint === undefined || line.hint === "" ? (
                   line.label
                 ) : (
@@ -52,7 +55,7 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
                   </Tooltip>
                 )}
               </dt>
-              <dd className={`truncate text-sm ${TONE_CLASS[line.tone]}`}>{line.value}</dd>
+              <dd className={`min-w-0 text-sm ${TONE_CLASS[line.tone]}`}>{line.value}</dd>
             </div>
           ))}
         </dl>
@@ -63,10 +66,10 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
           <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
             {t("config.pros_and_cons")}
           </h4>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <ul className="flex flex-col gap-0.5">
+          <div className="grid gap-2 @min-[30rem]/params:grid-cols-2">
+            <ul className="flex min-w-0 flex-col gap-0.5">
               {meaning.pros.map((line) => (
-                <li key={line} className="text-sm text-ok">
+                <li key={line} className="min-w-0 text-sm text-ok">
                   + {line}
                 </li>
               ))}
@@ -74,9 +77,9 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
                 <li className="text-sm text-muted">{t("config.no_pros")}</li>
               ) : null}
             </ul>
-            <ul className="flex flex-col gap-0.5">
+            <ul className="flex min-w-0 flex-col gap-0.5">
               {meaning.cons.map((line) => (
-                <li key={line} className="text-sm text-crit">
+                <li key={line} className="min-w-0 text-sm text-crit">
                   - {line}
                 </li>
               ))}

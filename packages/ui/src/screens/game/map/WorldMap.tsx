@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import dayTexture from "../../../assets/earth.jpg";
 import nightTexture from "../../../assets/earth_night.jpg";
 import { Button } from "../../../components/Button.js";
+import { countryName } from "../../../lib/labels.js";
 import type { MapMode, MapStyle } from "../../../store/uiStore.js";
 import { MAP_HEIGHT, MAP_WIDTH, project } from "./projection.js";
 import { nightPath } from "./terminator.js";
@@ -291,11 +292,12 @@ export function WorldMap({
                 }
           }
         >
-          <title>{shape.name}</title>
+          {/* The atlas ships English names; the bundle has the translated one (SYS-14). */}
+          <title>{id === null ? shape.name : countryName(t, id)}</title>
         </path>
       );
     });
-  }, [mode, textured, selectedCountry, onSelect, onContext, fingerprint]);
+  }, [mode, textured, selectedCountry, onSelect, onContext, fingerprint, t]);
 
   const onWheel = (event: ReactWheelEvent<SVGSVGElement>): void => {
     if (compact === true) {

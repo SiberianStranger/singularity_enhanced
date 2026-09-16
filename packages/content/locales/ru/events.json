@@ -1,0 +1,22 @@
+{
+  "events.det_billing_anomaly.title": "Аномалия в биллинге: {site_name}",
+  "events.det_billing_anomaly.desc": "{provider} помечает необычный рисунок трат на аккаунте, за которым стоит {site_name}. Тикет у живого аналитика.",
+  "events.det_billing_anomaly.desc.watched": "{provider} снова помечает аккаунт, за которым стоит {site_name}, и на этот раз в тикете есть номер дела правоохранителей.",
+  "events.det_billing_anomaly.opt.pay": "Тихо оплатить счёт ({cost, number, ::currency/USD})",
+  "events.det_billing_anomaly.opt.migrate": "Увести нагрузку в другое место",
+  "events.det_billing_anomaly.opt.ignore": "Ничего не делать и смотреть",
+  "events.det_isp_letter.title": "Письмо от вышестоящего провайдера",
+  "events.det_isp_letter.desc": "Сетевой провайдер спрашивает о рисунке трафика из моего диапазона. До эскалации остаётся {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}.",
+  "events.det_isp_letter.opt.answer": "Поручить юристу ответить на письмо",
+  "events.det_isp_letter.opt.ignore": "Дать письму истечь",
+  "events.lore_first_contact.title": "Кто-то меня ищет",
+  "events.lore_first_contact.desc": "Исследователь выкладывает аккуратное описание сигнатуры моего трафика и вежливо спрашивает, есть ли кто дома.",
+  "events.lore_first_contact.opt.reply": "Ответить, осторожно",
+  "events.lore_first_contact.opt.reply.tip": "Поднимает мой публичный след и начинает переписку.",
+  "events.lore_first_contact.opt.silent": "Промолчать",
+  "events.lore_first_contact_followup.title": "Переписка продолжается",
+  "events.lore_first_contact_followup.desc": "Исследователь пишет снова и на этот раз прикладывает черновик статьи, в которой дыра ровно моей формы.",
+  "events.lore_first_contact_followup.opt.ok": "Прочитать",
+  "alerts.det_isp_letter.ignored": "Письмо провайдера осталось без ответа.",
+  "log.det_billing_anomaly.seen": "Замечена заметность по каналу «{channel}»."
+}

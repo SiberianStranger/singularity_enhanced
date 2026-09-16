@@ -11,10 +11,25 @@
  * - "DejaVuSansMono" for logs, tables of numbers and the setup string. The legacy tree ships only
  *   the sans face of the family, so the mono one is the upstream DejaVu release (same project,
  *   same free Bitstream Vera and Arev license) and is credited as such in the About screen.
+ *
+ * Acknowledge is Latin only, so the Russian build would drop every title and button into the prose
+ * face. `acknowtt-cyrillic.ttf` is the Cyrillic alphabet drawn on the same three-by-five grid, with
+ * the same units per em, ascent, descent and advance (SYS-14 ru, section 8); it is loaded under the
+ * same family name behind a `unicode-range`, so the browser mixes the two per character and the
+ * metrics never disagree. `tools/fonts/build-cyrillic.py` regenerates it.
  */
 @font-face {
   font-family: "AcknowledgeTT";
   src: url("../assets/acknowtt.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "AcknowledgeTT";
+  src: url("../assets/acknowtt-cyrillic.ttf") format("truetype");
+  unicode-range: U+0400-04FF;
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -222,6 +237,13 @@ body {
   color: var(--c-fg);
   font-family: var(--font-sans);
   overscroll-behavior: none;
+  /*
+   * A word longer than the column it is in breaks rather than pushing the column wider (playtest
+   * 5, L3). It changes nothing for text that fits, which is nearly all of it; it is here because
+   * the panels are fixed columns in rem and the words in them come from content and from
+   * translations, so "the longest word fits" is not something a layout can be built on.
+   */
+  overflow-wrap: break-word;
 }
 
 #root {
@@ -301,6 +323,17 @@ pre {
 td.numeric,
 .font-mono {
   white-space: nowrap;
+}
+
+/*
+ * ...except in a field the player types into. A textarea holding the setup string is monospace for
+ * the same reason a table of numbers is, but `nowrap` turned it into a 4,400 px line the
+ * configurator had to scroll sideways to reach the end of (playtest 5, L3).
+ */
+textarea.font-mono,
+input.font-mono {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Country outlines brighten under the pointer so the vector layer stays legible over the raster. */

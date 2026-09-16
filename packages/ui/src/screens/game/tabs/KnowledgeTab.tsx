@@ -17,7 +17,7 @@ export function KnowledgeTab(): ReactNode {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-1">
         <Button variant={area === "" ? "primary" : "ghost"} onClick={() => setArea("")}>
           {t("common.all")}

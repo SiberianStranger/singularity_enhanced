@@ -99,11 +99,13 @@ export function QuirksStep(): ReactNode {
       </p>
       {selected === undefined ? null : (
         <>
-          <EffectList
-            title={t("config.meaning.title")}
-            effects={effects}
-            empty={t("config.quirks.no_effects")}
-          />
+          {/*
+           * L4: the Take button sits directly under the budget line, above everything else the
+           * step prints, so it is on screen at 1366 by 768 whatever length of description the
+           * quirk has. The effect list that used to stand between them printed "What this means
+           * in the game" a second time: the same lines are already in the parameter column, and
+           * the detail may not say the same thing twice.
+           */}
           <div className="flex flex-col gap-1">
             <button
               type="button"

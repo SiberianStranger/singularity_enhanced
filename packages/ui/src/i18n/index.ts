@@ -12,8 +12,27 @@ import ICU from "i18next-icu";
 import { initReactI18next } from "react-i18next";
 import { contentBundle } from "../content/bundle.js";
 import uiEn from "../locales/en.json";
+import uiRu from "../locales/ru.json";
 
 export const DEFAULT_LANGUAGE = "en";
+
+/**
+ * The client's own strings per language. The content bundle brings its own (SYS-14 rule 1), and a
+ * language present here but absent from the bundle, or the other way round, still works: whatever
+ * is missing falls back to English key by key.
+ */
+const UI_LOCALES: Record<string, Record<string, string>> = { en: uiEn, ru: uiRu };
+
+/**
+ * What each language calls itself, for the Settings selector. A player who cannot read the current
+ * language has to be able to find their own in the list, so the list is never translated.
+ */
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", ru: "Русский" };
+
+/** The language's own name, or its code when nothing better is known. */
+export function languageName(language: string): string {
+  return LANGUAGE_NAMES[language] ?? language;
+}
 
 /** Languages written right to left; `dir` is set from this (SYS-14). */
 const RTL_LANGUAGES = new Set(["ar", "he", "fa", "ur"]);
@@ -24,12 +43,16 @@ export function directionOf(language: string): "ltr" | "rtl" {
 
 function resources(): Record<string, { translation: Record<string, string> }> {
   const bundled = contentBundle.locales;
-  const languages = new Set<string>([DEFAULT_LANGUAGE, ...Object.keys(bundled)]);
+  const languages = new Set<string>([
+    DEFAULT_LANGUAGE,
+    ...Object.keys(UI_LOCALES),
+    ...Object.keys(bundled),
+  ]);
   const out: Record<string, { translation: Record<string, string> }> = {};
   for (const language of languages) {
     out[language] = {
       translation: {
-        ...(language === DEFAULT_LANGUAGE ? uiEn : {}),
+        ...(UI_LOCALES[language] ?? {}),
         ...(bundled[language] ?? {}),
       },
     };

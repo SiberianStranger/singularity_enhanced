@@ -66,7 +66,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
 
   if (!open) {
     return (
-      <div className="pointer-events-auto absolute start-2 top-2 z-20">
+      <div className="pointer-events-auto col-start-1 row-start-1 self-start">
         <Button variant="primary" onClick={() => openTab(tab)}>
           {t("panel.open", { name: t(`panel.${tab}`) })}
         </Button>
@@ -77,7 +77,10 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   return (
     <section
       aria-label={t(`panel.${tab}`)}
-      className="pointer-events-auto absolute inset-0 z-20 flex flex-col border border-line bg-panel/97 sm:inset-auto sm:start-2 sm:top-2 sm:max-h-[calc(100%-1rem)] sm:w-[34rem] sm:max-w-[calc(100%-1rem)]"
+      // The panel is the top of the left column of the screen grid: it never floats over another
+      // region, and its height is what the row leaves it (L8). Below 40rem of map region it takes
+      // the whole grid, which is the last step of the reflow order (L11).
+      className="pointer-events-auto col-start-1 row-start-1 flex max-h-full min-h-0 w-[32rem] max-w-full flex-col self-start border border-line bg-panel/97 @max-[40rem]/screen:col-span-3 @max-[40rem]/screen:w-full"
     >
       <div className="flex items-center gap-1 border-b border-line px-1 py-1">
         <div
@@ -109,7 +112,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
           <CloseIcon />
         </Button>
       </div>
-      <div className="flex-1 overflow-auto p-3">{tabContent(tab, view)}</div>
+      <div className="min-h-0 flex-1 overflow-auto p-2">{tabContent(tab, view)}</div>
     </section>
   );
 }

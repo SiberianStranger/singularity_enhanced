@@ -216,8 +216,10 @@ interface GlyphProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
 export function Glyph({ name, size = 16, label, ...rest }: GlyphProps): ReactNode {
   const drawn = DRAWN[name];
   const common = {
-    width: size,
-    height: size,
+    // Sized in rem, not in pixels: the interface scale is the root font size, so a glyph beside a
+    // label has to grow with it or the row stops lining up (playtest 5, L12).
+    width: `${size / 16}rem`,
+    height: `${size / 16}rem`,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",

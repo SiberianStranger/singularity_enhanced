@@ -12,11 +12,15 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
+import { logVars } from "../src/lib/labels.js";
 import { refusalOf } from "../src/lib/viewContract.js";
 import { GameScreen } from "../src/screens/game/GameScreen.js";
 import { useGameStore } from "../src/store/gameStore.js";
 import { useUiStore } from "../src/store/uiStore.js";
 import { type LocalSession, startSession } from "./helpers.js";
+
+// Toasts and alerts name their variables the way the log does (playtest 5, L10).
+const tr = i18next.t.bind(i18next);
 
 let session: LocalSession | null = null;
 
@@ -192,7 +196,10 @@ describe("research (U2, C5)", () => {
     const icons = screen.getByTestId("alert-icons");
     await userEvent.hover(
       within(icons).getByRole("button", {
-        name: i18next.t("alerts.tech_researched", { ...alert?.vars }),
+        name: i18next.t(
+          "alerts.tech_researched",
+          logVars(tr, "alerts.tech_researched", alert?.vars ?? {}, live.view()),
+        ),
       }),
     );
     expect(await within(icons).findByRole("tooltip")).toHaveTextContent(
@@ -341,7 +348,12 @@ describe("decisions, operations and money (C6, C7, C8, C9)", () => {
     expect(refusal).not.toBeNull();
     expect(useUiStore.getState().notices.length).toBeGreaterThan(0);
     expect(
-      await screen.findByText(i18next.t(refusal?.key ?? "", { ...refusal?.vars })),
+      await screen.findByText(
+        i18next.t(
+          refusal?.key ?? "",
+          logVars(tr, refusal?.key ?? "", refusal?.vars ?? {}, live.view()),
+        ),
+      ),
     ).toBeInTheDocument();
   });
 
@@ -415,8 +427,12 @@ describe("the fixed regions stay put (U7, U8)", () => {
     const live = await play();
     useUiStore.getState().select({ kind: "site", id: live.view().sites[0]?.id ?? "" });
     const selection = await screen.findByRole("region", { name: "Selection" });
-    // Measured against its container, not against the window, so it cannot run off the screen.
-    expect(selection.className).toContain("max-h-[calc(100%-1rem)]");
+    // Playtest 5, L8: the panel is the second row of the screen grid's left column, under the
+    // primary panel, with a height budget of its own. It used to float against the bottom-left
+    // corner, which is how it ended up drawn over the panel above it and under the log strip.
+    expect(selection.className).toContain("col-start-1");
+    expect(selection.className).toContain("row-start-2");
+    expect(selection.className).toContain("max-h-[22rem]");
     expect(within(selection).getByRole("tablist")).toBeInTheDocument();
 
     await userEvent.click(within(selection).getByRole("button", { name: "Collapse" }));
@@ -437,9 +453,13 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
     await play();
     await openTab(/^Compute and sites$/);
     const section = panel();
-    // 34rem is 544 px at the base size; the map keeps the rest of a 1366 px screen.
-    expect(section.className).toContain("sm:w-[34rem]");
-    expect(section.className).toContain("sm:max-w-[calc(100%-1rem)]");
+    // 32rem is 512 px at the base size; the map keeps the rest of a 1280 px screen, which is the
+    // width the layout is drawn for (playtest 5, L11).
+    expect(section.className).toContain("w-[32rem]");
+    expect(section.className).toContain("max-w-full");
+    // And it is the first row of the grid's left column rather than a card floating over a corner.
+    expect(section.className).toContain("col-start-1");
+    expect(section.className).toContain("row-start-1");
   });
 
   it("keeps the sites table narrow and its numbers on one line", async () => {
@@ -552,6 +572,76 @@ describe("tables say what they are sorted by", () => {
       await userEvent.click(sortable[1]);
       expect(sortable[1].className).toContain("underline");
       expect(header.className).not.toContain("underline");
+    }
+  });
+});
+
+describe("the game screen is a grid of regions (playtest 5, L5-L9)", () => {
+  /*
+   * jsdom has no layout, so "they do not overlap" is measured in `e2e/layout.spec.ts`. What is
+   * asserted here is the property that makes it true and that a later pass would undo: the four
+   * regions are grid areas of one container rather than four cards positioned against corners.
+   * Absolute positioning is what let the log strip run under the selection panel and the
+   * selection panel over the primary panel.
+   */
+  it("places the four regions in cells of one grid", async () => {
+    const live = await play();
+    useUiStore.getState().select({ kind: "site", id: live.view().sites[0]?.id ?? "" });
+    const grid = await screen.findByTestId("panel-grid");
+    expect(grid.className).toContain("grid");
+    expect(grid.className).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
+
+    const cells = new Map<string, string>();
+    for (const [name, element] of [
+      // By its own name rather than by its selected tab: the selection panel has tabs too.
+      ["primary", await screen.findByRole("region", { name: "Overview" })],
+      ["selection", await screen.findByRole("region", { name: "Selection" })],
+      ["outliner", await screen.findByRole("region", { name: "Outliner" })],
+      ["log", screen.getByTestId("log-strip")],
+    ] as const) {
+      const column = element.className.match(/col-start-\d/)?.[0] ?? "";
+      const row = element.className.match(/row-start-\d/)?.[0] ?? "";
+      expect(`${name} is placed`, `${name}: ${element.className}`).toBeTruthy();
+      expect(column, `${name} names its column`).not.toBe("");
+      expect(row, `${name} names its row`).not.toBe("");
+      cells.set(name, `${column} ${row}`);
+    }
+    // No two regions are in the same cell, which is what "they cannot overlap" means for a grid.
+    expect(new Set(cells.values()).size).toBe(cells.size);
+  });
+
+  it("gives the top bar a width it fits in rather than a scrollbar", async () => {
+    await play();
+    const bar = screen.getByRole("banner");
+    // L5: `overflow-x: auto` is not a way of fitting; the bar drops what the player can read
+    // elsewhere instead, and says so with a query on its own width.
+    expect(bar.className).not.toContain("overflow-x-auto");
+    expect(bar.className).toContain("@container/topbar");
+    const runway = screen
+      .getByRole("button", { name: /^Runway/ })
+      .closest('[class*="topbar:hidden"]');
+    expect(runway, "the runway gauge is the first thing a short bar drops").not.toBeNull();
+  });
+
+  it("never cuts a panel's own title into an ellipsis", async () => {
+    await play();
+    for (const region of screen.getAllByRole("region")) {
+      const title = within(region).queryAllByRole("heading", { level: 2 })[0];
+      if (title === undefined) {
+        continue;
+      }
+      // L7: the outliner printed its own name as "O...".
+      expect(title.className, title.textContent ?? "").not.toContain("truncate");
+    }
+  });
+
+  it("wraps a site's name in the outliner instead of cutting it", async () => {
+    await play();
+    const outliner = await screen.findByRole("region", { name: "Outliner" });
+    for (const row of within(outliner).getAllByRole("button")) {
+      for (const span of row.querySelectorAll("span")) {
+        expect(span.className, span.textContent ?? "").not.toContain("truncate");
+      }
     }
   });
 });

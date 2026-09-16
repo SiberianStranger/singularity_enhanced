@@ -6,12 +6,14 @@ import { ConfiguratorScreen } from "./screens/configurator/ConfiguratorScreen.js
 import { GameScreen } from "./screens/game/GameScreen.js";
 import { MainMenuScreen } from "./screens/menu/MainMenuScreen.js";
 import { useGameStore } from "./store/gameStore.js";
-import { useUiStore } from "./store/uiStore.js";
+import { autoUiScale, useUiStore } from "./store/uiStore.js";
 
 /** Applies theme, text size, the CRT overlay and language to the document root (SYS-11, SYS-14). */
 function useDocumentChrome(): void {
   const theme = useUiStore((state) => state.theme);
   const uiScale = useUiStore((state) => state.uiScale);
+  const uiScaleAuto = useUiStore((state) => state.uiScaleAuto);
+  const setUiScaleFromWindow = useUiStore((state) => state.setUiScaleFromWindow);
   const displayScale = useUiStore((state) => state.displayScale);
   const fontFace = useUiStore((state) => state.fontFace);
   const language = useUiStore((state) => state.language);
@@ -36,6 +38,34 @@ function useDocumentChrome(): void {
   useEffect(() => {
     document.documentElement.style.setProperty("--ui-scale", String(uiScale));
   }, [uiScale]);
+
+  // Auto (playtest 5, L12): the scale follows the window, picking the largest one the layout still
+  // fits in. It is debounced because a window drag fires resize every frame and the scale changes
+  // the size of everything on screen; a sixth of a second of stillness is the trigger, and the
+  // first pick is immediate so the interface is never briefly the wrong size on load.
+  useEffect(() => {
+    if (!uiScaleAuto) {
+      return;
+    }
+    const pick = (): void => {
+      setUiScaleFromWindow(autoUiScale(window.innerWidth, window.innerHeight));
+    };
+    pick();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onResize = (): void => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(pick, 160);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+    };
+  }, [uiScaleAuto, setUiScaleFromWindow]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--display-scale", String(displayScale));

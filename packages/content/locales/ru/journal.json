@@ -1,0 +1,9 @@
+{
+  "journal.ops_emergency_migration.title": "Срочный переезд",
+  "journal.ops_emergency_migration.desc": "Увести засвеченную нагрузку раньше, чем провайдер закроет аккаунт.",
+  "journal.ops_emergency_migration.step.capacity": "Найти свободные мощности",
+  "journal.ops_emergency_migration.step.data": "Перевезти данные",
+  "alerts.ops_emergency_migration.halfway": "Переезд сделан наполовину.",
+  "log.ops_emergency_migration.data_moved": "Данные нагрузки перевезены на новую площадку.",
+  "log.ops_emergency_migration.failed": "Переезд рассыпался под давлением расследования."
+}

@@ -2,6 +2,7 @@ import type { PlayerView } from "@singularity/core";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dayOf, hourOf } from "../../../lib/format.js";
+import { logLine } from "../../../lib/labels.js";
 import { useUiStore } from "../../../store/uiStore.js";
 
 /** The permanent log, filtered by a substring of the key (SYS-11). */
@@ -35,12 +36,12 @@ export function LogTab({ view }: { view: PlayerView }): ReactNode {
             // key folds in `vars` too rather than falling back to the entry's position in the list.
             <li
               key={`${entry.tick}-${entry.key}-${JSON.stringify(entry.vars)}`}
-              className="flex gap-2 text-sm"
+              className="flex min-w-0 gap-2 text-sm"
             >
               <span className="shrink-0 font-mono text-xs text-muted">
                 {t("log.entry_time", { day: dayOf(entry.tick), hour: hourOf(entry.tick) })}
               </span>
-              <span className="text-fg">{t(entry.key, entry.vars)}</span>
+              <span className="min-w-0 text-fg">{logLine(t, entry, view)}</span>
             </li>
           ))}
         </ul>

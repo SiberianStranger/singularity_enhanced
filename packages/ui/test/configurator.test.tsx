@@ -363,48 +363,104 @@ describe("no dead ends (playtest 4, P3)", () => {
   });
 });
 
-describe("the list and the detail are packed (playtest 4, P1 and P2)", () => {
-  it("gives the list column room for a family name", () => {
+describe("the detail card fits its pane (playtest 5, L1-L4)", () => {
+  /*
+   * jsdom has no layout, so the pixels are `e2e/layout.spec.ts`. What is asserted here is the
+   * contract that produced them, because that is what a later pass undoes by accident: the
+   * playtest 4 version asked for two columns at a *viewport* width of 64rem and sized the text
+   * column against a pane that was 822 px wide, so the parameters were left with 61 px and printed
+   * one letter per line.
+   */
+  function render_(step: string): void {
     introsSeen();
+    useConfigurator.setState({ step: STEP_IDS.indexOf(step as never) });
     render(<ConfiguratorScreen />);
+  }
+
+  it("gives the list a maximum the detail can have the rest of", () => {
+    render_("lineage");
     const body = screen.getByTestId("step-list").parentElement as HTMLElement;
-    // 23rem is 368 px at the base size, which holds the longest name content ships.
-    expect(body.className).toContain("grid-cols-[minmax(15rem,23rem)_minmax(0,1fr)]");
+    // 18rem is 288 px at the base size: two lines of the longest name content ships, and 80 px
+    // less than playtest 4 gave it, all of which went to the parameter column (L2).
+    expect(body.className).toContain("grid-cols-[minmax(11rem,18rem)_minmax(0,1fr)]");
+    // Both tracks shrink: a track with an intrinsic minimum pushes the frame wider instead (L3).
+    expect(body.className).toContain("min-w-0");
   });
 
-  it("never truncates a name in the list", () => {
-    introsSeen();
-    useConfigurator.setState({ step: STEP_IDS.indexOf("lineage") });
-    render(<ConfiguratorScreen />);
-    for (const row of listRows()) {
-      const name = row.firstElementChild?.firstElementChild as HTMLElement;
-      expect(name.className, name.textContent ?? "").not.toContain("truncate");
-    }
+  it("switches to two columns on the pane's width, not the window's", () => {
+    render_("lineage");
+    const split = screen.getByTestId("detail-split");
+    expect(split.className).toContain("@min-[44rem]/detail:grid-cols-");
+    // A viewport breakpoint is what broke it: the window was 1366 px and the pane was 822.
+    expect(split.className).not.toMatch(/\b(sm|md|lg|xl):/);
+    expect(screen.getByTestId("step-detail").className).toContain("@container/detail");
   });
 
-  it("puts the value right after its label instead of at the far edge", () => {
-    introsSeen();
-    useConfigurator.setState({ step: STEP_IDS.indexOf("lineage") });
-    render(<ConfiguratorScreen />);
+  it("caps the text column rather than fixing its width, and floors the parameters", () => {
+    render_("lineage");
+    const split = screen.getByTestId("detail-split");
+    // The text track is a maximum with a zero minimum, so it yields; the parameter track has the
+    // 18rem floor the playtest asked for.
+    expect(split.className).toContain("minmax(0,70ch)");
+    expect(split.className).toContain("minmax(18rem,1fr)");
+    const text = screen.getByTestId("detail-text");
+    expect(text.className).toContain("max-w-[70ch]");
+    expect(text.className).not.toMatch(/(?:^|\s)w-\[/);
+    // Both children can shrink inside their tracks.
+    expect(text.className).toContain("min-w-0");
+    expect(screen.getByTestId("detail-params").className).toContain("min-w-0");
+  });
+
+  it("stacks with the parameters first below the threshold", () => {
+    render_("lineage");
+    const params = screen.getByTestId("detail-params");
+    expect(params.className).toContain("order-first");
+    expect(params.className).toContain("@min-[44rem]/detail:order-none");
+  });
+
+  it("puts the value right after its label and lets both wrap", () => {
+    render_("lineage");
     const block = screen.getByTestId("meaning-block");
     const terms = block.querySelectorAll("[data-line]");
     expect(terms.length).toBeGreaterThan(4);
     for (const term of terms) {
-      // A flex row of label and value, not a grid row that stretches the label to the full width.
+      // A wrapping flex row: the value sits after its label and drops to a second line rather
+      // than printing over the next term, which is what `truncate` did at 18 px wide (L1).
       expect(term.className).toContain("flex");
-      expect(term.className).not.toContain("contents");
-      expect(term.querySelector("dd")?.className).not.toContain("text-end");
+      expect(term.className).toContain("flex-wrap");
+      expect(term.className).toContain("min-w-0");
+      expect(term.querySelector("dt")?.className).not.toContain("truncate");
+      expect(term.querySelector("dd")?.className).not.toContain("truncate");
     }
-    // Two columns of terms rather than one long ladder.
-    expect(block.querySelector("dl")?.className).toContain("sm:grid-cols-2");
+    // Two columns of terms when the parameter column is wide enough for two, asked of the column.
+    expect(block.querySelector("dl")?.className).toContain("@min-[30rem]/params:grid-cols-2");
+    expect(block.className).toContain("@container/params");
   });
 
-  it("puts the description beside the parameters, at the measure", () => {
-    introsSeen();
-    useConfigurator.setState({ step: STEP_IDS.indexOf("lineage") });
-    render(<ConfiguratorScreen />);
-    const pair = screen.getByTestId("meaning-block").closest("[class*=grid-cols]") as HTMLElement;
-    expect(pair.className).toContain("70ch");
+  it("truncates nothing but the footer's build line", () => {
+    render_("lineage");
+    const configurator = screen.getByTestId("configurator");
+    const cut = [...configurator.querySelectorAll("[class*=truncate]")].filter(
+      (element) => element.getAttribute("data-testid") !== "build-line",
+    );
+    expect(
+      cut.map((element) => element.textContent?.slice(0, 40) ?? ""),
+      "only the build line truncates (L3)",
+    ).toEqual([]);
+  });
+
+  it("keeps the Take button above everything else the Quirks step prints", () => {
+    render_("quirks");
+    const detail = screen.getByTestId("step-detail");
+    const controls = [...detail.querySelectorAll("button, p")];
+    const take = detail.querySelector("[data-testid=quirk-toggle]");
+    const budget = detail.querySelector("[data-testid=quirk-budget]");
+    expect(take).not.toBeNull();
+    expect(budget).not.toBeNull();
+    // The button follows the budget line directly: nothing tall stands between them, so it is on
+    // screen at 1366 by 768 whatever length of description the quirk has (L4).
+    expect(controls.indexOf(take as Element)).toBeGreaterThan(controls.indexOf(budget as Element));
+    expect(detail.textContent?.match(/What this means in the game/g)?.length ?? 0).toBe(1);
   });
 });
 

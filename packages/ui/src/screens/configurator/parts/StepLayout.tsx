@@ -186,9 +186,10 @@ export function StepLayout({
       title={t(`config.step.${step}`)}
       bordered={false}
       className="min-h-0"
-      // P1: the list column was too narrow and cut lineage names off. It is wider now, and the
-      // detail is packed rather than spread, so the detail loses nothing by it.
-      bodyClassName={`grid ${listless === true ? "" : "grid-cols-[minmax(15rem,23rem)_minmax(0,1fr)]"}`}
+      // L2: the list only has to hold two lines of a name, so its maximum came back from 23rem to
+      // 18rem and the freed width went to the detail, where the parameters live. Both tracks are
+      // `minmax(...,...)` with a shrinkable minimum, so neither can push the frame wider.
+      bodyClassName={`grid min-w-0 ${listless === true ? "" : "grid-cols-[minmax(11rem,18rem)_minmax(0,1fr)]"}`}
       actions={
         <Tooltip content={t("config.intro.reopen")}>
           <button
@@ -235,14 +236,16 @@ export function StepLayout({
                   {entry.visual === undefined ? null : (
                     <span className="shrink-0">{entry.visual}</span>
                   )}
+                  {/* L3: only the footer build line truncates; a summary too long for the
+                      column wraps onto a second line. */}
                   <span
-                    className={`flex-1 truncate text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
+                    className={`min-w-0 flex-1 text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
                   >
                     {entry.summary}
                   </span>
                 </span>
                 {entry.unavailable === undefined ? null : (
-                  <span className="w-full truncate text-xs normal-case text-crit">
+                  <span className="w-full min-w-0 text-xs normal-case text-crit">
                     {entry.unavailable}
                   </span>
                 )}
@@ -261,19 +264,35 @@ export function StepLayout({
         </ul>
       )}
 
-      <div className="flex min-h-0 flex-col gap-3 overflow-auto p-3" data-testid="step-detail">
-        <h3 className="text-base uppercase tracking-wide text-fg">{title}</h3>
+      <div
+        className="@container/detail flex min-h-0 min-w-0 flex-col gap-3 overflow-auto p-3"
+        data-testid="step-detail"
+      >
+        <h3 className="min-w-0 text-base uppercase tracking-wide text-fg">{title}</h3>
         <FixNote step={step} />
         {/*
-         * P2: the description on the left at the 70-character measure, the parameters and their
-         * values packed to the right of it. Before, the description ran the width of the card and
-         * the parameters sat under it with the values pushed to the far edge, which is the empty
-         * space the maintainer saw. Below the measure the two stack, as they must on a phone.
+         * L1: the description on the left at the 70-character measure, the parameters to the
+         * right of it. The playtest 4 version asked for the two columns at a *viewport* width of
+         * 64rem, and sized the text column `minmax(0,70ch)` against a pane that was 822 px wide
+         * at 1366: the text took 713 px of it and the parameters were left with 61, one character
+         * across. The switch is a container query on the pane now, so the pane's own width
+         * decides, and the parameter column carries a floor of 18rem that the text column yields
+         * to. Below the threshold the two stack with the parameters first.
          */}
-        <div className="grid min-w-0 gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,70ch)_minmax(0,1fr)]">
-          {description === "" ? null : <p className="prose text-muted">{description}</p>}
+        <div
+          data-testid="detail-split"
+          className="grid min-w-0 gap-x-6 gap-y-3 @min-[44rem]/detail:grid-cols-[minmax(0,70ch)_minmax(18rem,1fr)]"
+        >
+          {description === "" ? null : (
+            <p data-testid="detail-text" className="prose min-w-0 max-w-[70ch] text-muted">
+              {description}
+            </p>
+          )}
           {meaning === undefined ? null : (
-            <div className="min-w-0">
+            <div
+              data-testid="detail-params"
+              className="order-first min-w-0 @min-[44rem]/detail:order-none"
+            >
               <MeaningBlock meaning={meaning} />
             </div>
           )}

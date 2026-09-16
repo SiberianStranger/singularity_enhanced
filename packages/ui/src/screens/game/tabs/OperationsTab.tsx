@@ -70,7 +70,7 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-2">
         <h3 className="text-xs uppercase tracking-wide text-muted">{t("operations.offers")}</h3>
         {view.operation_offers.length === 0 ? (
           <p className="text-sm text-muted">{t("operations.empty")}</p>

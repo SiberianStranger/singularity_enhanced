@@ -63,7 +63,7 @@ export function Table<T>({
             <th
               key={column.id}
               scope="col"
-              className={`px-2 py-1 font-medium ${column.align === "end" ? "text-end" : "text-start"}`}
+              className={`px-1 py-0.5 font-medium ${column.align === "end" ? "text-end" : "text-start"}`}
               aria-sort={
                 sortId === column.id ? (descending ? "descending" : "ascending") : undefined
               }
@@ -110,7 +110,7 @@ export function Table<T>({
               {columns.map((column) => (
                 <td
                   key={column.id}
-                  className={`px-2 py-1 align-top ${column.align === "end" ? "text-end font-mono" : "text-start"}`}
+                  className={`px-1 py-0.5 align-top ${column.align === "end" ? "text-end font-mono" : "text-start"}`}
                 >
                   {column.cell(row)}
                 </td>

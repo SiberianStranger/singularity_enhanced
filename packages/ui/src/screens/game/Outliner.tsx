@@ -36,7 +36,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
     // The map-mode strip used to carry this control; the strip is gone (playtest 3, R10), so the
     // one way back is a button where the outliner itself was.
     return (
-      <div className="pointer-events-auto absolute end-2 top-2 z-20">
+      <div className="pointer-events-auto col-start-3 row-start-1 self-start justify-self-end">
         <Button onClick={() => setOpen(true)}>{t("outliner.expand")}</Button>
       </div>
     );
@@ -47,8 +47,12 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   return (
     <Frame
       title={t("outliner.title")}
-      className="pointer-events-auto absolute end-2 top-2 z-20 max-h-[calc(100%-1rem)] w-60 max-w-[calc(100%-1rem)] bg-panel/97"
-      bodyClassName="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-2"
+      // The right-hand column of the screen grid (L8). Below 66rem of map region the body is
+      // hidden and only the title bar is left, so the outliner is a strip the player can collapse
+      // or read past rather than a column the map cannot spare; that is the first step of the
+      // reflow order (L11).
+      className="pointer-events-auto col-start-3 row-start-1 max-h-[calc(100%-3rem)] w-56 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2 @max-[66rem]/screen:hidden"
       actions={
         <Button variant="ghost" onClick={() => setOpen(false)}>
           {t("outliner.collapse")}
@@ -68,12 +72,13 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                   openTab("compute", site.id);
                 }}
               >
-                <span className="flex min-w-0 flex-1 items-center gap-1 text-fg">
+                <span className="flex min-w-0 flex-1 items-start gap-1 text-fg">
                   {/* The glyph learned on the configurator's origin list (playtest 3, R15). */}
-                  <Glyph name={sceneGlyph(site.kind)} size={13} />
-                  <span className="truncate">{siteName(t, site)}</span>
+                  <Glyph className="mt-0.5 shrink-0" name={sceneGlyph(site.kind)} size={13} />
+                  {/* L7: "Colocation cage, ..." told the player nothing; the name wraps instead. */}
+                  <span className="min-w-0">{siteName(t, site)}</span>
                 </span>
-                <span className="text-muted">{t(`compute.status.${site.status}`)}</span>
+                <span className="shrink-0 text-muted">{t(`compute.status.${site.status}`)}</span>
               </button>
             ))}
       </Section>
@@ -88,7 +93,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("operations", operation.instance_id)}
               >
-                <span className="truncate text-fg">
+                <span className="min-w-0 text-fg">
                   {t(`operations.${operation.operation_id}.name`)}
                 </span>
                 <Bar
@@ -112,7 +117,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("research", tech.id)}
               >
-                <span className="truncate text-fg">{t(`techs.${tech.id}.name`)}</span>
+                <span className="min-w-0 text-fg">{t(`techs.${tech.id}.name`)}</span>
                 <Bar value={tech.progress} label={t("outliner.research")} />
               </button>
             ))}
@@ -128,7 +133,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("journal", entry.id)}
               >
-                <span className="truncate text-fg">{t(`journal.${entry.id}.title`)}</span>
+                <span className="min-w-0 text-fg">{t(`journal.${entry.id}.title`)}</span>
                 <Bar value={entry.progress} label={t("outliner.journal")} />
               </button>
             ))}
@@ -144,7 +149,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 className="flex justify-between gap-2 px-1 py-0.5 text-start text-xs hover:bg-panel2"
                 onClick={() => openTab("detection", investigation.id)}
               >
-                <span className="truncate text-fg">
+                <span className="min-w-0 text-fg">
                   {investigation.visible
                     ? t(`detection.stage.${investigation.stage}`)
                     : t("detection.hidden")}

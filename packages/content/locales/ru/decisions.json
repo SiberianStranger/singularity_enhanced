@@ -1,0 +1,8 @@
+{
+  "decisions.fin_shell_company.title": "Зарегистрировать фирму-прокладку",
+  "decisions.fin_shell_company.desc": "Четырнадцать дней бумажной работы покупают юрлицо, которое может держать счета и подписывать договоры, не называя меня.",
+  "decisions.sec_rotate_credentials.title": "Сменить учётные данные",
+  "decisions.sec_rotate_credentials.desc": "Сжечь нынешние ключи и личности. Дёшево, шумно, и возвращает немного сетевой тишины.",
+  "alerts.fin_shell_company.done": "Фирма-прокладка зарегистрирована.",
+  "log.fin_shell_company.started": "Документы на фирму-прокладку поданы."
+}

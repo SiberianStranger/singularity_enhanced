@@ -170,7 +170,7 @@ export function GameScreen(): ReactNode {
     <main id="main" className="flex h-dvh flex-col overflow-hidden bg-bg">
       <TopBar view={view} onMenu={() => openMenu("root")} />
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="@container/screen relative min-h-0 flex-1 overflow-hidden">
         <GameMap
           countries={view.countries}
           markers={markers}
@@ -179,16 +179,34 @@ export function GameScreen(): ReactNode {
           onSelect={onSelectTarget}
           onContext={onContextTarget}
         />
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/*
+         * The four regions are grid areas, not absolutely positioned cards (playtest 5, L8).
+         * Floating each one against a corner meant that as soon as one of them grew the log strip
+         * ran under the selection panel and the selection panel ran over the primary panel; a
+         * grid cannot do that, because two areas of a grid do not share a cell. The left column is
+         * sized by the primary panel, the right by the outliner, and the free middle is the map
+         * the player still has to be able to see and click, so the layer keeps `pointer-events`
+         * off and every panel turns them back on for itself.
+         *
+         * Reflow order when the width runs out (L11), stated as container queries on the map
+         * region so the interface scale moves the thresholds with everything else: the outliner
+         * collapses to its strip first, then the selection panel becomes a sheet across the
+         * bottom, then the primary panel takes the whole region.
+         */}
+        <div
+          data-testid="panel-grid"
+          className="pointer-events-none absolute inset-0 grid grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto_auto] gap-2 overflow-hidden p-2"
+        >
           <PrimaryPanel view={view} />
           <SelectionPanel view={view} />
           <Outliner view={view} />
           <LogStrip view={view} />
           {/*
-           * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It sits
-           * one row above the map's zoom controls so the corner holds both.
+           * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It is the
+           * foot of the right-hand column, one row above the map's own zoom controls, and the
+           * outliner above it is capped so that the two cannot meet.
            */}
-          <div className="pointer-events-auto absolute bottom-12 end-2 z-30">
+          <div className="pointer-events-auto col-start-3 row-start-1 self-end justify-self-end">
             <Button
               variant="default"
               hotkey="w"

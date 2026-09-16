@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { BellIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js";
 import { Tooltip } from "../../components/Tooltip.js";
+import { logVars } from "../../lib/labels.js";
 import { groupAlerts, unreadCount } from "../../store/selectors.js";
 import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
 
@@ -45,7 +46,7 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
             <Tooltip
               content={
                 <span className="flex flex-col gap-1">
-                  <span>{t(group.key, group.latest.vars)}</span>
+                  <span>{t(group.key, logVars(t, group.key, group.latest.vars, view))}</span>
                   {detailKeyOf(group.latest.vars) === "" ? null : (
                     <span className="text-muted">{t(detailKeyOf(group.latest.vars))}</span>
                   )}
@@ -60,7 +61,7 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
               <button
                 type="button"
                 data-severity={group.severity}
-                aria-label={t(group.key, group.latest.vars)}
+                aria-label={t(group.key, logVars(t, group.key, group.latest.vars, view))}
                 className={`relative p-1 hover:bg-panel2 ${SEVERITY_TONE[group.severity]}`}
                 onClick={() => follow(group.latest.link?.panel, group.latest.link?.id)}
               >
@@ -110,7 +111,10 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
                       </span>
                       <span className="flex flex-col gap-0.5">
                         <span className={notification.read ? "text-muted" : "text-fg"}>
-                          {t(notification.key, notification.vars)}
+                          {t(
+                            notification.key,
+                            logVars(t, notification.key, notification.vars, view),
+                          )}
                         </span>
                         {detailKeyOf(notification.vars) === "" ? null : (
                           <span className="text-xs text-muted">

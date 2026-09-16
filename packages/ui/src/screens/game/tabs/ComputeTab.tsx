@@ -246,7 +246,7 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
   const site = view.sites.find((entry) => entry.id === activeId);
 
   return (
-    <div className="flex min-w-0 flex-col gap-3">
+    <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" hotkey="b" onClick={() => setDialog("build")}>
           {t("compute.build_site")}
@@ -327,7 +327,7 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
       </div>
 
       {site === undefined ? null : (
-        <section className="flex min-w-0 flex-col gap-3 border border-line bg-panel p-3">
+        <section className="flex min-w-0 flex-col gap-2 border border-line bg-panel p-2">
           <h3 className="text-sm font-semibold text-fg">{siteName(t, site)}</h3>
           <div className="flex flex-wrap gap-3 text-xs text-muted">
             <span>

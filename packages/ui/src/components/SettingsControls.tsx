@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { music } from "../audio/index.js";
-import { availableLanguages } from "../i18n/index.js";
+import { availableLanguages, languageName } from "../i18n/index.js";
 import {
   DISPLAY_SCALE_MAX,
   DISPLAY_SCALE_MIN,
@@ -63,6 +63,8 @@ export function SettingsControls(): ReactNode {
   const { theme, language, setTheme, setLanguage } = useUiStore();
   const uiScale = useUiStore((state) => state.uiScale);
   const setUiScale = useUiStore((state) => state.setUiScale);
+  const uiScaleAuto = useUiStore((state) => state.uiScaleAuto);
+  const setUiScaleAuto = useUiStore((state) => state.setUiScaleAuto);
   const displayScale = useUiStore((state) => state.displayScale);
   const setDisplayScale = useUiStore((state) => state.setDisplayScale);
   const fontFace = useUiStore((state) => state.fontFace);
@@ -84,7 +86,7 @@ export function SettingsControls(): ReactNode {
         >
           {languages.map((code) => (
             <option key={code} value={code}>
-              {code}
+              {languageName(code)}
             </option>
           ))}
         </select>
@@ -109,6 +111,20 @@ export function SettingsControls(): ReactNode {
 
       <fieldset className="flex flex-col gap-2" data-testid="scale-settings">
         <legend className="text-xs text-muted">{t("settings.text_size")}</legend>
+        {/*
+         * Auto is the default, as it is in the Paradox games this screen borrows from: the client
+         * picks the largest scale its layout still fits the window at, and re-picks when the
+         * window changes (playtest 5, L12). Moving the slider is how the player takes it back.
+         */}
+        <label className="flex items-center gap-2 text-sm text-fg">
+          <input
+            type="checkbox"
+            data-testid="ui-scale-auto"
+            checked={uiScaleAuto}
+            onChange={(event) => setUiScaleAuto(event.target.checked)}
+          />
+          {t("settings.ui_scale_auto")}
+        </label>
         <Slider
           label={t("settings.ui_scale")}
           min={Math.round(UI_SCALE_MIN * 100)}

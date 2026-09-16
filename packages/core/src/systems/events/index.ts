@@ -128,7 +128,8 @@ export function resolveEventCommand(
   runEffects(option.effects, dctx);
   ctx.outbox.log({
     key: "log.event_resolved",
-    vars: { event: def.id, option: option.id },
+    // The event's own variables ride along so the title renders in the log as it did in the window.
+    vars: { ...choice.vars, event: def.id, option: option.id },
     playerId: choice.playerId,
   });
   fireHook(world, ctx, "on_event_option", choice.playerId, {

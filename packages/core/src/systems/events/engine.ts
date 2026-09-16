@@ -264,7 +264,7 @@ export function fireEvent(
       if (blocking) {
         world.events.lastBlockingTick[other] = world.clock.tick;
       }
-      ctx.outbox.log({ key: "log.event_fired", vars: { event: def.id }, playerId: other });
+      ctx.outbox.log({ key: "log.event_fired", vars: { ...vars, event: def.id }, playerId: other });
     }
     if (blocking) {
       world.events.lastBlockingTick[playerId] = world.clock.tick;
@@ -277,7 +277,9 @@ export function fireEvent(
         link: { panel: "events", id: instanceId },
       });
     }
-    ctx.outbox.log({ key: "log.event_fired", vars: { event: def.id }, playerId });
+    // The log line names the event by its title, and the title may carry the same variables the
+    // window and the notification got (a site name, a sum); the line has to carry them too.
+    ctx.outbox.log({ key: "log.event_fired", vars: { ...vars, event: def.id }, playerId });
     return "fired";
   }
 

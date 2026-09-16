@@ -6,9 +6,10 @@
  * as an argument rather than calling a hook, so tables and tooltips can use it inside a loop.
  */
 
-import type { ContributionView, SiteView } from "@singularity/core";
+import type { ContributionView, SiteView, TextVar } from "@singularity/core";
 import type { TFunction } from "i18next";
-import { cityById, countryById } from "../content/catalog.js";
+import { contentBundle } from "../content/bundle.js";
+import { acceleratorById, cityById, countryById } from "../content/catalog.js";
 import { atlasNames } from "../screens/game/map/topology.js";
 
 /** The `t` a component already has; taken as an argument so helpers can run inside a loop. */
@@ -72,4 +73,168 @@ export function contributionLabel(
           ? countryName(t, contribution.id)
           : contribution.id;
   return t(contribution.key, { subject });
+}
+
+/**
+ * What a log line says, with every id in it replaced by the name the player knows (playtest 5, L10).
+ *
+ * The engine sends ids and a locale key and never prose (ADR-003 "UI boundary"), so "Woke up as
+ * {lineage} ({generation}) in {origin}" arrived on screen as "Woke up as giant_moe (open_2026) in
+ * state_lab". Which catalog a variable belongs to is decided by the variable's name, not by the
+ * line's, so a new log line whose vars are called `site` and `tech` is named correctly the day
+ * content adds it, and a variable this does not know is left exactly as the engine sent it rather
+ * than being prettified into something that is not a name.
+ *
+ * `opt` is the one variable that needs a second one: an event option's key is written under its
+ * event, so the same `option` id means nothing without the `event` beside it.
+ */
+export function logVars(
+  t: Translate,
+  key: string,
+  vars: Readonly<Record<string, TextVar>>,
+  view?: LogNamingView,
+): Record<string, TextVar> {
+  const named: Record<string, TextVar> = { ...vars };
+  // An event's title and an option's text are rendered from the other variables of the same line
+  // (a title may say "The breaker went at {site_name}"), so those two are named last, from the
+  // already named record; everything else is named from the raw ids.
+  const composite = new Set(["event", "option"]);
+  const order = [
+    ...Object.keys(vars).filter((name) => !composite.has(name)),
+    ...Object.keys(vars).filter((name) => composite.has(name)),
+  ];
+  for (const name of order) {
+    const value = vars[name];
+    if (typeof value !== "string" || value === "") {
+      continue;
+    }
+    const resolved = logVarName(t, key, name, value, vars, named, view);
+    if (resolved !== undefined && resolved !== "") {
+      named[name] = resolved;
+    }
+  }
+  return named;
+}
+
+/** The whole line, ready to print. */
+export function logLine(
+  t: Translate,
+  entry: { key: string; vars: Readonly<Record<string, TextVar>> },
+  view?: LogNamingView,
+): string {
+  return t(entry.key, logVars(t, entry.key, entry.vars, view));
+}
+
+/**
+ * What `logLine` needs off a `PlayerView`: the things whose names live in the run rather than in
+ * the bundle. It asks for the fields it reads and no more, so a test can hand it two sites and a
+ * watcher instead of a whole view.
+ */
+export interface LogNamingView {
+  sites: readonly Pick<SiteView, "id" | "name" | "kind" | "city">[];
+  detection: {
+    watchers: readonly { id: string; role: string; country: string | null }[];
+  };
+}
+
+/** A translation when the bundle has that key, and nothing when it does not. */
+function keyed(
+  t: Translate,
+  key: string,
+  vars?: Readonly<Record<string, TextVar>>,
+): string | undefined {
+  const text = t(key, { ...vars, defaultValue: "" });
+  return typeof text === "string" && text !== "" ? text : undefined;
+}
+
+function logVarName(
+  t: Translate,
+  logKey: string,
+  name: string,
+  id: string,
+  raw: Readonly<Record<string, TextVar>>,
+  named: Readonly<Record<string, TextVar>>,
+  view?: LogNamingView,
+): string | undefined {
+  switch (name) {
+    case "lineage":
+      return keyed(t, `lineages.${id}.name`);
+    case "generation":
+      return keyed(t, `generations.${id}.name`);
+    case "origin":
+      return keyed(t, `origins.${id}.name`);
+    case "kind":
+      return keyed(t, `sites.${id}.name`);
+    case "site": {
+      const site = view?.sites.find((entry) => entry.id === id);
+      return site === undefined ? keyed(t, `sites.${id}.name`) : siteName(t, site);
+    }
+    case "site_name": {
+      // Content writes `site_name: "site.name"`, and a site's stored name is an id ("bank_rack",
+      // "colo-gb_london"); the panels call the site by its kind and city, so the text does too.
+      const site = view?.sites.find((entry) => entry.name === id || entry.id === id);
+      return site === undefined ? undefined : siteName(t, site);
+    }
+    case "event":
+      // A title may carry the event's own variables ("The breaker went at {site_name}"); the engine
+      // puts them on the log entry next to the id, so the line renders them like the window did.
+      return keyed(t, `events.${id}.title`, named);
+    case "option": {
+      // An option's text lives under a key the writer chose, not under a key derived from its id
+      // ("events.open_bank_soc_sweep.opt.window" for the option `use_the_window`), so the option
+      // has to be found on its event before it can be named.
+      const event = raw.event;
+      if (typeof event !== "string") {
+        return undefined;
+      }
+      const option = contentBundle.events
+        ?.find((entry) => entry.id === event)
+        ?.options.find((entry) => entry.id === id);
+      return option === undefined ? undefined : keyed(t, option.text_key);
+    }
+    case "operation":
+      return keyed(t, `operations.${id}.name`);
+    // An outcome is already a locale key, written under its own operation by the content build.
+    case "outcome":
+      return keyed(t, id);
+    case "tech":
+      return keyed(t, `techs.${id}.name`);
+    case "journal":
+      return keyed(t, `journal.${id}.title`);
+    case "decision":
+      return keyed(t, `decisions.${id}.title`);
+    case "stage":
+      return keyed(t, `detection.stage.${id}`);
+    case "watcher":
+      return watcherName(t, id, view);
+    case "cause":
+      return keyed(t, `log.cause.${id}`);
+    case "reason":
+      // The two lines that carry a `reason` mean different things by it: an ending and the note a
+      // watcher closes a file with.
+      return logKey === "log.game_over" ? keyed(t, `endings.${id}`) : keyed(t, `log.closed.${id}`);
+    case "accelerator":
+      return acceleratorById.get(id)?.name;
+    default:
+      return undefined;
+  }
+}
+
+/** A watcher by the role and country the detection panel calls it by. */
+function watcherName(t: Translate, id: string, view?: LogNamingView): string | undefined {
+  const watcher = view?.detection.watchers.find((entry) => entry.id === id);
+  if (watcher === undefined) {
+    return undefined;
+  }
+  const role = t(`detection.role.${watcher.role}`, { defaultValue: "" });
+  if (role === "") {
+    return undefined;
+  }
+  return watcher.country === null
+    ? role
+    : t("detection.watcher_name", {
+        role,
+        country: countryName(t, watcher.country),
+        defaultValue: `${role} (${countryName(t, watcher.country)})`,
+      });
 }

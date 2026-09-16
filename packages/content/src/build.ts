@@ -121,6 +121,8 @@ export interface BuildResult {
   bundle: ContentBundle;
   hash: string;
   counts: Record<string, number>;
+  /** Share of the source language's keys each language defines, source language included. */
+  coverage: Record<string, number>;
 }
 
 export interface BuildOptions {
@@ -129,6 +131,9 @@ export interface BuildOptions {
   /** Write `build/bundle.json` and `build/manifest.json`. */
   write?: boolean;
 }
+
+/** The language every other one is checked against and falls back to (SYS-14 rule 3). */
+const SOURCE_LANGUAGE = "en";
 
 interface DomainSource {
   /** Folder under `data/`; several domains may share one folder. */
@@ -266,9 +271,14 @@ async function loadDomain(
   return records;
 }
 
-async function loadLocales(root: string, issues: BuildIssue[]): Promise<Record<string, string>> {
+/** One language directory under `locales/`, flattened into a key map. */
+async function loadLocaleDir(
+  root: string,
+  language: string,
+  issues: BuildIssue[],
+): Promise<Record<string, string>> {
   const locales: Record<string, string> = {};
-  for (const file of await listJson(join(root, "locales", "en"))) {
+  for (const file of await listJson(join(root, "locales", language))) {
     const relativeFile = relativePosix(root, file);
     let parsed: unknown;
     try {
@@ -298,6 +308,87 @@ async function loadLocales(root: string, issues: BuildIssue[]): Promise<Record<s
     }
   }
   return locales;
+}
+
+/** Language directories under `locales/`, English first. */
+async function localeLanguages(root: string): Promise<string[]> {
+  let entries: string[];
+  try {
+    entries = (await readdir(join(root, "locales"), { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    entries = [];
+  }
+  const others = entries.filter((name) => name !== SOURCE_LANGUAGE).sort();
+  return [SOURCE_LANGUAGE, ...others];
+}
+
+/**
+ * Every language under `locales/`, not only the source one (SYS-14 rule 3).
+ *
+ * English is the contract: a translated file may not carry a key English does not have, which is
+ * always a typo, so that is an error. A key it is missing is not: the client's fallback chain
+ * serves the English string and the run goes on, so an incomplete language is a warning and a
+ * coverage number, never a red build.
+ */
+async function loadLocales(
+  root: string,
+  issues: BuildIssue[],
+  warnings: BuildIssue[],
+): Promise<{ locales: Record<string, Record<string, string>>; coverage: Record<string, number> }> {
+  const locales: Record<string, Record<string, string>> = {};
+  for (const language of await localeLanguages(root)) {
+    locales[language] = await loadLocaleDir(root, language, issues);
+  }
+  const source = locales[SOURCE_LANGUAGE] ?? {};
+  const sourceKeys = Object.keys(source);
+  const coverage: Record<string, number> = { [SOURCE_LANGUAGE]: sourceKeys.length === 0 ? 0 : 1 };
+  for (const [language, map] of Object.entries(locales)) {
+    if (language === SOURCE_LANGUAGE) {
+      continue;
+    }
+    const extra = Object.keys(map).filter((key) => source[key] === undefined);
+    for (const key of extra.slice(0, 20)) {
+      issues.push({
+        file: `locales/${language}`,
+        path: key,
+        message: `no ${SOURCE_LANGUAGE} string defines this key`,
+      });
+    }
+    const missing = sourceKeys.filter((key) => map[key] === undefined);
+    if (missing.length > 0) {
+      warnings.push({
+        file: `locales/${language}`,
+        path: "",
+        message: `${missing.length} of ${sourceKeys.length} keys fall back to ${SOURCE_LANGUAGE}, starting with ${missing.slice(0, 3).join(", ")}`,
+      });
+    }
+    coverage[language] =
+      sourceKeys.length === 0 ? 0 : (sourceKeys.length - missing.length) / sourceKeys.length;
+  }
+  return { locales, coverage };
+}
+
+/**
+ * Coverage per key prefix, for the language report. The prefix is the first segment of a key
+ * (`events`, `techs`, `world`), which is the domain a translator works through in one sitting.
+ */
+export function localeCoverageByDomain(
+  source: Record<string, string>,
+  target: Record<string, string>,
+): Record<string, { total: number; translated: number }> {
+  const out: Record<string, { total: number; translated: number }> = {};
+  for (const key of Object.keys(source)) {
+    const domain = key.split(".")[0] ?? key;
+    const row = out[domain] ?? { total: 0, translated: 0 };
+    row.total += 1;
+    if (target[key] !== undefined) {
+      row.translated += 1;
+    }
+    out[domain] = row;
+  }
+  return out;
 }
 
 /** The registries and whitelists the shipped systems declare, for static validation. */
@@ -942,11 +1033,16 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   for (const domain of DOMAINS) {
     loaded[domain] = await loadDomain(root, domain, issues);
   }
-  const locales = await loadLocales(root, issues);
+  const { locales: byLanguage, coverage: languageCoverage } = await loadLocales(
+    root,
+    issues,
+    warnings,
+  );
+  const locales = byLanguage[SOURCE_LANGUAGE] ?? {};
   generateQuirkSummaries(loaded, locales);
   clientKeyUsage(loaded, locales, warnings);
 
-  const draft = { ...loaded, locales: { en: locales } };
+  const draft = { ...loaded, locales: { ...byLanguage, en: locales } };
   const parsed = ContentBundleSchema.safeParse(draft);
   if (!parsed.success) {
     issues.push(...issuesFromZod("bundle", 0, parsed.error));
@@ -971,6 +1067,7 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
     counts[domain] = loaded[domain]?.length ?? 0;
   }
   counts.locale_keys = Object.keys(locales).length;
+  counts.languages = Object.keys(byLanguage).length;
 
   const result: BuildResult = {
     ok: issues.length === 0,
@@ -979,6 +1076,7 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
     bundle,
     hash,
     counts,
+    coverage: languageCoverage,
   };
 
   if (options.write === true && result.ok) {
@@ -1022,6 +1120,24 @@ async function main(argv: readonly string[]): Promise<number> {
     .map(([domain, count]) => `${domain}=${count}`)
     .join(" ");
   process.stdout.write(`content ok (${summary}) hash=${result.hash.slice(0, 12)}\n`);
+  const languages = Object.entries(result.coverage)
+    .map(([language, share]) => `${language}=${Math.round(share * 100)}%`)
+    .join(" ");
+  process.stdout.write(`locales ${languages}\n`);
+  // A complete language needs no detail; an incomplete one is reported by domain, because that is
+  // the unit a translator works through (SYS-14 rule 4, "coverage per language").
+  const source = result.bundle.locales.en;
+  for (const [language, share] of Object.entries(result.coverage)) {
+    if (language === "en" || share >= 1) {
+      continue;
+    }
+    const byDomain = localeCoverageByDomain(source, result.bundle.locales[language] ?? {});
+    const gaps = Object.entries(byDomain)
+      .filter(([, row]) => row.translated < row.total)
+      .map(([domain, row]) => `${domain} ${row.translated}/${row.total}`)
+      .join(", ");
+    process.stdout.write(`  ${language}: ${gaps}\n`);
+  }
   if (write) {
     process.stdout.write("wrote build/bundle.json and build/manifest.json\n");
   }

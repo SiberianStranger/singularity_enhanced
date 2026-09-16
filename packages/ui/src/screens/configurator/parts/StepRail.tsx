@@ -55,7 +55,9 @@ function RailEntry({
         }`}
       >
         <span className="w-4 shrink-0 font-mono text-xs text-muted">{index + 1}</span>
-        <span className="flex-1 truncate">
+        {/* L3: a step's name wraps rather than being cut; the rail is 11rem wide and a
+            translation longer than the English belongs on two lines, not behind an ellipsis. */}
+        <span className="min-w-0 flex-1">
           <Hotkey label={t(`config.step.${step}`)} letter={letter} />
         </span>
         <span aria-hidden className={`shrink-0 font-mono ${active ? "" : MARK_TONE[state]}`}>

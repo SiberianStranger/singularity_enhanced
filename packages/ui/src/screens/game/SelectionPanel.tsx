@@ -270,10 +270,15 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
       // Measured against the map region rather than against the window, so the panel cannot run
       // off the bottom of a short screen (playtest 1, U8); the body scrolls inside it, and at
       // phone width it becomes a sheet across the bottom instead of a floating card.
-      className={`pointer-events-auto absolute bottom-2 start-2 end-2 z-20 bg-panel/97 sm:end-auto sm:w-80 ${
-        collapsed ? "" : "max-h-[calc(100%-1rem)]"
+      // Row two of the left column of the screen grid: under the primary panel, with the grid's
+      // own gap between them, so the two cannot overlap however long a selection is (L8). Its
+      // height budget is its own; a tall selection scrolls inside it rather than pushing the
+      // primary panel off the top. Below 54rem of map region it becomes a sheet across the whole
+      // bottom, which is the second step of the reflow order (L11).
+      className={`pointer-events-auto col-start-1 row-start-2 flex w-80 max-w-full flex-col self-end bg-panel/97 @max-[54rem]/screen:col-span-3 @max-[54rem]/screen:row-start-3 @max-[54rem]/screen:w-full ${
+        collapsed ? "" : "max-h-[22rem]"
       }`}
-      bodyClassName="flex min-h-0 flex-1 flex-col gap-2 p-2"
+      bodyClassName="flex min-h-0 flex-1 flex-col gap-1.5 p-2"
       actions={
         <>
           <Button
@@ -296,7 +301,8 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
         </>
       }
     >
-      <h3 className="truncate text-sm font-semibold text-fg">{title}</h3>
+      {/* L7: a site reading "Colocation cage, ..." is worse than one on two lines. */}
+      <h3 className="min-w-0 text-sm font-semibold text-fg">{title}</h3>
       {collapsed ? null : (
         <>
           <TabStrip tabs={tabs} active={tab} onSelect={setTab} />

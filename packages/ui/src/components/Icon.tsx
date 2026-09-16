@@ -10,8 +10,9 @@ function svg(children: ReactNode, { className, label }: IconProps): ReactNode {
   return (
     <svg
       viewBox="0 0 16 16"
-      width="16"
-      height="16"
+      // In rem so the interface scale moves the icons with the text (playtest 5, L12).
+      width="1rem"
+      height="1rem"
       aria-hidden={label === undefined ? true : undefined}
       role={label === undefined ? undefined : "img"}
       aria-label={label}

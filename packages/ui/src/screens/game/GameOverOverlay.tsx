@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { RevealText } from "../../components/RevealText.js";
 import { dayOf, hourOf } from "../../lib/format.js";
+import { logLine } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
 
@@ -77,7 +78,7 @@ export function GameOverOverlay({
                   <span className="shrink-0 font-mono text-muted">
                     {t("log.entry_time", { day: dayOf(entry.tick), hour: hourOf(entry.tick) })}
                   </span>
-                  <span className="text-fg">{t(entry.key, entry.vars)}</span>
+                  <span className="min-w-0 text-fg">{logLine(t, entry, view)}</span>
                 </button>
               </li>
             ))}

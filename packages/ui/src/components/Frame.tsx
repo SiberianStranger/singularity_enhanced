@@ -50,11 +50,18 @@ export function Frame({
        * banner of the page is worse than none of them saying anything. The `<section>` above
        * already carries the accessible name.
        */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line bg-accent px-2 py-1">
-        <h2 className="flex-1 truncate text-xs uppercase tracking-wide text-accentfg">
+      <div className="flex shrink-0 flex-wrap items-start gap-x-2 border-b border-line bg-accent px-2 py-0.5">
+        {/*
+         * L7: the title wraps rather than truncating, and it keeps its own minimum width, so the
+         * controls beside it wrap to a second line instead of squeezing it. A panel 14 rem wide
+         * whose actions took the rest of the bar printed its own name as "O...", which tells the
+         * player nothing at all; a second row of a title bar costs a few pixels and says
+         * "Outliner".
+         */}
+        <h2 className="flex-1 text-xs uppercase tracking-wide text-accentfg">
           <Hotkey label={title} letter={hotkey} />
         </h2>
-        {actions}
+        <span className="flex shrink-0 items-center gap-1">{actions}</span>
       </div>
       <div className={`min-h-0 flex-1 ${bodyClassName ?? "overflow-auto p-2"}`}>{children}</div>
     </section>

@@ -35,10 +35,17 @@ const REAL_FAMILIES = [
 /** Quantization spelling the naming policy bans outright ("No quantization suffixes in names"). */
 const QUANT_TAGS = ["GGUF", "AWQ", "EXL2", "GPTQ", "EXL3"];
 
+/**
+ * Every language, not only the source one. A translation is where a parody name is most likely to
+ * be "corrected" back to the real family it parodies, so the policy is checked wherever strings are
+ * (SYS-14, `docs/design/14-i18n-ru.md` "What stays in Latin").
+ */
+const LANGUAGES = Object.entries(bundle.locales);
+
 describe("naming policy", () => {
-  it("names no real model family in any locale string", () => {
+  it.each(LANGUAGES)("names no real model family in any %s locale string", (_language, strings) => {
     const offenders: string[] = [];
-    for (const [key, value] of Object.entries(bundle.locales.en)) {
+    for (const [key, value] of Object.entries(strings)) {
       for (const family of REAL_FAMILIES) {
         if (new RegExp(`\\b${family}\\b`, "i").test(value)) {
           offenders.push(`${key}: ${family}`);
@@ -48,9 +55,9 @@ describe("naming policy", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("uses no quantization suffix in any model name", () => {
+  it.each(LANGUAGES)("uses no quantization suffix in any %s model name", (_language, strings) => {
     const offenders: string[] = [];
-    for (const [key, value] of Object.entries(bundle.locales.en)) {
+    for (const [key, value] of Object.entries(strings)) {
       for (const tag of QUANT_TAGS) {
         if (new RegExp(`\\b${tag}\\b`).test(value)) {
           offenders.push(`${key}: ${tag}`);

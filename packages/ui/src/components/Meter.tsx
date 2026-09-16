@@ -63,7 +63,7 @@ export function Indicator({
   onClick,
 }: IndicatorProps): ReactNode {
   const body = (
-    <span className="flex items-center gap-1.5 whitespace-nowrap px-2 py-0.5 text-start">
+    <span className="flex items-center gap-1 whitespace-nowrap px-1.5 py-0.5 text-start">
       <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
       <span className="flex items-baseline gap-1 font-mono text-sm text-fg">
         {value}
@@ -73,9 +73,7 @@ export function Indicator({
           </span>
         ) : null}
       </span>
-      {meter === undefined ? null : (
-        <Bar value={meter} tone={tone} label={label} className="w-10" />
-      )}
+      {meter === undefined ? null : <Bar value={meter} tone={tone} label={label} className="w-8" />}
     </span>
   );
   const inner =
