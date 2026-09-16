@@ -137,8 +137,9 @@ function gb(t: Translate, value: number): string {
   return t("common.gb", { value: Math.round(value) });
 }
 
+/** `common.percent` is an ICU percent style: it takes the fraction and multiplies once itself. */
 function pct(t: Translate, fraction: number): string {
-  return t("common.percent", { value: Math.round(fraction * 100) });
+  return t("common.percent", { value: fraction });
 }
 
 function times(t: Translate, factor: number): string {

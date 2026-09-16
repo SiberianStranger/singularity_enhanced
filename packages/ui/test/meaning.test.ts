@@ -206,6 +206,18 @@ describe("the other blocks", () => {
     }
   });
 
+  it("prints a 0..1 figure as whole percent, not a hundred times too large", () => {
+    // Playtest 5: "Local scrutiny 5,500%". `common.percent` is an ICU percent style, so the
+    // generator hands it the fraction and never a value it multiplied itself.
+    const city = catalog.cities[0];
+    const country = catalog.countries.find((entry) => entry.id === city?.country);
+    const meaning = locationMeaning(t, city as never, country, catalog.cities, catalog.countries);
+    const scrutiny = meaning.lines.find((line) => line.id === "scrutiny");
+    expect(scrutiny).toBeDefined();
+    expect(scrutiny?.value).toBe(t("common.percent", { value: city?.scrutiny ?? 0 }));
+    expect(scrutiny?.value).not.toMatch(/,/);
+  });
+
   it("calls a quirk that costs points a cost and one that pays them back a gain", () => {
     const spends = catalog.quirks.find((quirk) => quirk.cost > 0);
     const refunds = catalog.quirks.find((quirk) => quirk.cost < 0);
