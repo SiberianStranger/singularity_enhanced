@@ -170,7 +170,9 @@ it.
 
 **On `master`, not released yet:** countries that play differently, with a stance, a government
 type, identity checks, prices and an election calendar each, and ten families of world events that
-read off them; Russian as a second language with a Cyrillic version of the angular face; the
+read off them; countries that move on their own, with elections that change a government's line on
+AI, a newsroom that publishes once it believes, identities that can be checked, frozen and burned,
+agencies with a budget as well as a competence, and an `exposed` ending that can finally happen; Russian as a second language with a Cyrillic version of the angular face; the
 configurator's detail card and the game screen fit 1280 by 720 and up without scrollbars, overlaps
 or cut titles; an interface scale control that fits the window by default; log lines that name
 things as the player sees them; the desktop installers carry the soundtrack.

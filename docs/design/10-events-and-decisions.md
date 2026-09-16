@@ -297,6 +297,31 @@ document, and why. Everything else in the spec above is implemented as written.
 - `scripted_weights` with parameters; `scripted_triggers` and `scripted_effects` (`ref`) work.
 - NPC-scoped events gated by intel (SYS-17).
 
+### M2: country pulses, an audience and two new moments
+
+- **A country pulse is evaluated once per country, against that country.** The engine used to
+  enumerate every country an event's `targets` allowed and pick one with the world RNG, so an
+  `on_country_month` event bound to one country could fire about another. A hook that binds an
+  entity of the event's own scope now hands it to the event as its target, and a bound target is
+  checked against `targets` like any other, without which the condition that says "only where the
+  player is" would never be read at all.
+- **An audience.** A country-scoped event is offered to every living player present there (a live
+  site or an active identity): it is evaluated for the first of them and the pending choice is
+  copied for the rest, each with its own instance id. `immediate` effects run once, because the
+  country only happened once.
+- **Nobody there answers with the fallback.** A country no player is in resolves the event
+  immediately with the writer's `fallback` option, which is also what the new `auto: true` field
+  does anywhere. An event with no fallback option takes its first legal option, which is what every
+  automatic resolution did before M2.
+- **New hooks**: `on_country_week` (a pulse, fired only for the countries a player is present in),
+  `on_election` (country in scope, plus `election.kind`, `election.changed` and `election.stance`),
+  `on_identity_burned` and `on_identity_check_failed` (the identity in scope). `on_site_built`,
+  `on_site_lost` and `on_investigation_stage` already fired; the TODO list above loses those lines.
+- **Validation.** `country`, `country_stat` and `world_var` name a field, and the content build now
+  refuses a field no rule keeps: an effect may write only a stat with a published range, a condition
+  may read any numeric field of the country state. A typo that would have written nothing is a red
+  build (ADR-002).
+
 ### Effect summaries and `effects_text_key` (M1)
 
 Event options, decisions, techs and operation outcomes may carry `effects_text_key`: a locale key

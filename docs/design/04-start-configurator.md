@@ -373,6 +373,36 @@ factor and `cash_scales_with_country`, the `gray_hardware` flag and suspicion, `
 (the two-tier Location step with the meaning line and the cloud refusal, the Generation and
 Lineage steps under rules G and M, the Summary cash line).
 
+#### Implementation notes (core, 2026-09-16)
+
+- **Rule L.** `validateSetup` no longer refuses a city outside `origin.locations`; the list is the
+  typical one. The one refusal left is the physical one, and it is the same structured error
+  `build_site` gives: an origin whose site kind is **rented** (the `cloud` kinds) needs the
+  country's market for it, so a cloud origin in a country with `cloud_availability` below 0.2 is
+  refused with `errors.site.unavailable_in` naming the country and both figures.
+  A `colo` origin is **not** refused where the colocation market is below the build gate (0.15),
+  which is why Tallinn stays `startup_colo`'s default city: waking up in a cage somebody else has
+  already rented is not the same as going out and renting one, and the gate applies to what the
+  player builds during the run. The asymmetry is deliberate and this is where it is written down.
+- **Rule C.** Starting cash is `origin.starting.cash_usd x clamp(0.45 + 0.55 x min(1,
+  gdp_per_capita / 50000), 0.45, 1)` of the starting city's country, unless the origin sets
+  `cash_scales_with_country: false`. A country with no published income per head is left at 1
+  rather than guessed at. `CountryView.cash_factor` and `cash_factor_contributions` publish the
+  figure and the two lines behind it, so the Location and Summary steps can show the formula.
+  `startup_colo` was re-baselined from 6,000 to 7,500 in the same pass: at the factor of its
+  default city that is the 6,000 the fourth balance pass set, and without it the eight thousand of
+  arrears in `eco_company_folds` landed on a bank a fifth smaller than the invoice.
+- **Rule H.** A country whose `chip_access` is `restricted` or `banned`, and a preset built on
+  export-controlled accelerators, sets the player flag `gray_hardware` and adds 0.05 starting
+  suspicion to the local `police` and `regulator`; the setup logs `log.gray_hardware`. No schema
+  change was needed: the hardware catalog already carries `export_control_to_china`, and a
+  `restricted` or `banned` part is the controlled one while a domestic or China-compliant part is
+  not.
+- **Rule G and rule M** are content and the configurator's: the core neither checks a generation
+  against an origin nor a lineage against a preset beyond the memory it needs. The balance runner
+  picks the lineage a player would (`tools/sim/src/setup.ts`), and rule M's removal of the lineage
+  lists is why that function now prefers a self that does real work over a bigger one that fits.
+
 ### Quirk catalog (v0.2, designed 2026-09-16)
 
 Rules: a quirk changes a number the engine reads (the content build enforces it, as for techs);

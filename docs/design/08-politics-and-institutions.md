@@ -200,3 +200,29 @@ Families that did not fire anywhere, with the reason:
 Nothing fired in every run except the reporting clock in San Jose, which started 4.6 times per run
 before a 25-day cooldown was added: the `on_investigation_stage` hook fires on every stage change and
 stages 4 and 5 are also at or above 3.
+
+## Implementation notes (M2, core)
+
+The politics of this document is a monthly rule per country and an election day, both in the `world`
+system (SYS-01 "M2 contract"). What the core settled:
+
+- A country's stance is state and its government is content: elections and events flip the stance,
+  nothing in M2 changes the regime type, and `country_is` reads each from where it lives.
+- `ai_regulation` moves toward `STANCE_REGULATION_TARGET[stance] + 0.3 x awareness` at
+  `REGULATION_SPEED_PER_MONTH[government]`, which is the whole of "at a speed set by government
+  type": a one-party state writes the rule in about a year and a coalition takes three.
+- Enforcement is two numbers, as this document asks: a budget that answers to the public
+  (`+0.05 x awareness`), to the law it has to enforce (`+0.02 x (regulation - enforcement)`) and to
+  the state of the country (`-0.03 x (1 - stability)`), and a capacity that follows the budget at a
+  fifth of the gap a month. Strict-but-toothless countries are therefore real and are visible as a
+  gap between two bars in the country panel.
+- Election day draws once: `P(change) = 0.25 + 0.40 x awareness + 0.20 x max(0, -opinion) -
+  0.20 x stability`. The new line is read off the same numbers rather than drawn again:
+  `securitize` where awareness is at or above 0.3, else `regulate` where opinion is below -0.2,
+  else `accelerate` where opinion is above 0.2, else unchanged. A settled, uninterested country
+  consumes one number and keeps its government.
+- Every threshold this document gives an institution is now wired to a watcher's attention:
+  compute reporting to the regulator's `telemetry`, know-your-customer to the financial
+  intelligence unit's `financial`, and a `securitize` posture to every local role's `human`
+  (SYS-05 "Implementation notes (M2)").
+- Treaties, interest groups and elite rent-binding are untouched: they need the actors of M3.

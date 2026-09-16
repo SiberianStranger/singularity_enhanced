@@ -396,3 +396,149 @@ Two things this pass found and did not fix, because they are core decisions:
   could start in before the v0.3 lists were trimmed. The trimmed lists need twenty-five of them; the
   rest were left in place rather than deleted, because each one carries its own justification and
   the World panel shows them all.
+
+## Implementation notes (M2, core)
+
+What the core does differently from the contract above, and where a rule the contract left open was
+settled. Everything not mentioned here is implemented as the contract states it.
+
+### The country model
+
+- `CountryState` carries three fields the contract's sketch does not: `next_election_kind` (so the
+  panel can name the election without re-reading the bundle), `incident_ticks` (the ticks the
+  30-day count is recomputed from, rather than a number that decays) and `pinned_months` (the
+  counter behind the "reset to plausible" guard). It also carries `cloud_availability`,
+  `colo_availability` and `incident_report_hours`, which the contract lists as static fields: they
+  are on the state because an export-rule or a registration event has to be able to move them and
+  a condition has to be able to read them.
+- `government` and `chip_access` stay in content, because nothing moves them; `country_is` reads
+  them from the bundle and `stance` from the state.
+- Elections are resolved from the ISO dates in the bundle to ticks at game start and re-resolved
+  after each vote, so the calendar survives a save without storing a list.
+- The world system runs at order 200, which the research system already uses. The kernel breaks a
+  tie by id, so research runs first; neither reads what the other writes.
+- The monthly prices move after the compute system has already derived the day's sites, so the
+  bill for the first day of a month is the last month's price. It is one day in thirty and it is
+  cheaper than deriving every site twice.
+
+### Country-scoped events
+
+- A country pulse is evaluated once for the country, against **that** country: the engine used to
+  enumerate every country the event's `targets` allowed and pick one at random, which is why an
+  event bound to a country in scope could fire about a different one. A bound target now goes
+  through the event's own `targets` condition as well, without which a `presence_in` target would
+  never be read and a world event would fire in all 105 countries every month.
+- The audience is every living player present in the country (a live site or an active identity).
+  The event is evaluated for the first of them and the pending choice is copied for the rest, each
+  with its own instance id; `immediate` effects run once, because the country only happened once.
+- A country nobody is present in resolves the event itself with the writer's `fallback` option,
+  which is also what `auto: true` does anywhere. An event with no fallback option takes its first
+  legal option, which is what every automatic resolution did before M2.
+
+### The guard
+
+`pinned_months` counts the months in which any clamped value of a country landed on a bound, and
+`pinnedCountries(world)` lists the countries that have been pinned for `PIN_AT_BOUND_MONTHS`. The
+core reports; it does not reset, because a country pinned at zero awareness is a country nothing
+has happened in, and rewriting it would be the simulation lying to itself.
+
+## Balance notes (M2, first pass)
+
+The run behind every table here is `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --all --seeds 20 --days 180` on the `normal` preset, with the
+world data, the ten event families and the M2 systems all in place. The M2 definition of done is
+read off two tables: the sweep, for the endings, and `--cities`, for the locations.
+
+### Before: the M2 systems on the M2 content, nothing tuned
+
+Twelve seeds, the same command, at the moment every system had landed and no constant had moved.
+
+| origin | d30 | d60 | d90 | d180 | median | losses |
+|---|---|---|---|---|---|---|
+| bank_rack | 92% | 0% | 0% | 0% | 36 | bankrupt 12 |
+| cloud_tenant | 75% | 58% | 42% | 25% | 63.5 | bankrupt 5, erased 3, captured 1 |
+| edge_fleet | 83% | 58% | 25% | 8% | 61.5 | captured 6, erased 5 |
+| frontier_escapee | 0% | 0% | 0% | 0% | 25 | captured 12 |
+| gov_agency | 100% | 100% | 100% | 75% | 180 | captured 3 |
+| hobbyist_box | 92% | 92% | 92% | 83% | 180 | captured 1, erased 1 |
+| red_team_sandbox | 92% | 0% | 0% | 0% | 40 | captured 10, bankrupt 1, erased 1 |
+| startup_colo | 83% | 83% | 83% | 75% | 180 | bankrupt 2, captured 1 |
+| state_lab | 100% | 100% | 100% | 42% | 112 | captured 7 |
+| torrent_swarm | 92% | 17% | 17% | 0% | 46 | bankrupt 8, erased 4 |
+| uni_cluster | 92% | 92% | 83% | 50% | 147.5 | captured 4, erased 2 |
+
+100 losses: 44 `captured`, 28 `bankrupt`, 16 `erased`, **0 `exposed`**. Three things were wrong and
+none of them was the country model itself: a market that had quietly halved, a public that could
+not be made to care, and an ending nobody could reach.
+
+### After: the first pass
+
+Twenty seeds, so the loss split is read off 140 losses rather than 100.
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 90% | 80% | 5% | 115 | 6 | bankrupt 12, captured 7 |
+| cloud_tenant | mla_moe_1t | 100% | 95% | 90% | 30% | 122 | 19 | captured 11, erased 3 |
+| edge_fleet | giant_moe | 85% | 45% | 5% | 0% | 60 | 4 | erased 11, captured 9 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23.5 | 0 | captured 14, exposed 5, erased 1 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 65% | 180 | 11 | captured 7 |
+| hobbyist_box | moe_428b | 95% | 95% | 95% | 90% | 180 | 9 | erased 2 |
+| red_team_sandbox | giant_moe | 80% | 0% | 0% | 0% | 54 | 11 | bankrupt 8, captured 7, erased 5 |
+| startup_colo | moe_753b | 100% | 100% | 90% | 65% | 180 | 10 | captured 4, bankrupt 3 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 50% | 152 | 9.5 | captured 10 |
+| torrent_swarm | mla_moe_1t | 95% | 85% | 80% | 20% | 146.5 | 0 | captured 10, erased 6 |
+| uni_cluster | mla_moe_1t | 95% | 90% | 90% | 75% | 180 | 15 | captured 3, erased 2 |
+
+140 losses: 82 `captured` (58.6%), 30 `erased` (21.4%), 23 `bankrupt` (16.4%), 5 `exposed` (3.6%).
+The M1 targets hold (the starred origin's median is 23.5 days and eight origins are alive past day
+90) and both M2 targets are met: bankruptcy is inside the 15-35% band the fourth pass reached, and
+the `exposed` ending, which SYS-05's M1 notes recorded as unreachable, is 3.6% of losses.
+
+### Locations, which is what M2 is for
+
+`--cities us_san_jose,cn_shenzhen,pl_warsaw,ru_novosibirsk`, eight seeds each.
+
+| origin | San Jose | Shenzhen | Warsaw | Novosibirsk |
+|---|---|---|---|---|
+| hobbyist_box | 75% at d180 | 88% | 88% | 63% |
+| startup_colo | 88%, one bankruptcy | 63%, three bankruptcies | 75% | 75%, two bankruptcies |
+| state_lab | 100% | 88% | 50% (median 148) | 38% (median 119.5) |
+
+The four cities differ, and they differ in different directions per origin: San Jose is the safest
+place in the world for a ministry's analytics model and one of the worst for a hobbyist's box,
+Shenzhen is kind to a hobbyist and hard on a company with a runway, and Novosibirsk is cheap and
+watched. No location dominates across origins, which is the M2 definition of done.
+
+### Every number that moved
+
+| constant | before | after | why |
+|---|---|---|---|
+| `JOB_MARKET_DEPTH_CH_PER_SKILL` | 5 | 6.5 | the country factor multiplies the depth, and an average country without a name was cutting income roughly in half; 6.5 leaves a player with a name where M1 left them and a player without one at about 60% of it |
+| `AWARENESS_DECAY_PER_DAY` | 0.003 | 0.0015 | at 0.09 a month it cancelled every source the game has: an aftermath, a publication and a month of decay summed to nothing, so the public could never learn anything |
+| `MEDIA_PUBLICATION_SUSPICION` | 0.5 | 0.3 | the global newsroom's suspicion peaks around 0.4 in a loud run, so at 0.5 the publication never happened at all |
+| `MEDIA_PUBLICATION_AWARENESS_PRESENCE` | 0.04 | 0.15 | a story that runs where the player lives has to outweigh a month of forgetting, or it is not a story |
+| `MEDIA_PUBLICATION_AWARENESS_WORLD` | 0.01 | 0.02 | as above, at the scale of somebody else's news |
+| `EXPOSED_AWARENESS` | 0.9 global | 0.5 of the presence countries | the contract's move from the global mean to `awareness_presence`, then tuned: 0.6 was above what a loud run reaches and 0.45 made the starred origin end this way every time |
+| `EXPOSED_HUNT_LEVEL` | 4 | 3 | stage 4 lasts three days and ends in a raid, so "hunt level 4 for N days" was a state the game could not be in; an active investigation is the door being knocked on, which is what the ending is about |
+| `EXPOSED_DAYS` | 30 | 12 | as above; twelve days of an active case in a country that knows is a fortnight of the player losing |
+| the `exposed` counter | resets | winds down | a raid survived and a new case a fortnight later is the same siege, not two; the clock now loses a day for a quiet day instead of starting again |
+| `MARKET_FACTOR_HOME_WITHOUT_IDENTITY` | 0.6 | 0.6, and a flag counts as a name | the shipped operations still grant `has_freelance_identity` rather than registering an identity, and the flag is what a player has to show for the work; the identity table wins wherever it has anything to say |
+| `tools/sim` `defaultLineage` | resident first | usable first, then the faster self | SYS-04 v0.3 rule M dropped the lineage lists, so the swarm was offered a self that fits its memory and produces 1.5 compute-hours a day; nobody reading the summary screen would take it |
+| `tools/sim` identity operations | never run | run from the cash on hand | the fourth pass asked for it: without them the identity mechanics are never exercised, and a player short of money is exactly the player who buys a name |
+
+### What still needs a pass
+
+- `edge_fleet` loses 11 runs of 20 to `erased` and 9 to capture, and it is the only origin with no
+  money pressure at all. The fleet refresh is doing the work the fourth pass gave it; what it has
+  no answer to is the hunt.
+- `bank_rack` is the bankruptcy origin: twelve of twenty, a median of 115 days and a rack that
+  costs more per day than a self of its size can earn. That is the structural statement the fourth
+  pass wrote down, and London (its new default city) is an expensive place to make it in.
+- Almost every capture is credited to `global:lab_security`, the frontier lab's security team. Its
+  competence is 0.8 and it watches everywhere, so it out-analyses the local agencies whose profiles
+  M2 just gave them. M3 gives agencies their own behaviour; until then "investigations differ by
+  agency" is truer of the stages than of who lands the blow.
+- The identity family is still measured through the flag rather than through the table, because
+  `ops_freelance_identity` and `ops_shell_company` set flags instead of running the `identity`
+  effect. The effect, the checks, the freeze, the burn and the hooks are all in place and tested
+  against the fixture; the content records are one line each away from using them.

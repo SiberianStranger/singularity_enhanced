@@ -207,3 +207,66 @@ run is never taken away without a choice.
   `SUSPICION_DECAY_PER_DAY`, and `player.vars.investigation_speed_multiplier` scales how fast every
   stage against the player runs. Both are what the `cold_reader`, `famous_base` and `reckless`
   quirks change (SYS-04 v0.2).
+
+## Implementation notes (M2: agency profiles, the hunt and an ending that happens)
+
+What M2 changed in this system, against SYS-01's "M2 contract" and the M1 notes above.
+
+### A watcher is its country's agency now
+
+`agency_profile` in the country record gives every local role a `competence` and a new `budget`,
+both in [0, 1]; a role content does not author takes the country's `ai_enforcement` for both, which
+is exactly what M1 did for every role everywhere. The budget is the speed: an investigation's stage
+runs at `1 / (0.6 + 0.4 x budget)`, so a fully funded service moves through the stages about twice
+as fast as one with nothing. Competence is still the quality of the analysis and still the thing an
+aftermath raises, which is why a refresh never rewrites it.
+
+What a country's own law makes its agencies look at is recomputed daily, before normalization:
+compute reporting (`ai_regulation >= 0.6`) puts the regulator on `telemetry`, strict know-your-
+customer (`kyc_strength >= 0.7`) puts the financial intelligence unit on `financial`, and a
+`securitize` posture puts every local role on `human`. Adding before normalizing is deliberate: a
+regulator with compute reporting looks at telemetry **at the cost of** everything else, which is
+what a mandate does to an inspectorate.
+
+### Local heat carries the country
+
+`localHeat` takes a city rather than a site, because the city panel asks the same question about a
+place the player has not built in yet and has to get the same answer. On top of the city's scrutiny
+and the country's enforcement it now adds `0.20 x awareness`, `0.10 x min(1, incidents_30d / 3)`
+and `+0.10` under `securitize`. Raids, seizures and aftermaths are recorded as incidents of the
+country they happened in, so the third term is the memory of the last thirty days in that place.
+
+### Two clocks, published
+
+`hunt_pressure` is `clamp(0.15 x open cases + 0.20 x hunt_level / 5 + 0.50 x awareness_presence)`
+and `awareness_presence` is population-weighted awareness over the countries the player is present
+in (a live site or an active identity; a player present nowhere falls back to the global figure).
+Both are written to `player.vars` every day, both are on `DetectionView` and `WorldView`, and both
+carry the lines they are made of. Pressure speeds every stage against the player by `1 +
+hunt_pressure` and lowers the suspicion a watcher needs to open a case at all by `0.1 x
+hunt_pressure`: once a service believes there is something out there, a smaller anomaly is enough.
+
+### The `exposed` ending
+
+The M1 notes said this ending was unreachable and why. M2 replaced the global mean with
+`awareness_presence` and then had to tune the rest, because the first two figures the contract
+suggested were also unreachable for reasons the contract could not have known:
+
+- hunt level 4 is the `action` stage, which lasts about three days and ends in a raid, so "hunt
+  level 4 for N days" is a state the game cannot be in. The ending reads level 3, an active
+  investigation: subpoenas, traffic captures, visits.
+- the countdown is twelve days, and it winds down rather than resetting. A player raided on day 40
+  who is investigated again on day 55 is under the same siege, not two unrelated ones.
+- `EXPOSED_AWARENESS` is 0.5 over the presence countries, which a loud run reaches and a quiet one
+  does not.
+
+It is 3.6% of losses in the M2 sweep (SYS-01 "Balance notes (M2, first pass)"), all of them on the
+origin whose fiction is that everybody already knows.
+
+### An investigation follows the paperwork
+
+Reaching `active` still freezes the freelance identity (the M1 fourth-pass rule), and now also
+burns every identity the player holds in the country running the investigation, which is the rule
+SYS-01's contract names. A bundle whose operations grant a flag rather than an identity keeps the
+M1 behaviour exactly, because the flag is only overwritten once the identity table has something to
+say about that kind of name.

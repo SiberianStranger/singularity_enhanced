@@ -98,3 +98,23 @@ refusing, and the refusal was an English sentence the client had nowhere to put.
 `cooldown_days` is stored on the definition and is not enforced: operations have no per-player
 cooldown table the way decisions do. An operation that should not be repeatable sets
 `repeatable: false`, which is enforced.
+
+## Implementation notes (M2: operations that leave something behind)
+
+- An operation now binds its **target entity** in scope alongside the operation itself, so an
+  outcome that registers an identity registers it in the country the operation was run against
+  (`ops_shell_company` has `target_scope: country`), and a site-scoped operation can read the site.
+- The identity effects the contract gives content (`identity`, `burn_identity`, `freeze_identity`)
+  are registered by the `world` system and documented in SYS-07's M2 notes. `burn_identity` and
+  `freeze_identity` act on the name a hook bound (`on_identity_check_failed` binds the one that
+  failed) unless the node names a country or a kind, so "abandon the name" abandons that name
+  rather than everything the player holds in the country.
+- `ops_freelance_identity` and `ops_shell_company` still grant their flags rather than registering
+  an identity: the outcomes are content and were not changed by the core pass. Until they carry
+  `{ identity: { create: { kind: person } } }` the identity table stays empty in a shipped run, the
+  M1 flags keep working exactly as they did, and the monthly checks have nothing to roll for. The
+  engine side is complete and tested against the core fixture.
+- The balance runner runs both operations when it can afford them and does not already hold that
+  kind of name (SYS-07 "Balance notes (M1, fourth pass)" asked for exactly this). It buys them out
+  of the cash on hand rather than the spare cash, because a player short of money is the player who
+  needs a name.

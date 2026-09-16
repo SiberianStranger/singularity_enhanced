@@ -83,3 +83,29 @@ Two populations inside one country, one selected into the system and one provide
 no enmity between them and no shared frame of reference, which within a generation reads as cultural
 speciation. The demography tab should show it as two pyramids rather than one, because the median age,
 education and mortality of the two diverge visibly by mid-game.
+
+## Implementation notes (M2, core)
+
+The two proxies this document names are country state and move monthly in the `world` system:
+
+- `unemployment` starts at 0.05 and is moved by events only; no rule writes it yet, because the
+  economy has no labour market to derive it from and a number that drifts without a cause is worse
+  than one that waits.
+- `ai_displacement` starts at 0.02 and rises by `0.004 x ai_adoption x service_weight` a month,
+  where `service_weight` is `min(1, gdp_per_capita / 30000)`: automation reaches a service economy
+  first. `ai_adoption` is a world variable that starts at 0.20 and gains a point a month, so a
+  wealthy country loses about a tenth of a percentage point of its jobs a month at the start of the
+  game and about twice that by the end of the first year. Opinion reads it at `-0.30` a month,
+  which makes displacement the slowest and most reliable way for a country to turn against AI.
+- What this document asks demography to feed SYS-05 is wired: a site's `human` exposure is scaled
+  by `0.7 + 0.3 x urbanization` and its `osint` exposure by `0.6 + 0.4 x internet`, both from the
+  country the site is in. More neighbours on the landing, more eyes online.
+- `engineer_pool` is derived by the content generator and published on the country view. Nothing
+  reads it in M2, as the contract says.
+- Cohorts, migration, fertility and the two-population split are untouched: M2 needed the proxies
+  that feed opinion and exposure, not a population model.
+
+The rate above is the one the content gates for job-loss backlash are set against: the events that
+read `ai_displacement` use thresholds a little over the 0.02 start, because a country gains about
+0.0009 a month at the opening adoption level. Moving `DISPLACEMENT_PER_MONTH` means moving those
+gates with it.

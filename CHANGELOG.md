@@ -12,6 +12,33 @@ section repeats the current version's highlights and this unreleased list.
 ## [Unreleased]
 
 ### Added
+- Countries move on their own: a monthly rule per country for regulation, the enforcement budget
+  and the capacity that lags it, public opinion, jobs lost to automation, and the two price indexes
+  for power and rented capacity; awareness fades daily and spills to the neighbours and to the
+  countries that share a language.
+- Election day: the chance a government changes its line on AI is read off what the public
+  believes, the new line is read off the same numbers, the calendar moves on by the country's
+  cadence, and anybody living there is told.
+- A story that runs: once the global newsroom believes there is a rogue AI, it publishes, and
+  awareness rises where the player lives and everywhere else.
+- The `exposed` ending can happen: the public where the player lives, an investigation at the door
+  and a clock that winds down instead of resetting, all three visible with the numbers behind them.
+- Identities are things the game keeps: a name or a company per country, with a quality, the checks
+  it has passed and the sites held under it; monthly checks that can freeze it, an investigation
+  that burns every name it finds in its country, and hooks for both.
+- Watchers are their country's agencies: competence and a budget from the country's agency profile,
+  a funded service moving through an investigation faster, and attention that follows the country's
+  own law (compute reporting, know-your-customer, a securitizing state).
+- Prices and markets per country: electricity and rented capacity at the country's index, a card at
+  its export regime and the world card market, and a refusal that names the country and the figure
+  when nobody sells cloud or colocation there.
+- The freelance market has a country behind it: how much paid work there is where the player can
+  invoice from, at a discount until there is a name to invoice under.
+- Starting cash is worth what it is worth locally, and starting on cards a country is not supposed
+  to have begins the run with a customs file (SYS-04 v0.3 rules C and H).
+- The balance runner runs origins across cities (`--locations`, `--cities a,b,c`), counts the event
+  families each run saw, names the watchers that ended the most runs, and buys the names a careful
+  player buys.
 - The world is a place with politics: every country carries its stance toward AI, its government
   type, how stable it is, how hard its identity checks bite, whether cloud and colocation can be
   rented there, what accelerators cost, how many people could run a cluster, the legal deadline for
@@ -39,11 +66,22 @@ section repeats the current version's highlights and this unreleased list.
   missing key is a warning, an extra key an error.
 
 ### Changed
+- Any city is legal for any origin: the origin's locations are the typical ones, and the only
+  refusal left is physical, a cloud origin where nobody sells cloud (SYS-04 v0.3 rule L).
+- The freelance market is deeper per point of skill, because the country factor multiplies it; a
+  name is what buys the full market back.
+- Awareness fades at half the old rate and a published story adds three times what it did, because
+  a newsroom running the story every month against a decay of the same size can never move anybody.
 - The desktop installers built by the release workflow now carry the soundtrack, as the web
   build already did.
 - Panels are flatter: tighter title bars, table cells, panel padding and gaps.
 
 ### Fixed
+- A country-scoped event is about the country it fired for: it used to pick one of the countries
+  its targets allowed at random, and its `targets` condition was skipped entirely when a hook had
+  already named the country, which fired every world event in all 105 countries every month.
+- An event nobody is present for answers itself with the writer's fallback option instead of
+  waiting for a player who is not there.
 - Configurator: the detail card's parameter column no longer collapses to one character; the two
   columns switch on the card's own width, the parameter column has a floor, the text column is
   capped at 70 characters, and the list gave the detail 5rem back.

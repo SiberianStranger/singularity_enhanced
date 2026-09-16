@@ -565,3 +565,63 @@ policy the operations it is meant to use is the next thing the sim needs.
 - `red_team_sandbox` now loses fourteen runs of thirty to bankruptcy, all of them to the notice
   period on a fallback it could not afford to close. That is the mechanic working, but a starting
   cash of zero plus a notice period is a sharp edge.
+
+## Implementation notes (M2: identities, prices and the market a player sells into)
+
+### Identities are entities now
+
+`world.entities.identity` holds one record per name: owner, kind (`person` or `company`), country,
+quality, the tier of check it has passed, its status and the sites held under it. They are created
+by the `identity` effect, which an operation's outcome runs in the operation's target country, and
+`Site.identity` records the name a place is held under: a company signs before a person, and
+nobody signs for a machine the player simply took.
+
+The two flags M1 content reads (`has_freelance_identity`, `has_shell_company`) are derived from the
+table every day, with one rule that keeps both worlds working: while the player has no identity of
+that kind **at all**, the flag is left exactly as content set it; from the first identity of that
+kind onward the table is the truth. A bundle whose `ops_freelance_identity` still writes
+`set_flag` therefore plays as it did in M1, and one whose outcome registers an identity gets the
+checks, the freeze and the burn.
+
+Monthly, per active identity: `P(check) = 0.15 + 0.25 x kyc_strength`, and on a check
+`P(fail) = clamp(kyc_strength - quality - 0.02 x age_months, 0.02, 0.9)`. A pass raises the
+identity's `kyc_level` by one, to a maximum of three; a failure freezes it and fires
+`on_identity_check_failed`. Only active identities are rolled for, so a player with no names
+consumes no randomness and their run is bit-identical to the same run before M2.
+
+A burned company gives each of its live sites `human` and `financial` exposure and opens the
+existing cutoff journal against it; it does not take the site away. Taking a place away is content's
+job, with a paid way out, because the content build already refuses an event that can take the last
+site without offering an answer (SYS-05 "every death has a warning").
+
+Beyond the contract: the `identity` effect also accepts `{ restore: true }`, which puts a frozen
+name back to work. The contract asks content to offer "documents for cash, contest for time,
+abandon" against `on_identity_check_failed` and there was no effect that could write the first two.
+
+### What a country does to a bill and to a purchase
+
+- Electricity is the published industrial price times the country's `power_price_index`, and rented
+  capacity is the card's hourly rate times its `cloud_price_index`. Both indexes start at 1, drift
+  monthly and are moved by the energy and cloud events, and both default to 1 where there is no
+  country state, so a world without them prices exactly as M1 did.
+- A card costs its list price times `(2 - hardware_availability)` times the world's
+  `gpu_price_index`. The command and the catalog the client renders call the same function, so the
+  price in the list is the price the command charges.
+- A `cloud` site needs `cloud_availability >= 0.2` in its country and a `colo` site
+  `colo_availability >= 0.15`; `build_site` refuses with `errors.site.unavailable_in` naming the
+  country and both figures, the city panel greys the row with the same refusal, and the balance
+  runner's fallback plan skips a place nobody sells. The gate reads the country **state**, so an
+  export-rule or licensing event can open or close a market during a run.
+
+### The market a player sells into
+
+The freelance market depth gains a country factor: the weighted mean of
+`clamp(0.30 + 0.50 x log10(gdp_nominal_usd_bn) / 4 + 0.20 x internet_share, 0.3, 1.2)` over the
+countries where the player holds an active identity, weighted by how many names are in each. With
+no name at all it is the home country at 0.6, and `FinancesView.market_factor_contributions` names
+the lines. The M1 flag counts as a name for this rule, for the reason above.
+
+`JOB_MARKET_DEPTH_CH_PER_SKILL` moved from 5 to 6.5 in the same pass, because the factor multiplies
+the depth rather than replacing part of it: at 5 an average country without a name cut the market
+roughly in half and every origin that lives on contract work died of it (SYS-01 "Balance notes (M2,
+first pass)").
