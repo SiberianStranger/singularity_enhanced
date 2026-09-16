@@ -1,4 +1,4 @@
-import { loudSetup, m1Content, m1Setup } from "@singularity/core/test-fixtures";
+import { instituteSetup, loudSetup, m1Content, m1Setup } from "@singularity/core/test-fixtures";
 import { describe, expect, it } from "vitest";
 import {
   cheapestUpgrade,
@@ -84,9 +84,11 @@ describe("balance runner", () => {
         kind.id === "residential" ? { ...kind, ownership: "partner" as const } : kind,
       ),
     };
-    const plan = planSecondSite(content, m1Setup());
-    // Every residential site is somebody else's now, so the colo is the only place left.
-    expect(plan?.kind).toBe("colo");
+    // Every residential site is somebody else's now, so the colo is the only place left, and
+    // Frankfurt has a colocation market to rent it in.
+    expect(planSecondSite(content, instituteSetup())?.kind).toBe("colo");
+    // Iceland has neither: a fallback nobody sells is not a fallback (SYS-01 "M2 contract").
+    expect(planSecondSite(content, m1Setup())).toBeUndefined();
   });
 
   it("sells compute when the runway is short and researches when it is not", () => {

@@ -25,6 +25,7 @@ import {
   DEFAULT_ELECTRICITY_USD_PER_KWH,
   EMERGENCY_INT2_FACTOR,
   FALLBACK_ACCELERATOR_PRICE_USD,
+  HARDWARE_AVAILABILITY_PRICE_SPAN,
   HARDWARE_DEPRECIATION_PER_YEAR,
   HARNESS_AUTONOMY_ATTENTION_FLOOR,
   HARNESS_MEMORY_RESEARCH_FACTOR,
@@ -99,6 +100,22 @@ export function acceleratorPriceUsd(accelerator: AcceleratorDef | undefined): nu
     return FALLBACK_ACCELERATOR_PRICE_USD;
   }
   return accelerator.price_usd_new ?? accelerator.price_usd_used ?? FALLBACK_ACCELERATOR_PRICE_USD;
+}
+
+/**
+ * What a card costs where the player is buying it (SYS-01 M2 contract "Sites and prices"): the
+ * list price times `(2 - hardware_availability)` for the country and times the world's
+ * `gpu_price_index`. A country that sells them freely pays about the list price; one under an
+ * export ban pays nearly twice it, and only the gray-market path of the hardware events sells at
+ * all. Both factors default to the neutral value, so a world without them prices as M1 did.
+ */
+export function acceleratorMarketPrice(
+  listPrice: number,
+  hardwareAvailability = 1,
+  gpuPriceIndex = 1,
+): number {
+  const availability = clamp(hardwareAvailability, 0, 1);
+  return listPrice * (HARDWARE_AVAILABILITY_PRICE_SPAN - availability) * gpuPriceIndex;
 }
 
 /**
@@ -370,6 +387,22 @@ export function siteHardwareValueUsd(
  * Daily cost of a site, split into the lines the finance panel shows. Rented capacity is billed
  * per GPU-hour and carries no electricity or depreciation; owned hardware carries both.
  */
+/**
+ * What the country's own market does to a bill today (SYS-01 M2 contract "Sites and prices"): the
+ * electricity price is multiplied by `power_price_index` and rented capacity by
+ * `cloud_price_index`, both of which the monthly drift and the energy and cloud events move. Both
+ * default to 1, so a world with no country state prices exactly as M1 did.
+ */
+export interface CountryPriceIndexes {
+  power_price_index: number;
+  cloud_price_index: number;
+}
+
+export const NEUTRAL_PRICE_INDEXES: CountryPriceIndexes = {
+  power_price_index: 1,
+  cloud_price_index: 1,
+};
+
 export function siteCosts(
   site: Pick<Site, "nodes" | "status">,
   kind: SiteKindDef | undefined,
@@ -378,6 +411,7 @@ export function siteCosts(
   accelerators: Record<string, AcceleratorDef>,
   tick: number,
   powerKw: number,
+  prices: CountryPriceIndexes = NEUTRAL_PRICE_INDEXES,
 ): SiteCosts {
   const ownership = kind?.ownership ?? "owned";
   const upkeepFactor = kind?.upkeep_factor ?? 1;
@@ -397,16 +431,16 @@ export function siteCosts(
     for (const node of activeNodes(site, tick)) {
       const hourly = cloudHourlyUsd(accelerators[node.accelerator]);
       if (hourly !== null) {
-        rental += hourly * node.count * HOURS_PER_DAY;
+        rental += hourly * node.count * HOURS_PER_DAY * prices.cloud_price_index;
       }
     }
   } else if (ownership === "owned") {
-    electricity = powerKw * HOURS_PER_DAY * electricityPrice(country);
+    electricity = powerKw * HOURS_PER_DAY * electricityPrice(country, prices.power_price_index);
     depreciation =
       (siteHardwareValueUsd(site, accelerators) * HARDWARE_DEPRECIATION_PER_YEAR) / DAYS_PER_YEAR;
   } else if (ownership === "partner") {
     // A partner passes the power bill on and keeps the hardware, so no depreciation (SYS-02).
-    electricity = powerKw * HOURS_PER_DAY * electricityPrice(country);
+    electricity = powerKw * HOURS_PER_DAY * electricityPrice(country, prices.power_price_index);
   }
   // `stolen` pays neither: it is somebody else's machine and somebody else's meter. What it costs
   // the player is exposure, not money (SYS-02 "Grace, discovery and loss").

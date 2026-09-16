@@ -26,6 +26,7 @@ import {
 } from "../balance.js";
 import { contentIndex } from "../content.js";
 import {
+  acceleratorMarketPrice,
   attentionTotal,
   bestPrecision,
   clamp,
@@ -39,6 +40,7 @@ import {
   kvCacheGb,
   longHorizonMultiplier,
   maxContextK,
+  NEUTRAL_PRICE_INDEXES,
   precisionFactor,
   requiredMemoryGb,
   siteCosts,
@@ -928,6 +930,10 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
   const home = activeSiteOf(world, player);
   const city = home === undefined ? undefined : cityTable(world)[home.city];
   const country = city === undefined ? undefined : index.countries[city.country];
+  // The catalog quotes the prices of the place the player is actually in (SYS-01 M2 contract).
+  const state = city === undefined ? undefined : countryTable(world)[city.country];
+  const gpuIndex = world.vars[VAR_GPU_PRICE_INDEX] ?? 1;
+  const hardwareAvailability = state?.hardware_availability ?? 1;
   const smallest =
     lineage === undefined || generation === undefined
       ? Number.POSITIVE_INFINITY
@@ -959,6 +965,7 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
               index.accelerators,
               0,
               sitePowerKw(plan.site, index.accelerators, 0),
+              state ?? NEUTRAL_PRICE_INDEXES,
             ).total,
       power_cap_kw: kind.power_cap_kw,
       exposure_profile: fullExposure(kind.base_exposure),
@@ -985,7 +992,11 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
       memory_kind: memoryKindOf(accelerator),
       tflops_or_class: accelerator.tflops_fp16,
       power_w: accelerator.tdp_w,
-      price_usd: accelerator.price_usd_new ?? accelerator.price_usd_used ?? 0,
+      price_usd: acceleratorMarketPrice(
+        accelerator.price_usd_new ?? accelerator.price_usd_used ?? 0,
+        hardwareAvailability,
+        gpuIndex,
+      ),
       ...(hourly !== null ? { hourly_usd: hourly } : {}),
       availability,
       ...(reason !== undefined ? { availability_reason: reason } : {}),

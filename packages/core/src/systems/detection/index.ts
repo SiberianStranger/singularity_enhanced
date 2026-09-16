@@ -20,6 +20,8 @@ import {
   EXPOSURE_VAR_SUFFIX,
   HARNESS_AUTONOMY_EXPOSURE_PER_DAY,
   HARNESS_LOGGING_EXPOSURE_PER_DAY,
+  HUMAN_EXPOSURE_URBANIZATION_BASE,
+  HUMAN_EXPOSURE_URBANIZATION_SPAN,
   HUNT_PRESSURE_SUSPICION_RELIEF,
   INVESTIGATION_OPEN_SUSPICION,
   INVESTIGATION_STAGE_SUSPICION,
@@ -27,6 +29,8 @@ import {
   LOCAL_HEAT_INCIDENT_SPAN,
   LOCAL_HEAT_INCIDENTS,
   LOCAL_HEAT_SECURITIZE,
+  OSINT_EXPOSURE_INTERNET_BASE,
+  OSINT_EXPOSURE_INTERNET_SPAN,
   POWER_EXPOSURE_PER_KW_PER_DAY,
   RESIDENTIAL_POWER_KW,
   SUSPICION_DECAY_PER_DAY,
@@ -42,7 +46,7 @@ import {
 } from "../../balance.js";
 import { contentIndex } from "../../content.js";
 import { clamp } from "../../derive.js";
-import type { ExposureChannel, Watcher } from "../../domain.js";
+import type { CountryDef, ExposureChannel, Watcher } from "../../domain.js";
 import { EXPOSURE_CHANNELS } from "../../domain.js";
 import { compareValue, createConditionRegistry } from "../../dsl/conditions.js";
 import { createEffectRegistry } from "../../dsl/effects.js";
@@ -116,6 +120,27 @@ export function localHeat(world: World, cityId: string): number {
   );
 }
 
+/**
+ * What the country around a site does to the two channels that are made of people (SYS-01 M2
+ * contract "Exposure", SYS-09 "internet and urbanization scale osint and human"): more neighbours
+ * on the landing, more eyes online. A country with no published figures is left at 1.
+ */
+export function countryChannelFactor(
+  def: CountryDef | undefined,
+  channel: ExposureChannel,
+): number {
+  if (channel === "human" && def?.urbanization_pct != null) {
+    return (
+      HUMAN_EXPOSURE_URBANIZATION_BASE +
+      HUMAN_EXPOSURE_URBANIZATION_SPAN * (def.urbanization_pct / 100)
+    );
+  }
+  if (channel === "osint" && def?.internet_pct != null) {
+    return OSINT_EXPOSURE_INTERNET_BASE + OSINT_EXPOSURE_INTERNET_SPAN * (def.internet_pct / 100);
+  }
+  return 1;
+}
+
 /** What the harness itself leaks every day, before the site adds anything (SYS-03, SYS-05). */
 function harnessNoise(player: PlayerState): number {
   const harness = player.profile?.harness;
@@ -139,7 +164,9 @@ function accrueExposure(
   player: PlayerState,
   site: SiteState,
 ): void {
-  const kind = contentIndex(ctx.content).site_kinds[site.kind];
+  const index = contentIndex(ctx.content);
+  const kind = index.site_kinds[site.kind];
+  const country = index.countries[cityTable(world)[site.city]?.country ?? ""];
   const growth = player.profile?.difficulty.exposure_growth ?? 1;
   const overDraw = Math.max(0, site.derived.power_kw - RESIDENTIAL_POWER_KW);
   const rented = kind?.ownership === "rented";
@@ -160,7 +187,8 @@ function accrueExposure(
       gain += harnessNoise(player);
     }
     const counter = modifier(player, `${EXPOSURE_GROWTH_VAR_PREFIX}${channel}`) * everywhere;
-    const raised = site.exposure[channel] + gain * growth * counter;
+    const raised =
+      site.exposure[channel] + gain * growth * counter * countryChannelFactor(country, channel);
     // Decay pulls down toward the floor; a channel nothing touches stays where it is.
     const decayed =
       raised > EXPOSURE_FLOOR

@@ -20,6 +20,7 @@ import {
   defaultContextK,
   hostedMemoryGb,
   maxContextK,
+  NEUTRAL_PRICE_INDEXES,
   preferredPrecision,
   siteCosts,
   siteMemory,
@@ -28,6 +29,7 @@ import {
   tokensToComputeHoursPerDay,
 } from "./derive.js";
 import type {
+  CountryDef,
   Exposure,
   ExposureChannel,
   GenerationDef,
@@ -43,6 +45,7 @@ import {
   cityTable,
   cloudAvailabilityOf,
   coloAvailabilityOf,
+  countryTable,
   type SiteState,
   siteTable,
 } from "./entities.js";
@@ -91,8 +94,7 @@ export function siteKindUnavailable(
   }
   const city = cityTable(world)[cityId];
   const def = city === undefined ? undefined : contentIndex(content).countries[city.country];
-  const available =
-    rule.stat === "cloud_availability" ? cloudAvailabilityOf(def) : coloAvailabilityOf(def);
+  const available = siteKindMarket(def, kindId);
   if (available >= rule.min) {
     return null;
   }
@@ -105,6 +107,21 @@ export function siteKindUnavailable(
       needed: rule.min,
     },
   };
+}
+
+/** How much of the market this kind needs there is in a country; 1 for a kind nothing gates. */
+export function siteKindMarket(def: CountryDef | undefined, kindId: string): number {
+  const rule = SITE_KIND_AVAILABILITY[kindId];
+  if (rule === undefined) {
+    return 1;
+  }
+  return rule.stat === "cloud_availability" ? cloudAvailabilityOf(def) : coloAvailabilityOf(def);
+}
+
+/** The same question from the content alone, for a plan made before a world exists (tools/sim). */
+export function siteKindAvailableIn(def: CountryDef | undefined, kindId: string): boolean {
+  const rule = SITE_KIND_AVAILABILITY[kindId];
+  return rule === undefined || siteKindMarket(def, kindId) >= rule.min;
 }
 
 export interface CreateSiteOptions {
@@ -226,6 +243,10 @@ export function deriveSite(
   const kind = index.site_kinds[site.kind];
   const city = cityTable(world)[site.city];
   const country = city === undefined ? undefined : index.countries[city.country];
+  // The country's own market: what a kilowatt-hour and an hour of rented capacity cost here today
+  // (SYS-01 M2 contract "Sites and prices").
+  const state = city === undefined ? undefined : countryTable(world)[city.country];
+  const prices = state ?? NEUTRAL_PRICE_INDEXES;
   const memory = siteMemory(site, index.accelerators, tick);
   const cap = kind?.power_cap_kw ?? null;
   const owner = world.players[site.owner];
@@ -261,7 +282,7 @@ export function deriveSite(
     }
   }
 
-  const costs = siteCosts(site, kind, city, country, index.accelerators, tick, power);
+  const costs = siteCosts(site, kind, city, country, index.accelerators, tick, power, prices);
   // `hardware_sourcing` and the cost events move this; the finance panel shows the result.
   let costFactor = owner === undefined ? 1 : modifier(owner, VAR_COST_MULTIPLIER);
   // Rented capacity has a second multiplier of its own: an hour bought carelessly costs more than

@@ -14,10 +14,18 @@ import {
   HARDWARE_DELIVERY_DAYS_NEW,
   HARDWARE_DELIVERY_DAYS_USED,
   SITE_INSTALL_DAYS,
+  VAR_GPU_PRICE_INDEX,
   VAR_PRECISION_DOWNTIME_DAYS,
 } from "../../balance.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
-import { clamp, hostedMemoryGb, maxContextK, requiredMemoryGb, sitePowerKw } from "../../derive.js";
+import {
+  acceleratorMarketPrice,
+  clamp,
+  hostedMemoryGb,
+  maxContextK,
+  requiredMemoryGb,
+  sitePowerKw,
+} from "../../derive.js";
 import type {
   AcceleratorDef,
   GenerationDef,
@@ -31,12 +39,14 @@ import { asRecord, isRecord, optionalString } from "../../dsl/node.js";
 import type { DslContext, EffectRegistry } from "../../dsl/types.js";
 import {
   cityTable,
+  countryOfCity,
   investigationsOf,
   type SiteState,
   sitesOf,
   siteTable,
   watchersOf,
 } from "../../entities.js";
+import { attachSite, identityForSite } from "../../identities.js";
 import { daysToTicks } from "../../kernel/clock.js";
 import {
   type CommandHandler,
@@ -72,6 +82,7 @@ import {
   promoteReadyNodes,
   type SiteLossCause,
   scaleExposure,
+  siteKindUnavailable,
 } from "../../sites.js";
 import { fireHook } from "../events/index.js";
 
@@ -268,8 +279,16 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   if (kind === undefined) {
     return fail("errors.site_kind.unknown", { kind: command.kind });
   }
-  if (cityTable(world)[command.city] === undefined) {
+  const city = cityTable(world)[command.city];
+  if (city === undefined) {
     return fail("errors.city.unknown", { city: command.city });
+  }
+  // A cloud tenancy needs somebody selling cloud in the country and a cage needs a colocation
+  // market (SYS-01 M2 contract "Sites and prices"). The city panel greys the same row with the
+  // same words, because it calls this function too.
+  const unavailable = siteKindUnavailable(world, ctx.content, kind.id, command.city);
+  if (unavailable !== null) {
+    return { ok: false, error: unavailable };
   }
   const preset = index.hardware_presets[command.hardware_preset];
   if (preset === undefined) {
@@ -309,6 +328,9 @@ const buildSite: CommandHandler = (world, command, ctx) => {
 
   const profile = player.profile;
   const graceFactor = profile?.difficulty.grace_windows ?? 1;
+  // Somebody signs for the place: a company first, then a person, and nobody at all for a machine
+  // the player simply took (SYS-01 M2 contract "Identities").
+  const identity = identityForSite(world, player.id, city.country, kind.ownership);
   const site = createSite(world, ctx.content, {
     owner: player.id,
     kind: kind.id,
@@ -318,7 +340,9 @@ const buildSite: CommandHandler = (world, command, ctx) => {
     readyTick: world.clock.tick + daysToTicks(SITE_INSTALL_DAYS[kind.ownership]),
     role: "none",
     graceFactor,
+    identity,
   });
+  attachSite(world, site.id, identity);
   refreshPlayer(world, ctx, player.id);
   ctx.outbox.log({
     key: "log.site_built",
@@ -525,7 +549,15 @@ const buyHardware: CommandHandler = (world, command, ctx) => {
   if (purchase === undefined) {
     return fail("errors.accelerator.not_for_sale", { accelerator: accelerator.id });
   }
-  const cost = purchase.price * command.count;
+  // What a card costs here today: the country's export regime and the world's card market
+  // (SYS-01 M2 contract "Sites and prices").
+  const country = countryOfCity(world, site.city);
+  const cost =
+    acceleratorMarketPrice(
+      purchase.price,
+      country?.hardware_availability ?? 1,
+      world.vars[VAR_GPU_PRICE_INDEX] ?? 1,
+    ) * command.count;
   if (player.cash < cost) {
     return fail("errors.cash.insufficient", {
       cost: Math.round(cost),

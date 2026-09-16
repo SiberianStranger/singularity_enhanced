@@ -19,7 +19,13 @@ import type {
   SiteView,
   TechView,
 } from "@singularity/core";
-import { contentIndex, siteCosts, siteMemory, sitePowerKw } from "@singularity/core";
+import {
+  contentIndex,
+  siteCosts,
+  siteKindAvailableIn,
+  siteMemory,
+  sitePowerKw,
+} from "@singularity/core";
 
 export interface PolicyOptions {
   /** Days of runway the player aims to keep; below it the compute moves to paid work. */
@@ -123,6 +129,11 @@ export function planSecondSite(
       continue;
     }
     if (kind.ownership === "stolen" || kind.ownership === "partner") {
+      continue;
+    }
+    // A cloud tenancy needs a cloud market and a cage needs a colocation floor; `build_site`
+    // refuses where there is neither (SYS-01 "M2 contract").
+    if (!siteKindAvailableIn(country, kind.id)) {
       continue;
     }
     for (const presetId of Object.keys(index.hardware_presets).sort()) {

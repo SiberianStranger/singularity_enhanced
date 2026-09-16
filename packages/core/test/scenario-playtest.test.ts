@@ -133,19 +133,21 @@ describe("playtest 1: the institute cluster", () => {
       "rtx_pro_6000",
       "tesla_p40",
     ]);
+    // The catalog quotes what a card costs where the player is buying it: Germany ships freely, so
+    // the list price times (2 - 0.9), which is the M2 hardware-availability factor (SYS-01).
     expect(catalog.find((card) => card.id === "h100_sxm")).toMatchObject({
       vendor: "NVIDIA",
       vram_gb: 80,
       memory_kind: "hbm",
       power_w: 700,
-      price_usd: 27_000,
+      price_usd: 27_000 * 1.1,
       availability: "buy",
       fits_self: true,
     });
     expect(catalog.find((card) => card.id === "tesla_p40")).toMatchObject({
       availability: "gray",
       availability_reason: "hardware.availability.gray",
-      price_usd: 130,
+      price_usd: 130 * 1.1,
       fits_self: false,
     });
     expect(catalog.find((card) => card.id === "ascend_910c")).toMatchObject({
