@@ -7,8 +7,11 @@ import {
   lineageById,
   originById,
 } from "../../../content/catalog.js";
+import { presetById } from "../../../content/presets.js";
+import { computeHours } from "../../../lib/format.js";
+import { dayZeroOf } from "../dayZero.js";
 import { rateDraft } from "../rating.js";
-import { useConfigurator } from "../store.js";
+import { matchingPreset, setupFromDraft, useConfigurator } from "../store.js";
 
 /**
  * The build so far, as one line in the footer (playtest 4, P5).
@@ -25,6 +28,22 @@ import { useConfigurator } from "../store.js";
 export function BuildLine(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
+  const chosen = useConfigurator((state) => state.preset);
+
+  /*
+   * Which preset this is (playtest 7, Y6). A build that still matches a preset exactly is named
+   * after it; one that started as a preset and was then edited says so, because "Custom (from the
+   * bank)" is the difference between a player who changed one dial on purpose and one who has no
+   * idea what they are looking at.
+   */
+  const exact = matchingPreset(draft);
+  const from = chosen === null ? undefined : presetById.get(chosen);
+  const origin =
+    exact !== undefined && exact !== null
+      ? t("config.build.preset", { preset: t(exact.name_key) })
+      : from === undefined
+        ? undefined
+        : t("config.build.preset_custom", { preset: t(from.name_key) });
 
   const parts = [
     originById.get(draft.origin)?.name_key,
@@ -37,7 +56,16 @@ export function BuildLine(): ReactNode {
     .map((key) => t(key));
 
   parts.push(t("config.build.quirks", { count: draft.quirks.length }));
+  // Y7: the compute-hours a day beside the challenge rating, from the engine. It is the figure the
+  // maintainer called one of the main ones, and this line is the one place it is always on screen.
+  const day = dayZeroOf(setupFromDraft(draft));
+  if (day !== null) {
+    parts.push(t("config.build.compute", { value: computeHours(day.computeHoursPerDay) }));
+  }
   parts.push(t("config.build.rating", { value: rateDraft(draft).value }));
+  if (origin !== undefined) {
+    parts.unshift(origin);
+  }
 
   const line = parts.join(t("config.build.separator"));
 

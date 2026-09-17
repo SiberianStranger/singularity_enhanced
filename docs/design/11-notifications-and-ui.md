@@ -1167,3 +1167,82 @@ carries a one-line description under it in the style the font note already used:
 auto scale, interface scale, the angular face, music, interface sounds, the CRT overlay, the map
 style and the link to the message settings. A description a language has not translated prints
 nothing rather than its key.
+
+## Implementation notes (client, playtest 7), 2026-09-17
+
+Findings Y1 to Y7 of `docs/playtests/2026-09-17-playtest-7-configurator-comprehension.md`. The
+design is in SYS-04 "Configurator v0.4: two tracks and a guidance layer"; what follows is what the
+client does with it.
+
+### Two tracks in one rail (Y6)
+
+`STEP_IDS` gained `presets` at the top and the rail prints a "Full setup" header before the first
+of the eight that follow. The header lives inside the same `<li>` as that step, because a heading
+between two list items is not a list item; `RailEntry` is the button and nothing else now.
+
+A step's mark is still computed from the draft rather than tracked, and the presets step needs a
+fourth answer to a three-state question: a build that is exactly a preset is `done`, and anything
+else is `locked`, whose mark is the muted "=" and whose tooltip reads "A build of your own". It is
+never `attention`: walking past the presets is a way to play, not a mistake.
+
+`matchingPreset(draft)` compares the draft with each preset's own draft on every field but the
+seed. That is what the rail mark, the list's selection and the footer's build line all read, so no
+setter has to maintain a flag, and editing a preset and editing it back is the preset again. The
+store keeps one thing: `preset`, the last one the player pressed, which is what lets the footer say
+"Custom (from the bank)" after an edit. It is cleared by Random build, by Reroll, by a pasted setup
+and by a reset.
+
+`toSetup()` is now a thin wrapper over the exported pure `setupFromDraft(draft)`, because the
+day-zero figures are computed by handing the engine the setup a build *would* produce, and a screen
+showing a preset it has not applied has no store state to read.
+
+### The guidance block (Y2, Y3)
+
+`StepLayout` takes a `guidance` node, drawn under the description and above the `aside`, inside the
+text column. Five steps pass a `GuidanceBlock` (origin, generation, lineage, hardware, quirks); the
+Harness step passes its own three sentences in the same slot. The block draws nothing when content
+has written nothing, so a new entry is never an empty frame.
+
+`MeaningLine` gained three optional fields, and all three are general rather than one-offs:
+
+- `bar`, a `Band` from `guidance.ts`: where the value sits between the lowest and the highest of
+  its field, drawn as a one-pixel bar inside the label's box. Inside the label's box, not under the
+  row, because a `dl` group may hold only `dt` and `dd`.
+- `word`, the band's word, printed before the value in the muted angular face.
+- `valueHint`, a tooltip on the *value* rather than on the label. It is what Y1 needed: the site
+  kind in the origin card explains that kind of place, on hover and on keyboard focus, through the
+  one-at-a-time `Tooltip` playtest 6 left. The trigger is a real `<button>` so the keyboard reaches
+  it, and it carries `measure` so a value does not change face when it gains a tooltip.
+
+### Day zero, from the engine (Y7)
+
+`dayZero.ts` builds a game from the setup with `createGame`, ticks nothing, and reads the first
+`PlayerView`. There is no second implementation of anything: the compute-hours are the engine's,
+the cash is the engine's after the country factor, the runway is the engine's. Both halves are
+cached: a setup is measured once (about six milliseconds), and the catalog scan that produces the
+tertiles once per session. `packages/ui/test/presets.test.tsx` asserts the figures against the
+Overview and Finances panels of a real session for three starts, which is the only form of that
+claim worth making.
+
+The verdict's own numbers are in SYS-04. What matters here is that no threshold is a constant in
+the client, and that the block is rendered by the same `MeaningBlock` every other card uses, so the
+tooltips, the bars and the colours are the ones the player has already learnt.
+
+### The World step in one screen (Y5)
+
+The step was five stacked sections and it scrolled at every supported size. It is now a difficulty
+row, four settings in two columns with a line of explanation each, and the multipliers and
+modifiers behind an "advanced" toggle. The difficulty row is ordered by the severity of the
+presets' own sliders rather than by their ids, so it reads as a ladder. `Card` is no longer used
+here: four paragraphs side by side were most of the height.
+
+Measured in Chromium at 1280 by 720, 1366 by 768, 1600 by 900 and 1920 by 1080, in both languages:
+no page scroll, no sideways overflow anywhere in the configurator, and the Presets and World steps
+do not scroll inside their own frame either.
+
+### A sentence in a list row is prose
+
+The angular face is caps-only by design, which is right for "40k USD" in a list row and wrong for
+"for a player who has never played". `ListEntry.summaryProse` puts that row's summary back on the
+reading face and the reading ladder. It has to be a class that is unlayered and more specific than
+the `button` rule (`measure`), because a Tailwind utility loses to it inside a button.

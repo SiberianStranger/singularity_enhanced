@@ -9,6 +9,7 @@
 
 import type {
   AcceleratorDef,
+  BorrowedChannelDef,
   CityDef,
   Condition,
   CountryDef,
@@ -32,6 +33,7 @@ import type {
   Weight,
 } from "@singularity/core";
 import type { z } from "zod";
+import type { BorrowedChannelDefSchema } from "./borrowed.js";
 import type {
   DifficultyPresetDefSchema,
   GenerationDefSchema,
@@ -86,6 +88,8 @@ export type SchemaCompatibility = [
   AssertAssignable<z.infer<typeof HardwarePresetDefSchema>, DeepWiden<HardwarePresetDef>>,
   AssertAssignable<SiteKindDef, z.infer<typeof SiteKindDefSchema>>,
   AssertAssignable<z.infer<typeof SiteKindDefSchema>, DeepWiden<SiteKindDef>>,
+  AssertAssignable<BorrowedChannelDef, z.infer<typeof BorrowedChannelDefSchema>>,
+  AssertAssignable<z.infer<typeof BorrowedChannelDefSchema>, DeepWiden<BorrowedChannelDef>>,
   AssertAssignable<MacroRegionDef, z.infer<typeof MacroRegionDefSchema>>,
   AssertAssignable<z.infer<typeof MacroRegionDefSchema>, DeepWiden<MacroRegionDef>>,
   AssertAssignable<CountryDef, z.infer<typeof CountryDefSchema>>,

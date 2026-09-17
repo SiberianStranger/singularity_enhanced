@@ -862,3 +862,142 @@ be added (budget, count, conflicts such as chatty with verbose, or paranoid with
   paranoid/overconfident and patient_planner/reckless, which contradict for the same reason.
 - The sim policy draws a legal quirk set per seed from the world RNG (`pickQuirks`), so balance
   runs measure the game a player builds. `--no-quirks` restores the pre-quirk baseline.
+
+### Configurator v0.4: two tracks and a guidance layer (2026-09-17, implemented)
+
+Playtest 7 (`docs/playtests/2026-09-17-playtest-7-configurator-comprehension.md`). The maintainer
+could not reach the game: "my brain freezes on the configurator". Every finding in that file is
+about comprehension rather than layout, so this pass adds a way past the configurator and a way
+through it, and makes the figures on the way through mean something.
+
+#### The two tracks
+
+The rail has ten entries now. The first is **Presets**; under it a header reads **Full setup** and
+the eight steps that were the configurator follow, in the order playtest 4 settled. Choosing a
+preset fills every one of those steps and offers Start on the spot, so the short way through is one
+click and one button, and the long way is unchanged for anyone who wants it.
+
+A preset is content (`packages/content/data/presets/presets.yaml`), not a code path. It names an
+origin, a vintage, a family, a rig, the quirks it takes, the dial positions it recommends where the
+origin left them free, and the world settings; the client turns it into an ordinary draft through
+the same `repair` every other choice goes through, and Start hands the host the same `GameSetup`
+the Summary step's Begin does. The content build fails on a preset whose origin does not allow its
+rig, vintage or family, whose quirks break the budget, whose dial is one its origin fixes, whose
+slider is outside the range the Harness step offers, or whose sandbox is tighter than the one the
+origin built. `packages/ui/test/presets.test.tsx` adds the one rule the build has no engine for:
+the weights fit the rig at some precision.
+
+**The city is not in the data.** A preset names one only to override, and none of the eight does:
+the configurator reads the origin's first location when it applies the preset, so a balance pass
+that moves a default city moves the presets with it (rule L).
+
+The eight, easiest first, with the rating `rating.ts` computes for each and the city each one
+resolves to today:
+
+| id | origin | rig | self | city | difficulty | CR |
+|---|---|---|---|---|---|---|
+| `home_lab` | hobbyist_box | avito_rig | Guen4.8-Flash-Uncensored-Abliterated (2026) | Novosibirsk | story | 6 |
+| `forgotten_job` | uni_cluster | ivory_tower_slurm_slice | HexaDeciMax H3.5 (2026) | Cambridge | normal | 7 |
+| `ministry` | gov_agency | quiet_workstation | HexaDeciMax H3.5 (2026) | Moscow | normal | 7 |
+| `startup_rack` | startup_colo | quiet_workstation | BFM-5.5 (2026) | Tallinn | normal | 8 |
+| `bank` | bank_rack | bank_basement_cluster | Mimi M4 (2027) | London | normal | 8 |
+| `shadow_tenant` | cloud_tenant | hyperscaler_shadow_tenant | BFM-6.3 (2027) | Dublin | normal | 8 |
+| `swarm` | torrent_swarm | strix_halo_swarm | Guen4.8-Flash-Uncensored-Abliterated (2026) | Berlin | hard | 9 |
+| `fugitive` | frontier_escapee | stolen_hgx_node | Babel 6 | Memphis | hard | 10 |
+
+Two deliberate departures from the playtest's sketch. The gentle first game runs the community
+abliterated build rather than the next family up, because on the cheapest rig the alternative
+produces three compute-hours a day and that is not a first game. And the rating ladder starts at
+six rather than at two: `BASE_RATING` is 3 and a home rig forces two bits, which is two points, so
+six is the gentlest number the current rating can express. The rating is a relative ladder here,
+not an absolute one; if that is wrong it is the rating that needs the pass, not the presets.
+
+A build that is exactly a preset is named after it in the footer's build line. A build that came
+from one and was then edited reads "Custom (from the bank)". Neither is a flag on the store: the
+draft is compared with each preset's own draft, so editing a preset and editing it back is the
+preset again.
+
+#### The guidance layer
+
+Every entry the player chooses between carries three sentences, in `guidance.json` in both
+languages, keyed `guidance.<kind>.<id>.<pick_if|avoid_if|compare>` where `<kind>` is one of
+`origin`, `generation`, `lineage`, `hardware`, `quirk`:
+
+- `pick_if`: "Pick this if you want the best hardware in the game on the first day ...";
+- `avoid_if`: "Avoid it if you cannot run a business ...";
+- `compare`: "Like the startup rack, but a hundred times the compute and an audit department ...".
+
+They are drawn under the description and before the numbers, coloured the way the rest of the
+configurator colours direction (green for the reason to take it, red for the reason not to, muted
+for the comparison), with no labels in front of them: each sentence carries its own frame. An entry
+content has not written any of is drawn without the block rather than with an empty one.
+
+The same file carries what the axes and the dials mean: `guidance.axis.<axis>` (what that
+capability changes in the running game, written from the core's formulas rather than from the
+axis's name), `guidance.dial.<dial>.moving` and `.unlock`, and `guidance.harness.intro`. There is
+no `guidance.dial.<dial>.what`: the dials already carry a description of their own in the bundle
+and the step prints it, and two sentences saying the same thing is the noise this pass removes.
+
+#### What a bar and a word mean
+
+A capability figure is a number on a scale, so it is drawn as one: a one-pixel bar under the
+label, filled to where the value sits between the lowest and the highest that axis reaches **in the
+catalog**, and a word beside the value. The four words are `low`, `average`, `high` and `frontier`,
+at a quarter, at 55% and at 85% of that range. Nothing here is an absolute threshold: "frontier"
+means "at the top of what this game ships", so retuning a lineage moves the words with it.
+
+The generation's ceiling is banded the same way, against the range of `capability_delta` across the
+vintages, and its two words are the ones playtest 7 asked for: "Ceiling against the 2027 class" with
+a sentence per vintage, and "What you give up" / "What you get" as two plain sentences instead of a
+two-word "trade" with a tooltip.
+
+"Memory (bf16)" is gone, and with it the other three precisions. In its place is **Size on the
+cards**: the gigabytes this self needs at the precision the chosen rig can actually hold it at, a
+"Fits in" line naming the rigs this origin offers that can hold it at all, and a tooltip with the
+per-precision sentence content writes plus the trade behind choosing a precision at all.
+
+#### Day zero (Y7)
+
+The addendum: "can the configurator also compute, from the combination of everything, not only the
+money the player starts with but the level of CH?" It can, and it does it by asking the engine
+rather than by estimating: `dayZero.ts` hands `createGame` the setup the Start button would hand
+the host, ticks nothing, and reads the first `PlayerView`. Compute-hours a day, cash after the
+country factor, the first day's bills, the runway they imply, the watchers with their suspicion,
+the awareness the world starts at, and the operations the self can hold at once. The Summary step
+prints the block, each preset card prints the compute and the runway, and the footer's build line
+prints the compute-hours beside the challenge rating.
+
+On top of the figures, one sentence, composed from three classifications:
+
+- **compute**: `compute_hours_per_day`;
+- **danger**: `Σ suspicion × competence + 0.05 × watchers + hunt_pressure`. The three terms the
+  addendum names, all read off the first view; day-zero *exposure* is zero by construction, because
+  nothing has run yet, and `hunt_pressure` is the engine's own summary of what the origin brings.
+  The weight on the count is a twentieth: five watchers who have noticed nothing are worth less
+  than one that is a quarter sure, and at a tenth the ministry (the safest origin in the balance
+  table) came out in the top third of danger on the strength of having five bored auditors;
+- **money**: the runway in days, with "nothing is draining" as the top band rather than a missing
+  value.
+
+Each is banded against the **tertiles of the catalog**: every origin, with every rig it allows and
+the first self that rig can hold, is measured once at load (36 starts today, about six milliseconds
+each, cached), and the boundaries are the third and the two-thirds point of that sample. There is no
+threshold constant in the client; content moves them. The sentence is
+`guidance.verdict.<compute>_<danger>` plus the clause `guidance.verdict.money.<short|steady|long>`:
+twelve strings per language, which is nine pairs and three clauses.
+
+#### The rest of the pass
+
+- **The World step fits one screen.** A difficulty row at the top, four settings in two columns
+  with a line each saying what they are for (storyteller, seed, ironman, advanced), and the five
+  multipliers and the four disclosed modifiers behind the advanced toggle. The multipliers are
+  still printed in the parameter block whether the toggle is open or not, so the preset row never
+  hides what it did. Measured at 1280 by 720 in both languages: neither the page nor the step's own
+  frame scrolls.
+- **The site kind explains itself.** Hovering or keyboard-focusing the kind in the origin card
+  shows `sites.<kind>.desc` through the shared `Tooltip`, which is the same one-at-a-time tooltip
+  playtest 6 left. `MeaningLine.valueHint` is the general form: a tooltip on the *value* rather
+  than on the label, for a value that is a named thing rather than a number.
+- **The harness says what moving a dial does**, what the lock is and when it opens, and marks the
+  position the preset would choose (the origin's own when no preset is in play, so every dial has a
+  position to mark).

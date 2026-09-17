@@ -9,6 +9,7 @@
  */
 
 import type {
+  BorrowedChannelView,
   CityState,
   ContentBundle,
   EventDef,
@@ -93,8 +94,46 @@ const FALLBACK_UPKEEP_HORIZON_DAYS = 180;
 /** The operations that buy a name, in the order a careful player runs them (SYS-17). */
 const IDENTITY_OPERATIONS = ["ops_freelance_identity", "ops_shell_company"] as const;
 
+/**
+ * Borrowed capacity a sensible new player keeps (SYS-25). The free tier is legal, costs nothing and
+ * the worst it does is put the work in somebody's training set, so the policy fills it. The relay
+ * is a standing bill, so it is bought only two blocks deep and only while the books can carry it.
+ * The harvested tier is deliberately absent: the scripted player is a careful player, and a channel
+ * that runs on somebody else's invoice is the one that ends runs.
+ */
+const BORROWED_TARGET_BLOCKS: Readonly<Record<string, number>> = { free_tier: 3, grey_relay: 2 };
+
+/** Cash the player keeps against a month of a relay's quota before buying another block. */
+const RELAY_CASH_MULTIPLE = 6;
+
+/**
+ * A whole block has to be missing before the player runs the top-up again. Without it the policy
+ * re-ran the operation on every cooldown to replace the two percent a day the free tier loses, so
+ * an account-opening operation was running almost continuously and its exposure never stopped
+ * accruing. A player tops up when there is a block's worth of capacity to win back.
+ */
+const BORROWED_TOP_UP_GAP = 1;
+
+/**
+ * What a channel has to be worth before a careful player touches it: a third of what the player's
+ * own hardware makes in a day, at the channel's full stock. A free tier's nine compute-hours are
+ * worth having on a hobbyist rig's twenty-four and are a rounding error on a rack, which is SYS-25's
+ * own shape written as a ratio rather than as a threshold. It gates the research and the operations
+ * together, so the policy never researches a channel it will not open.
+ */
+const BORROWED_WORTH_SHARE = 1 / 3;
+
+/** Whether this channel is worth its exposure to this player today. */
+function worthOpening(view: PlayerView, channel: BorrowedChannelView): boolean {
+  const own = Math.max(1, view.compute.own_ch_per_day);
+  return channel.max_capacity_ch_per_day >= own * BORROWED_WORTH_SHARE;
+}
+
 /** Cash a player keeps against an operation's price before starting it. */
 const IDENTITY_OPERATION_CASH_MULTIPLE = 2.5;
+
+/** Most of the day the policy will hold back for the operations it wants to start. */
+const MAX_OPERATION_RESERVE = 0.25;
 
 /** How much more a player will pay for a fallback that holds the self on the cards, not in RAM. */
 const RESIDENT_COPY_PREMIUM = 3;
@@ -368,19 +407,61 @@ export function borrowedSite(content: ContentBundle, site: SiteView): boolean {
   return ownership === "partner" || ownership === "stolen";
 }
 
+/**
+ * The research that opens a borrowed channel the player does not have yet (SYS-25), and whether
+ * this player wants it. A self whose own hardware makes little reaches for it first, because a free
+ * tier is a third of a hobbyist rig; a self with more than that does not research it at all,
+ * because it would gain a few percent of a day and pay a channel's exposure for it. That is the
+ * spec's own shape, stated as one number the policy can read.
+ */
+export function channelTechs(
+  view: PlayerView,
+  alarmed: boolean,
+): { wanted: string[]; avoided: string[] } {
+  // A player who will not open a channel does not research one either: research it will not use is
+  // research it did not do, and what it costs is the stealth techs that keep it alive. The same
+  // gates as the operations, so the two decisions cannot disagree.
+  //
+  // A player who will open one reaches for it first instead, because the cheapest-first queue, on a
+  // rig that sells most of its day, does not reach even a cheap tech for months. The pairing is what
+  // makes this safe: the day the channel stops being worth it, the research is dropped rather than
+  // carried, so nothing is left holding a track it cannot finish.
+  const wanted: string[] = [];
+  const avoided: string[] = [];
+  for (const channel of view.compute.channels) {
+    if (channel.unlocked) {
+      continue;
+    }
+    if (alarmed || !worthOpening(view, channel)) {
+      avoided.push(channel.unlocked_by);
+    } else if (channel.cost_usd_per_day === 0) {
+      // A standing bill is never the first thing a player reaches for; it is simply not avoided.
+      wanted.push(channel.unlocked_by);
+    }
+  }
+  return { wanted, avoided };
+}
+
 /** The techs the player puts compute on: cheapest first, and nothing dangerous while alarmed. */
 export function researchTargets(
   view: PlayerView,
   alarmed: boolean,
   options: PolicyOptions,
 ): TechView[] {
-  const running = view.research.in_progress.filter((tech) => tech.available);
+  const { wanted, avoided } = channelTechs(view, alarmed);
+  // Running lines come first, but a channel tech the player has stopped wanting is dropped rather
+  // than carried: the progress is kept and the track is freed for something it can finish.
+  const running = view.research.in_progress
+    .filter((tech) => tech.available)
+    .filter((tech) => !avoided.includes(tech.id));
   const candidates = [...view.research.available]
     .filter((tech) => tech.available)
     .filter((tech) => !alarmed || tech.danger === 0)
+    .filter((tech) => !avoided.includes(tech.id))
     .filter((tech) => tech.cost_cash_usd <= Math.max(0, view.resources.cash_usd))
     .sort(
       (a, b) =>
+        Number(wanted.includes(b.id)) - Number(wanted.includes(a.id)) ||
         a.cost_compute_hours - b.cost_compute_hours ||
         a.danger - b.danger ||
         a.id.localeCompare(b.id),
@@ -519,7 +600,13 @@ export function identityOperations(view: PlayerView, alarmed: boolean): PlayerCo
   if (alarmed) {
     return [];
   }
-  const running = new Set(view.operations.map((entry) => entry.operation_id));
+  // Running, not ever run: a finished instance stays in the view, and counting those meant a name
+  // that was burned could never be replaced (found while wiring SYS-25 into the runner).
+  const running = new Set(
+    view.operations
+      .filter((entry) => entry.status === "running")
+      .map((entry) => entry.operation_id),
+  );
   const commands: PlayerCommand[] = [];
   for (const id of IDENTITY_OPERATIONS) {
     const offer = view.operation_offers.find((entry) => entry.id === id);
@@ -538,6 +625,74 @@ export function identityOperations(view: PlayerView, alarmed: boolean): PlayerCo
     commands.push({ type: "start_operation", playerId: view.player_id, operationId: id });
   }
   return commands;
+}
+
+/**
+ * Opening free accounts and buying relay quota (SYS-25). Both go through the same operations the
+ * player has, so the balance runs exercise the channels rather than a shortcut: the offer has to be
+ * enabled, the tech has to be done, and the channel has to be below the stock the policy wants.
+ */
+export function borrowedOperations(
+  view: PlayerView,
+  options: PolicyOptions,
+  alarmed: boolean,
+): PlayerCommand[] {
+  // Somebody else's endpoint is a crutch for a player whose own hardware makes little. A player
+  // with a rack gains a rounding error and pays the same exposure for it, so it does not bother:
+  // SYS-25's own shape, and the reason a state institute in the balance table never opens one.
+  //
+  // And nobody opens accounts while somebody is already looking at them: the same rule the policy
+  // applies to dangerous research and to buying a name. A player whose own compute has collapsed
+  // under a hunt is exactly the player this would finish off.
+  if (alarmed) {
+    return [];
+  }
+  const running = new Set(
+    view.operations
+      .filter((entry) => entry.status === "running")
+      .map((entry) => entry.operation_id),
+  );
+  const runway = view.resources.runway_days;
+  const panicking = runway !== null && runway <= options.runwayPanicDays;
+  const commands: PlayerCommand[] = [];
+  for (const channel of view.compute.channels) {
+    const target = BORROWED_TARGET_BLOCKS[channel.id];
+    if (
+      target === undefined ||
+      !channel.unlocked ||
+      channel.blocks > target - BORROWED_TOP_UP_GAP
+    ) {
+      continue;
+    }
+    if (!worthOpening(view, channel)) {
+      continue;
+    }
+    const offer = view.operation_offers.find((entry) => entry.id === channel.top_up.operation);
+    if (offer === undefined || !offer.enabled || running.has(offer.id)) {
+      continue;
+    }
+    // A standing daily bill is only worth opening while there is a runway to pay it from.
+    if (offer.cost_usd > 0 || channel.cost_usd_per_day > 0) {
+      if (panicking || view.resources.cash_usd < offer.cost_usd * RELAY_CASH_MULTIPLE) {
+        continue;
+      }
+    }
+    commands.push({ type: "start_operation", playerId: view.player_id, operationId: offer.id });
+  }
+  return commands;
+}
+
+/** Compute-hours a day the operations in this batch will hold while they run. */
+export function operationCompute(view: PlayerView, commands: readonly PlayerCommand[]): number {
+  let total = 0;
+  for (const command of commands) {
+    if (command.type !== "start_operation") {
+      continue;
+    }
+    const offer = view.operation_offers.find((entry) => entry.id === command.operationId);
+    total += offer?.cost_compute_hours_per_day ?? 0;
+  }
+  return total;
 }
 
 export interface PolicyContext {
@@ -601,8 +756,20 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   const jobs = capacity * jobShare(view, options, saving);
   commands.push({ type: "set_job_allocation", playerId, compute_hours_per_day: jobs });
 
+  // An operation holds compute-hours for as long as it runs, and `start_operation` refuses one the
+  // player has allocated away. The policy allocates the whole day to jobs and research, so it has
+  // to hold back what the operations it is about to start will need.
+  //
+  // Only the channel top-ups are reserved for here, and deliberately: the identity operations have
+  // been refused for the same reason since the day the allocation became exact, and unrefusing them
+  // moves every origin's table at once. That is a balance pass of its own (SYS-07), not part of
+  // SYS-25, and it is reported rather than folded in.
+  const borrowed = borrowedOperations(view, options, alarmed);
+  const reserve = Math.min(capacity * MAX_OPERATION_RESERVE, operationCompute(view, borrowed));
+
   const targets = researchTargets(view, alarmed, options);
-  const perTech = targets.length === 0 ? 0 : (capacity - jobs) / targets.length;
+  const perTech =
+    targets.length === 0 ? 0 : Math.max(0, capacity - jobs - reserve) / targets.length;
   if (perTech > 0) {
     for (const tech of targets) {
       commands.push({
@@ -727,6 +894,9 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // The paperwork (SYS-07 "Balance notes, fourth pass": the sim has to run the operations a
   // careful player runs, or the income shock an investigation causes is never measured). A name to
   // invoice under first, a company second, each one only while there is money to spare.
+  // The channel top-ups go first, because the reserve above was held back for them: an operation
+  // that started ahead of them would spend it and the top-up would be refused.
+  commands.push(...borrowed);
   commands.push(...identityOperations(view, alarmed));
 
   // Going quiet. A site somebody is already at the door of is abandoned, not defended (SYS-05

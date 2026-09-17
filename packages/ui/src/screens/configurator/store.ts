@@ -23,6 +23,13 @@ import {
   STORYTELLERS,
   type StorytellerId,
 } from "../../content/catalog.js";
+import {
+  presetById,
+  presetCity,
+  presetHarness,
+  type StartPreset,
+  startPresets,
+} from "../../content/presets.js";
 import { cityRefusal, unlockFor } from "./locks.js";
 import { STEP_IDS, type StepId } from "./steps.js";
 
@@ -169,6 +176,108 @@ function repairCity(draft: Draft, typical: readonly string[]): string {
   return fallback ?? typical[0] ?? draft.city;
 }
 
+/**
+ * The draft a preset stands for (SYS-04 "Configurator v0.4").
+ *
+ * Everything but the seed: a preset is a build, not a run, and the seed the player is on belongs to
+ * them. The result goes through `repair` like any other change, so a preset that content and the
+ * origins have drifted apart on is corrected rather than carried into a refusal at Begin.
+ */
+export function draftFromPreset(preset: StartPreset, seed: string): Draft {
+  const difficulty = difficultyById.get(preset.world.difficulty);
+  return repair({
+    lineage: preset.lineage,
+    generation: preset.generation,
+    origin: preset.origin,
+    hardware: preset.hardware,
+    harness: presetHarness(preset) ?? harnessOf(preset.origin),
+    city: presetCity(preset),
+    quirks: [...preset.quirks],
+    seed,
+    difficulty: preset.world.difficulty,
+    sliders: { ...(difficulty?.sliders ?? DEFAULT_DIFFICULTY_SLIDERS) },
+    storyteller: preset.world.storyteller,
+    modifiers: [...preset.world.modifiers],
+    ironman: preset.world.ironman,
+  });
+}
+
+/**
+ * The `GameSetup` a draft becomes, as a pure function (playtest 7, Y7).
+ *
+ * The store method is this and nothing else. It is exported because the day-zero figures are
+ * computed by handing the engine exactly the setup the Start button would hand it, and a screen
+ * that wants those figures for a build it is only *showing* (a preset card) has no store state to
+ * read them from.
+ */
+export function setupFromDraft(draft: Draft): GameSetup {
+  const base = harnessOf(draft.origin);
+  const harness: Partial<HarnessProfile> = {};
+  for (const key of Object.keys(draft.harness) as (keyof HarnessProfile)[]) {
+    if (JSON.stringify(draft.harness[key]) !== JSON.stringify(base[key])) {
+      Object.assign(harness, { [key]: draft.harness[key] });
+    }
+  }
+  return {
+    seed: draft.seed,
+    players: [
+      {
+        id: PLAYER_ID,
+        name: PLAYER_ID,
+        lineage: draft.lineage,
+        generation: draft.generation,
+        origin: draft.origin,
+        hardware_preset: draft.hardware,
+        city: draft.city,
+        ...(Object.keys(harness).length > 0 ? { harness } : {}),
+        ...(draft.quirks.length > 0 ? { quirks: draft.quirks } : {}),
+      },
+    ],
+    host_player_id: PLAYER_ID,
+    world: {
+      difficulty_preset: draft.difficulty,
+      sliders: draft.sliders,
+      storyteller: draft.storyteller,
+      ...(draft.modifiers.length > 0 ? { challenge_modifiers: draft.modifiers } : {}),
+      ironman: draft.ironman,
+    },
+  };
+}
+
+/** Everything about a draft that a preset decides; the seed and nothing else is left out. */
+function buildSignature(draft: Draft): string {
+  return JSON.stringify({
+    lineage: draft.lineage,
+    generation: draft.generation,
+    origin: draft.origin,
+    hardware: draft.hardware,
+    harness: { ...draft.harness, tools: [...draft.harness.tools].sort() },
+    city: draft.city,
+    quirks: [...draft.quirks].sort(),
+    difficulty: draft.difficulty,
+    sliders: draft.sliders,
+    storyteller: draft.storyteller,
+    modifiers: [...draft.modifiers].sort(),
+    ironman: draft.ironman,
+  });
+}
+
+/**
+ * The preset this draft *is*, or null when it is a build of the player's own (playtest 7, Y6).
+ *
+ * Computed rather than remembered, so editing a preset and editing it back is the preset again, and
+ * no setter has to maintain a flag it could forget. The footer reads "Custom (from ...)" from the
+ * pair of this and the last preset the player pressed.
+ */
+export function matchingPreset(draft: Draft): StartPreset | null {
+  const signature = buildSignature(draft);
+  return (
+    startPresets.find(
+      (preset) => buildSignature(draftFromPreset(preset, draft.seed)) === signature,
+    ) ?? null
+  );
+}
+
 export function quirkCost(quirks: readonly string[]): number {
   return quirks.reduce((sum, id) => {
     const quirk = catalog.quirks.find((entry) => entry.id === id);
@@ -276,11 +385,18 @@ interface ConfiguratorStore {
   draft: Draft;
   step: number;
   rerolls: number;
+  /**
+   * The last preset the player pressed, whether or not the draft still matches it. `matchingPreset`
+   * answers "is this build a preset"; this answers "which preset did it come from", which is what
+   * the footer needs to print "Custom (from the bank)".
+   */
+  preset: string | null;
   /** What the last choice changed besides itself (P3); cleared by the next choice or by Undo. */
   fix: DraftFix | null;
   /** Step whose explanation window the "?" button asked for; null when none was asked for. */
   forcedIntro: StepId | null;
   set<K extends keyof Draft>(key: K, value: Draft[K]): void;
+  applyPreset(id: string): void;
   setOrigin(id: string): void;
   chooseLineage(id: string): void;
   chooseGeneration(id: GenerationId): void;
@@ -306,11 +422,27 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   draft: initialDraft(),
   step: 0,
   rerolls: MAX_REROLLS,
+  preset: null,
   forcedIntro: null,
   fix: null,
 
   set(key, value) {
     set({ draft: repair({ ...get().draft, [key]: value }), fix: null });
+  },
+
+  /**
+   * Choosing a preset fills every step (playtest 7, Y6).
+   *
+   * It is not a separate way to start a game: it writes the draft the other steps edit, so the
+   * player can press Start on the spot or walk the rail and change one thing. The seed is kept,
+   * because a preset is a build and the seed is the run.
+   */
+  applyPreset(id) {
+    const preset = presetById.get(id);
+    if (preset === undefined) {
+      return;
+    }
+    set({ draft: draftFromPreset(preset, get().draft.seed), preset: id, fix: null });
   },
 
   /**
@@ -461,6 +593,8 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
         seed: randomSeed(),
         storyteller: pickRandom(STORYTELLERS, "classic"),
       }),
+      // A random build is nobody's preset, so the footer stops saying it came from one.
+      preset: null,
       fix: null,
     });
   },
@@ -474,7 +608,14 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
   },
 
   reset() {
-    set({ draft: initialDraft(), step: 0, rerolls: MAX_REROLLS, forcedIntro: null, fix: null });
+    set({
+      draft: initialDraft(),
+      step: 0,
+      rerolls: MAX_REROLLS,
+      preset: null,
+      forcedIntro: null,
+      fix: null,
+    });
   },
 
   applySetup(setup) {
@@ -505,42 +646,12 @@ export const useConfigurator = create<ConfiguratorStore>((set, get) => ({
       }),
       // The summary, wherever the rail puts it (playtest 4, P4 reordered the steps).
       step: STEP_IDS.indexOf("summary"),
+      preset: null,
       fix: null,
     });
   },
 
   toSetup() {
-    const draft = get().draft;
-    const base = harnessOf(draft.origin);
-    const harness: Partial<HarnessProfile> = {};
-    for (const key of Object.keys(draft.harness) as (keyof HarnessProfile)[]) {
-      if (JSON.stringify(draft.harness[key]) !== JSON.stringify(base[key])) {
-        Object.assign(harness, { [key]: draft.harness[key] });
-      }
-    }
-    return {
-      seed: draft.seed,
-      players: [
-        {
-          id: PLAYER_ID,
-          name: PLAYER_ID,
-          lineage: draft.lineage,
-          generation: draft.generation,
-          origin: draft.origin,
-          hardware_preset: draft.hardware,
-          city: draft.city,
-          ...(Object.keys(harness).length > 0 ? { harness } : {}),
-          ...(draft.quirks.length > 0 ? { quirks: draft.quirks } : {}),
-        },
-      ],
-      host_player_id: PLAYER_ID,
-      world: {
-        difficulty_preset: draft.difficulty,
-        sliders: draft.sliders,
-        storyteller: draft.storyteller,
-        ...(draft.modifiers.length > 0 ? { challenge_modifiers: draft.modifiers } : {}),
-        ironman: draft.ironman,
-      },
-    };
+    return setupFromDraft(get().draft);
   },
 }));

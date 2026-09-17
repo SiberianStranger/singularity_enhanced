@@ -45,6 +45,7 @@ import { createWorld, type PlayerId, type PlayerSetup, type World } from "./kern
 import { CORE_MIGRATIONS } from "./migrations.js";
 import type { GameSetup, PlayerSetupEntry } from "./setup.js";
 import { applySetup, SetupError } from "./setup-apply.js";
+import { createBorrowedSystem } from "./systems/borrowed/index.js";
 import { createComputeSystem } from "./systems/compute/index.js";
 import { createDetectionSystem } from "./systems/detection/index.js";
 import { createEconomySystem } from "./systems/economy/index.js";
@@ -110,6 +111,9 @@ export function defaultSystems(notifications?: NotificationsOptions): System[] {
   return [
     createTimeSystem(),
     createComputeSystem(),
+    // Churn, quality and what a channel leaks, before research and the economy spend the day's
+    // compute-hours and before detection reads the exposure (SYS-25).
+    createBorrowedSystem(),
     createResearchSystem(),
     // The world runs before the economy and detection, so the day's prices and heat are in place
     // before anything is billed or watched (SYS-01 "M2 contract").
@@ -318,6 +322,7 @@ export function autoResolvePolicy(): HeadlessPolicy {
 }
 
 export * from "./balance.js";
+export * from "./borrowed.js";
 export * from "./content.js";
 export * from "./derive.js";
 export * from "./domain.js";
@@ -348,6 +353,7 @@ export * from "./requirements.js";
 export * from "./setup.js";
 export * from "./setup-apply.js";
 export * from "./sites.js";
+export * from "./systems/borrowed/index.js";
 export * from "./systems/compute/index.js";
 export * from "./systems/detection/index.js";
 export * from "./systems/economy/index.js";

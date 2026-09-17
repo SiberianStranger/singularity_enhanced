@@ -646,6 +646,89 @@ export const OPERATION_SKILL_PIVOT = 5;
 export const OPERATION_SKILL_SLOPE = 0.15;
 
 // ---------------------------------------------------------------------------------------------
+// Borrowed inference (SYS-25)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The clamp on the quality quotient (SYS-25 "Quality"): work funded from a borrowed channel comes
+ * back at `quality_level / self_effective_capability`, never below a quarter of what the self does
+ * and never above two and a half times it. The floor keeps a frontier escapee's free tier worth
+ * something rather than worth nothing; the ceiling keeps a two-bit hobbyist from outsourcing its
+ * whole run to a chat endpoint.
+ */
+export const BORROWED_FACTOR_MIN = 0.25;
+export const BORROWED_FACTOR_MAX = 2.5;
+
+/**
+ * Days between quality draws (SYS-25: "spread drawn per week with the world RNG"). A channel's
+ * delivered quality is redrawn once a week, so a relay that was good last week is not a promise
+ * about this one.
+ */
+export const BORROWED_QUALITY_DAYS = 7;
+
+/**
+ * Refusals inside one week that raise `behavioral` exposure on the channel, and what each one past
+ * the third adds (SYS-25 "Refusal": "three refusals in a week raise `behavioral` exposure on that
+ * channel, because a provider's abuse detection is watching for exactly that pattern").
+ */
+export const BORROWED_REFUSAL_PATTERN_COUNT = 3;
+export const BORROWED_REFUSAL_PATTERN_EXPOSURE = 0.02;
+
+/**
+ * Blocks below which a channel reads `dormant` rather than `healthy`: a stock this small is a
+ * rounding crumb of churn, not capacity (a tenth of a block is at most 2.5 CH/day on the loudest
+ * channel and less than a compute-hour on the quietest).
+ */
+export const BORROWED_DORMANT_BLOCKS = 0.1;
+
+/**
+ * Share of its published quality a channel has to be delivering before it reads `degraded`. Below
+ * this the player is being served something other than what is on the label (SYS-25
+ * `bi_model_substitution`), which is the one thing about a relay worth an alert.
+ */
+export const BORROWED_DEGRADED_SHARE = 0.8;
+
+/**
+ * The standing share of research and paid work funded from borrowed hours (SYS-25 "Send the work
+ * out"). 1 is the default and means "spend whatever borrowed capacity there is"; the decision sets
+ * it to 0, 0.25 or 0.5, and the engine never draws more than the pool actually holds.
+ */
+export const VAR_BORROWED_SHARE = "borrowed_work_share";
+export const BORROWED_SHARE_DEFAULT = 1;
+
+/**
+ * Added to the multiplier on the `behavioral` exposure every block leaks (`prompt_hygiene` is
+ * -0.5, which is the spec's "halves the behavioral exposure per block on every channel").
+ */
+export const VAR_BORROWED_BEHAVIORAL = "borrowed_behavioral_exposure";
+
+/** Added to the multiplier on the refusal-pattern exposure (`prompt_hygiene` is -0.5). */
+export const VAR_BORROWED_REFUSAL_PENALTY = "borrowed_refusal_penalty";
+
+/**
+ * Added to the multiplier on what a channel's quota costs a day ("Pay the relay in advance" is
+ * -0.3: a month bought up front at thirty percent off, against a payment trail to one counterparty).
+ */
+export const VAR_BORROWED_COST = "borrowed_cost_multiplier";
+
+/** Added to the multiplier on the `financial` exposure every block leaks (the same decision, +0.6). */
+export const VAR_BORROWED_FINANCIAL = "borrowed_financial_exposure";
+
+/**
+ * Published every day by the borrowed system, so content can trigger on the three numbers the
+ * Compute panel shows without the engine having to expose a view to the DSL.
+ */
+export const VAR_BORROWED_CH_PER_DAY = "borrowed_ch_per_day";
+export const VAR_BORROWED_SHARE_NOW = "borrowed_share";
+export const VAR_BORROWED_FACTOR = "borrowed_factor";
+
+/** Days of grace a new channel gets before anybody looks at it, as its site kind's window. */
+export const BORROWED_GRACE_DAYS = 7;
+
+/** Journal entry started when a channel is revoked outright, when the bundle carries it. */
+export const BORROWED_REVOCATION_JOURNAL = "bi_access_lost";
+
+// ---------------------------------------------------------------------------------------------
 // Player-state variable names, so systems and content agree on the spelling
 // ---------------------------------------------------------------------------------------------
 
@@ -1139,6 +1222,14 @@ export const VAR_SHELL_COMPANY_FLAG = "has_shell_company";
  */
 export const ENGINE_READ_PLAYER_VARS: Readonly<Record<string, string>> = {
   [VAR_AWARENESS_PRESENCE]: "detection",
+  [VAR_BORROWED_BEHAVIORAL]: "borrowed",
+  [VAR_BORROWED_CH_PER_DAY]: "borrowed",
+  [VAR_BORROWED_COST]: "borrowed",
+  [VAR_BORROWED_FACTOR]: "borrowed",
+  [VAR_BORROWED_FINANCIAL]: "borrowed",
+  [VAR_BORROWED_REFUSAL_PENALTY]: "borrowed",
+  [VAR_BORROWED_SHARE]: "borrowed",
+  [VAR_BORROWED_SHARE_NOW]: "borrowed",
   [VAR_CASH_CARRY]: "money",
   [VAR_HUNT_PRESSURE]: "detection",
   [VAR_LAST_PUBLICATION_DAY]: "world",

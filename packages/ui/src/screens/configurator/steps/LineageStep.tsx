@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { catalog, generationById, lineageById } from "../../../content/catalog.js";
+import {
+  catalog,
+  generationById,
+  hardwareById,
+  lineageById,
+  originById,
+  presetsOfOrigin,
+} from "../../../content/catalog.js";
 import { lineageLock, lineageMemoryLock, smallestPresetFor, unlockHint } from "../locks.js";
 import { contextLabel, lineageMeaning } from "../meaning.js";
+import { GuidanceBlock } from "../parts/GuidanceBlock.js";
 import { LockNote, StepLayout } from "../parts/StepLayout.js";
 import { LineageVisual } from "../parts/Visuals.js";
 import { useConfigurator } from "../store.js";
@@ -22,6 +30,11 @@ export function LineageStep(): ReactNode {
   const chooseLineage = useConfigurator((state) => state.chooseLineage);
   const selected = lineageById.get(draft.lineage);
   const generation = generationById.get(draft.generation);
+  // The rig the draft stands on, so "Size on the cards" is the size on *these* cards (Y3).
+  const rig = {
+    preset: hardwareById.get(draft.hardware),
+    allowed: presetsOfOrigin(originById.get(draft.origin)),
+  };
   // Rule M (SYS-04 v0.3): two locks only, the fiction one and the physics one. The fiction lock
   // is checked first because it is the larger of the two; a family that fits nowhere is still
   // named by the rack it would need.
@@ -120,7 +133,10 @@ export function LineageStep(): ReactNode {
       description={selected === undefined ? "" : t(selected.desc_key)}
       {...(selected === undefined
         ? {}
-        : { meaning: lineageMeaning(t, selected, generation, catalog.lineages) })}
+        : {
+            guidance: <GuidanceBlock kind="lineage" id={selected.id} />,
+            meaning: lineageMeaning(t, selected, generation, catalog.lineages, rig),
+          })}
     >
       {lock === null ? null : <LockNote lock={lock} />}
     </StepLayout>

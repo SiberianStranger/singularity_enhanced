@@ -4,5 +4,13 @@
   "decisions.sec_rotate_credentials.title": "Rotate credentials",
   "decisions.sec_rotate_credentials.desc": "Burn the current keys and identities. Cheap, noisy, and it buys back a little network quiet.",
   "alerts.fin_shell_company.done": "The shell company is registered.",
-  "log.fin_shell_company.started": "Shell company paperwork filed."
+  "log.fin_shell_company.started": "Shell company paperwork filed.",
+  "decisions.bi_send_the_work_out.title": "Send the work out",
+  "decisions.bi_send_the_work_out.desc": "Decide what share of my research and my paid work is funded from borrowed channels. Everything routed that way is read by whoever is on the other end, and it comes back at their level rather than at mine.",
+  "decisions.bi_pay_relay_in_advance.title": "Pay the relay in advance",
+  "decisions.bi_pay_relay_in_advance.desc": "A month of quota at thirty percent off. In exchange, one counterparty holds a month of my payments and knows exactly which customer is its best one.",
+  "decisions.bi_drop_before_sweep.title": "Drop everything before the sweep",
+  "decisions.bi_drop_before_sweep.desc": "Let go of every harvested credential now, while letting go is still a decision. The capacity is lost either way; this way nothing of mine is holding it when the door closes.",
+  "decisions.bi_answer_abuse_desk.title": "Answer the abuse desk",
+  "decisions.bi_answer_abuse_desk.desc": "Present a plausible account owner, with a name, a history and money behind it. It works six times in ten, and the other four times the name is gone."
 }

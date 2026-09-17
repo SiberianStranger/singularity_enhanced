@@ -54,5 +54,11 @@ export const SiteKindDefSchema = z.object({
   power_exposure: z.number().min(0),
   upkeep_factor: z.number().min(0),
   can_host_active_mind: z.boolean(),
-  max_nodes: z.number().int().positive(),
+  /**
+   * Non-negative rather than positive since SYS-25: a borrowed channel has no nodes at all, and a
+   * placeholder node would lie in the sites table.
+   */
+  max_nodes: z.number().int().min(0),
+  /** Where the compute-hours come from; `declared` is a channel with no hardware (SYS-25). */
+  compute_source: z.enum(["accelerators", "declared"]).optional(),
 });

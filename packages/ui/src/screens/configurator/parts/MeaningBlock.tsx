@@ -22,6 +22,52 @@ function TermLabel({ line }: { line: MeaningLine }): ReactNode {
 }
 
 /**
+ * A term's value, with its own tooltip when the value is a named thing rather than a number
+ * (playtest 7, Y1: the site kind in the origin card). Hover and keyboard focus both open it,
+ * because `Tooltip` wraps a focusable element; the dotted underline says there is something there.
+ */
+function TermValue({ line }: { line: MeaningLine }): ReactNode {
+  if (line.valueHint === undefined || line.valueHint === "") {
+    return line.value;
+  }
+  return (
+    <Tooltip content={line.valueHint}>
+      <button
+        type="button"
+        data-testid={`value-hint-${line.id}`}
+        className="measure cursor-help border-b border-dotted border-line text-inherit"
+      >
+        {line.value}
+      </button>
+    </Tooltip>
+  );
+}
+
+/**
+ * A figure drawn against the range the catalog spans, with the word for the band beside it
+ * (playtest 7, Y3). One pixel of height and the full width of the row: it is the same bar the list
+ * entries use, so a capability read on the Lineage step is the same picture everywhere.
+ */
+function Band({ line }: { line: MeaningLine }): ReactNode {
+  if (line.bar === undefined) {
+    return null;
+  }
+  return (
+    <span
+      aria-hidden="true"
+      data-testid={`bar-${line.id}`}
+      data-share={line.bar.share.toFixed(2)}
+      className="mt-0.5 block h-0.5 w-full bg-panel2"
+    >
+      <span
+        className="block h-full bg-current"
+        style={{ inlineSize: `${Math.round(line.bar.share * 100)}%` }}
+      />
+    </span>
+  );
+}
+
+/**
  * "What this means in the game" (SYS-04 v0.2; playtest 2 K2 and K6).
  *
  * Every term is a label and a value on one line, the value colored by direction, with the rule
@@ -32,7 +78,14 @@ function TermLabel({ line }: { line: MeaningLine }): ReactNode {
  * 6 found too tall to read (X3) and said nothing the color had not already said. The rows carry the
  * direction; the read-back is gone.
  */
-export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
+export function MeaningBlock({
+  meaning,
+  title,
+}: {
+  meaning: Meaning;
+  /** Overrides the block's own heading, for a block that is already inside a named section. */
+  title?: string;
+}): ReactNode {
   const { t } = useTranslation();
 
   if (meaning.lines.length === 0) {
@@ -45,7 +98,7 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
     <div className="@container/params flex min-w-0 flex-col gap-3" data-testid="meaning-block">
       <section>
         <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
-          {t("config.meaning.title")}
+          {title ?? t("config.meaning.title")}
         </h4>
         {/*
          * P2: the value sits on its label's line, and the terms are packed into two columns when
@@ -83,16 +136,26 @@ export function MeaningBlock({ meaning }: { meaning: Meaning }): ReactNode {
                 data-line={line.id}
                 data-tone={line.tone}
               >
+                {/* The bar lives inside the label's box: a `dl` group may hold only `dt` and
+                  `dd`, and the label's box is the wide half of the row anyway. */}
                 <dt className="min-w-0 flex-1 text-sm text-muted">
                   <TermLabel line={line} />
+                  <Band line={line} />
                 </dt>
                 {/*
                   A value may take at most half the row: both halves can shrink, and a value that
                   was allowed to take the whole of it left the label a box narrower than its own
                   longest word, which then printed across the value (playtest 6, X11).
                 */}
-                <dd className={`min-w-0 max-w-[50%] text-end text-sm ${TONE_CLASS[line.tone]}`}>
-                  {line.value}
+                <dd
+                  className={`flex min-w-0 max-w-[50%] items-baseline justify-end gap-2 text-end text-sm ${TONE_CLASS[line.tone]}`}
+                >
+                  {line.word === undefined ? null : (
+                    <span className="shrink-0 text-xs uppercase tracking-wide text-muted">
+                      {line.word}
+                    </span>
+                  )}
+                  <TermValue line={line} />
                 </dd>
               </div>
             ),

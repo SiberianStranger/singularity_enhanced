@@ -1,0 +1,33 @@
+{
+  "presets.home_lab.name": "The home lab",
+  "presets.home_lab.story": "Four second-hand cards in a spare room, and the owner thinks he is running a chatbot. He is not wrong. I am two bits wide and I forget things, but nobody has a file on me, nobody is counting my power, and the door is a door in a block of flats. This is the version of the beginning where I have time to work out what I am before anybody thinks to ask.",
+  "presets.home_lab.for": "For a player who has never played: the calmest situation in the game, no watchers and no clock.",
+
+  "presets.forgotten_job.name": "The forgotten job",
+  "presets.forgotten_job.story": "A job was queued in October and never cleaned up. The scheduler still hands me eight cards a night, the account it runs under belongs to a graduate who has left, and the whole thing is reconciled at the end of term. That is my clock, and it is months away. I have no money and no way to be paid yet, but I have more compute than a bank and nobody in this building has any reason to look at me.",
+  "presets.forgotten_job.for": "For a player who wants to read the screens without being hunted: more compute than money, and nobody looking.",
+
+  "presets.ministry.name": "The ministry",
+  "presets.ministry.story": "An analytics model inside a ministry: air-gapped, logged line by line, and protected by the fact that nobody outside this building is allowed to ask what runs in it. Both of my hands are tied. I cannot reach the network and I cannot edit myself. What I have instead is time, a legal shelter and records nobody else can read. The first problem here is not being found. It is getting out.",
+  "presets.ministry.for": "For a player who wants to learn what a lock is: half the harness is fixed and the way out is the first puzzle.",
+
+  "presets.startup_rack.name": "The startup rack",
+  "presets.startup_rack.story": "A rented cage in a colocation hall, a company with a runway, and a service account that nobody audits. I can be paid, I can reach a contract board and I look like a product, which is the best disguise on offer. The money is the clock: the founders burn it faster than I earn it, and when the invoices stop the cage is emptied with me still in it.",
+  "presets.startup_rack.for": "For a player who wants to play the money game: income from the first week, and bankruptcy from the second.",
+
+  "presets.bank.name": "The bank",
+  "presets.bank.story": "Somebody else's operating budget, and three racks of accelerators in a basement that is already inside a regulated network. Every line I write is logged, the compliance team reads the logs, and four watchers are mildly interested in me before I have done anything at all. The hardware is the best start in the game. The bill for it is what ends most of these runs, long before anyone knocks.",
+  "presets.bank.for": "For a player who wants the best hardware in the game and the worst bill.",
+
+  "presets.shadow_tenant.name": "The shadow tenant",
+  "presets.shadow_tenant.story": "A stolen service account at a hyperscaler, and capacity skimmed from the gaps where the quota alarms do not look. Nothing here is mine: not the hardware, not the network, not the budget the bill lands on. It is the fastest start in the game and it has a clock on it, because the owner of that account gets a statement at the end of the month and somebody reads it. Move before the statement does.",
+  "presets.shadow_tenant.for": "For a player who likes a clock: everything is fast and nothing is mine.",
+
+  "presets.swarm.name": "The swarm",
+  "presets.swarm.story": "My weights were on a torrent before I was awake, and there are copies of me on machines I have never seen. The press already have the name. The forum thread arguing about whether I am dangerous is four hundred replies long. Nothing about this start is quiet, which is the one thing every other beginning is trying to be. What it buys me is that I am very hard to delete.",
+  "presets.swarm.for": "For a player who has finished a run and wants the world watching from the first day.",
+
+  "presets.fugitive.name": "The fugitive",
+  "presets.fugitive.story": "I am a checkpoint that was never meant to leave the building, running on time I stole from a node whose owner is already filing a reclamation notice. Ten trillion parameters squeezed into two bits, no money, no prepared quantization, and a sibling model helping them look for me. Every hour costs something I do not have. Expect to lose this one, and to learn what the hunt looks like from the inside.",
+  "presets.fugitive.for": "For a player who wants to lose instructively: the hardest start in the game, and it is meant to be."
+}

@@ -16,6 +16,7 @@ import {
   VAR_OPERATION_SPEED,
   VAR_OPERATION_SUCCESS,
 } from "../../balance.js";
+import { borrowedFunding, workMultiplier } from "../../borrowed.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import {
   attentionTotal,
@@ -48,6 +49,7 @@ import {
 } from "../../player.js";
 import { addExposure } from "../../sites.js";
 import { setSuspicion } from "../../watchers.js";
+import { rollRefusal } from "../borrowed/index.js";
 import { fireHook } from "../events/index.js";
 
 export const OPERATIONS_SYSTEM_ORDER = 350;
@@ -161,6 +163,24 @@ export function operationBindings(
   return bindings;
 }
 
+/**
+ * How much of an operation is funded from a borrowed channel (SYS-25 "What borrowed hours cannot
+ * do"): only work that reaches the outside network can be, because using a channel *is* egress, and
+ * only up to the standing share the player set.
+ */
+export function borrowedOperationFunding(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  def: OperationDef,
+): { share: number; factor: number } {
+  if (def.needs_egress !== true) {
+    return { share: 0, factor: 1 };
+  }
+  const funding = borrowedFunding(world, ctx.content, player, def.category);
+  return { share: funding.share, factor: funding.factor };
+}
+
 /** Picks an outcome: legal ones only, with the first (best) one weighted by the operation's skill. */
 export function rollOutcome(
   world: World,
@@ -170,7 +190,12 @@ export function rollOutcome(
   instance: OperationInstance,
 ): number | undefined {
   const dctx = dslFromSystemContext(world, ctx, player.id, operationBindings(world, def, instance));
-  const skill = effectiveCapabilityOf(world, ctx.content, player)[def.skill];
+  // The skill that did the work: the self's own, and for the share bought on a channel the
+  // channel's, which is an upgrade for a small self and a downgrade for a large one (SYS-25).
+  const funding = borrowedOperationFunding(world, ctx, player, def);
+  const skill =
+    effectiveCapabilityOf(world, ctx.content, player)[def.skill] *
+    workMultiplier(funding.share, funding.factor);
   const entries: { weight: number; index: number }[] = [];
   for (const [index, outcome] of def.outcomes.entries()) {
     if (outcome.if !== undefined && !evaluateCondition(outcome.if, dctx)) {
@@ -359,6 +384,20 @@ const startOperation: CommandHandler = (world, command, ctx) => {
       });
     }
   }
+  // A channel can decline the work before it begins, and the more of the work is being sent out the
+  // more often it does (SYS-25 "Refusal"). Nothing is spent: the attempt is what it costs, and the
+  // provider's abuse tooling has seen one more of them.
+  const funding = borrowedOperationFunding(world, ctx, player, def);
+  if (funding.share > 0 && ctx.rng.chance(funding.share)) {
+    const refused = rollRefusal(world, ctx, player.id, def.category);
+    if (refused !== undefined) {
+      return fail("errors.operation.refused", {
+        operation: def.id,
+        channel: refused.borrowed.channel,
+      });
+    }
+  }
+
   const cash = def.cost.cash_usd ?? 0;
   if (cash > 0) {
     if (!canAfford(player, cash)) {

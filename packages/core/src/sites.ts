@@ -8,11 +8,13 @@
 
 import {
   SITE_KIND_AVAILABILITY,
+  VAR_BORROWED_COST,
   VAR_COMPUTE_MULTIPLIER,
   VAR_COST_MULTIPLIER,
   VAR_POWER_DRAW,
   VAR_RENTED_COST_MULTIPLIER,
 } from "./balance.js";
+import { channelCapacityChPerDay, channelCostUsdPerDay } from "./borrowed.js";
 import { type ContentBundle, contentIndex } from "./content.js";
 import {
   activeNodes,
@@ -29,6 +31,7 @@ import {
   tokensToComputeHoursPerDay,
 } from "./derive.js";
 import type {
+  BorrowedChannelState,
   CountryDef,
   Exposure,
   ExposureChannel,
@@ -147,6 +150,8 @@ export interface CreateSiteOptions {
    * signed for: a stolen machine, or the one the self woke up on.
    */
   identity?: string | null;
+  /** The borrowed channel this place is, when it is one (SYS-25); null for hardware. */
+  borrowed?: BorrowedChannelState | null;
 }
 
 export function createNodes(
@@ -190,6 +195,9 @@ export function createSite(
     createdTick: world.clock.tick,
     identity: options.identity ?? null,
     graceUntilTick: options.readyTick + daysToTicks(graceDays),
+    // A place made of hardware is not a borrowed channel; the borrowed system fills this in for
+    // the sites that are one (SYS-25).
+    borrowed: options.borrowed ?? null,
     unpaidDays: 0,
     downUntilTick: 0,
     derived: {
@@ -268,6 +276,26 @@ export function deriveSite(
     site.status = "sleep";
     power = sitePowerKw(site, index.accelerators, tick) * drawFactor;
     tripped = true;
+  }
+
+  // A channel is an endpoint that answers questions: its compute-hours are the stock of blocks it
+  // holds times what a block buys, and its bill is what that stock costs (SYS-25 "Engine changes").
+  if (kind?.compute_source === "declared") {
+    const state = site.borrowed;
+    const def = state === null ? undefined : index.borrowed_channels[state.channel];
+    const running = site.status === "active" && state !== null;
+    site.derived = {
+      memory_gb: 0,
+      power_kw: 0,
+      power_cap_kw: cap,
+      compute_hours_per_day: running && state !== null ? channelCapacityChPerDay(state, def) : 0,
+      upkeep_usd_per_day:
+        state === null
+          ? 0
+          : channelCostUsdPerDay(state, def) *
+            (owner === undefined ? 1 : modifier(owner, VAR_BORROWED_COST)),
+    };
+    return false;
   }
 
   let computeHours = 0;
@@ -401,6 +429,12 @@ export function loseSite(
   site.precision = null;
   site.contextKUsed = 0;
   site.nodes = [];
+  // A channel that is gone holds nothing: the account is closed, the quota reclaimed, the keys
+  // dead. The tech stays and the operation can open another one (SYS-25 "Capacity").
+  if (site.borrowed !== null) {
+    site.borrowed.blocks = 0;
+    site.borrowed.status = "revoked";
+  }
   site.derived = {
     memory_gb: 0,
     power_kw: 0,

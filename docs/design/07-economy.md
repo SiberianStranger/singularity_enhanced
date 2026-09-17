@@ -636,3 +636,21 @@ the 15-35% band, and the reason it needed pushing back up is on the other side o
 balance runner's scripted player now sells enough compute to cover the day's bills instead of
 waiting for a runway alarm, and `runway_days` divides the cash by the *net*, so an origin losing a
 few dollars a day never rang it.
+
+## Borrowed hours in the money model (2026-09-17, implemented)
+
+SYS-25 touches the economy in three places, all of them small.
+
+- **A relay's quota is an upkeep line.** A borrowed channel with a price bills daily like any other
+  site, through the same `billSite` path, and appears in the finance panel as
+  `finances.cost.borrowed` with the channel's id rather than as a site. A channel cut off for
+  non-payment is never bankruptcy on its own: the self does not live there, so `cutOffSite` does not
+  treat it as the last place that could hold the self.
+- **Paid work funded from a channel is paid at the channel's quality.** `jobIncomeUsdPerDay` carries
+  the factor SYS-25 publishes, so a hobbyist reselling a free tier earns more per hour than it could
+  earn itself and a frontier escapee earns less. The figure the panel shows is the figure the day's
+  tick pays, as everywhere else in this system.
+- **A refused day is not paid.** When the channel that would have done the freelance work declines
+  it, the borrowed share of that day's jobs line returns nothing. It is the only income line besides
+  trading whose result can differ from the panel's expectation, and only while a channel is funding
+  it.

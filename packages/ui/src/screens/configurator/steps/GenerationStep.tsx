@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { catalog, generationById } from "../../../content/catalog.js";
 import { generationLock } from "../locks.js";
 import { generationMeaning } from "../meaning.js";
+import { GuidanceBlock } from "../parts/GuidanceBlock.js";
 import { LockNote, StepLayout } from "../parts/StepLayout.js";
 import { GenerationVisual } from "../parts/Visuals.js";
 import { useConfigurator } from "../store.js";
@@ -43,7 +44,12 @@ export function GenerationStep(): ReactNode {
       entries={entries}
       title={selected === undefined ? t("config.step.generation") : t(selected.name_key)}
       description={selected === undefined ? "" : t(selected.desc_key)}
-      {...(selected === undefined ? {} : { meaning: generationMeaning(t, selected) })}
+      {...(selected === undefined
+        ? {}
+        : {
+            guidance: <GuidanceBlock kind="generation" id={selected.id} />,
+            meaning: generationMeaning(t, selected, catalog.generations),
+          })}
     >
       {lock === null ? null : <LockNote lock={lock} />}
     </StepLayout>

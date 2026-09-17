@@ -181,6 +181,9 @@ describe("balance runner", () => {
 
     const view = {
       resources: { cash_usd: 10_000 },
+      // No channels: the borrowed block is empty, which is what a player with no research into it
+      // has (SYS-25).
+      compute: { own_ch_per_day: 20, channels: [] },
       research: {
         in_progress: [],
         available: [

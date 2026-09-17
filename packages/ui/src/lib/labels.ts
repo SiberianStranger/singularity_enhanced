@@ -76,6 +76,18 @@ export function siteKindName(t: Translate, kind: string): string {
   return keyed(t, `sites.${kind}.name`) ?? kind;
 }
 
+/**
+ * What that kind of place is, in its own words (playtest 7, Y1).
+ *
+ * The kinds carry a description beside their name (`sites.<id>.desc`), written for the site list;
+ * the configurator shows it wherever a kind is printed, so "colo" stops being a word the player has
+ * to already know. Nothing is returned for a kind content has not described, and the caller then
+ * prints the name without a tooltip rather than an empty box.
+ */
+export function siteKindDescription(t: Translate, kind: string): string | undefined {
+  return keyed(t, `sites.${kind}.desc`);
+}
+
 export function agencyName(t: Translate, countryId: string, role: string): string | undefined {
   return keyed(t, `world.country.${countryId}.agency.${role}`);
 }

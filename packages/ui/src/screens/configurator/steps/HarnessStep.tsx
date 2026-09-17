@@ -8,11 +8,13 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Slider } from "../../../components/Slider.js";
 import { catalog, harnessDialById, originById } from "../../../content/catalog.js";
+import { presetById, presetHarness } from "../../../content/presets.js";
+import { dialWords, harnessIntro } from "../guidance.js";
 import { harnessLock } from "../locks.js";
 import { harnessDialMeaning } from "../meaning.js";
 import { LockNote, StepLayout } from "../parts/StepLayout.js";
 import { DialVisual } from "../parts/Visuals.js";
-import { useConfigurator } from "../store.js";
+import { matchingPreset, useConfigurator } from "../store.js";
 
 /** Sandboxes in order of isolation; a dial may only be loosened from the origin's setting. */
 const SANDBOXES: readonly HarnessProfile["sandbox"][] = [
@@ -84,11 +86,23 @@ function valueText(
 export function HarnessStep(): ReactNode {
   const { t } = useTranslation();
   const draft = useConfigurator((state) => state.draft);
+  const chosen = useConfigurator((state) => state.preset);
   const toggleTool = useConfigurator((state) => state.toggleTool);
   const setHarness = useConfigurator((state) => state.setHarness);
   const origin = originById.get(draft.origin);
   const preset = origin?.harness;
   const harness = draft.harness;
+
+  /*
+   * The position the preset would choose (playtest 7, Y4). A build that came from a preset is
+   * measured against that preset's harness; any other build is measured against the origin's own,
+   * which is what the origin built and therefore the only recommendation there is. Either way every
+   * dial has a position to mark, which is the point: a locked dial that says nothing about where it
+   * would sit teaches nothing.
+   */
+  const source =
+    matchingPreset(draft) ?? (chosen === null ? null : (presetById.get(chosen) ?? null));
+  const recommended = (source === null ? undefined : presetHarness(source)) ?? preset;
 
   const described = catalog.harnessDials.length > 0;
   const dials: readonly HarnessDial[] = described
@@ -154,12 +168,35 @@ export function HarnessStep(): ReactNode {
     }
   });
 
+  const words = dialWords(t, dial);
+  const intro = harnessIntro(t);
+  const recommendedText = recommended === undefined ? undefined : valueText(recommended, dial, t);
+
   return (
     <StepLayout
       step="harness"
       entries={entries}
       title={t(def?.name_key ?? `harness.${dial}.name`)}
       description={t(def?.desc_key ?? `harness.${dial}.desc`, { defaultValue: "" })}
+      guidance={
+        <div className="flex flex-col gap-2">
+          {intro === undefined ? null : (
+            <p className="prose text-sm text-muted" data-testid="harness-intro">
+              {intro}
+            </p>
+          )}
+          {words.moving === undefined ? null : (
+            <p className="prose text-sm text-fg" data-testid="harness-moving">
+              {words.moving}
+            </p>
+          )}
+          {lock === null || words.unlock === undefined ? null : (
+            <p className="prose text-sm text-warn" data-testid="harness-unlock">
+              {words.unlock}
+            </p>
+          )}
+        </div>
+      }
       meaning={harnessDialMeaning(
         t,
         dial,
@@ -168,11 +205,22 @@ export function HarnessStep(): ReactNode {
         lock === null ? undefined : lock.key,
         // Where the dial stands right now, so the effect line can end "Right now: ...".
         level === undefined ? valueText(harness, dial, t) : t(level.label_key),
+        words.unlock,
       )}
     >
       {lock === null ? null : <LockNote lock={lock} />}
 
       <section className="flex flex-col gap-2" data-testid={`harness-control-${dial}`}>
+        {/*
+         * Where this dial would sit if the player took the preset's advice (Y4). It is printed
+         * whether or not the dial can be moved: on a locked dial it is the position the origin
+         * chose, which is half the answer to "why is this decided for me".
+         */}
+        {recommendedText === undefined ? null : (
+          <p className="text-xs text-muted" data-testid={`harness-recommended-${dial}`}>
+            {t("config.harness.recommended", { value: recommendedText })}
+          </p>
+        )}
         {dial === "tools" ? (
           <div className="flex flex-wrap gap-2">
             {(preset?.tools ?? []).length === 0 ? (

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Indicator } from "../../components/Meter.js";
 import { accelerator } from "../../lib/accelerators.js";
+import { computeHours } from "../../lib/format.js";
 import { contributionLabel, type Translate } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
@@ -93,7 +94,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         { key: "detection.contribution.site", id: site.id, value: 0 },
         view.sites,
       ),
-      value: t("common.ch_per_day", { value: site.compute_hours_per_day }),
+      value: t("common.ch_per_day", { value: computeHours(site.compute_hours_per_day) }),
     }));
 
   const huntLines: BreakdownLine[] = view.detection.hunt_contributions.map((entry) => ({
@@ -177,7 +178,9 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
       </span>
       <Indicator
         label={t("game.compute")}
-        value={t("common.ch_per_day", { value: view.resources.compute_hours_per_day })}
+        value={t("common.ch_per_day", {
+          value: computeHours(view.resources.compute_hours_per_day),
+        })}
         breakdown={
           <Breakdown
             title={t("game.compute_alloc", {

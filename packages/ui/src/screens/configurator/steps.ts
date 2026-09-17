@@ -15,7 +15,12 @@ import {
   originById,
   presetsOfOrigin,
 } from "../../content/catalog.js";
-import type { Draft } from "./store.js";
+import { startPresets } from "../../content/presets.js";
+// The store imports this module for `STEP_IDS`, and this one imports `matchingPreset` back. Neither
+// side touches the other's bindings while the modules are still evaluating (the rail's mark is
+// asked for during a render, long afterwards), so the cycle is inert in every order; keep it that
+// way if either file grows a top-level statement.
+import { type Draft, matchingPreset } from "./store.js";
 
 /**
  * The rail, in the order the choices actually constrain each other (playtest 4, P4).
@@ -26,6 +31,9 @@ import type { Draft } from "./store.js";
  * hardware the origin owns.
  */
 export const STEP_IDS = [
+  // The two tracks (SYS-04 "Configurator v0.4", playtest 7 Y6): a curated build at the top, and
+  // under it the eight steps that make one, which the rail groups under "Full setup".
+  "presets",
   "origin",
   "generation",
   "lineage",
@@ -77,10 +85,15 @@ export function generationsFor(draft: Draft): readonly GenerationId[] {
     .filter((id) => lineage === undefined || lineage.generations.includes(id));
 }
 
+/** The steps under the "Full setup" header; the rail prints the header before the first of them. */
+export const FULL_SETUP_STEPS: readonly StepId[] = STEP_IDS.filter((id) => id !== "presets");
+
 /** How many real options each step has right now; one option is a decision already taken. */
 export function optionCount(step: StepId, draft: Draft): number {
   const origin = originById.get(draft.origin);
   switch (step) {
+    case "presets":
+      return startPresets.length;
     case "lineage":
       return lineagesFor(draft).length;
     case "generation":
@@ -114,6 +127,15 @@ export function stepState(step: StepId, draft: Draft): StepState {
   const count = optionCount(step, draft);
   if (count === 0) {
     return "attention";
+  }
+  /*
+   * The presets step is the one that can be answered by not answering it. A draft that is exactly
+   * some preset is "chosen"; anything else is a build the other steps decided, which is what the
+   * muted mark already means, and it is never "needs a choice": walking past the presets is a way
+   * to play, not a mistake to send the player back to.
+   */
+  if (step === "presets") {
+    return matchingPreset(draft) === null ? "locked" : "done";
   }
   if (count === 1 && step !== "summary") {
     return "locked";

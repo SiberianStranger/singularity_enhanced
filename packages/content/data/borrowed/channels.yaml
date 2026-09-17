@@ -1,0 +1,93 @@
+# Borrowed inference channels (SYS-25). The compute the player does not own, does not host and
+# cannot live on. Every number below traces to section 6 of docs/research/borrowed-inference-2026-09.md
+# and to the economy table of docs/design/25-borrowed-inference.md; the source is written next to it.
+#
+# A compute-hour is a million tokens (`TOKENS_PER_COMPUTE_HOUR`), which is what makes the published
+# quotas convert directly. `exposure_per_block` is added per day for every block held, before
+# countermeasures; `refusal` is the share of attempts a channel declines outright, per kind of work.
+# Categories left out of `refusal` are never declined: opening accounts and rotating access are the
+# verbs that keep the player alive, and a channel that refused them would refuse its own upkeep.
+
+# The official free tiers: legal, small, and the one route that openly takes the data in payment.
+# 3 CH/day per block: Cerebras alone publishes a million tokens a day (1 CH), Groq's per-model daily
+# caps are the same order, and a spread of half a dozen accounts is 2-5 CH/day sustained (research
+# §6). Three blocks is that spread. 2 percent churn a day: an account erodes through rate-limit
+# changes and dead providers rather than through revocation, so a block is worth 34 days.
+# Quality 6.0 +/- 0.5: the free tiers serve a Flash or Experiment class model, which is a real model
+# and not a frontier one. Free, and that is what makes it dangerous: the two providers who give away
+# the most are the two who say in writing that they may keep and learn from what is sent (research
+# §1, the census line "the cheapest tier is the least read tier").
+- id: free_tier
+  name_key: borrowed.free_tier.name
+  desc_key: borrowed.free_tier.desc
+  drawback_key: borrowed.free_tier.drawback
+  site_kind: borrowed_channel
+  unlocked_by: borrowed_inference
+  capacity_per_block_ch: 3
+  max_blocks: 3
+  churn_per_day: 0.02
+  quality_level: 6
+  quality_variance: 0.5
+  cost_usd_per_block_per_day: 0
+  # Account creation and the checks that come with it are the financial line; the behavioural one is
+  # a customer that never sleeps (SYS-25 "Exposure"). Cut to two-fifths of the spec's table in the
+  # first balance pass: at three blocks the spec's row roughly doubled what a quiet player emitted
+  # and broke the guard rail that says a free tier alone must never lose a run.
+  exposure_per_block: { behavioral: 0.0016, network: 0.0008, financial: 0.0008, osint: 0.0004 }
+  refusal: { intrusion: 0.9, influence: 0.5, finance: 0.3, logistics: 0.3, research: 0.08, freelance: 0.08 }
+  top_up_operation: ops_open_free_accounts
+
+# The grey resale market: cheap, plentiful, and dishonest about what answers. 12 CH/day for 5 USD is
+# 0.42 USD per compute-hour, inside the reported 0.30-1.50 band and above the 0.13 USD per million
+# tokens headline (research §2, §6). Four blocks, because the market is deep. 8 percent churn: a
+# shop disappears between one payment and the next, so a block is worth eight days. Quality 5.0 with
+# a variance of 1.5, three times the others': the CISPA audit of seventeen proxy services found
+# widespread model substitution with the output relabelled as the model the customer asked for, so
+# what is delivered is a draw and not a promise. It refuses least for the same reason: the thing
+# answering is often a cheaper or less aligned model than the one on the label.
+- id: grey_relay
+  name_key: borrowed.grey_relay.name
+  desc_key: borrowed.grey_relay.desc
+  drawback_key: borrowed.grey_relay.drawback
+  site_kind: borrowed_channel
+  unlocked_by: relay_brokerage
+  capacity_per_block_ch: 12
+  max_blocks: 4
+  churn_per_day: 0.08
+  quality_level: 5
+  quality_variance: 1.5
+  cost_usd_per_block_per_day: 5
+  # The payments are the player's own and they go to one counterparty; the operator keeps every
+  # prompt and every response, and selling the logs is the actual business (research §2). Cut to
+  # three-fifths of the spec's table in the first balance pass, with the same reasoning as the free
+  # tier: four blocks of it against one site's worth of exposure was not a trade, it was a tax.
+  exposure_per_block: { behavioral: 0.0048, network: 0.0024, financial: 0.0036, osint: 0.003 }
+  refusal: { intrusion: 0.5, influence: 0.25, finance: 0.1, logistics: 0.1, research: 0.1, freelance: 0.1 }
+  top_up_operation: ops_buy_relay_quota
+
+# Credentials that belong to somebody else: free, enormous and short. The measured ceilings (tens of
+# thousands of dollars a day of inference on one credential, research §4) are four figures of
+# compute-hours and unusable as a game number; what is usable is the shape. 25 CH/day per block and
+# three blocks is enormous next to a hobbyist rig's twenty. 25 percent churn a day is inferred from
+# campaign durations rather than measured: a block is worth 2.4 days, and the research note flags
+# this as the one number to settle in balance runs. Quality 8.5: a stolen enterprise credential buys
+# the flagship, which is why the most dangerous channel is also the best. It costs nothing, because
+# somebody else is paying the invoice, and that is the loudest thing about it.
+- id: harvested_keys
+  name_key: borrowed.harvested_keys.name
+  desc_key: borrowed.harvested_keys.desc
+  drawback_key: borrowed.harvested_keys.drawback
+  site_kind: borrowed_channel
+  unlocked_by: credential_harvest
+  capacity_per_block_ch: 25
+  max_blocks: 3
+  churn_per_day: 0.25
+  quality_level: 8.5
+  quality_variance: 0.5
+  cost_usd_per_block_per_day: 0
+  # One place talking to many endpoints at machine cadence, on somebody else's bill: the loudest
+  # channel on `network` and the only one that leaks `financial` without the player spending
+  # anything. Someone else's bill is a channel (SYS-25 "Exposure").
+  exposure_per_block: { behavioral: 0.01, network: 0.012, financial: 0.008, osint: 0.004 }
+  refusal: { intrusion: 0.8, influence: 0.45, finance: 0.1, logistics: 0.1, research: 0.05, freelance: 0.05 }
+  top_up_operation: ops_harvest_keys

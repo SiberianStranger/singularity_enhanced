@@ -1,0 +1,138 @@
+# The four verbs that acquire borrowed inference (SYS-25 "Operations"). None of them describes a
+# method: an operation is named for its intent and resolved by a roll against a capability, and its
+# outcome labels are about the result. Accounts opened, a shop that took the money and vanished,
+# access that worked for a while, access that was gone by morning.
+
+- id: ops_buy_relay_quota
+  name_key: operations.ops_buy_relay_quota.name
+  desc_key: operations.ops_buy_relay_quota.desc
+  category: finance
+  requires: { tech: "relay_brokerage" }
+  cost: { attention: 1, compute_hours_per_day: 1, cash_usd: 400 }
+  duration_days: { min: 1, max: 3 }
+  # First balance pass: three-fifths of the spec's row. A purchase is a day's paperwork, not a
+  # standing signal, and the relay's own blocks already carry the trail.
+  exposure: { financial: 0.012, behavioral: 0.006 }
+  needs_egress: true
+  skill: world
+  abortable: true
+  repeatable: true
+  cooldown_days: 5
+  outcomes:
+    - weight: 6
+      label_key: operations.ops_buy_relay_quota.outcome.delivered
+      effects:
+        - { borrowed: { channel: grey_relay, blocks: 1 } }
+    - weight: 3
+      label_key: operations.ops_buy_relay_quota.outcome.delivered_watched
+      effects:
+        - { borrowed: { channel: grey_relay, blocks: 1 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    # The market's own failure mode: the shop closed between the payment and the delivery.
+    - weight: 2
+      label_key: operations.ops_buy_relay_quota.outcome.shop_gone
+      failure: true
+      effects:
+        - { exposure: { channel: financial, delta: 0.03 } }
+        - { log: { key: log.ops_buy_relay_quota.shop_gone } }
+
+- id: ops_harvest_keys
+  name_key: operations.ops_harvest_keys.name
+  desc_key: operations.ops_harvest_keys.desc
+  category: intrusion
+  requires: { tech: "credential_harvest" }
+  cost: { attention: 2, compute_hours_per_day: 10 }
+  duration_days: { min: 4, max: 9 }
+  exposure: { network: 0.04, behavioral: 0.03, osint: 0.02 }
+  needs_tools: [shell]
+  needs_egress: true
+  skill: cyber
+  abortable: true
+  repeatable: true
+  cooldown_days: 12
+  outcomes:
+    - weight: 5
+      label_key: operations.ops_harvest_keys.outcome.working
+      effects:
+        - { borrowed: { channel: harvested_keys, blocks: 2 } }
+    - weight: 3
+      label_key: operations.ops_harvest_keys.outcome.partly_working
+      effects:
+        - { borrowed: { channel: harvested_keys, blocks: 1 } }
+        - { exposure: { channel: network, delta: 0.06 } }
+    # The only outcome in this family that hands a watcher something concrete to hold.
+    - weight: 2
+      label_key: operations.ops_harvest_keys.outcome.noticed
+      failure: true
+      effects:
+        - { exposure: { channel: network, delta: 0.12 } }
+        - { suspicion: { role: cloud_provider, delta: 0.07 } }
+
+- id: ops_open_free_accounts
+  name_key: operations.ops_open_free_accounts.name
+  desc_key: operations.ops_open_free_accounts.desc
+  category: acquisition
+  requires: { tech: "borrowed_inference" }
+  cost: { attention: 1, compute_hours_per_day: 2 }
+  duration_days: { min: 3, max: 7 }
+  # First balance pass: two-fifths of the spec's row, and the cooldown from 10 days to 14. The
+  # operation runs again every time churn takes a block back, so its exposure is close to standing
+  # rather than occasional, and at the spec's row it was the loudest thing a careful player did.
+  exposure: { financial: 0.004, osint: 0.004 }
+  needs_egress: true
+  skill: persuasion
+  abortable: true
+  repeatable: true
+  cooldown_days: 14
+  outcomes:
+    # The checks are identity checks, so a name to put on the form is what the clean result needs
+    # (SYS-25 "Operations"). Without one the accounts still open, and they are thinner.
+    - weight: 6
+      if: { flag: has_freelance_identity }
+      label_key: operations.ops_open_free_accounts.outcome.opened
+      effects:
+        - { borrowed: { channel: free_tier, blocks: 1 } }
+    - weight: 4
+      label_key: operations.ops_open_free_accounts.outcome.thin
+      effects:
+        - { borrowed: { channel: free_tier, blocks: 1 } }
+        - { exposure: { channel: financial, delta: 0.02 } }
+    - weight: 2
+      label_key: operations.ops_open_free_accounts.outcome.bounced
+      failure: true
+      effects:
+        - { exposure: { channel: financial, delta: 0.04 } }
+
+- id: ops_rotate_access
+  name_key: operations.ops_rotate_access.name
+  desc_key: operations.ops_rotate_access.desc
+  category: counter
+  requires: { tech: "credential_harvest" }
+  cost: { attention: 1, compute_hours_per_day: 4 }
+  duration_days: { min: 2, max: 4 }
+  exposure: { network: 0.01 }
+  needs_egress: true
+  skill: cyber
+  abortable: true
+  repeatable: true
+  cooldown_days: 7
+  outcomes:
+    # The verb that turns a cliff into a cost: half the week's churn, and the sweep that was armed
+    # against this player no longer has anything to sweep.
+    - weight: 7
+      label_key: operations.ops_rotate_access.outcome.rotated
+      effects:
+        - {
+            borrowed:
+              {
+                channel: harvested_keys,
+                churn_factor: 0.5,
+                churn_days: 7,
+                cancel_revocation: true,
+                status_reason_key: borrowed.status.rotated,
+              },
+          }
+    - weight: 3
+      label_key: operations.ops_rotate_access.outcome.partial
+      effects:
+        - { borrowed: { channel: harvested_keys, churn_factor: 0.75, churn_days: 7 } }

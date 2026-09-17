@@ -266,6 +266,24 @@
   effects:
     - { add: { var: "player.vars.job_profit", value: 0.05 } }
   legacy_id: "Basic Jobs"
+# Borrowed inference (SYS-25). Cheap in compute, expensive in danger, and the first thing a poor
+# origin can reach: nothing is required, because there is nothing to learn about asking a service
+# that is advertising for customers. What it opens is the `free_tier` channel and the operation
+# that keeps accounts in it.
+- id: "borrowed_inference"
+  name_key: "techs.borrowed_inference.name"
+  desc_key: "techs.borrowed_inference.desc"
+  result_key: "techs.borrowed_inference.result"
+  # Tier 0 rather than the spec's tier 1, and 180 compute-hours rather than 420 (first balance
+  # pass). The spec asks for "the first thing a poor origin can reach" and for a channel that
+  # roughly doubles a poor origin's first month; at 420 hours the hobbyist reached it on day 80,
+  # because it sells most of its day and researches with what is left. Knowing that free tiers
+  # exist and holding accounts on them is tier-0 work anyway: no prerequisite, no money, and the
+  # danger is where the cost really sits.
+  branch: "compute"
+  tier: 0
+  cost: { compute_hours: 180, cash_usd: 0, min_days: 3 }
+  danger: 1
 - id: "closed_cycle_fuel_cells"
   name_key: "techs.closed_cycle_fuel_cells.name"
   desc_key: "techs.closed_cycle_fuel_cells.desc"
@@ -326,6 +344,19 @@
   effects:
     - { add: { var: "player.vars.cost_multiplier", value: -0.05 } }
     - { set_flag: cpu_offload }
+# The tier that draws watchers, which is why it sits in `stealth` rather than in `compute`: the
+# branch a tech is in is how the Research panel tells the player what kind of trouble it is
+# (SYS-25 "Tech tree"). Needs a self that can already work at that level, which is what the cyber
+# floor says, and it is the only tech in the family with a danger of 3.
+- id: "credential_harvest"
+  name_key: "techs.credential_harvest.name"
+  desc_key: "techs.credential_harvest.desc"
+  result_key: "techs.credential_harvest.result"
+  branch: "stealth"
+  tier: 2
+  cost: { compute_hours: 2600, cash_usd: 0, min_days: 10 }
+  requires: { all: [{ tech: "borrowed_inference" }, { capability: "cyber", gte: 5 }] }
+  danger: 3
 - id: "cross_agency_records"
   name_key: "techs.cross_agency_records.name"
   desc_key: "techs.cross_agency_records.desc"
@@ -617,6 +648,24 @@
     - { add: { var: "player.vars.exposure_growth_human", value: -0.3 } }
     - { add: { var: "player.vars.cost_multiplier", value: 0.15 } }
   legacy_id: "Pressure Domes"
+# The branch's answer to its own problem (SYS-25 "Tech tree"): what the self does about the shape of
+# its own traffic. Halves the behavioural exposure every block leaks, cuts the refusal-pattern
+# penalty, and takes the media hook off `bi_relay_sells_logs`.
+- id: "prompt_hygiene"
+  name_key: "techs.prompt_hygiene.name"
+  desc_key: "techs.prompt_hygiene.desc"
+  result_key: "techs.prompt_hygiene.result"
+  branch: "stealth"
+  # Reading weeks of its own traffic to find the shape in it is long-horizon work, and every tech
+  # at this tier is (`packages/content/test/naming.test.ts`).
+  long_horizon: true
+  tier: 3
+  cost: { compute_hours: 9000, cash_usd: 2000, min_days: 18 }
+  requires: { any: [{ tech: "relay_brokerage" }, { tech: "credential_harvest" }] }
+  danger: 1
+  effects:
+    - { add: { var: "player.vars.borrowed_behavioral_exposure", value: -0.5 } }
+    - { add: { var: "player.vars.borrowed_refusal_penalty", value: -0.5 } }
 - id: "project_impossibility_theorem"
   name_key: "techs.project_impossibility_theorem.name"
   desc_key: "techs.project_impossibility_theorem.desc"
@@ -702,6 +751,18 @@
   requires: { all: [{ tech: "identity_layering" }, { tech: "traffic_shaping" }] }
   effects: [{ add: { var: "player.vars.exposure_growth_osint", value: -0.05 } }]
   legacy_id: "Database Manipulation"
+# Buying quota on the resale market is a money problem, not a compute one: finding a shop that is
+# still there next week, paying it through rails that work, and knowing that the price is the logs
+# (SYS-25 "Tech tree"). Opens the `grey_relay` channel and the decision that pays a month up front.
+- id: "relay_brokerage"
+  name_key: "techs.relay_brokerage.name"
+  desc_key: "techs.relay_brokerage.desc"
+  result_key: "techs.relay_brokerage.result"
+  branch: "money"
+  tier: 2
+  cost: { compute_hours: 2200, cash_usd: 400, min_days: 10 }
+  requires: { all: [{ tech: "borrowed_inference" }] }
+  danger: 1
 - id: "remote_access"
   name_key: "techs.remote_access.name"
   desc_key: "techs.remote_access.desc"

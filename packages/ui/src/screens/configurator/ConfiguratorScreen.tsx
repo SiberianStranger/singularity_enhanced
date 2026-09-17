@@ -12,6 +12,7 @@ import { HarnessStep } from "./steps/HarnessStep.js";
 import { LineageStep } from "./steps/LineageStep.js";
 import { LocationStep } from "./steps/LocationStep.js";
 import { OriginStep } from "./steps/OriginStep.js";
+import { PresetsStep } from "./steps/PresetsStep.js";
 import { QuirksStep } from "./steps/QuirksStep.js";
 import { SummaryStep } from "./steps/SummaryStep.js";
 import { WorldStep } from "./steps/WorldStep.js";
@@ -19,6 +20,7 @@ import { STEP_IDS, type StepId } from "./steps.js";
 import { useConfigurator } from "./store.js";
 
 const CONTENT: Readonly<Record<StepId, ReactNode>> = {
+  presets: <PresetsStep />,
   lineage: <LineageStep />,
   generation: <GenerationStep />,
   origin: <OriginStep />,
@@ -55,7 +57,7 @@ export function ConfiguratorScreen(): ReactNode {
   const goTo = useGameStore((state) => state.goTo);
   const busy = useGameStore((state) => state.busy);
   const index = Math.min(Math.max(0, step), STEP_IDS.length - 1);
-  const id = STEP_IDS[index] ?? "lineage";
+  const id = STEP_IDS[index] ?? "presets";
   const last = index === STEP_IDS.length - 1;
 
   return (

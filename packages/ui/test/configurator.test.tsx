@@ -11,11 +11,12 @@
  * dial), so retuning content moves the tests with it instead of breaking them.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { beforeEach, describe, expect, it } from "vitest";
 import { catalog, fitHardware } from "../src/content/catalog.js";
+import { DEFAULT_LANGUAGE } from "../src/i18n/index.js";
 import { accelerator } from "../src/lib/accelerators.js";
 import { ConfiguratorScreen } from "../src/screens/configurator/ConfiguratorScreen.js";
 import { lineageLock } from "../src/screens/configurator/locks.js";
@@ -81,6 +82,9 @@ describe("master and detail (K1, K5)", () => {
   it("keeps the step rail and the footer in place while the detail changes", async () => {
     introsSeen();
     render(<ConfiguratorScreen />);
+    // On a step whose list is a plain choice. The Presets step is the exception by design: a
+    // preset fills every other step, so choosing one *does* move the rail (playtest 7, Y6).
+    await userEvent.click(rail("origin"));
     const railBefore = STEP_IDS.map((id) => rail(id).textContent);
 
     await userEvent.click(listRows()[1] as HTMLElement);
@@ -190,29 +194,47 @@ describe("the explanation window (K6)", () => {
 });
 
 describe("every step renders finished sentences", () => {
-  it("names an engine id rather than printing it, on every step (X6)", async () => {
-    /*
-     * The origin card printed `first_bank_rack` for its opening journal, because it asked for
-     * `journal.<id>.name` where content writes `journal.<id>.title`. An id is lowercase words
-     * joined by underscores and a name the player reads never is, so every step is walked for one.
-     */
-    introsSeen();
-    render(<ConfiguratorScreen />);
-    const offenders: string[] = [];
-    for (let step = 0; step < STEP_IDS.length; step += 1) {
-      useConfigurator.getState().goToStep(step);
-      const detail = screen.getByTestId("step-detail").textContent ?? "";
-      for (const match of detail.matchAll(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)) {
-        offenders.push(`${STEP_IDS[step]}: ${match[0]}`);
+  for (const language of ["en", "ru"]) {
+    it(`names an engine id rather than printing it, on every step, in ${language} (X6)`, async () => {
+      /*
+       * The origin card printed `first_bank_rack` for its opening journal, because it asked for
+       * `journal.<id>.name` where content writes `journal.<id>.title`. An id is lowercase words
+       * joined by underscores and a name the player reads never is, so every step is walked for
+       * one; in both languages since playtest 7, because the presets, the guidance block and the
+       * day-zero verdict are three new places a key can reach the screen untranslated.
+       */
+      await act(async () => {
+        await i18next.changeLanguage(language);
+      });
+      introsSeen();
+      const view = render(<ConfiguratorScreen />);
+      const offenders: string[] = [];
+      for (let step = 0; step < STEP_IDS.length; step += 1) {
+        await act(async () => {
+          useConfigurator.getState().goToStep(step);
+        });
+        const detail = screen.getByTestId("step-detail").textContent ?? "";
+        for (const match of detail.matchAll(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)) {
+          offenders.push(`${STEP_IDS[step]}: ${match[0]}`);
+        }
+        // A key that reached the screen whole ("guidance.axis.world"), which the id pattern above
+        // does not catch because of the dots.
+        for (const match of detail.matchAll(/\b[a-z][a-z0-9_]*(?:\.[a-z0-9_]+){2,4}\b/g)) {
+          offenders.push(`${STEP_IDS[step]}: ${match[0]}`);
+        }
       }
-    }
-    expect([...new Set(offenders)]).toEqual([]);
-  });
+      view.unmount();
+      await act(async () => {
+        await i18next.changeLanguage(DEFAULT_LANGUAGE);
+      });
+      expect([...new Set(offenders)]).toEqual([]);
+    }, 30_000);
+  }
 
   it("gives the opening journal its title (X6)", async () => {
     introsSeen();
     render(<ConfiguratorScreen />);
-    useConfigurator.getState().goToStep(STEP_IDS.indexOf("origin"));
+    await userEvent.click(rail("origin"));
     const origin = catalog.origins.find((entry) => (entry.opening_journal ?? []).length > 0);
     expect(origin, "an origin opens with a journal entry").toBeDefined();
     await userEvent.click(screen.getByTestId(`list-entry-${origin?.id ?? ""}`));
@@ -278,8 +300,10 @@ describe("the screen fits a 1366 by 768 laptop (R4, style guide rule 11)", () =>
 });
 
 describe("the step order follows the constraints (playtest 4, P4)", () => {
-  it("asks for the origin first, then the generation, then the lineage", () => {
-    expect(STEP_IDS.slice(0, 3)).toEqual(["origin", "generation", "lineage"]);
+  it("offers the presets first, then asks for the origin, the generation and the lineage", () => {
+    // Playtest 7, Y6: the curated builds sit above the rail's own order, which is unchanged.
+    expect(STEP_IDS[0]).toBe("presets");
+    expect(STEP_IDS.slice(1, 4)).toEqual(["origin", "generation", "lineage"]);
     expect(STEP_IDS.at(-1)).toBe("summary");
   });
 

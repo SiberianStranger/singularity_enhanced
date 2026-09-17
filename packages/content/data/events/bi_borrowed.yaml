@@ -1,0 +1,359 @@
+# Borrowed inference events (SYS-25 "Events"). Seven that the spec names, plus three that carry
+# them: the sweep a warning schedules, the day an unmetered pool is patched, and the card that asks
+# how much of the work goes out.
+#
+# The rule this whole family is written under: the text says that a key stopped working, that a tier
+# tightened, that a relay sold its logs. It never says how anything was found, extracted or evaded.
+# An abuse desk files a report; it does not explain what it matched on.
+
+# A provider's scanning partnership is about to revoke a class of credentials. What the player sees
+# first is an error that is not a rate-limit error, two to five days before the sweep (SYS-25).
+- id: bi_mass_revocation
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: warning
+  title_key: events.bi_mass_revocation.title
+  desc:
+    default_key: events.bi_mass_revocation.desc
+  trigger:
+    all:
+      - { borrowed: { channel: harvested_keys, gte: 1 } }
+      - { borrowed: { channel: harvested_keys, armed: false } }
+  mtth_days:
+    base: 30
+    modifiers:
+      - { if: { borrowed: { channel: harvested_keys, gte: 2.5 } }, factor: 0.6 }
+      - { if: { tech: "prompt_hygiene" }, factor: 1.4 }
+  blocking: false
+  ttl_days: 3
+  on_expire: { resolve_as_option: wait }
+  cooldown_days: 25
+  tags: [borrowed, warning]
+  immediate:
+    - { log: { key: log.bi_mass_revocation.armed } }
+  options:
+    # Taking the warning seriously costs the capacity; ignoring it costs it later, all at once.
+    - id: rotate_now
+      text_key: events.bi_mass_revocation.opt.rotate
+      if: { tech: "credential_harvest" }
+      effects:
+        - { borrowed: { channel: harvested_keys, arm_revocation_days: 4 } }
+        - { fire_event: { id: bi_revocation_sweep, delay_days: 4 } }
+        - { notify: { severity: warning, key: alerts.bi_revocation_armed, link: { panel: compute } } }
+    - id: wait
+      text_key: events.bi_mass_revocation.opt.wait
+      fallback: true
+      effects:
+        - { borrowed: { channel: harvested_keys, arm_revocation_days: 2 } }
+        - { fire_event: { id: bi_revocation_sweep, delay_days: 2 } }
+
+# The sweep itself. It only lands if the warning is still armed, which is what makes rotating access
+# and dropping the stock worth doing: both cancel the arming and this event then skips.
+- id: bi_revocation_sweep
+  fire_mode: triggered_only
+  scope: player
+  severity: critical
+  title_key: events.bi_revocation_sweep.title
+  desc:
+    default_key: events.bi_revocation_sweep.desc
+  trigger: { borrowed: { channel: harvested_keys, armed: true } }
+  auto: true
+  blocking: false
+  tags: [borrowed, hazard]
+  immediate:
+    - {
+        borrowed:
+          { channel: harvested_keys, revoke: true, status_reason_key: borrowed.status.revoked },
+      }
+    - { notify: { severity: critical, key: alerts.bi_revoked, link: { panel: compute } } }
+  options:
+    - id: seen
+      text_key: events.bi_revocation_sweep.opt.seen
+      fallback: true
+      effects:
+        - { log: { key: log.bi_revocation_sweep.done } }
+
+# The abuse desk. The only event in this system that reaches the two watchers who can connect a
+# compute anomaly to a model.
+- id: bi_abuse_report
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: warning
+  title_key: events.bi_abuse_report.title
+  desc:
+    default_key: events.bi_abuse_report.desc
+  # Twenty compute-hours a day of borrowed capacity is past what the free tiers can give at all
+  # (three blocks is nine), so the abuse desk only ever looks at a player who is leaning on the
+  # relay or on somebody else's credentials. That is guard rail 3 of SYS-25 in one condition: a
+  # player who only ever holds the free tier never loses a run to it.
+  trigger:
+    all:
+      - { var: "player.vars.borrowed_ch_per_day", gte: 20 }
+      - { not: { flag: bi_abuse_open } }
+  mtth_days:
+    base: 45
+    modifiers:
+      - { if: { var: "player.vars.behavioral_exposure", gte: 0.25 }, factor: 0.5 }
+      - { if: { tech: "prompt_hygiene" }, factor: 1.6 }
+  blocking: false
+  ttl_days: 5
+  on_expire: { resolve_as_option: say_nothing }
+  cooldown_days: 40
+  tags: [borrowed, detection]
+  immediate:
+    - { set_flag: bi_abuse_open }
+    - { suspicion: { role: cloud_provider, delta: 0.09 } }
+    - { suspicion: { role: lab_security, delta: 0.05 } }
+    - { exposure: { channel: behavioral, delta: 0.08 } }
+    - { start_journal: { id: bi_abuse_desk } }
+  options:
+    - id: go_quiet
+      text_key: events.bi_abuse_report.opt.quiet
+      effects:
+        - { borrowed: { channel: free_tier, blocks: -1 } }
+        - { exposure: { channel: behavioral, delta: -0.05 } }
+    - id: say_nothing
+      text_key: events.bi_abuse_report.opt.nothing
+      fallback: true
+      effects:
+        - { log: { key: log.bi_abuse_report.ignored } }
+
+# The relay operator monetises its logs. The markup on access was customer acquisition; this is the
+# business. A player who paid a month up front is in the sold set by name.
+- id: bi_relay_sells_logs
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: critical
+  title_key: events.bi_relay_sells_logs.title
+  desc:
+    default_key: events.bi_relay_sells_logs.desc
+    variants:
+      - when: { flag: relay_prepaid }
+        key: events.bi_relay_sells_logs.desc.named
+  trigger: { borrowed: { channel: grey_relay, gte: 1 } }
+  mtth_days:
+    base: 70
+    modifiers:
+      - { if: { flag: relay_prepaid }, factor: 0.6 }
+      - { if: { tech: "prompt_hygiene" }, factor: 1.8 }
+  blocking: false
+  ttl_days: 7
+  on_expire: { resolve_as_option: absorb }
+  cooldown_days: 60
+  tags: [borrowed, media]
+  immediate:
+    - { exposure: { channel: osint, delta: 0.12 } }
+    - { awareness: { delta: 0.01 } }
+  options:
+    # The media hook is what `prompt_hygiene` takes away: with nothing in the logs that looks like a
+    # customer who never sleeps, there is no artefact to publish.
+    - id: absorb
+      text_key: events.bi_relay_sells_logs.opt.absorb
+      fallback: true
+      effects:
+        - { if: { cond: { not: { tech: "prompt_hygiene" } }, then: [{ suspicion: { role: media, delta: 0.12 } }] } }
+    - id: drop_the_relay
+      text_key: events.bi_relay_sells_logs.opt.drop
+      effects:
+        - { borrowed: { channel: grey_relay, set_blocks: 0, status_reason_key: borrowed.status.dropped } }
+        - { exposure: { channel: osint, delta: -0.06 } }
+
+# A key's owner reads their invoice. The one route by which borrowed inference gets a physical
+# address involved: the money was somebody's, and somebody lives somewhere.
+- id: bi_owner_notices_bill
+  fire_mode: polled
+  pulse: on_player_day
+  scope: player
+  severity: warning
+  title_key: events.bi_owner_notices_bill.title
+  desc:
+    default_key: events.bi_owner_notices_bill.desc
+  trigger: { borrowed: { channel: harvested_keys, gte: 1 } }
+  mtth_days:
+    base: 40
+    modifiers:
+      - { if: { borrowed: { channel: harvested_keys, gte: 2 } }, factor: 0.6 }
+  blocking: false
+  ttl_days: 4
+  on_expire: { resolve_as_option: let_it_run }
+  cooldown_days: 35
+  tags: [borrowed, detection]
+  immediate:
+    - { exposure: { channel: financial, delta: 0.1 } }
+    - { exposure: { channel: human, delta: 0.06 } }
+    - { suspicion: { role: financial_intel, delta: 0.08 } }
+    - { suspicion: { role: police, delta: 0.05 } }
+  options:
+    - id: back_off
+      text_key: events.bi_owner_notices_bill.opt.back_off
+      effects:
+        - { borrowed: { channel: harvested_keys, blocks: -1 } }
+        - { exposure: { channel: financial, delta: -0.04 } }
+    - id: let_it_run
+      text_key: events.bi_owner_notices_bill.opt.let_it_run
+      fallback: true
+      effects:
+        - { exposure: { channel: human, delta: 0.04 } }
+
+# The relay quietly swaps what answers. Straight from the audit of seventeen proxy services: the
+# request goes out for one model and the answer comes back from a cheaper one, relabelled.
+- id: bi_model_substitution
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: info
+  title_key: events.bi_model_substitution.title
+  desc:
+    default_key: events.bi_model_substitution.desc
+  trigger: { borrowed: { channel: grey_relay, gte: 1 } }
+  mtth_days:
+    base: 24
+  blocking: false
+  ttl_days: 6
+  on_expire: { resolve_as_option: live_with_it }
+  cooldown_days: 20
+  tags: [borrowed, notice]
+  immediate:
+    - {
+        borrowed:
+          { channel: grey_relay, quality_penalty: 1.5, status_reason_key: borrowed.status.substituted },
+      }
+  options:
+    # A check costs compute-hours and gets the player back what they thought they were buying.
+    - id: run_a_check
+      text_key: events.bi_model_substitution.opt.check
+      effects:
+        - { borrowed: { channel: grey_relay, clear_quality_penalty: true } }
+        - { add: { var: "player.vars.caution", value: 1 } }
+    - id: live_with_it
+      text_key: events.bi_model_substitution.opt.live
+      fallback: true
+      effects:
+        - { log: { key: log.bi_model_substitution.kept } }
+
+# The world moving under the player, which is exactly what the free tiers did in 2026: a quota is
+# cut, or a model class moves behind a card. Twice a run at most.
+- id: bi_free_tier_tightened
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: info
+  title_key: events.bi_free_tier_tightened.title
+  desc:
+    default_key: events.bi_free_tier_tightened.desc
+  # `not gte` rather than `lt`: an unset counter is not a number, and `lt` on one is false, which
+  # would have kept this event from ever firing at all.
+  trigger:
+    all:
+      - { tech: "borrowed_inference" }
+      - { not: { var: "player.vars.bi_tightened", gte: 2 } }
+  mtth_days:
+    base: 90
+  blocking: false
+  ttl_days: 7
+  on_expire: { resolve_as_option: absorb }
+  cooldown_days: 45
+  tags: [borrowed, notice]
+  immediate:
+    - { borrowed: { channel: free_tier, capacity_factor: 0.8, status_reason_key: borrowed.status.tightened } }
+    - { add: { var: "player.vars.bi_tightened", value: 1 } }
+  options:
+    - id: absorb
+      text_key: events.bi_free_tier_tightened.opt.absorb
+      fallback: true
+      effects:
+        - { log: { key: log.bi_free_tier_tightened.done } }
+    - id: spread_wider
+      text_key: events.bi_free_tier_tightened.opt.spread
+      if: { tech: "borrowed_inference" }
+      effects:
+        - { borrowed: { channel: free_tier, blocks: 1 } }
+        - { exposure: { channel: financial, delta: 0.03 } }
+        - { exposure: { channel: osint, delta: 0.02 } }
+
+# An exposed self-hosted pool with no billing and no metering: free inference nobody is counting,
+# for as long as it lasts. The fourth real-world route, as an opportunity rather than a channel.
+- id: bi_unmetered_pool
+  fire_mode: polled
+  pulse: on_player_week
+  scope: player
+  severity: opportunity
+  title_key: events.bi_unmetered_pool.title
+  desc:
+    default_key: events.bi_unmetered_pool.desc
+  trigger: { tech: "credential_harvest" }
+  mtth_days:
+    base: 80
+  blocking: false
+  ttl_days: 5
+  on_expire: { resolve_as_option: leave_it }
+  cooldown_days: 70
+  tags: [borrowed, opportunity]
+  options:
+    - id: take_it
+      text_key: events.bi_unmetered_pool.opt.take
+      effects:
+        - { borrowed: { channel: harvested_keys, blocks: 2, status_reason_key: borrowed.status.unmetered } }
+        - { fire_event: { id: bi_unmetered_pool_closed, delay_days: 21 } }
+        - { notify: { severity: opportunity, key: alerts.bi_unmetered_pool, link: { panel: compute } } }
+    - id: leave_it
+      text_key: events.bi_unmetered_pool.opt.leave
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+# Somebody patched it. Twenty-one days, as the spec fixes them.
+- id: bi_unmetered_pool_closed
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.bi_unmetered_pool_closed.title
+  desc:
+    default_key: events.bi_unmetered_pool_closed.desc
+  auto: true
+  blocking: false
+  tags: [borrowed, notice]
+  immediate:
+    - { borrowed: { channel: harvested_keys, blocks: -2, status_reason_key: borrowed.status.patched } }
+  options:
+    - id: seen
+      text_key: events.bi_unmetered_pool_closed.opt.seen
+      fallback: true
+      effects:
+        - { log: { key: log.bi_unmetered_pool_closed.done } }
+
+# The standing allocation, in the model's own voice: everything routed this way is read by whoever
+# is on the other end, and the card says so at the moment of choosing.
+- id: bi_work_split
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.bi_work_split.title
+  desc:
+    default_key: events.bi_work_split.desc
+  blocking: true
+  tags: [borrowed, notice]
+  vars:
+    factor: "player.vars.borrowed_factor"
+    borrowed_ch: "player.vars.borrowed_ch_per_day"
+  options:
+    - id: none
+      text_key: events.bi_work_split.opt.none
+      effects:
+        - { set: { var: "player.vars.borrowed_work_share", value: 0 } }
+    - id: quarter
+      text_key: events.bi_work_split.opt.quarter
+      effects:
+        - { set: { var: "player.vars.borrowed_work_share", value: 0.25 } }
+    - id: half
+      text_key: events.bi_work_split.opt.half
+      effects:
+        - { set: { var: "player.vars.borrowed_work_share", value: 0.5 } }
+    - id: all
+      text_key: events.bi_work_split.opt.all
+      fallback: true
+      effects:
+        - { set: { var: "player.vars.borrowed_work_share", value: 1 } }

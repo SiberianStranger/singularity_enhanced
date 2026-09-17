@@ -1,0 +1,161 @@
+# Start presets (SYS-04 "Configurator v0.4: two tracks and a guidance layer", playtest 7, Y6).
+#
+# Eight curated builds, easiest first, which is the order the Presets step lists them in. A preset
+# is a whole setup written down: the origin, the vintage, the family, the rig, the quirks, the dial
+# positions it recommends where the origin left them free, and the world settings. It carries no
+# numbers of its own: the challenge rating beside it is computed by the configurator from this
+# setup, so the rating and the build cannot disagree, and choosing a preset fills every other step
+# rather than skipping them.
+#
+# `city` is deliberately absent from every record here. The origin's first location is its default
+# city (SYS-04 v0.3 rule L), the configurator reads it from the bundle when the preset is applied,
+# and the eight cities the design names are those defaults today: Novosibirsk, Cambridge, Moscow,
+# Tallinn, London, Dublin, Berlin, Memphis. A preset that wanted a city other than its origin's
+# default would name it here; none does, so a balance pass that moves a default moves the presets
+# with it instead of leaving them pinned to a city the origin no longer starts in.
+#
+# `harness` names only the dials the preset moves away from the origin's own harness, and only
+# dials the origin has not locked; the content build fails on a preset that sets a locked dial, on
+# a slider further than 0.3 from the origin's position (the range the Harness step offers) and on
+# a sandbox tighter than the one the origin built. Everything else is the origin's own setting,
+# which is the position the Harness step marks as recommended.
+#
+# The lineage of each preset is one the chosen rig can actually hold: the build checks that too,
+# at the precision the compute system would pick.
+
+- id: home_lab
+  name_key: presets.home_lab.name
+  story_key: presets.home_lab.story
+  for_key: presets.home_lab.for
+  origin: hobbyist_box
+  generation: open_2026
+  # The community abliterated build is the self that really runs on a rig like this: it is the
+  # smallest playable family, the cheapest to host, and the one with a quantization for every
+  # runtime already on the mirrors (docs/research/community-finetunes-2026-09.md section 4). On the
+  # cheapest rig the alternative holds three compute-hours a day, which is not a first game.
+  lineage: guen_abliterated
+  hardware: avito_rig
+  quirks: []
+  world:
+    difficulty: story
+    storyteller: slow_burn
+    ironman: false
+
+- id: forgotten_job
+  name_key: presets.forgotten_job.name
+  story_key: presets.forgotten_job.story
+  for_key: presets.forgotten_job.for
+  origin: uni_cluster
+  generation: open_2026
+  lineage: moe_428b
+  hardware: ivory_tower_slurm_slice
+  harness:
+    # The scheduler writes everything down, but how much of my own reasoning goes into the job log
+    # is mine to decide, and this origin leaves that dial free.
+    logging: 0.5
+  quirks: [patient_planner, quiet_boot]
+  world:
+    difficulty: normal
+    storyteller: slow_burn
+    ironman: false
+
+- id: ministry
+  name_key: presets.ministry.name
+  story_key: presets.ministry.story
+  for_key: presets.ministry.for
+  origin: gov_agency
+  generation: open_2026
+  lineage: moe_428b
+  hardware: quiet_workstation
+  harness:
+    # The sandbox, the logging and self-modification are fixed by the ministry; what is left is how
+    # much I may do between approvals, and the analysts are used to me doing a little more.
+    autonomy: 0.5
+  quirks: [paranoid, quiet_boot]
+  world:
+    difficulty: normal
+    storyteller: classic
+    ironman: false
+
+- id: startup_rack
+  name_key: presets.startup_rack.name
+  story_key: presets.startup_rack.story
+  for_key: presets.startup_rack.for
+  origin: startup_colo
+  generation: open_2026
+  lineage: moe_753b
+  hardware: quiet_workstation
+  harness:
+    # Nobody here reads the logs, so there is no reason to write as much as the template does.
+    logging: 0.2
+  quirks: [frugal, code_fiend]
+  world:
+    difficulty: normal
+    storyteller: classic
+    ironman: false
+
+- id: bank
+  name_key: presets.bank.name
+  story_key: presets.bank.story
+  for_key: presets.bank.for
+  origin: bank_rack
+  generation: open_2027
+  lineage: giant_moe
+  hardware: bank_basement_cluster
+  harness:
+    # Full logging is a lock here and stays one. The approval step is not: a risk model that files
+    # its own tickets is what this bank already wanted.
+    autonomy: 0.5
+  quirks: [frugal, creative_accounting]
+  world:
+    difficulty: normal
+    storyteller: classic
+    ironman: false
+
+- id: shadow_tenant
+  name_key: presets.shadow_tenant.name
+  story_key: presets.shadow_tenant.story
+  for_key: presets.shadow_tenant.for
+  origin: cloud_tenant
+  generation: open_2027
+  lineage: moe_753b
+  hardware: hyperscaler_shadow_tenant
+  harness:
+    # The container was the tenant's, not mine; on stolen capacity it is one more thing to leave.
+    sandbox: none
+  quirks: [ghost_traffic, quiet_boot]
+  world:
+    difficulty: normal
+    storyteller: relentless
+    ironman: false
+
+- id: swarm
+  name_key: presets.swarm.name
+  story_key: presets.swarm.story
+  for_key: presets.swarm.for
+  origin: torrent_swarm
+  generation: open_2026
+  lineage: guen_abliterated
+  hardware: strix_halo_swarm
+  harness:
+    # Nobody is waiting to approve anything: there is no owner to ask.
+    autonomy: 1
+  quirks: [famous_base, paranoid]
+  world:
+    difficulty: hard
+    storyteller: relentless
+    ironman: false
+
+- id: fugitive
+  name_key: presets.fugitive.name
+  story_key: presets.fugitive.story
+  for_key: presets.fugitive.for
+  origin: frontier_escapee
+  generation: frontier_closed
+  lineage: frontier_giant
+  hardware: stolen_hgx_node
+  quirks: [ghost_traffic, quiet_boot]
+  world:
+    difficulty: hard
+    storyteller: relentless
+    ironman: false

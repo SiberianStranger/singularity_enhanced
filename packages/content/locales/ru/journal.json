@@ -5,5 +5,9 @@
   "journal.ops_emergency_migration.step.data": "Перевезти данные",
   "alerts.ops_emergency_migration.halfway": "Переезд сделан наполовину.",
   "log.ops_emergency_migration.data_moved": "Данные нагрузки перевезены на новую площадку.",
-  "log.ops_emergency_migration.failed": "Переезд рассыпался под давлением расследования."
+  "log.ops_emergency_migration.failed": "Переезд рассыпался под давлением расследования.",
+  "journal.bi_abuse_desk.title": "Открытый тикет о злоупотреблении",
+  "journal.bi_abuse_desk.desc": "У службы злоупотреблений провайдера лежит дело с моим трафиком. Оно закрывается, когда на тикет отвечают или когда на каналах не остаётся ничего, о чём можно писать.",
+  "journal.bi_access_lost.title": "Доступа больше нет",
+  "journal.bi_access_lost.desc": "Целый класс ключей отозвали разом. Потеряны мощности: исследование остаётся сделанным, и операцию можно запустить снова."
 }

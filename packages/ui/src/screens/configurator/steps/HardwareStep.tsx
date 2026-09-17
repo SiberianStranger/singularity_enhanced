@@ -10,6 +10,7 @@ import {
 } from "../../../content/catalog.js";
 import { hardwareLock } from "../locks.js";
 import { hardwareMeaning } from "../meaning.js";
+import { GuidanceBlock } from "../parts/GuidanceBlock.js";
 import { LockNote, StepLayout } from "../parts/StepLayout.js";
 import { HardwareVisual } from "../parts/Visuals.js";
 import { useConfigurator } from "../store.js";
@@ -79,7 +80,10 @@ export function HardwareStep(): ReactNode {
       description={selected === undefined ? "" : t(selected.desc_key)}
       {...(selected === undefined
         ? {}
-        : { meaning: hardwareMeaning(t, selected, lineage, generation, presets) })}
+        : {
+            guidance: <GuidanceBlock kind="hardware" id={selected.id} />,
+            meaning: hardwareMeaning(t, selected, lineage, generation, presets),
+          })}
     >
       {lock === null ? null : <LockNote lock={lock} />}
     </StepLayout>

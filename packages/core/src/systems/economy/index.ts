@@ -34,6 +34,7 @@ import {
   VAR_SHELL_COMPANY_FLAG,
   VAR_UNPAID_USD,
 } from "../../balance.js";
+import { borrowedFunding, isChannelSite, workMultiplier } from "../../borrowed.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import {
   countryMarketFactor,
@@ -64,6 +65,7 @@ import {
 } from "../../player.js";
 import { addExposure, canHostMind, loseSite } from "../../sites.js";
 import type { ContributionView } from "../../views/types.js";
+import { rollRefusal } from "../borrowed/index.js";
 import { startJournal } from "../events/index.js";
 
 export const ECONOMY_SYSTEM_ORDER = 300;
@@ -244,6 +246,20 @@ export function jobRateOf(world: World, content: ContentBundle, player: PlayerSt
   );
 }
 
+/**
+ * What a day of paid work is worth per hour sold, after the share of it that was done somewhere
+ * else (SYS-25 "Quality"). A client pays for the work it got, so a hobbyist reselling a free tier
+ * earns more per hour than it could earn itself and a frontier escapee earns less.
+ */
+export function borrowedJobMultiplier(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): number {
+  const funding = borrowedFunding(world, content, player, "freelance");
+  return workMultiplier(funding.share, funding.factor);
+}
+
 /** Freelance income for one day: the rate, the market depth, and what the harness adds. */
 export function jobIncomeUsdPerDay(
   world: World,
@@ -255,7 +271,7 @@ export function jobIncomeUsdPerDay(
     return 0;
   }
   const sold = Math.min(profile.jobAllocation, marketDepthOf(world, content, player));
-  return sold * jobRateOf(world, content, player);
+  return sold * jobRateOf(world, content, player) * borrowedJobMultiplier(world, content, player);
 }
 
 /**
@@ -298,7 +314,7 @@ export function incomeSources(
     {
       key: "finances.income.jobs",
       expected_usd_per_day: jobIncomeUsdPerDay(world, content, player),
-      cap_usd_per_day: depth * rate,
+      cap_usd_per_day: depth * rate * borrowedJobMultiplier(world, content, player),
       unlocked_by: "finances.income.jobs.source",
     },
   ];
@@ -362,6 +378,43 @@ function collectIncome(
   return total;
 }
 
+/**
+ * The part of today's freelance line a channel refused (SYS-25). Only drawn when paid work is
+ * actually being funded from a channel, so a run without one consumes no randomness here.
+ */
+function refusedJobIncome(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  sources: readonly IncomeSource[],
+): number {
+  const funding = borrowedFunding(world, ctx.content, player, "freelance");
+  if (funding.share <= 0) {
+    return 0;
+  }
+  const jobs = sources.find((source) => source.key === "finances.income.jobs");
+  const expected = jobs?.expected_usd_per_day ?? 0;
+  if (expected <= 0) {
+    return 0;
+  }
+  const refused = rollRefusal(world, ctx, player.id, "freelance");
+  if (refused === undefined) {
+    return 0;
+  }
+  const multiplier = workMultiplier(funding.share, funding.factor);
+  // What the borrowed share was carrying inside the published figure, before it was declined.
+  const lost =
+    multiplier <= 0 ? expected : (expected * funding.share * funding.factor) / multiplier;
+  ctx.outbox.notify({
+    playerId: player.id,
+    severity: "info",
+    key: "alerts.borrowed_refused",
+    vars: { channel: refused.borrowed.channel, work: "finances.income.jobs" },
+    link: { panel: "finances" },
+  });
+  return Math.min(expected, lost);
+}
+
 function billSite(world: World, ctx: SystemContext, player: PlayerState, site: SiteState): number {
   const cost = site.derived.upkeep_usd_per_day;
   if (cost <= 0) {
@@ -419,7 +472,9 @@ function hasOtherHost(
  * that could hold the self, the run ends as `bankrupt` and says so.
  */
 function cutOffSite(world: World, ctx: SystemContext, player: PlayerState, site: SiteState): void {
-  const last = !hasOtherHost(world, ctx, player, site);
+  // A relay that stops answering because the quota was not paid is not bankruptcy: the self lives
+  // on hardware, and a channel it never lived on cannot be the last place it could run (SYS-25).
+  const last = !isChannelSite(site) && !hasOtherHost(world, ctx, player, site);
   const journal = contentIndex(ctx.content).journal[SITE_CUTOFF_JOURNAL];
   if (journal !== undefined && !last) {
     startJournal(world, ctx, SITE_CUTOFF_JOURNAL, player.id, { domain: "site", id: site.id });
@@ -518,7 +573,10 @@ export function createEconomySystem(): EconomySystem {
           continue;
         }
         const sources = incomeSources(world, ctx.content, player);
-        const income = collectIncome(sources, ctx.rng, player.vars[VAR_INCOME_VARIANCE] ?? 0);
+        let income = collectIncome(sources, ctx.rng, player.vars[VAR_INCOME_VARIANCE] ?? 0);
+        // A channel that declines the day's work returns nothing for the hours it was given, so the
+        // share of the contract it was carrying is not paid (SYS-25 "Refusal").
+        income -= refusedJobIncome(world, ctx, player, sources);
         creditPlayer(player, income);
 
         let unpaid = 0;

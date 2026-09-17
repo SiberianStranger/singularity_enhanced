@@ -165,6 +165,77 @@ export interface ResourcesView {
   attention_used: number;
 }
 
+/**
+ * One tier of borrowed compute as the Compute panel shows it (SYS-25 "View fields"): a block under
+ * the sites table, never a row inside it, because a channel is not a place.
+ */
+export interface BorrowedChannelView {
+  id: string;
+  name_key: string;
+  desc_key: string;
+  /** What it costs the player that is not money: the line the panel prints under the name. */
+  drawback_key: string;
+  /** The site the channel is filed as, so alerts and events can link to it. */
+  site_id: string;
+  /** Whether the tech that opens this channel is done. */
+  unlocked: boolean;
+  /** The tech that opens it, so the client can link to the Research tab. */
+  unlocked_by: string;
+  /** Locale key of that tech, for a locked channel's one-line reason. */
+  unlocked_by_key: string;
+  blocks: number;
+  max_blocks: number;
+  capacity_ch_per_day: number;
+  max_capacity_ch_per_day: number;
+  churn_per_day: number;
+  /** Days a block is worth at the current churn; null when nothing erodes it. */
+  half_life_days: number | null;
+  /** This week's delivered quality, absolute 0-10. */
+  quality_level: number;
+  /** The published level, before this week's draw and any substitution. */
+  quality_published: number;
+  /** What it is being compared against: the mean of the self's effective axes. */
+  self_capability_level: number;
+  /** The published quotient, clamped: what an hour here is worth against an hour of the self's. */
+  effective_factor: number;
+  cost_usd_per_day: number;
+  /** Exposure this channel adds per day at the stock it holds, every channel present. */
+  exposure_per_day: Exposure;
+  /** Share of attempts declined, per kind of work. */
+  refusal: Record<string, number>;
+  status: "healthy" | "degraded" | "dormant" | "revoked";
+  /** What the last incident was; null when nothing has happened to it. */
+  status_reason_key: string | null;
+  /** Whether a revocation warning is armed against this channel right now. */
+  revocation_armed: boolean;
+  /** Refusals this channel has answered with inside the current week. */
+  refusals_this_week: number;
+  /** The operation that adds a block, and why it cannot be run right now. */
+  top_up: { operation: string; blocked_reason_key: string | null };
+  /** The terms behind `effective_factor`, for the tooltip. */
+  factor_contributions: ContributionView[];
+}
+
+/**
+ * Where the day's compute-hours come from (SYS-25 "View fields"). The sites table is still
+ * `PlayerView.sites`; this is the borrowed block beneath it and the two totals the Research panel
+ * needs to say which allocation is being funded from where.
+ */
+export interface ComputeView {
+  /** Compute-hours a day from the player's own hardware. */
+  own_ch_per_day: number;
+  /** Compute-hours a day from channels the player does not own. */
+  borrowed_ch_per_day: number;
+  /** The borrowed share of the total, in [0, 1]. */
+  borrowed_share: number;
+  /** The standing decision: how much of a line the player is willing to send out, in [0, 1]. */
+  borrowed_share_setting: number;
+  /** Every channel the content defines, held or not, in id order. */
+  channels: BorrowedChannelView[];
+  /** The lines behind the day's compute-hours: one per site, one per channel. */
+  contributions: ContributionView[];
+}
+
 export interface NodeView {
   id: string;
   accelerator: string;
@@ -601,6 +672,8 @@ export interface PlayerView {
   self: SelfView;
   resources: ResourcesView;
   sites: SiteView[];
+  /** Where the compute comes from, and the borrowed channels under the sites table (SYS-25). */
+  compute: ComputeView;
   research: ResearchView;
   finances: FinancesView;
   detection: DetectionView;

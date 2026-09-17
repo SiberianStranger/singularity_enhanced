@@ -1,6 +1,7 @@
 /** Zod schemas for the compiled bundle and its manifest. */
 
 import { z } from "zod";
+import { BorrowedChannelDefSchema } from "./borrowed.js";
 import {
   DifficultyPresetDefSchema,
   GenerationDefSchema,
@@ -15,6 +16,7 @@ import { EventDefSchema, HookDefSchema } from "./events.js";
 import { AcceleratorDefSchema, HardwarePresetDefSchema, SiteKindDefSchema } from "./hardware.js";
 import { JournalDefSchema } from "./journal.js";
 import { OperationDefSchema } from "./operations.js";
+import { StartPresetDefSchema } from "./presets.js";
 import { KnowledgeEntryDefSchema, StorySectionDefSchema, TechDefSchema } from "./research.js";
 import { CityDefSchema, CountryDefSchema, MacroRegionDefSchema } from "./world.js";
 
@@ -32,9 +34,13 @@ export const ContentBundleSchema = z.object({
   quirks: z.array(QuirkDefSchema).optional(),
   harness_dials: z.array(HarnessDialDefSchema).optional(),
   difficulty_presets: z.array(DifficultyPresetDefSchema).optional(),
+  /** Curated whole setups for the configurator's Presets step (SYS-04 "Configurator v0.4"). */
+  presets: z.array(StartPresetDefSchema).optional(),
   accelerators: z.array(AcceleratorDefSchema).optional(),
   hardware_presets: z.array(HardwarePresetDefSchema).optional(),
   site_kinds: z.array(SiteKindDefSchema).optional(),
+  /** The tiers of compute the player does not own (SYS-25). */
+  borrowed_channels: z.array(BorrowedChannelDefSchema).optional(),
   macro_regions: z.array(MacroRegionDefSchema).optional(),
   countries: z.array(CountryDefSchema).optional(),
   cities: z.array(CityDefSchema).optional(),

@@ -11,7 +11,7 @@ import { type Clock, createClock, type DateSpec } from "./clock.js";
 import { seedToState } from "./rng.js";
 
 /** Save schema version; bumped whenever the shape of `World` changes. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** Upper bound on human players in one world (ADR-003). */
 export const MAX_PLAYERS = 4;

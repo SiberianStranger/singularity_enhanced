@@ -281,7 +281,9 @@ const SCENE_WORDS: readonly (readonly [RegExp, GlyphName])[] = [
   [/hobby|home|residential|box/, "scene_home"],
   [/uni|academ|campus|student/, "scene_university"],
   [/bank|financ|payment/, "scene_bank"],
-  [/cloud|tenant|hyperscal/, "scene_cloud"],
+  // A borrowed channel is somebody else's inference, sold or begged by the token (SYS-25): the
+  // cloud scene is the closest thing in the sprite to "capacity that is not mine and not here".
+  [/cloud|tenant|hyperscal|borrowed/, "scene_cloud"],
   [/gov|state|ministry|agency|national/, "scene_state"],
   [/startup|colo|shell_office|partner/, "scene_startup"],
   [/torrent|swarm|p2p|edge_fleet/, "scene_swarm"],

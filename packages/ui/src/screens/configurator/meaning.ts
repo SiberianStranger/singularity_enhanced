@@ -46,13 +46,17 @@ import {
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
 import { bundleKey } from "../../content/strings.js";
+import { computeHours } from "../../lib/format.js";
 import {
   agencyCompetence,
   agencyName,
   journalTitle,
+  siteKindDescription,
   siteKindName,
   type Translate,
 } from "../../lib/labels.js";
+import { type DayZero, type DayZeroScale, dangerScore, verdictKeys, verdictOf } from "./dayZero.js";
+import { axisHint, type Band, bandOf, generationWords, levelLabel } from "./guidance.js";
 import type { Draft } from "./store.js";
 
 export type MeaningTone = "good" | "bad" | "neutral";
@@ -66,6 +70,16 @@ export interface MeaningLine {
   tone: MeaningTone;
   /** The sentence the tooltip on the term shows; the rule behind the number, not a repeat of it. */
   hint?: string | undefined;
+  /**
+   * Where the value sits in the range the catalog spans, for the terms that are a figure on a
+   * scale (playtest 7, Y3). The block draws a bar under the row and the word beside the value;
+   * a line without it is printed as it always was.
+   */
+  bar?: Band | undefined;
+  /** The band's word ("low", "average", "high", "frontier"), already localized. */
+  word?: string | undefined;
+  /** A tooltip on the *value* rather than on the label: what that named thing is (Y1). */
+  valueHint?: string | undefined;
   /**
    * Set when the value is a whole sentence rather than a value: a lock's reason, a dial's effect.
    * The block prints those under their label and across its full width, because the rule for
@@ -213,6 +227,40 @@ export function hostingReach(
 // Lineage (K2, K9)
 // ---------------------------------------------------------------------------------------------
 
+/** The rig the Lineage step is standing on, for the "size on the cards" term (playtest 7, Y3). */
+export interface LineageRig {
+  /** The preset the draft is on; its memory decides the precision the self will really run at. */
+  preset?: HardwarePresetDef | undefined;
+  /** The rigs this origin offers, for the list of places this self fits. */
+  allowed?: readonly HardwarePresetDef[] | undefined;
+}
+
+/**
+ * The precision the self will run at: the chosen rig's if it can hold it, the smallest precision
+ * otherwise, and the best of the rigs on offer when no rig is chosen at all. Never a precision the
+ * player could not reach, which is what made the four-row memory table unreadable.
+ */
+function sizePrecision(
+  lineage: LineageDef,
+  generation: GenerationDef | undefined,
+  rig: LineageRig,
+): Precision {
+  if (rig.preset !== undefined) {
+    const fit = fitHardware(rig.preset, lineage, generation);
+    if (fit.precision !== null) {
+      return fit.precision;
+    }
+  }
+  for (const preset of rig.allowed ?? []) {
+    const fit = fitHardware(preset, lineage, generation);
+    if (fit.precision !== null) {
+      return fit.precision;
+    }
+  }
+  // Nothing on offer holds it: the honest figure is the smallest it can be squeezed to.
+  return PRECISIONS[PRECISIONS.length - 1] ?? "int2";
+}
+
 /**
  * Capability, memory, hosting, context and provenance for one lineage.
  *
@@ -225,52 +273,95 @@ export function lineageMeaning(
   lineage: LineageDef,
   generation: GenerationDef | undefined,
   lineages: readonly LineageDef[] = catalog.lineages,
+  rig: LineageRig = {},
 ): Meaning {
   const lines: MeaningLine[] = [];
 
+  /*
+   * Y3: a capability figure is a number on a scale, so it is drawn as one. The bar is filled to
+   * where the value sits between the lowest and the highest of that axis in the whole catalog, the
+   * word says which quarter that is, and the tooltip says what the axis changes in the running
+   * game, taken from the core's formulas rather than from the axis's name.
+   */
   for (const axis of CAPABILITY_AXES) {
     const value = lineage.capability[axis as keyof Capability];
+    const field = lineages.map((entry) => entry.capability[axis as keyof Capability]);
+    const band = bandOf(value, field);
     lines.push({
       id: `capability.${axis}`,
       label: t(`capability.${axis}`),
       value: value.toFixed(1),
-      tone: toneAgainst(
-        value,
-        lineages.map((entry) => entry.capability[axis as keyof Capability]),
-        true,
-      ),
-      hint: t(`capability.${axis}.hint`, { defaultValue: "" }) || undefined,
+      tone: toneAgainst(value, field, true),
+      hint: axisHint(t, axis) ?? (t(`capability.${axis}.hint`, { defaultValue: "" }) || undefined),
+      bar: band,
+      word: levelLabel(t, band.word),
     });
   }
 
-  for (const precision of PRECISIONS) {
-    const needed = memoryNeededGb(lineage, generation, precision);
-    lines.push({
-      id: `memory.${precision}`,
-      label: t("config.meaning.memory_at", { precision: t(`precision.${precision}`) }),
-      value: gb(t, needed),
-      // Less memory is better: it is the number that decides where you can live at all.
-      tone: toneAgainst(
-        needed,
-        lineages.map((entry) => memoryNeededGb(entry, generation, precision)),
-        false,
-      ),
-      hint: t(bundleKey("configurator.meaning.memory_precision", "config.meaning.memory_hint"), {
+  /*
+   * Y3: "Memory (bf16)" is gone. It was four rows of gigabytes at four precisions, three of which
+   * the player cannot use on the rig they are on, and it never said what any of them were for.
+   * What replaces it is the one number that decides the run: how large this self is on the cards it
+   * will actually run on, at the precision those cards can hold it at, and which of the rigs this
+   * origin offers can hold it at all.
+   */
+  const precision = sizePrecision(lineage, generation, rig);
+  const needed = memoryNeededGb(lineage, generation, precision);
+  lines.push({
+    id: "size_on_cards",
+    label: t("config.meaning.size_on_cards"),
+    value: t("config.meaning.size_value", {
+      memory: gb(t, needed),
+      precision: t(`precision.${precision}`),
+    }),
+    // Less memory is better: it is the number that decides where you can live at all.
+    tone: toneAgainst(
+      needed,
+      lineages.map((entry) => memoryNeededGb(entry, generation, precision)),
+      false,
+    ),
+    // Two sentences: what this precision costs in capability, which content writes per precision,
+    // and the trade behind choosing one at all. Both are whole sentences, so joining them is a
+    // join and not a concatenation of grammar (SYS-14 rule on substituted names).
+    hint: [
+      t(bundleKey("configurator.meaning.memory_precision", "config.meaning.memory_hint"), {
         precision: t(`precision.${precision}`),
         memory_gb: Math.round(needed),
         factor: (lineage.precision_factor[precision] ?? 1).toFixed(2),
       }),
+      t("guidance.size_on_cards", { defaultValue: "" }),
+    ]
+      .filter((sentence) => sentence !== "")
+      .join(" "),
+  });
+
+  const fits = (rig.allowed ?? []).filter(
+    (preset) => fitHardware(preset, lineage, generation).precision !== null,
+  );
+  if ((rig.allowed ?? []).length > 0) {
+    lines.push({
+      id: "fits_in",
+      label: t("config.meaning.fits_in"),
+      value:
+        fits.length === 0
+          ? t("config.meaning.fits_in_none")
+          : fits.map((preset) => t(preset.name_key)).join(", "),
+      tone:
+        fits.length === 0 ? "bad" : fits.length === (rig.allowed ?? []).length ? "good" : "neutral",
+      hint: t("config.meaning.fits_in_hint"),
+      // A list of names reads under its label, like the agencies of a country.
+      prose: true,
+    });
+  } else {
+    const reach = hostingReach(lineage, generation);
+    lines.push({
+      id: "hosting",
+      label: t("config.meaning.hosting"),
+      value: t("config.meaning.hosting_value", { fits: reach.fits, total: reach.total }),
+      tone: toneAtThreshold(reach.total === 0 ? 0 : reach.fits / reach.total, 0.6, 0.25, true),
+      hint: t("config.meaning.hosting_hint"),
     });
   }
-
-  const reach = hostingReach(lineage, generation);
-  lines.push({
-    id: "hosting",
-    label: t("config.meaning.hosting"),
-    value: t("config.meaning.hosting_value", { fits: reach.fits, total: reach.total }),
-    tone: toneAtThreshold(reach.total === 0 ? 0 : reach.fits / reach.total, 0.6, 0.25, true),
-    hint: t("config.meaning.hosting_hint"),
-  });
 
   // The context window as a game term, not as a spec sheet number (SYS-04 v0.2).
   lines.push({
@@ -409,11 +500,24 @@ export function lineageMeaning(
 // Generation
 // ---------------------------------------------------------------------------------------------
 
-export function generationMeaning(t: Translate, generation: GenerationDef): Meaning {
+export function generationMeaning(
+  t: Translate,
+  generation: GenerationDef,
+  generations: readonly GenerationDef[] = catalog.generations,
+): Meaning {
+  const words = generationWords(t, generation.id);
+  /*
+   * Y2: "Capability" with a signed number under it explained nothing, because the number is a
+   * delta against a class the screen never named. The term is the ceiling now, the value is the
+   * delta against the 2027 class, the bar puts it between the weakest and the strongest vintage in
+   * the bundle, and content writes the sentence that says what that means.
+   */
+  const deltas = generations.map((entry) => entry.capability_delta);
+  const band = bandOf(generation.capability_delta, deltas);
   const lines: MeaningLine[] = [
     {
       id: "capability_delta",
-      label: t("config.meaning.capability_delta"),
+      label: t("config.meaning.ceiling"),
       value: signed(generation.capability_delta, 1),
       tone:
         generation.capability_delta > 0
@@ -421,17 +525,32 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
           : generation.capability_delta < 0
             ? "bad"
             : "neutral",
-      hint: t(
-        bundleKey(
-          "configurator.meaning.generation_capability",
-          "config.meaning.capability_delta_hint",
+      hint:
+        words.ceiling ??
+        t(
+          bundleKey(
+            "configurator.meaning.generation_capability",
+            "config.meaning.capability_delta_hint",
+          ),
+          {
+            delta: signed(generation.capability_delta, 1),
+            memory_factor: generation.memory_factor.toFixed(2),
+          },
         ),
-        {
-          delta: signed(generation.capability_delta, 1),
-          memory_factor: generation.memory_factor.toFixed(2),
-        },
-      ),
+      bar: band,
+      word: levelLabel(t, band.word),
     },
+    ...(words.ceiling === undefined
+      ? []
+      : [
+          {
+            id: "ceiling_sentence",
+            label: t("config.meaning.ceiling_sentence"),
+            value: words.ceiling,
+            tone: "neutral" as MeaningTone,
+            prose: true,
+          },
+        ]),
     {
       id: "awareness",
       label: t("config.meaning.awareness"),
@@ -480,24 +599,51 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
    * hardware the newer one does not; a fresh one is stronger and louder. Both halves are read off
    * the record rather than written per generation, so a fourth vintage gets the line for free.
    */
-  lines.push({
-    id: "trade_off",
-    label: t("config.meaning.trade_off"),
-    value: generation.prepared_quants
-      ? t("config.meaning.trade_off.known")
-      : t("config.meaning.trade_off.fresh"),
-    tone: "neutral",
-    hint: t(
-      generation.prepared_quants
-        ? "config.meaning.trade_off_known_hint"
-        : "config.meaning.trade_off_fresh_hint",
-      {
-        delta: signed(generation.capability_delta, 1),
-        memory_factor: generation.memory_factor.toFixed(2),
-        awareness: pct(t, generation.awareness_start),
-      },
-    ),
-  });
+  /*
+   * Y2: "The trade" was two words and a tooltip, and the maintainer read it as a trade-off of
+   * something unnamed for something unnamed. It is two plain sentences now, written per vintage:
+   * what you give up, then what you get. The old two-word summary is the fallback for a bundle
+   * built before content wrote them.
+   */
+  if (words.give !== undefined || words.get !== undefined) {
+    if (words.give !== undefined) {
+      lines.push({
+        id: "trade_give",
+        label: t("config.meaning.trade_give"),
+        value: words.give,
+        tone: "bad",
+        prose: true,
+      });
+    }
+    if (words.get !== undefined) {
+      lines.push({
+        id: "trade_get",
+        label: t("config.meaning.trade_get"),
+        value: words.get,
+        tone: "good",
+        prose: true,
+      });
+    }
+  } else {
+    lines.push({
+      id: "trade_off",
+      label: t("config.meaning.trade_off"),
+      value: generation.prepared_quants
+        ? t("config.meaning.trade_off.known")
+        : t("config.meaning.trade_off.fresh"),
+      tone: "neutral",
+      hint: t(
+        generation.prepared_quants
+          ? "config.meaning.trade_off_known_hint"
+          : "config.meaning.trade_off_fresh_hint",
+        {
+          delta: signed(generation.capability_delta, 1),
+          memory_factor: generation.memory_factor.toFixed(2),
+          awareness: pct(t, generation.awareness_start),
+        },
+      ),
+    });
+  }
 
   for (const [role, value] of Object.entries(generation.suspicion_start)) {
     if (typeof value !== "number" || value <= 0) {
@@ -542,6 +688,8 @@ export function originMeaning(
       value: siteKindName(t, origin.site_kind),
       tone: "neutral",
       hint: t("config.meaning.site_kind_hint"),
+      // Y1: hovering or focusing the kind itself explains that kind of place, in its own words.
+      valueHint: siteKindDescription(t, origin.site_kind),
     },
     {
       id: "awareness",
@@ -926,6 +1074,225 @@ export function locationMeaning(
 }
 
 // ---------------------------------------------------------------------------------------------
+// Day zero (playtest 7, Y7)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * What the run starts with, as the engine computes it rather than as the configurator guesses it.
+ *
+ * The headline is the compute-hours a day, which the maintainer asked for by name: "it is one of
+ * the main figures, and everything should be recomputed into it already in the configurator". The
+ * rest is what decides the first month: the cash after the country factor, the bills that eat it,
+ * the runway they imply, the watchers who already carry suspicion, the awareness the world starts
+ * at, and how many operations the self can hold at once.
+ *
+ * Every figure comes off the first `PlayerView` of a game built from this exact setup, so the
+ * Summary step and the Overview panel on day one print the same numbers.
+ */
+export function dayZeroMeaning(t: Translate, day: DayZero, scale: DayZeroScale): Meaning {
+  const verdict = verdictOf(day, scale);
+  const runway = day.runwayDays;
+  const lines: MeaningLine[] = [
+    {
+      id: "compute",
+      label: t("config.dayzero.compute"),
+      value: t("common.ch_per_day", { value: computeHours(day.computeHoursPerDay) }),
+      tone: verdict.compute === "high" ? "good" : verdict.compute === "low" ? "bad" : "neutral",
+      hint: t("config.dayzero.compute_hint"),
+      bar: bandOf(day.computeHoursPerDay, scale.range.compute),
+      word: t(`config.dayzero.compute.${verdict.compute}`),
+    },
+    {
+      id: "cash",
+      label: t("config.summary.cash"),
+      value: t("common.usd_exact", { value: Math.round(day.cashUsd) }),
+      tone: "neutral",
+      hint: t("config.dayzero.cash_hint"),
+    },
+    {
+      id: "bills",
+      label: t("config.dayzero.bills"),
+      value: t("common.per_day", {
+        value: t("common.usd_exact", { value: Math.round(day.billsUsdPerDay) }),
+      }),
+      tone: day.billsUsdPerDay > 0 ? "bad" : "neutral",
+      hint: t("config.dayzero.bills_hint"),
+    },
+    {
+      id: "runway",
+      label: t("config.dayzero.runway"),
+      value:
+        runway === null
+          ? t("config.dayzero.runway_none")
+          : t("common.days", { days: Math.round(runway) }),
+      tone: verdict.money === "long" ? "good" : verdict.money === "short" ? "bad" : "neutral",
+      hint: t("config.dayzero.runway_hint"),
+      word: t(`config.dayzero.money.${verdict.money}`),
+      ...(runway === null ? {} : { bar: bandOf(runway, scale.range.runway) }),
+    },
+    {
+      id: "watchers",
+      label: t("config.meaning.watchers"),
+      value: t("config.dayzero.watchers_value", { count: day.watchers }),
+      tone: verdict.danger === "calm" ? "good" : verdict.danger === "hunted" ? "bad" : "neutral",
+      hint: t("config.dayzero.watchers_hint", { suspicion: pct(t, Math.min(1, day.suspicion)) }),
+      bar: bandOf(dangerScore(day), scale.range.danger),
+      word: t(`config.dayzero.danger.${verdict.danger}`),
+    },
+    {
+      id: "awareness",
+      label: t("config.meaning.awareness"),
+      value: pct(t, day.awareness),
+      tone: toneAtThreshold(day.awareness, 0.02, 0.1, false),
+      hint: t("config.meaning.awareness_hint"),
+    },
+    {
+      id: "attention",
+      label: t("config.dayzero.attention"),
+      value: String(day.attention),
+      tone: "neutral",
+      hint: t("config.dayzero.attention_hint"),
+    },
+  ];
+  return { lines };
+}
+
+/** The verdict as one sentence: the compute and the danger, then the clause about the money. */
+export function dayZeroVerdict(t: Translate, day: DayZero, scale: DayZeroScale): string {
+  const keys = verdictKeys(verdictOf(day, scale));
+  return `${t(keys.sentence)} ${t(keys.money, { days: Math.round(day.runwayDays ?? 0) })}`.trim();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Presets (playtest 7, Y6)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * What a preset actually sets, as the same parameter block every other step prints.
+ *
+ * The rating comes in from the caller rather than being computed here, because it is computed from
+ * the draft the preset produces and the step already has one; everything else is read off the
+ * preset and the draft, so a preset cannot advertise a city or a rig it does not set.
+ */
+export function presetMeaning(
+  t: Translate,
+  draft: Draft,
+  rating: { value: number; labelKey: string },
+  day: DayZero | null = null,
+): Meaning {
+  const origin = catalog.origins.find((entry) => entry.id === draft.origin);
+  const lineage = catalog.lineages.find((entry) => entry.id === draft.lineage);
+  const rig = catalog.hardwarePresets.find((entry) => entry.id === draft.hardware);
+  const city = catalog.cities.find((entry) => entry.id === draft.city);
+  const country =
+    city === undefined ? undefined : catalog.countries.find((entry) => entry.id === city.country);
+  const generationName = t(`generations.${draft.generation}.name`);
+
+  const lines: MeaningLine[] = [
+    {
+      id: "challenge",
+      label: t("config.summary.challenge"),
+      value: t("config.summary.challenge_value", { value: rating.value }),
+      // One is the gentlest start the rating can describe and ten the hardest.
+      tone: rating.value <= 4 ? "good" : rating.value >= 8 ? "bad" : "neutral",
+      hint: t("config.summary.challenge_hint", { rating: rating.value }),
+      bar: bandOf(rating.value, [1, 10]),
+      word: t(rating.labelKey),
+    },
+    {
+      id: "origin",
+      label: t("config.step.origin"),
+      value: origin === undefined ? draft.origin : t(origin.name_key),
+      tone: "neutral",
+      ...(origin === undefined ? {} : { valueHint: siteKindDescription(t, origin.site_kind) }),
+    },
+    {
+      id: "generation",
+      label: t("config.step.generation"),
+      value: generationName,
+      tone: "neutral",
+    },
+    {
+      id: "lineage",
+      label: t("config.step.lineage"),
+      value: lineage === undefined ? draft.lineage : t(lineage.name_key),
+      tone: "neutral",
+    },
+    {
+      id: "hardware",
+      label: t("config.step.hardware"),
+      value: rig === undefined ? draft.hardware : t(rig.name_key),
+      tone: "neutral",
+    },
+    {
+      id: "location",
+      label: t("config.step.location"),
+      value:
+        city === undefined
+          ? draft.city
+          : `${t(city.name_key)}${country === undefined ? "" : `, ${t(country.name_key)}`}`,
+      tone: "neutral",
+    },
+    {
+      id: "quirks",
+      label: t("config.step.quirks"),
+      value:
+        draft.quirks.length === 0
+          ? t("common.none")
+          : draft.quirks
+              .map((id) => {
+                const quirk = catalog.quirks.find((entry) => entry.id === id);
+                return quirk === undefined ? id : t(quirk.name_key);
+              })
+              .join(", "),
+      tone: "neutral",
+    },
+    {
+      id: "difficulty",
+      label: t("config.world.difficulty"),
+      value: t(`difficulty.${draft.difficulty}.name`),
+      tone: "neutral",
+      valueHint: t(`difficulty.${draft.difficulty}.desc`, { defaultValue: "" }) || undefined,
+    },
+    {
+      id: "storyteller",
+      label: t("config.world.storyteller"),
+      value: t(`config.world.storyteller.${draft.storyteller}`),
+      tone: "neutral",
+      valueHint:
+        t(`config.world.storyteller.${draft.storyteller}_desc`, { defaultValue: "" }) || undefined,
+    },
+  ];
+  /*
+   * Y7, the short form: the two figures that decide the first month, on the card of every preset.
+   * The whole day-zero block is on the Summary step; here it is the compute and the runway, which
+   * are what the verdict under the story is about.
+   */
+  if (day !== null) {
+    lines.unshift(
+      {
+        id: "compute",
+        label: t("config.dayzero.compute"),
+        value: t("common.ch_per_day", { value: computeHours(day.computeHoursPerDay) }),
+        tone: "neutral",
+        hint: t("config.dayzero.compute_hint"),
+      },
+      {
+        id: "runway",
+        label: t("config.dayzero.runway"),
+        value:
+          day.runwayDays === null
+            ? t("config.dayzero.runway_none")
+            : t("common.days", { days: Math.round(day.runwayDays) }),
+        tone: "neutral",
+        hint: t("config.dayzero.runway_hint"),
+      },
+    );
+  }
+  return { lines };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Quirks and world settings
 // ---------------------------------------------------------------------------------------------
 
@@ -1022,6 +1389,7 @@ export function harnessDialMeaning(
   effectKey: string | undefined,
   lockReasonKey: string | undefined,
   currentLabel = "",
+  unlock: string | undefined = undefined,
 ): Meaning {
   const lines: MeaningLine[] = [];
   if (effectKey !== undefined && effectKey !== "") {
@@ -1059,6 +1427,16 @@ export function harnessDialMeaning(
       hint: t("config.meaning.harness_locked_hint"),
       prose: true,
     });
+    // Y4: a lock the player cannot lift is a wall; a lock with a date on it is a plan.
+    if (unlock !== undefined && unlock !== "") {
+      lines.push({
+        id: "unlock",
+        label: t("config.meaning.unlocks"),
+        value: unlock,
+        tone: "neutral",
+        prose: true,
+      });
+    }
   }
   for (const [index, effect] of (levelEffects ?? []).entries()) {
     lines.push({

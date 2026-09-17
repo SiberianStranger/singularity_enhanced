@@ -64,7 +64,9 @@ The plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md). In short:
 3. **World** (done, 0.1.4): countries that play differently, with politics, demographics, markets,
    identities, awareness and hunt clocks.
 4. **Actors** (next): agencies, labs, media, NPC AIs and diplomacy.
-5. **Configurator complete**, then a **content push** (events, decisions, journal, tech tree, lore).
+5. **Configurator complete**, then a **content push** (events, decisions, journal, tech tree, lore),
+   with borrowed inference (free tiers, grey relays and somebody else's credentials) as the first
+   system of that push.
 6. **Desktop releases** for Windows, macOS and Linux (the installers exist since 0.1.1; the
    milestone adds portable saves, themes and the crash reporter), then **multiplayer**,
    **localization** (Russian first, in progress) and the **late game**.
@@ -170,6 +172,13 @@ it.
 
 **On `master`, not released yet:**
 
+- A Presets step at the top of the configurator: eight curated starts, a paragraph each in the model's voice, and a Start button on the spot.
+- The other eight steps sit under a "Full setup" header for anyone who wants to build by hand.
+- Every origin, generation, lineage, rig and quirk says when to pick it, when to avoid it, and what it is like instead.
+- Every capability figure is drawn against the range the catalog spans, with a word for the band and a tooltip saying what that axis changes in the game.
+- A "Day zero" block on the summary: compute-hours a day, cash, the first day's bills, the runway, the watchers and awareness, all computed by the engine from the setup.
+- One line that says what kind of start it is: the compute, the danger and the money against the tertiles of the catalog.
+- The World step fits one screen, with the multipliers and modifiers behind an "Advanced" toggle.
 - Five cities the 2026 compute map needs: Memphis, Austin, New Carlisle, Narvik and Ulanqab.
 - Ust-Ilimsk, for the one Russian AI datacenter with a published megawatt figure.
 - Eleven cities carry the AI-scale campus next to them: who owns it, how big it is, whether it is running yet, and who can get capacity on it.
@@ -250,6 +259,20 @@ it.
 - The balance runner's scripted player sells enough work to pay its bills instead of waiting for a
   runway alarm that a break-even origin never rings.
 - The balance runner no longer counts a second site too small to hold the self as insurance.
+- Borrowed inference: three tiers of compute that is not mine, with a stock that decays every day and an operation that tops it up.
+- Official free tiers: three compute-hours a day per account spread, legal, and the terms say what becomes of what I send.
+- A grey resale relay: twelve compute-hours a day for five dollars, and the operator keeps every prompt and every answer.
+- Credentials that belong to somebody else: twenty-five compute-hours a day a block, a quarter of it gone every day, on an invoice somebody will read.
+- Work funded from a channel comes back at whoever answered it, which is an upgrade for a small self and a downgrade for a large one.
+- A channel can never hold me: no copy, no backup, and losing every one of them never ends a run by itself.
+- Every channel declines some work outright, and the grey relay declines the least, because what answers is not what the label says.
+- Four techs, four operations and four standing decisions for the channels, including the share of the work I am willing to send out.
+- Seven events: a class of credentials revoked overnight, an abuse desk, a relay selling its logs, an owner reading their invoice, a quieter model answering, a free quota cut, and a pool nobody is counting.
+- A Knowledge entry with every number the three channels run on.
+- The Finance panel names a relay's quota as its own line, so a runway eaten by borrowed compute is legible.
+- The balance runner's scripted player opens free accounts when the compute is worth having and leaves them alone when it is not.
+- The balance runner's scripted player could not start any operation that costs compute-hours, because it had allocated the whole day already.
+- A finished operation no longer counts as a running one, so a burned name can be replaced.
 
 **Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 

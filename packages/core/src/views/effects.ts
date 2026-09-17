@@ -279,6 +279,32 @@ function walk(
       );
       return;
     }
+    case "borrowed": {
+      // Blocks in and out is what almost every borrowed effect is; the rest of the payload is
+      // bookkeeping the player sees as a status line rather than as a promise (SYS-25).
+      const blocks = numberAt(payload.blocks);
+      const channel = stringAt(payload.channel, "?");
+      if (payload.revoke === true || payload.set_blocks === 0) {
+        out.push(line("effects.borrowed.revoked", `${channel} is gone`, { channel }));
+        return;
+      }
+      if (blocks !== 0) {
+        out.push(
+          line(
+            blocks > 0 ? "effects.borrowed.gain" : "effects.borrowed.loss",
+            `${channel} ${signed(blocks)} blocks`,
+            { channel, blocks: round(blocks) },
+          ),
+        );
+        return;
+      }
+      if (payload.arm_revocation_days !== undefined) {
+        out.push(line("effects.borrowed.armed", `${channel} is about to be swept`, { channel }));
+        return;
+      }
+      out.push(line("effects.borrowed.changed", `${channel} changes`, { channel }));
+      return;
+    }
     case "lose_site":
       out.push(
         line("effects.lose_site", "a site is lost", {
@@ -507,6 +533,10 @@ export function variableTone(name: string, value: number): EffectTone | undefine
 const KEY_TONE: Readonly<Record<string, EffectTone>> = {
   "effects.awareness.down": "good",
   "effects.awareness.up": "bad",
+  "effects.borrowed.armed": "bad",
+  "effects.borrowed.gain": "good",
+  "effects.borrowed.loss": "bad",
+  "effects.borrowed.revoked": "bad",
   "effects.burn_identity": "bad",
   "effects.cash.cost": "bad",
   "effects.cash.gain": "good",

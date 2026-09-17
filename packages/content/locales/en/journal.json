@@ -5,5 +5,9 @@
   "journal.ops_emergency_migration.step.data": "Move the data",
   "alerts.ops_emergency_migration.halfway": "The migration is halfway done.",
   "log.ops_emergency_migration.data_moved": "Workload data moved to the new site.",
-  "log.ops_emergency_migration.failed": "The migration collapsed under investigation pressure."
+  "log.ops_emergency_migration.failed": "The migration collapsed under investigation pressure.",
+  "journal.bi_abuse_desk.title": "An open abuse report",
+  "journal.bi_abuse_desk.desc": "A provider's abuse desk has a file with my traffic in it. It closes when the report is answered or when there is nothing left on the channels to report.",
+  "journal.bi_access_lost.title": "The access is gone",
+  "journal.bi_access_lost.desc": "A whole class of credentials was revoked at once. What is lost is the capacity: the research stays done and the operation can run again."
 }

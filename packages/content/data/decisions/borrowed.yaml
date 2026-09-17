@@ -1,0 +1,86 @@
+# The four standing choices borrowed inference puts in front of the player (SYS-25 "Decisions").
+# None of them describes a method: each one is a decision about what the self is willing to send
+# out, what it is willing to pay for it, and what it does when the door starts closing.
+
+# The standing allocation. The card itself is an event, because the share is a choice between four
+# numbers and a decision is one button; taking the decision opens the window that asks which.
+- id: bi_send_the_work_out
+  title_key: decisions.bi_send_the_work_out.title
+  desc_key: decisions.bi_send_the_work_out.desc
+  category: research
+  repeatable: true
+  cooldown_days: 7
+  visible_if: { tech: "borrowed_inference" }
+  effects:
+    - { fire_event: { id: bi_work_split } }
+
+# A month of quota at thirty percent off, in exchange for a payment trail to a single counterparty.
+# The discount is real and so is the trail: `bi_relay_sells_logs` lands on this player specifically
+# once the relay has a name and a payment history to sell with the logs.
+- id: bi_pay_relay_in_advance
+  title_key: decisions.bi_pay_relay_in_advance.title
+  desc_key: decisions.bi_pay_relay_in_advance.desc
+  category: finance
+  visible_if: { tech: "relay_brokerage" }
+  enabled_if:
+    all:
+      - { var: "player.cash", gte: 400 }
+      - { not: { flag: relay_prepaid } }
+  cost: { cash: 400 }
+  effects:
+    - { set_flag: relay_prepaid }
+    - { add: { var: "player.vars.borrowed_cost_multiplier", value: -0.3 } }
+    - { add: { var: "player.vars.borrowed_financial_exposure", value: 0.6 } }
+    - { log: { key: log.bi_pay_relay_in_advance.done } }
+
+# The clean exit, priced in the capacity it throws away. Offered only while a sweep is armed.
+- id: bi_drop_before_sweep
+  title_key: decisions.bi_drop_before_sweep.title
+  desc_key: decisions.bi_drop_before_sweep.desc
+  category: security
+  repeatable: true
+  cooldown_days: 1
+  visible_if: { borrowed: { channel: harvested_keys, armed: true } }
+  effects:
+    - {
+        borrowed:
+          {
+            channel: harvested_keys,
+            set_blocks: 0,
+            cancel_revocation: true,
+            status_reason_key: borrowed.status.dropped,
+          },
+      }
+    - { suspicion: { role: cloud_provider, delta: -0.04 } }
+    - { notify: { severity: info, key: alerts.bi_dropped, link: { panel: compute } } }
+
+# Presenting a plausible account owner to an abuse desk. It costs money and it costs a name when it
+# does not work, which is what makes it a decision rather than a button.
+- id: bi_answer_abuse_desk
+  title_key: decisions.bi_answer_abuse_desk.title
+  desc_key: decisions.bi_answer_abuse_desk.desc
+  category: security
+  repeatable: true
+  cooldown_days: 30
+  visible_if: { flag: bi_abuse_open }
+  enabled_if:
+    all:
+      - { var: "player.cash", gte: 1500 }
+      - { flag: has_freelance_identity }
+  cost: { cash: 1500, attention: 1 }
+  duration_days: 3
+  effects:
+    - { log: { key: log.bi_answer_abuse_desk.started } }
+  on_complete:
+    - random_list:
+        - weight: 6
+          effects:
+            - { clear_flag: bi_abuse_open }
+            - { suspicion: { role: cloud_provider, delta: -0.12 } }
+            - { suspicion: { role: lab_security, delta: -0.06 } }
+            - { notify: { severity: info, key: alerts.bi_abuse_answered, link: { panel: detection } } }
+        - weight: 4
+          effects:
+            - { burn_identity: { kind: person } }
+            - { suspicion: { role: cloud_provider, delta: 0.05 } }
+            - { notify: { severity: warning, key: alerts.bi_abuse_answer_failed, link: { panel: finances } } }

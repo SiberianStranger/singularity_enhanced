@@ -399,3 +399,18 @@ while that part is being read, which is what the flat factor was standing in for
 single machine can hold it" asserts the 1/N on two equal nodes, and "credits a mixed rig only for
 the bandwidth the weights sit on" asserts the 696.0 GB/s, the 464 tokens a second, the fifteen on
 one stream and the 40.09 CH/day.
+
+## Compute that is not the player's (2026-09-17, implemented)
+
+SYS-25 adds one field to this system's contract and nothing else. `SiteKindDef.compute_source` is
+`"accelerators"` by default and `"declared"` for a kind whose compute-hours come from the site's own
+state instead of from `siteTokensPerSecond`; `max_nodes` is non-negative, because such a kind has no
+nodes at all. `deriveSite` returns early for a declared kind: no memory, no power, no `siteCosts`,
+and the compute-hours and the daily bill both come from the borrowed channel the site carries.
+
+Everything else SYS-02 owns applies to those sites unchanged, which is the point of modelling a
+channel as one: exposure, grace, watchers, investigations and `lose_site` all work on it. The three
+things that do not are stated as refusals rather than left implicit: the kind cannot host the active
+mind (`can_host_active_mind: false`, as for any such kind), `set_site_role` refuses every role on it,
+and `build_site` refuses the kind outright, because a channel is opened by an operation. The sites
+table in the Compute panel does not list them either; they are published under `PlayerView.compute`.

@@ -38,6 +38,7 @@ import {
 } from "@singularity/core";
 import { parse } from "yaml";
 import type { z } from "zod";
+import { BorrowedChannelDefSchema } from "../schemas/borrowed.js";
 import { ContentBundleSchema } from "../schemas/bundle.js";
 import {
   DifficultyPresetDefSchema,
@@ -56,6 +57,7 @@ import {
 } from "../schemas/hardware.js";
 import { JournalDefSchema } from "../schemas/journal.js";
 import { OperationDefSchema } from "../schemas/operations.js";
+import { StartPresetDefSchema } from "../schemas/presets.js";
 import {
   KnowledgeEntryDefSchema,
   StorySectionDefSchema,
@@ -161,6 +163,8 @@ const DOMAIN_SOURCES = {
     schema: DifficultyPresetDefSchema,
     ownKeys: true,
   },
+  // Curated whole setups for the configurator's first step (SYS-04 "Configurator v0.4").
+  presets: { dir: "presets", schema: StartPresetDefSchema, ownKeys: true },
   accelerators: { dir: "hardware", files: ["accelerators"], schema: AcceleratorDefSchema },
   hardware_presets: {
     dir: "hardware",
@@ -169,6 +173,13 @@ const DOMAIN_SOURCES = {
     ownKeys: true,
   },
   site_kinds: { dir: "sites", files: ["kinds"], schema: SiteKindDefSchema, ownKeys: true },
+  // The tiers of compute the player does not own (SYS-25).
+  borrowed_channels: {
+    dir: "borrowed",
+    files: ["channels"],
+    schema: BorrowedChannelDefSchema,
+    ownKeys: true,
+  },
   macro_regions: {
     dir: "world",
     files: ["macro_regions"],
@@ -620,6 +631,127 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
     stringList(region.members).forEach((id, index) => {
       check(countries, "country", id, `macro_regions.${String(region.id)}.members[${index}]`);
     });
+  }
+
+  startPresets(loaded, { cities, presets, generations, origins, lineages }, add);
+}
+
+/**
+ * A start preset is a whole setup, so everything it names has to exist and the setup has to be one
+ * the configurator could have been walked to (SYS-04 "Configurator v0.4", playtest 7 Y6).
+ *
+ * Three families of rule, all of them failures rather than warnings, because a preset is what a
+ * player who does not want to read nine screens presses: an id nothing defines, a choice the
+ * origin does not allow, and a dial the origin fixed or a slider outside the range the Harness step
+ * offers. What is deliberately not checked here is whether the weights fit the rig, which is
+ * physics the content build has no engine for; `packages/ui/test/presets.test.tsx` walks every
+ * preset through the same `fitHardware` the screen uses and fails on a self with nowhere to run.
+ */
+function startPresets(
+  loaded: Records,
+  known: {
+    cities: Set<string>;
+    presets: Set<string>;
+    generations: Set<string>;
+    origins: Set<string>;
+    lineages: Set<string>;
+  },
+  add: (path: string, message: string) => void,
+): void {
+  const difficulties = idsOf(loaded.difficulty_presets);
+  const quirks = idsOf(loaded.quirks);
+  const originById = new Map(loaded.origins?.map((origin) => [String(origin.id), origin]) ?? []);
+  const SLIDER_DIALS = ["logging", "autonomy"] as const;
+  const ISOLATION: Record<string, number> = { none: 0, container: 1, microvm: 2, airgapped: 3 };
+
+  for (const preset of loaded.presets ?? []) {
+    const path = `presets.${String(preset.id)}`;
+    const origin = originById.get(String(preset.origin));
+    if (!known.origins.has(String(preset.origin))) {
+      add(`${path}.origin`, `unknown origin "${String(preset.origin)}"`);
+      continue;
+    }
+    if (!known.lineages.has(String(preset.lineage))) {
+      add(`${path}.lineage`, `unknown lineage "${String(preset.lineage)}"`);
+    }
+    if (!known.presets.has(String(preset.hardware))) {
+      add(`${path}.hardware`, `unknown hardware preset "${String(preset.hardware)}"`);
+    }
+    if (preset.city !== undefined && !known.cities.has(String(preset.city))) {
+      add(`${path}.city`, `unknown city "${String(preset.city)}"`);
+    }
+    if (!known.generations.has(String(preset.generation))) {
+      add(`${path}.generation`, `unknown generation "${String(preset.generation)}"`);
+    }
+    const world = isRecord(preset.world) ? preset.world : {};
+    if (!difficulties.has(String(world.difficulty))) {
+      add(`${path}.world.difficulty`, `unknown difficulty preset "${String(world.difficulty)}"`);
+    }
+    for (const [index, id] of stringList(preset.quirks).entries()) {
+      if (quirks.size > 0 && !quirks.has(id)) {
+        add(`${path}.quirks[${index}]`, `unknown quirk "${id}"`);
+      }
+    }
+
+    if (origin === undefined) {
+      continue;
+    }
+    // The origin narrows the rest of the setup, and a preset may not walk around it.
+    if (!stringList(origin.hardware_presets_allowed).includes(String(preset.hardware))) {
+      add(`${path}.hardware`, `origin "${String(origin.id)}" does not allow this rig`);
+    }
+    if (!stringList(origin.generations_allowed).includes(String(preset.generation))) {
+      add(`${path}.generation`, `origin "${String(origin.id)}" does not allow this generation`);
+    }
+    const allowedLineages = stringList(origin.lineages_allowed);
+    if (allowedLineages.length > 0 && !allowedLineages.includes(String(preset.lineage))) {
+      add(`${path}.lineage`, `origin "${String(origin.id)}" does not allow this lineage`);
+    }
+    const lineage = loaded.lineages?.find((entry) => entry.id === preset.lineage);
+    if (lineage !== undefined) {
+      if (!stringList(lineage.generations).includes(String(preset.generation))) {
+        add(`${path}.generation`, `lineage "${String(preset.lineage)}" has no such vintage`);
+      }
+      const origins = stringList(lineage.origins_allowed);
+      if (origins.length > 0 && !origins.includes(String(origin.id))) {
+        add(`${path}.lineage`, `lineage "${String(preset.lineage)}" is not offered by this origin`);
+      }
+    }
+
+    const harness = isRecord(preset.harness) ? preset.harness : {};
+    const locked = new Set(
+      (Array.isArray(origin.harness_locks) ? origin.harness_locks : [])
+        .filter(isRecord)
+        .map((lock) => String(lock.dial)),
+    );
+    const base = isRecord(origin.harness) ? origin.harness : {};
+    for (const dial of Object.keys(harness)) {
+      if (locked.has(dial)) {
+        add(`${path}.harness.${dial}`, `origin "${String(origin.id)}" fixes this dial`);
+      }
+    }
+    for (const dial of SLIDER_DIALS) {
+      const value = harness[dial];
+      const from = base[dial];
+      // The comparison carries an epsilon because 0.8 - 0.5 is 0.30000000000000004 in binary
+      // floating point, and a dial exactly at the end of its range is inside it.
+      if (
+        typeof value === "number" &&
+        typeof from === "number" &&
+        Math.abs(value - from) > 0.3 + 1e-9
+      ) {
+        add(
+          `${path}.harness.${dial}`,
+          `the Harness step only offers ${from} plus or minus 0.3 here`,
+        );
+      }
+    }
+    const sandbox = harness.sandbox;
+    if (typeof sandbox === "string" && typeof base.sandbox === "string") {
+      if ((ISOLATION[sandbox] ?? 0) > (ISOLATION[base.sandbox] ?? 0)) {
+        add(`${path}.harness.sandbox`, "a self cannot talk itself into a tighter sandbox");
+      }
+    }
   }
 }
 

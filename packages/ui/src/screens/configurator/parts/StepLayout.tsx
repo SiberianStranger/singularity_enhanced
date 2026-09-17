@@ -21,6 +21,12 @@ export interface ListEntry {
   visual?: ReactNode;
   /** One line; the list is not the place for a paragraph. */
   summary: string;
+  /**
+   * The summary is a sentence rather than a figure, so it is drawn in the reading face. The
+   * angular face is caps-only by design (style guide, "Sizes and reveal"), which is right for
+   * "40k USD" and wrong for "for a player who has never played".
+   */
+  summaryProse?: boolean;
   /** Hover tooltip; the whole point of playtest 2 K6 ("tooltips on everything"). */
   tooltip?: ReactNode;
   /** Set when an earlier step makes this entry unavailable; the detail explains it. */
@@ -172,6 +178,11 @@ interface StepLayoutProps {
   description: string;
   meaning?: Meaning;
   /**
+   * The three sentences of the guidance layer (playtest 7, Y3), printed under the description and
+   * before the numbers: "Pick this if ...", "Avoid it if ...", "Like <entry>, but ...".
+   */
+  guidance?: ReactNode;
+  /**
    * Prose that belongs with the description rather than with the parameters: the origin's summary
    * in the model's voice, its strengths and its problems (playtest 6, X4). It is printed under the
    * description, inside the text column, which is what that column's empty half is for.
@@ -198,6 +209,7 @@ export function StepLayout({
   title,
   description,
   meaning,
+  guidance,
   aside,
   listHeader,
   children,
@@ -277,7 +289,7 @@ export function StepLayout({
                     {/* L3: only the footer build line truncates; a summary too long for the
                       column wraps onto a second line. */}
                     <span
-                      className={`min-w-0 flex-1 text-xs normal-case ${entry.selected ? "text-accentfg" : "text-muted"}`}
+                      className={`min-w-0 flex-1 text-xs normal-case ${entry.summaryProse === true ? "measure" : ""} ${entry.selected ? "text-accentfg" : "text-muted"}`}
                     >
                       {entry.summary}
                     </span>
@@ -340,13 +352,14 @@ export function StepLayout({
               : "@min-[36rem]/detail:grid-cols-[minmax(0,9fr)_minmax(0,11fr)]"
           }`}
         >
-          {description === "" && aside === undefined ? null : (
+          {description === "" && guidance === undefined && aside === undefined ? null : (
             <div className="flex min-w-0 flex-col gap-3">
               {description === "" ? null : (
                 <p data-testid="detail-text" className="prose min-w-0 max-w-[70ch] text-muted">
                   {description}
                 </p>
               )}
+              {guidance}
               {aside}
             </div>
           )}

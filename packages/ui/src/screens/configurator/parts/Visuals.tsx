@@ -216,6 +216,25 @@ export function DialVisual({
   );
 }
 
+/**
+ * A preset at a glance: its challenge rating as ten ticks (playtest 7, Y6).
+ *
+ * The rating is the one number that orders the list, so it is the picture: a row of ten marks with
+ * the rating filled, tinted by the tier so the gentle first game and the starred origin do not read
+ * the same at a glance.
+ */
+export function PresetVisual({ rating }: { rating: number }): ReactNode {
+  const { t } = useTranslation();
+  const tone =
+    rating <= 4 ? "text-ok" : rating <= 6 ? "text-fg" : rating <= 8 ? "text-warn" : "text-crit";
+  return (
+    <span className={`flex items-center gap-1 ${tone}`}>
+      <Ticks on={rating} total={10} label={t("config.summary.challenge")} />
+      <span className="font-mono text-xs">{rating}</span>
+    </span>
+  );
+}
+
 /** A quirk at a glance: a glyph colored by its sign. */
 export function QuirkVisual({ cost }: { cost: number }): ReactNode {
   const name: GlyphName = quirkGlyph(cost);

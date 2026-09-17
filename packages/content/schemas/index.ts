@@ -6,6 +6,7 @@
  * content, so there is no cycle. See README.md.
  */
 
+export * from "./borrowed.js";
 export * from "./bundle.js";
 export * from "./common.js";
 export type { SchemaCompatibility } from "./compat.js";

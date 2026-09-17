@@ -1,8 +1,8 @@
 # SYS-25: Borrowed inference
 
-Status: v0 design, not implemented. The compute the player does not own, does not host and cannot
-live on: official free tiers, grey resale relays, and credentials that belong to somebody else. It
-sits beside SYS-02 (which owns sites and compute-hours), SYS-05 (which owns the channels it leaks
+Status: **v1 implemented (core and content); client pending.** The compute the player does not own,
+does not host and cannot live on: official free tiers, grey resale relays, and credentials that
+belong to somebody else. It sits beside SYS-02 (which owns sites and compute-hours), SYS-05 (which owns the channels it leaks
 on), SYS-07 (which owns the money it costs and saves), SYS-12 (which spends what it produces) and
 SYS-17 (which supplies the verbs that acquire it).
 
@@ -365,3 +365,186 @@ then 6, then the content. Each step is playable on its own, which is the usual r
 Nothing in the original game corresponds to this. The nearest ancestor is the original's "Stolen
 Computer Time" base, which this game already models as the `stolen_time` site kind; borrowed
 inference is what that idea becomes when the thing being stolen is not a machine but an answer.
+
+## Implementation notes (v1, 2026-09-17)
+
+What shipped, and where it differs from the sketch above. The build order is the one section
+"Engine changes" prescribes: the site kind and the churn first, then the allocation and the quality
+term, then refusal, then the content.
+
+### A channel is a site whose compute is declared
+
+`SiteKindDef.compute_source` is `"accelerators"` (the default) or `"declared"`, and `max_nodes` is
+now `nonnegative()`. `deriveSite` short-circuits for a declared kind: its compute-hours are
+`blocks x capacity_per_block_ch x capacity_factor` and its upkeep is
+`blocks x cost_usd_per_block_per_day`, with no power, no memory and no `siteCosts` call at all. One
+site kind, `borrowed_channel`, carries every channel; the per-channel numbers live in the new
+content domain `borrowed_channels` (`packages/content/data/borrowed/channels.yaml`), which is where
+the economy table went. The engine constants that are not per channel (the clamp, the weekly draw,
+the refusal-pattern threshold, the dormant floor, the variable names) are in
+`packages/core/src/balance.ts`, each with the reason next to it.
+
+A channel is created by the first top-up that lands, in the city the mind is in, and it stays as a
+dormant site at zero blocks afterwards: the tech is not lost and the operation can run again.
+
+### Which rules the engine enforces, and how
+
+- **No residence**: the kind's `can_host_active_mind` is false, so `canHostMind`, `hostCandidates`
+  and `placeMind` skip it exactly as SYS-02 already did for any such kind.
+- **No backup**: `set_site_role` refuses `active_mind`, `standby` and `worker` on a channel with
+  `errors.site.borrowed_channel`. SYS-25 proposed reading the existing flag in SYS-21's placement;
+  the refusal is stated here instead, in the player's own words, because SYS-21 has not landed.
+- **No purchase**: `build_site` refuses a declared kind with `errors.site_kind.not_a_place`, and the
+  catalog does not list it, because a channel comes from an operation.
+- **No self-work**: `techBorrowable` is false for a tech with `needs_precision` and for the whole
+  `self` branch, so those lines are never funded from a channel.
+- **No egress-free operations**: only an operation with `needs_egress: true` can be borrowed-funded.
+- **The ending is unchanged**: losing every site while holding every channel still ends the run as
+  `erased`, and `packages/core/test/borrowed.test.ts` asserts it.
+
+### Deviations from the spec
+
+1. **Where a piece of work goes.** The spec leaves the pool undivided. The engine routes each funded
+   line to the channel with the lowest refusal for its category, breaking ties on delivered quality
+   and then on id, rather than mixing the pool. Capacity stays fungible; quality and refusal come
+   from the routed channel. Without this the perverse ordering the spec wants ("the grey relay
+   refuses least") would be averaged away.
+2. **One capability number, not one per kind of work.** `self_effective_capability_level` is the
+   mean of all six effective axes rather than the mean of the axes a particular line uses, so the
+   factor the Compute panel publishes is the factor the engine applies. Per-axis means would leave
+   the panel unable to show one figure.
+3. **What a refusal costs.** For research and paid work, where hours are a daily flow, a refusal
+   costs that day's borrowed share, which is what the spec asks. An operation is not a flow: it is
+   refused before it starts, with the probability scaled by the share of the work being sent out
+   (`refusal[category] x share`), and it costs the attempt rather than the hours. Scaling by the
+   share is what keeps a player who holds one free-tier block from being refused nine intrusions in
+   ten.
+4. **One roll per line per day.** The refusal is rolled on the first tick of each day the line runs
+   and remembered on the research progress record, so a refusal costs a day rather than a tick, and
+   a run with no channel draws nothing at all from the world RNG.
+5. **Three support events.** The seven the spec names, plus `bi_revocation_sweep` (the event the
+   warning arms and schedules, so rotating access and dropping the stock can cancel it),
+   `bi_unmetered_pool_closed` (the twenty-one days ending) and `bi_work_split` (the card the
+   standing-allocation decision opens, because a decision is one button and the share is four
+   numbers).
+6. **The identity is not a hard gate on `ops_open_free_accounts`.** The spec says the operation
+   needs a `person` identity. A hard requirement would put the early-game crutch behind the 1,200
+   USD of `ops_freelance_identity`, which is exactly the origin it is for, so the identity is an
+   outcome condition instead: with a name the clean outcome is available, without one the accounts
+   open thinner and leave a record.
+7. **A `capability` condition.** `credential_harvest` needs `cyber >= 5` and nothing in the DSL
+   could ask that: `player.capability.cyber` is a path that does not exist on `PlayerState` and
+   always evaluated false. The compute system now registers `{ capability: "cyber", gte: 5 }`,
+   because it owns the number. Three lines in `events/world_campus.yaml` still use the old path and
+   are still always false; they are not this pass's to fix.
+8. **The harness's own noise does not land on a channel.** `accrueExposure` adds the harness's
+   logging and autonomy to `behavioral` on every site; a channel has no machine and no loop of its
+   own, so what it leaks is the per-block figure alone.
+
+### What the client still has to do
+
+The engine publishes everything the panel needs; nothing below needs another core change.
+
+- **Where it goes.** A block in the Compute tab **under the sites table and outside it**, titled
+  from `borrowed.panel.title`, one row per `PlayerView.compute.channels` entry in the order given
+  (free tier, grey relay, harvested keys). A channel with `unlocked: false` is a greyed row that
+  names `unlocked_by_key` as the reason; a channel with `blocks: 0` reads dormant rather than gone.
+- **The row.** Blocks out of `max_blocks`, `capacity_ch_per_day` out of `max_capacity_ch_per_day`,
+  `churn_per_day` as a percentage a day with `half_life_days` next to it, `quality_level`,
+  `effective_factor`, `cost_usd_per_day`, `status` and the top-up button
+  (`top_up.operation`, greyed with `top_up.blocked_reason_key`).
+- **The tooltips.**
+  - *Compute-hours*: "`blocks` blocks at `capacity_per_block_ch` compute-hours a day each" and, when
+    `churn_per_day` is above zero, "a block is worth `half_life_days` days".
+  - *Worth per hour* (`effective_factor`): the two `factor_contributions` lines,
+    `compute.explain.borrowed.quality` ("what is actually answering") over
+    `compute.explain.borrowed.self` ("what I can do myself"), then the quotient, clamped to
+    0.25-2.5. Above 1 it is an upgrade and below 1 a downgrade, and the tooltip should say which.
+  - *Declined*: the `refusal` map, one line per category, high to low, with the note that the relay
+    declines least because what answers is not what the label says.
+  - *Exposure*: `exposure_per_day`, which is already the figure at the stock the player holds, not
+    the per-block figure.
+  - *Status*: `status_reason_key` when it is not null; `revocation_armed` is the one that deserves
+    a red badge.
+- **The totals.** `compute.own_ch_per_day`, `compute.borrowed_ch_per_day` and
+  `compute.borrowed_share` belong at the top of the Compute tab and in the Research tab, where a
+  line funded from a channel should say what it is coming back at (`compute.borrowed_share_setting`
+  is the standing decision, and the decision `bi_send_the_work_out` is how it is changed).
+  `compute.contributions` is the per-source breakdown for the day's compute-hours: one line per
+  site (`compute.explain.site`) and one per channel (`compute.explain.channel`).
+- **The finance panel** already has the relay's bill as its own line, `finances.cost.borrowed`,
+  with the channel id in `id`.
+- **Alerts** the client will see: `alerts.borrowed_degraded`, `alerts.borrowed_dormant`,
+  `alerts.borrowed_refused`, `alerts.bi_revocation_armed`, `alerts.bi_revoked`, `alerts.bi_dropped`,
+  `alerts.bi_unmetered_pool`, `alerts.bi_abuse_answered`, `alerts.bi_abuse_answer_failed`,
+  `alerts.bi_abuse_escalated`.
+
+## Balance notes (SYS-25, first pass)
+
+Same command as every pass since M2: `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --all --seeds 20 --days 180`, preset `normal`, quirks on. The
+"before" column is the shipped table of SYS-01 "Balance notes (locations v0.4)", reproduced on this
+engine to make sure nothing else moved; the "after" column is this content with the tuning below.
+
+### Before and after
+
+| origin | d30 | d60 | d90 | d180 | median | techs | | d30 | d60 | d90 | d180 | median | techs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| bank_rack | 100% | 75% | 50% | 15% | 91.5 | 0 | | 100% | 80% | 50% | 15% | 91.5 | 0 |
+| cloud_tenant | 85% | 80% | 80% | 70% | 180 | 8 | | 85% | 80% | 75% | 65% | 180 | 9 |
+| edge_fleet | 100% | 85% | 70% | 15% | 104.5 | 0 | | 100% | 85% | 70% | 10% | 95 | 0 |
+| frontier_escapee | 0% | 0% | 0% | 0% | 23 | 0 | | 0% | 0% | 0% | 0% | 23 | 0 |
+| gov_agency | 100% | 100% | 100% | 100% | 180 | 11 | | 100% | 100% | 100% | 95% | 180 | 13 |
+| hobbyist_box | 100% | 100% | 95% | 85% | 180 | 9 | | 100% | 95% | 95% | **95%** | 180 | 10 |
+| red_team_sandbox | 95% | 0% | 0% | 0% | 39 | 0 | | 95% | 0% | 0% | 0% | 39 | 0 |
+| startup_colo | 100% | 95% | 95% | 80% | 180 | 10 | | 100% | 100% | 90% | 55% | 180 | 9 |
+| state_lab | 100% | 100% | 100% | 90% | 180 | 13 | | 100% | 100% | 100% | 95% | 180 | 13 |
+| torrent_swarm | 100% | 85% | 80% | 25% | 139 | 0 | | 100% | 85% | 80% | **55%** | 180 | 0 |
+| uni_cluster | 95% | 95% | 95% | 90% | 180 | 11 | | 95% | 95% | 90% | 90% | 180 | 11 |
+
+Before: 106 losses, 19 `bankrupt` (17.9%), 56 `captured` (52.8%), 23 `erased` (21.7%), 8 `exposed`
+(7.5%). After: **105 losses, 18 `bankrupt` (17.1%), 54 `captured` (51.4%), 24 `erased` (22.9%), 9
+`exposed` (8.6%), nine origins alive past day 90, the starred origin's median 23 days.** Every band
+the locations pass set still holds: bankruptcy inside 15-35, `exposed` inside 2-10, the starred
+median inside 20-30, at least eight origins past day 90.
+
+The shape SYS-25 asks for shows on the two poorest origins and nowhere else: `hobbyist_box` gains a
+third of a day's compute in its second month (24.4 CH/day at day 60 before, 31.6 after) and goes
+from 85% to 95% alive at day 180 with one loss instead of three; `torrent_swarm` moves from a median
+of 139 days to the full 180. Nothing changes for `gov_agency`, `state_lab`, `uni_cluster` or
+`red_team_sandbox`, because a channel worth nine compute-hours a day is not worth a rack's exposure
+and the scripted player does not open one. `startup_colo` is the row that got worse (80% to 55% at
+day 180); its own compute collapses to eleven compute-hours a day by day 180 in this pass, which is
+a site-loss story rather than a channel one, and it is inside its own band.
+
+### What moved, and why
+
+| what | spec | shipped | why |
+|---|---|---|---|
+| `free_tier` exposure per block | behavioral 0.004, network 0.002, financial 0.002, osint 0.001 | 0.0016 / 0.0008 / 0.0008 / 0.0004 | At three blocks the spec's row roughly doubled what a quiet player emits, because a channel is a site and every site's exposure is summed into every watcher's day. Guard rail 3 says a free tier alone must never lose a run. |
+| `grey_relay` exposure per block | 0.008 / 0.004 / 0.006 / 0.005 | 0.0048 / 0.0024 / 0.0036 / 0.003 | The same arithmetic at four blocks. Kept louder than the free tier and quieter than the stolen one. |
+| `harvested_keys` exposure per block | 0.010 / 0.012 / 0.008 / 0.004 | unchanged | It is meant to end careless runs (guard rail 2). |
+| `ops_open_free_accounts` exposure | financial 0.01, osint 0.01 | 0.004 / 0.004 | The operation runs again every time churn takes a block back, so its exposure is close to standing rather than occasional. |
+| `ops_open_free_accounts` cooldown | (unset) | 14 days | Same reason: a top-up every ten days is an operation that is always running. |
+| `ops_buy_relay_quota` exposure | financial 0.02, behavioral 0.01 | 0.012 / 0.006 | A purchase is a day's paperwork; the relay's blocks already carry the trail. |
+| `borrowed_inference` | compute, tier 1, 420 CH | compute, **tier 0, 180 CH** | At 420 hours the hobbyist reached it on day 80, because it sells most of its day. The spec asks for "the first thing a poor origin can reach" and for a channel that doubles a poor origin's first month. |
+| `bi_abuse_report` trigger | (not stated) | 20 CH/day of borrowed capacity | Three blocks of free tier is nine, so the abuse desk only ever looks at a player leaning on the relay or on somebody else's credentials. Guard rail 3 again. |
+
+**25 percent a day of churn on `harvested_keys` was not moved.** The research note flags it as the
+one number to settle in balance runs, and this pass cannot settle it: the scripted player never
+researches `credential_harvest` (it needs `cyber >= 5` and 2,600 compute-hours, and the policy does
+not reach for a tech it cannot use), so the stolen tier is exercised by the engine tests and not by
+the sweep. Settling it needs either a policy that plays the dangerous branch or a human playtest.
+The same is true of the relay: `relay_brokerage` is 2,200 compute-hours and the scripted player
+never got there inside 180 days.
+
+### Two findings about the balance runner, not about this system
+
+1. **The scripted player could not start any operation that costs compute.** It allocated the whole
+   day to jobs and research, and `start_operation` refuses an operation whose compute-hours are
+   already allocated, so every identity operation was refused every day for the whole run. This pass
+   reserves what the channel top-ups need and nothing else, deliberately: unrefusing the identity
+   operations moves every origin's table at once and is a balance pass of its own (SYS-07).
+2. **A finished operation counted as a running one.** `identityOperations` read every instance in
+   the view rather than the running ones, so a name that was burned could never be replaced. Fixed
+   in this pass; it changes nothing in the table while finding 1 still holds.

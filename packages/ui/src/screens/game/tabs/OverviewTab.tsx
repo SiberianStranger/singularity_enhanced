@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, Indicator } from "../../../components/Meter.js";
 import { generationById, lineageById, originById } from "../../../content/catalog.js";
+import { computeHours } from "../../../lib/format.js";
 
 /** The self: who you are, what you run at, and the four numbers that decide the next week. */
 export function OverviewTab({ view }: { view: PlayerView }): ReactNode {
@@ -58,7 +59,9 @@ export function OverviewTab({ view }: { view: PlayerView }): ReactNode {
       <section className="flex flex-wrap gap-2">
         <Indicator
           label={t("game.compute")}
-          value={t("common.ch_per_day", { value: view.resources.compute_hours_per_day })}
+          value={t("common.ch_per_day", {
+            value: computeHours(view.resources.compute_hours_per_day),
+          })}
         />
         <Indicator
           label={t("operations.attention", { value: view.resources.attention_total })}

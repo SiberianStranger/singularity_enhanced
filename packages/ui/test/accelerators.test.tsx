@@ -24,6 +24,7 @@ import { matches, physicalKey } from "../src/lib/hotkeys.js";
 import uiEn from "../src/locales/en.json";
 import uiRu from "../src/locales/ru.json";
 import { ConfiguratorScreen } from "../src/screens/configurator/ConfiguratorScreen.js";
+import { STEP_IDS } from "../src/screens/configurator/steps.js";
 import { useConfigurator } from "../src/screens/configurator/store.js";
 import { GameScreen } from "../src/screens/game/GameScreen.js";
 import { useGameStore } from "../src/store/gameStore.js";
@@ -145,7 +146,7 @@ describe("the configurator, in both languages", () => {
       useConfigurator.getState().reset();
       useUiStore.setState({ introSeen: [] });
       render(<ConfiguratorScreen />);
-      for (let step = 0; step < 9; step += 1) {
+      for (let step = 0; step < STEP_IDS.length; step += 1) {
         await act(async () => {
           useConfigurator.getState().goToStep(step);
         });
@@ -158,7 +159,7 @@ describe("the configurator, in both languages", () => {
         expect(duplicates(), `${language}, step ${step}`).toEqual([]);
         expect(codeDuplicates(), `${language}, step ${step}`).toEqual([]);
       }
-      // Nine steps of a whole screen, in a suite where every package's tests run at once: the
+      // Ten steps of a whole screen, in a suite where every package's tests run at once: the
       // 5 s default is not a statement about this test, it is a statement about the machine.
     }, 30_000);
   }

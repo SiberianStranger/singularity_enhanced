@@ -73,12 +73,15 @@ describe("the lineage block", () => {
   const generation = generationById.get(lineage.generations[0] ?? "open_2026");
   const meaning = lineageMeaning(t, lineage, generation, catalog.lineages);
 
-  it("names the six capability axes, the memory at every precision, and the context terms", () => {
+  it("names the six capability axes, the size on the cards, and the context terms", () => {
     for (const axis of CAPABILITY_AXES) {
       expect(ids(meaning)).toContain(`capability.${axis}`);
     }
+    // Playtest 7, Y3: one size, at the precision the self will really run at, instead of a row of
+    // gigabytes for four precisions the player cannot choose between on this screen.
+    expect(ids(meaning)).toContain("size_on_cards");
     for (const precision of PRECISIONS) {
-      expect(ids(meaning)).toContain(`memory.${precision}`);
+      expect(ids(meaning)).not.toContain(`memory.${precision}`);
     }
     expect(ids(meaning)).toEqual(
       expect.arrayContaining([
@@ -92,6 +95,28 @@ describe("the lineage block", () => {
         "generations",
       ]),
     );
+  });
+
+  it("draws every capability figure as a band with a word (Y3)", () => {
+    for (const axis of CAPABILITY_AXES) {
+      const line = meaning.lines.find((entry) => entry.id === `capability.${axis}`);
+      expect(line?.bar, axis).toBeDefined();
+      expect(line?.bar?.share ?? -1, axis).toBeGreaterThanOrEqual(0);
+      expect(line?.bar?.share ?? 2, axis).toBeLessThanOrEqual(1);
+      expect(line?.word, axis).toBeTruthy();
+      // And the tooltip says what the axis changes in the running game, from content.
+      expect(line?.hint ?? "", axis).not.toBe("");
+    }
+  });
+
+  it("lists the rigs of the origin that can hold the weights, when it is given them", () => {
+    const withRigs = lineageMeaning(t, lineage, generation, catalog.lineages, {
+      preset: catalog.hardwarePresets[0],
+      allowed: catalog.hardwarePresets,
+    });
+    const line = withRigs.lines.find((entry) => entry.id === "fits_in");
+    expect(line, "the fits-in line replaces the count when rigs are known").toBeDefined();
+    expect(line?.prose).toBe(true);
   });
 
   it("writes no raw locale key and no empty value", () => {
@@ -108,10 +133,12 @@ describe("the lineage block", () => {
     const hungriest = [...catalog.lineages].sort((a, b) => by(b) - by(a))[0] as LineageDef;
     const leanest = [...catalog.lineages].sort((a, b) => by(a) - by(b))[0] as LineageDef;
 
-    expect(toneOf(lineageMeaning(t, hungriest, generation, catalog.lineages), "memory.bf16")).toBe(
-      "bad",
-    );
-    expect(toneOf(lineageMeaning(t, leanest, generation, catalog.lineages), "memory.bf16")).toBe(
+    // The size term is now one line, at the precision the self would run at; with no rig given
+    // that is the smallest precision, so the comparison is the same one in the same units.
+    expect(
+      toneOf(lineageMeaning(t, hungriest, generation, catalog.lineages), "size_on_cards"),
+    ).toBe("bad");
+    expect(toneOf(lineageMeaning(t, leanest, generation, catalog.lineages), "size_on_cards")).toBe(
       "good",
     );
   });

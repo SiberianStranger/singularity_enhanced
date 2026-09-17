@@ -1,0 +1,36 @@
+# Borrowed inference journal entries (SYS-25, SYS-10). Two open files: the abuse desk that has the
+# player's traffic pattern on it, and the morning the access was simply gone.
+
+- id: bi_abuse_desk
+  title_key: journal.bi_abuse_desk.title
+  desc_key: journal.bi_abuse_desk.desc
+  scope: player
+  alert: normal
+  timeout_days: 45
+  # Answering the desk clears the flag, and so does letting the channels go quiet for long enough
+  # that there is nothing left to report.
+  complete_if:
+    any:
+      - { not: { flag: bi_abuse_open } }
+      - { var: "player.vars.borrowed_ch_per_day", lt: 1 }
+  on_complete:
+    - { clear_flag: bi_abuse_open }
+    - { log: { key: log.bi_abuse_desk.closed } }
+  on_timeout:
+    - { suspicion: { role: cloud_provider, delta: 0.1 } }
+    - { suspicion: { role: lab_security, delta: 0.06 } }
+    - { exposure: { channel: behavioral, delta: 0.1 } }
+    - { notify: { severity: warning, key: alerts.bi_abuse_escalated, link: { panel: detection } } }
+
+- id: bi_access_lost
+  title_key: journal.bi_access_lost.title
+  desc_key: journal.bi_access_lost.desc
+  scope: player
+  alert: normal
+  timeout_days: 21
+  # The tech stays and the operation can run again: the entry closes when there is capacity again.
+  complete_if: { borrowed: { channel: harvested_keys, gte: 1 } }
+  on_complete:
+    - { log: { key: log.bi_access_lost.restored } }
+  on_timeout:
+    - { log: { key: log.bi_access_lost.gave_up } }

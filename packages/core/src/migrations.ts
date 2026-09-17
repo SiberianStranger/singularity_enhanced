@@ -133,5 +133,30 @@ export const migrationV2ToV3: Migration = {
   },
 };
 
+/**
+ * Schema 3 -> 4 (SYS-25): a site records the borrowed channel it is, when it is one. Every site in
+ * an M2 save is made of hardware, so `null` is the correct state for all of them, and a player who
+ * had no channels before the system shipped still has none after it.
+ */
+export const migrationV3ToV4: Migration = {
+  from: 3,
+  to: 4,
+  migrate(save: Record<string, unknown>): Record<string, unknown> {
+    const entities = isRecord(save.entities) ? save.entities : {};
+    const sites = isRecord(entities.site) ? entities.site : {};
+    for (const site of Object.values(sites)) {
+      if (isRecord(site)) {
+        site.borrowed ??= null;
+      }
+    }
+    save.entities = entities;
+    return save;
+  },
+};
+
 /** Every migration the core ships, oldest first. */
-export const CORE_MIGRATIONS: readonly Migration[] = [migrationV1ToV2, migrationV2ToV3];
+export const CORE_MIGRATIONS: readonly Migration[] = [
+  migrationV1ToV2,
+  migrationV2ToV3,
+  migrationV3ToV4,
+];

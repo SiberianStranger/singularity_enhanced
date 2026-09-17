@@ -209,7 +209,10 @@ function accrueExposure(
     if (channel === "billing" && rented) {
       gain += (site.derived.upkeep_usd_per_day / 1000) * CLOUD_SPEND_EXPOSURE_PER_1K_USD;
     }
-    if (channel === "behavioral") {
+    // What the harness itself leaks is what the self's own loop writes down where it runs; a
+    // borrowed channel has no machine and no loop of its own, and what it leaks per day is the
+    // per-block figure the channel carries (SYS-25 "Exposure").
+    if (channel === "behavioral" && kind?.compute_source !== "declared") {
       gain += harnessNoise(player);
     }
     const counter = modifier(player, `${EXPOSURE_GROWTH_VAR_PREFIX}${channel}`) * everywhere;

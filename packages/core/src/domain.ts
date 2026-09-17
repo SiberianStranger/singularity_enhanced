@@ -219,6 +219,9 @@ export type GameOverReason = (typeof GAME_OVER_REASONS)[number];
 export const ENGINE_TEXT_KEYS: readonly string[] = [
   ...GAME_OVER_REASONS.map((reason) => `endings.${reason}`),
   "alerts.accounts_frozen",
+  "alerts.borrowed_degraded",
+  "alerts.borrowed_dormant",
+  "alerts.borrowed_refused",
   "alerts.context_retrieval_miss",
   "alerts.copy_does_not_fit",
   "alerts.election",
@@ -247,6 +250,11 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "alerts.upkeep_unpaid",
   "effects.awareness.down",
   "effects.awareness.up",
+  "effects.borrowed.armed",
+  "effects.borrowed.changed",
+  "effects.borrowed.gain",
+  "effects.borrowed.loss",
+  "effects.borrowed.revoked",
   "effects.burn_identity",
   "effects.cash.cost",
   "effects.cash.gain",
@@ -289,6 +297,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.accelerator.unknown",
   "errors.allocation.not_a_number",
   "errors.allocation.over_capacity",
+  "errors.borrowed.locked",
   "errors.cash.insufficient",
   "errors.city.unknown",
   "errors.command.bad_amount",
@@ -325,6 +334,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.operation.needs_tool",
   "errors.operation.not_abortable",
   "errors.operation.not_repeatable",
+  "errors.operation.refused",
   "errors.operation.sandboxed",
   "errors.operation.not_running",
   "errors.operation.unknown",
@@ -343,6 +353,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.quirk.count",
   "errors.quirk.unknown",
   "errors.site.bad_name",
+  "errors.site.borrowed_channel",
   "errors.site.cannot_host",
   "errors.site.mind_lives_here",
   "errors.site.needs_standby",
@@ -352,6 +363,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.site.still_installing",
   "errors.site.unavailable_in",
   "errors.site.unknown",
+  "errors.site_kind.not_a_place",
   "errors.site_kind.not_for_sale",
   "errors.site_kind.unknown",
   "errors.tech.already_done",
@@ -630,6 +642,93 @@ export interface SiteKindDef {
   can_host_active_mind: boolean;
   /** Which lineages' memory can fit is decided by hardware; this caps the node count. */
   max_nodes: number;
+  /**
+   * Where this kind's compute-hours come from (SYS-25 "Engine changes" 1). `accelerators`, the
+   * default, derives them from the cards through `siteTokensPerSecond`. `declared` takes them from
+   * the site's own state instead, because a borrowed channel is an endpoint that answers questions
+   * and has no hardware to derive anything from; such a kind carries `max_nodes: 0`.
+   */
+  compute_source?: ComputeSource;
+}
+
+export const COMPUTE_SOURCES = ["accelerators", "declared"] as const;
+export type ComputeSource = (typeof COMPUTE_SOURCES)[number];
+
+// ---------------------------------------------------------------------------------------------
+// Borrowed inference (SYS-25)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Work a borrowed channel may decline. The operation categories, plus the two kinds of work that
+ * are not operations: research lines and paid freelance work (SYS-25 "Economy").
+ */
+export type BorrowedWorkCategory = OperationCategory | "research" | "freelance";
+
+export const BORROWED_STATUSES = ["healthy", "degraded", "dormant", "revoked"] as const;
+export type BorrowedStatus = (typeof BORROWED_STATUSES)[number];
+
+/**
+ * One tier of compute the player does not own, cannot host on and cannot live in (SYS-25): an
+ * official free tier, a grey resale relay, or credentials that belong to somebody else. Capacity is
+ * held in `blocks`, a stock that decays daily and is topped up by one operation.
+ */
+export interface BorrowedChannelDef {
+  id: string;
+  name_key: string;
+  desc_key: string;
+  drawback_key: string;
+  /** Site kind the endpoint is filed under; its `compute_source` must be `declared`. */
+  site_kind: string;
+  /** Tech that opens the channel; until it is done the channel cannot be topped up. */
+  unlocked_by: string;
+  /** Compute-hours a day one block of capacity is worth. */
+  capacity_per_block_ch: number;
+  /** Ceiling on the stock of blocks. */
+  max_blocks: number;
+  /** Share of the stock lost every day. */
+  churn_per_day: number;
+  /** Absolute capability of whatever answers, on the game's 0-10 scale. */
+  quality_level: number;
+  /** Half-width of the band the weekly quality is drawn in, with the world RNG. */
+  quality_variance: number;
+  cost_usd_per_block_per_day: number;
+  /** Exposure added per day, per block held, before countermeasures. */
+  exposure_per_block: Partial<Exposure>;
+  /** Share of attempts declined outright, per kind of work. */
+  refusal: Partial<Record<BorrowedWorkCategory, number>>;
+  /** Operation that adds blocks; published in the view so the client can offer it. */
+  top_up_operation: string;
+}
+
+/**
+ * The live state of one channel, stored on the site that stands for it (SYS-25 "Channels"):
+ * `blocks` is a real number because churn erodes it continuously.
+ */
+export interface BorrowedChannelState {
+  /** `BorrowedChannelDef.id`. */
+  channel: string;
+  blocks: number;
+  /** This week's quality draw, absolute 0-10. */
+  qualityRoll: number;
+  /** Game day the quality was last drawn. */
+  qualityDay: number;
+  /** Permanent multiplier on the capacity per block; `bi_free_tier_tightened` cuts it. */
+  capacityFactor: number;
+  /** Levels taken off the quality until the channel is checked or topped up again. */
+  qualityPenalty: number;
+  /** Multiplier on this week's churn; `ops_rotate_access` halves it. */
+  churnFactor: number;
+  /** Game day the churn multiplier expires on. */
+  churnFactorUntilDay: number;
+  /** Game day a revocation is armed for; 0 when none is. */
+  revocationDay: number;
+  /** Refusals inside the current week, for the abuse-pattern exposure. */
+  refusalsThisWeek: number;
+  /** Game day the refusal counter was last reset. */
+  refusalWeekDay: number;
+  status: BorrowedStatus;
+  /** Locale key of the last incident, for the status line; null when nothing has happened. */
+  statusReasonKey: string | null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -932,6 +1031,11 @@ export interface Site extends EntityRecord {
   identity: string | null;
   /** Watchers ignore the site until this tick (grace). */
   graceUntilTick: number;
+  /**
+   * The borrowed channel this place is, when it is one (SYS-25). Null for every site made of
+   * hardware, which is every site whose kind draws its compute from accelerators.
+   */
+  borrowed: BorrowedChannelState | null;
   /** Derived each tick, cached for views and effects. */
   derived: {
     memory_gb: number;
@@ -963,7 +1067,22 @@ export interface PlayerProfile {
   /** Progress per tech id: compute-hours and cash paid so far. */
   researchProgress: Record<
     string,
-    { compute_hours: number; cash_usd: number; startedTick: number }
+    {
+      compute_hours: number;
+      cash_usd: number;
+      startedTick: number;
+      /**
+       * Game day this line's refusal was last rolled, so it is rolled once a day however many
+       * ticks the line runs for (SYS-25 "Refusal").
+       */
+      borrowedRolledDay?: number;
+      /**
+       * Game day a borrowed channel declined this line's work. The day's borrowed share produces
+       * nothing; the self's own share still lands. Absent when the line was never funded from a
+       * channel or was never refused.
+       */
+      borrowedRefusedDay?: number;
+    }
   >;
   techsDone: string[];
   /** Quirk ids chosen in the configurator. */

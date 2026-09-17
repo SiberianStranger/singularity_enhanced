@@ -26,6 +26,25 @@
   can_host_active_mind: true
   max_nodes: 4
 
+# Not a place: an endpoint that answers questions (SYS-25). Every borrowed channel is filed as a
+# site of this kind, so exposure, grace, watchers and investigations work on it unchanged, but its
+# compute-hours are declared by the channel's stock of blocks rather than derived from hardware,
+# it has no nodes, and `can_host_active_mind: false` keeps the self out of it. base_exposure is
+# empty because what a channel leaks is per block held, from `borrowed/channels.yaml`, not per day
+# of existing. Seven days of grace: an account that was opened this week is not yet a pattern.
+- id: borrowed_channel
+  name_key: sites.borrowed_channel.name
+  desc_key: sites.borrowed_channel.desc
+  ownership: stolen
+  grace_days: 7
+  base_exposure: {}
+  power_cap_kw: null
+  power_exposure: 0
+  upkeep_factor: 1
+  can_host_active_mind: false
+  max_nodes: 0
+  compute_source: declared
+
 - id: cloud
   name_key: sites.cloud.name
   desc_key: sites.cloud.desc

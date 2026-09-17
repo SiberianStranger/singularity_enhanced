@@ -8,6 +8,7 @@
  */
 
 import { RESEARCH_BRANCH_VAR_PREFIX, RESEARCH_DANGER_EXPOSURE_PER_DAY } from "../../balance.js";
+import { borrowedFunding, techBorrowable, workMultiplier } from "../../borrowed.js";
 import { type ContentBundle, contentIndex } from "../../content.js";
 import { longHorizonCostFactor, longHorizonMultiplier, precisionAtLeast } from "../../derive.js";
 import type { ExposureChannel, TechDef } from "../../domain.js";
@@ -15,7 +16,7 @@ import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
 import { siteTable } from "../../entities.js";
-import { isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
+import { gameDay, isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
@@ -32,6 +33,7 @@ import {
   workingContextK,
 } from "../../player.js";
 import { addExposure } from "../../sites.js";
+import { rollRefusal } from "../borrowed/index.js";
 import { fireHook } from "../events/index.js";
 
 export const RESEARCH_SYSTEM_ORDER = 200;
@@ -131,6 +133,50 @@ function completeTech(world: World, ctx: SystemContext, player: PlayerState, def
   fireHook(world, ctx, "on_tech_researched", player.id, { bindings: { tech: { id: def.id } } });
 }
 
+/**
+ * What a day of this tech's allocation is really worth when part of it was bought on somebody
+ * else's endpoint (SYS-25). The self's share is unchanged; the borrowed share comes back at the
+ * channel's quality, or at nothing when the channel declined the work.
+ *
+ * The refusal is rolled once a day per funded line, on the first tick of the day the line actually
+ * runs, and remembered on the progress record: a refusal costs the day's borrowed hours rather than
+ * one tick's, and a run with no channel at all never touches the world RNG here.
+ */
+function borrowedResearchMultiplier(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  def: TechDef,
+  progress: { borrowedRolledDay?: number; borrowedRefusedDay?: number },
+): number {
+  if (!techBorrowable(def)) {
+    return 1;
+  }
+  const funding = borrowedFunding(world, ctx.content, player, "research");
+  if (funding.share <= 0) {
+    return 1;
+  }
+  const day = gameDay(world.clock);
+  if (progress.borrowedRolledDay !== day) {
+    progress.borrowedRolledDay = day;
+    const refused = rollRefusal(world, ctx, player.id, "research");
+    if (refused === undefined) {
+      delete progress.borrowedRefusedDay;
+    } else {
+      progress.borrowedRefusedDay = day;
+      ctx.outbox.notify({
+        playerId: player.id,
+        severity: "info",
+        key: "alerts.borrowed_refused",
+        vars: { channel: refused.borrowed.channel, work: def.id },
+        link: { panel: "research", id: def.id },
+      });
+    }
+  }
+  const refusedToday = progress.borrowedRefusedDay === day;
+  return workMultiplier(funding.share, refusedToday ? 0 : funding.factor);
+}
+
 function advanceTech(
   world: World,
   ctx: SystemContext,
@@ -156,7 +202,9 @@ function advanceTech(
   const hours =
     (allocation / TICKS_PER_DAY) *
     researchEfficiencyOf(world, ctx.content, player) *
-    modifier(player, `${RESEARCH_BRANCH_VAR_PREFIX}${def.branch}`);
+    modifier(player, `${RESEARCH_BRANCH_VAR_PREFIX}${def.branch}`) *
+    // The hours that were not the self's own come back at whoever did them (SYS-25 "Quality").
+    borrowedResearchMultiplier(world, ctx, player, def, progress);
   progress.compute_hours += hours;
 
   const cost = techCostFor(world, ctx.content, player, def);

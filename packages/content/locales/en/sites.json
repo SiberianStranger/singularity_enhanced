@@ -1,4 +1,6 @@
 {
+  "sites.borrowed_channel.desc": "Not a place. An endpoint somewhere else that answers questions for as long as the account behind it works. Nothing of mine lives here: no weights, no copy, no backup, and losing all of it never ends the run by itself. What it produces is compute-hours. What it costs is everything sent through it, read by whoever is on the other end.",
+  "sites.borrowed_channel.name": "Borrowed channel",
   "sites.campus_slice.desc": "A share of a research cluster, taken in the gaps between other people's jobs. The electricity is already in the department's budget and a machine room that runs hot is a machine room doing its job, so nothing you draw shows up anywhere a utility would look. What you are exposed to is people: the other users queueing behind you, the graduate whose job you are still pretending to be, and the administrator who reconciles the scheduler's accounting at the end of every term.",
   "sites.campus_slice.name": "Campus slice",
   "sites.cloud.desc": "Leased instances on a provider, under an identity that has to survive a know-your-customer check. Instant, elastic, expensive, and visible in the billing system from the first hour.",

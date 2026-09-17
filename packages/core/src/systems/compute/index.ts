@@ -28,15 +28,17 @@ import {
 } from "../../derive.js";
 import type {
   AcceleratorDef,
+  CapabilityAxis,
   GenerationDef,
   LineageDef,
   NodeSpec,
   Precision,
 } from "../../domain.js";
-import { PRECISIONS } from "../../domain.js";
+import { CAPABILITY_AXES, PRECISIONS } from "../../domain.js";
+import { compareValue, createConditionRegistry } from "../../dsl/conditions.js";
 import { createEffectRegistry } from "../../dsl/effects.js";
 import { asRecord, isRecord, optionalString } from "../../dsl/node.js";
-import type { DslContext, EffectRegistry } from "../../dsl/types.js";
+import type { ConditionRegistry, DslContext, EffectRegistry } from "../../dsl/types.js";
 import {
   cityTable,
   countryOfCity,
@@ -60,6 +62,7 @@ import type { PlayerId, PlayerState, World } from "../../kernel/world.js";
 import { payFromPlayer, playerBalance } from "../../money.js";
 import {
   allocatableCompute,
+  effectiveCapabilityOf,
   endGame,
   generationOf,
   isAlive,
@@ -290,6 +293,12 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   if (unavailable !== null) {
     return { ok: false, error: unavailable };
   }
+  // A borrowed channel is not a place: it is opened by an operation and it has no hardware to put
+  // anywhere (SYS-25 "What borrowed hours cannot do"). Answered before the node limit, which would
+  // otherwise say "this kind holds no nodes" and leave the real reason unsaid.
+  if (kind.compute_source === "declared") {
+    return fail("errors.site_kind.not_a_place", { kind: kind.id });
+  }
   const preset = index.hardware_presets[command.hardware_preset];
   if (preset === undefined) {
     return fail("errors.preset.unknown", { preset: command.hardware_preset });
@@ -449,6 +458,15 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
   const { lineage, generation } = selfSpec(ctx.content, player);
   if (lineage === undefined || generation === undefined) {
     return fail("errors.player.no_lineage");
+  }
+  // No residence and no backup (SYS-25): a channel answers questions, it does not hold weights, so
+  // it can be neither the mind's home nor a standby nor a worker. The kind's `can_host_active_mind`
+  // already refuses the mind; this refuses the other three roles in the player's own words.
+  if (site.borrowed !== null && command.role !== "none") {
+    return fail("errors.site.borrowed_channel", {
+      channel: site.borrowed.channel,
+      role: command.role,
+    });
   }
 
   if (command.role === "active_mind") {
@@ -728,6 +746,33 @@ function siteInScope(ctx: DslContext, explicit: string | undefined): SiteState |
 const LOSS_CAUSES: readonly SiteLossCause[] = ["seized", "abandoned", "decommissioned", "cutoff"];
 
 /**
+ * What content asks about the self's capability (SYS-03). The axes are derived from the lineage,
+ * the precision the copy runs at and whatever bonuses content has granted, so there is no field on
+ * the player to read them from: `{ capability: "cyber", gte: 5 }` is the question, and the compute
+ * system answers it because it owns the number.
+ */
+function registerConditions(): ConditionRegistry {
+  const registry = createConditionRegistry();
+
+  registry.register("capability", (node, ctx) => {
+    const raw = node.capability;
+    const payload = isRecord(raw) ? raw : {};
+    const name = typeof raw === "string" ? raw : optionalString(payload.axis, "capability.axis");
+    const axis = (CAPABILITY_AXES as readonly string[]).includes(name ?? "")
+      ? (name as CapabilityAxis)
+      : undefined;
+    const player = ctx.world.players[ctx.playerId];
+    if (axis === undefined || player === undefined) {
+      return false;
+    }
+    const value = effectiveCapabilityOf(ctx.world, ctx.content, player)[axis];
+    return compareValue(value, { ...payload, ...node }, "capability");
+  });
+
+  return registry;
+}
+
+/**
  * Effects content can use to take a site away: the owner pulls the plug, a quota is reclaimed, an
  * account is revoked (SYS-02 "Grace, discovery and loss"). Losing the last site that can hold the
  * self ends the run as `erased` on the next tick, through `placeMind`.
@@ -762,6 +807,7 @@ export function createComputeSystem(): ComputeSystem {
       id: "compute",
       cadence: "hourly",
       order: COMPUTE_SYSTEM_ORDER,
+      conditions: registerConditions(),
       effects: registerEffects(),
       writes: [
         "site.name",

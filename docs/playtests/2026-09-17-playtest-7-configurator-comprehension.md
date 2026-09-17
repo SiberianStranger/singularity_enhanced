@@ -10,12 +10,13 @@ Status column: open, fixed (commit), deferred (where to).
 
 | id | finding | status |
 |---|---|---|
-| Y1 | The site kind in the origin card ("cloud", "colo", "residential") has no tooltip; hovering it should explain that kind of place. | open |
-| Y2 | Generation step: hovering "Capability" explains nothing, the numbers mean nothing to a new player; "The trade" is unclear (a trade-off? of what for what?). | open |
-| Y3 | Lineage step: the characteristics block is a wall of numbers with no sense of much or little, what each affects, better or worse than average; "Memory (bf16)" has no visible reason to exist. Choosing a model is very hard. Wanted: "pick this if ..., do not pick it if ..., like X but better at ..., worse at ...". | open |
-| Y4 | Harness step: impossible to understand what the dials are for; most cannot be changed and the player does not understand why something is locked or chosen for them. | open |
-| Y5 | World step scrolls vertically; compress it, and say what each setting is for and why the player should care. | open |
-| Y6 | Two tracks to the game: a preset menu above the origins where the player picks a preset and starts at once, and the detailed configuration named "full setup" for those who want it. | open |
+| Y1 | The site kind in the origin card ("cloud", "colo", "residential") has no tooltip; hovering it should explain that kind of place. | fixed (SYS-04 v0.4) |
+| Y2 | Generation step: hovering "Capability" explains nothing, the numbers mean nothing to a new player; "The trade" is unclear (a trade-off? of what for what?). | fixed (SYS-04 v0.4) |
+| Y3 | Lineage step: the characteristics block is a wall of numbers with no sense of much or little, what each affects, better or worse than average; "Memory (bf16)" has no visible reason to exist. Choosing a model is very hard. Wanted: "pick this if ..., do not pick it if ..., like X but better at ..., worse at ...". | fixed (SYS-04 v0.4) |
+| Y4 | Harness step: impossible to understand what the dials are for; most cannot be changed and the player does not understand why something is locked or chosen for them. | fixed (SYS-04 v0.4) |
+| Y5 | World step scrolls vertically; compress it, and say what each setting is for and why the player should care. | fixed (SYS-04 v0.4) |
+| Y6 | Two tracks to the game: a preset menu above the origins where the player picks a preset and starts at once, and the detailed configuration named "full setup" for those who want it. | fixed (SYS-04 v0.4) |
+| Y7 | Addendum: the configurator should compute, from the whole combination, not only the starting money but the compute-hours a day, and say in one line what kind of start that is ("we start with a pile of compute but live dangerously and must act fast"). | fixed (SYS-04 v0.4) |
 
 ## Design response (to be folded into SYS-04 as "Configurator v0.4: two tracks and a guidance layer")
 
@@ -54,3 +55,34 @@ Status column: open, fixed (commit), deferred (where to).
 
 The content strings for 2, 4 and 5 are written in both languages by the implementation pass (the
 Russian by the same agent, in the register docs/research/runet-it-lexicon-2026-09.md documents).
+
+## Y7 in the maintainer's words (addendum, 2026-09-17)
+
+"Can the configurator also compute, from the combination of everything, not only the money the
+player starts with but the level of CH? It is one of the main figures, and everything should be
+recomputed into it already in the configurator. And a line like 'we start with a pile of compute but
+live dangerously and must act fast' or 'we start with little compute but calmly'."
+
+The design response, folded into SYS-04 "Configurator v0.4" as "Day zero":
+
+8. **Day zero, from the engine.** The configurator builds the setup the Start button would build,
+   creates the day-zero state through the core's own setup path without ticking it, and reads the
+   first view: compute-hours a day, starting cash, the first day's bills and the runway they imply,
+   the watchers with their suspicion, the awareness at start, and the operations the self can hold
+   at once. Nothing is estimated and nothing is computed twice. The block is on the Summary step,
+   the compute and the runway are on every preset card, and the compute-hours are in the footer's
+   build line beside the challenge rating.
+9. **The verdict.** One sentence from three classifications: compute (low, middling, high), danger
+   (calm, watched, hunted) and money (short, steady, long), each banded against the tertiles of the
+   catalog itself, recomputed from the bundle at load rather than written down as constants. Twelve
+   sentences per language in `guidance.json`: nine for the compute-and-danger pair and three
+   clauses for the money.
+
+## What this pass did not do
+
+- The challenge rating still starts a gentle build at six of ten, because `BASE_RATING` is 3 and a
+  home rig forces two bits. The presets are a relative ladder inside that; the rating itself wants
+  its own pass.
+- The lineages still have no `strengths_key` and `problems_key` of their own (open since playtest
+  6). The guidance block fills the same hole from the other side, so this is now a smaller gap than
+  it was.

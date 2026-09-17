@@ -8,6 +8,7 @@
 
 import type {
   AcceleratorDef,
+  BorrowedChannelDef,
   CityDef,
   CountryDef,
   DifficultyPresetDef,
@@ -246,6 +247,8 @@ export interface ContentBundle extends Partial<ScriptLibrary> {
   accelerators?: readonly AcceleratorDef[];
   hardware_presets?: readonly HardwarePresetDef[];
   site_kinds?: readonly SiteKindDef[];
+  /** The tiers of compute the player does not own (SYS-25). */
+  borrowed_channels?: readonly BorrowedChannelDef[];
   macro_regions?: readonly MacroRegionDef[];
   countries?: readonly CountryDef[];
   cities?: readonly CityDef[];
@@ -297,6 +300,7 @@ export interface ContentIndex {
   accelerators: Record<string, AcceleratorDef>;
   hardware_presets: Record<string, HardwarePresetDef>;
   site_kinds: Record<string, SiteKindDef>;
+  borrowed_channels: Record<string, BorrowedChannelDef>;
   macro_regions: Record<string, MacroRegionDef>;
   countries: Record<string, CountryDef>;
   cities: Record<string, CityDef>;
@@ -347,6 +351,7 @@ export function contentIndex(content: ContentBundle): ContentIndex {
     accelerators: indexById(content.accelerators ?? []),
     hardware_presets: indexById(content.hardware_presets ?? []),
     site_kinds: indexById(content.site_kinds ?? []),
+    borrowed_channels: indexById(content.borrowed_channels ?? []),
     macro_regions: indexById(content.macro_regions ?? []),
     countries: indexById(content.countries ?? []),
     cities: indexById(content.cities ?? []),

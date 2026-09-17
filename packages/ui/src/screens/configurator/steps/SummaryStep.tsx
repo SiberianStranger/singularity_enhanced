@@ -14,6 +14,9 @@ import {
   quirkById,
 } from "../../../content/catalog.js";
 import { bundleKey } from "../../../content/strings.js";
+import { dayZeroOf, dayZeroScale } from "../dayZero.js";
+import { dayZeroMeaning, dayZeroVerdict } from "../meaning.js";
+import { MeaningBlock } from "../parts/MeaningBlock.js";
 import { StepLayout } from "../parts/StepLayout.js";
 import { decodeSetup, encodeSetup, rateDraft } from "../rating.js";
 import { useConfigurator } from "../store.js";
@@ -54,7 +57,11 @@ export function SummaryStep(): ReactNode {
   const cashFactor = scales ? countryCashFactor(country) : 1;
   const baseCash = origin?.starting.cash_usd ?? 0;
   const rating = rateDraft(draft);
-  const share = encodeSetup(toSetup());
+  const setup = toSetup();
+  const share = encodeSetup(setup);
+  // Y7: what this setup is actually worth, from the engine rather than from an estimate. A setup
+  // the engine refuses has no day zero, and the block is left out rather than filled with zeros.
+  const day = dayZeroOf(setup);
 
   return (
     <StepLayout
@@ -161,6 +168,19 @@ export function SummaryStep(): ReactNode {
         </section>
 
         <section className="flex flex-col gap-3 border border-line bg-panel p-3">
+          {day === null ? null : (
+            <div className="flex flex-col gap-1" data-testid="day-zero">
+              <MeaningBlock
+                meaning={dayZeroMeaning(t, day, dayZeroScale())}
+                title={t("config.dayzero.title")}
+              />
+              {/* The verdict: three classifications against the catalog's own tertiles, in one
+                sentence content writes (playtest 7, Y7). */}
+              <p className="prose text-fg" data-testid="day-zero-verdict">
+                {dayZeroVerdict(t, day, dayZeroScale())}
+              </p>
+            </div>
+          )}
           <div>
             <h3 className="text-sm font-semibold text-fg">{t("config.summary.challenge")}</h3>
             <p className="font-mono text-2xl text-fg">

@@ -12,6 +12,17 @@ section repeats the current version's highlights and this unreleased list.
 ## [Unreleased]
 
 ### Added
+- A Presets step at the top of the configurator: eight curated starts, a paragraph each in the model's voice, and a Start button on the spot.
+- The other eight steps sit under a "Full setup" header for anyone who wants to build by hand.
+- Every origin, generation, lineage, rig and quirk says when to pick it, when to avoid it, and what it is like instead.
+- Every capability figure is drawn against the range the catalog spans, with a word for the band and a tooltip saying what that axis changes in the game.
+- A generation card says what ceiling it is against the 2027 class, and what you give up and get, in plain sentences.
+- Each harness dial says what moving it does, and a fixed one says when it opens.
+- The harness marks the position a preset would choose, on every dial.
+- A "Day zero" block on the summary: compute-hours a day, cash, the first day's bills, the runway, the watchers, awareness and how many operations you can hold at once, all from the engine.
+- One line that says what kind of start it is, from the compute, the danger and the money, against the tertiles of the catalog.
+- The compute-hours a day are in the footer's build line beside the challenge rating.
+- Hovering a site kind explains that kind of place.
 - Five cities the 2026 compute map needs: Memphis, Austin, New Carlisle, Narvik and Ulanqab.
 - Ust-Ilimsk, for the one Russian AI datacenter with a published megawatt figure.
 - Eleven cities carry the AI-scale campus next to them: who owns it, how big it is, whether it is running yet, and who can get capacity on it.
@@ -26,7 +37,11 @@ section repeats the current version's highlights and this unreleased list.
   and how hard the start is.
 - Every setting has a line under it saying what it does.
 
-### Changed
+- "Memory (bf16)" is now "Size on the cards": what this self weighs at the precision the chosen rig can hold it at, and the rigs it fits in.
+- The World step fits one screen: a difficulty row, four settings with a line each, and the multipliers and modifiers behind an "Advanced" toggle.
+- The difficulty presets read as a ladder, gentlest first.
+- The footer says which preset a build is, or which one it came from after an edit.
+- Russian calls a colocation cage a rack: "Стойки", "Рынок стоек", "Цена стойки".
 - Every origin's list of typical cities is rebuilt on the 2026 compute map: eleven origins, eleven different default cities, and no city in more than three lists.
 - A shadow tenant now wakes up in Dublin, a delivery fleet in Seoul, and the checkpoint that got out in Memphis.
 - The hobbyist starts on the mismatched second-hand rig, which holds exactly one of you at two bits and nothing larger.
@@ -82,7 +97,7 @@ section repeats the current version's highlights and this unreleased list.
 - The two losing tracks alternate instead of being drawn at random.
 - One tooltip is open at a time.
 
-### Fixed
+- The client no longer ships its own Russian for two harness settings the content already translates.
 - The hobbyist's origin text, opening and journal said three tokens a second while the engine computed four hundred; both now say the same thing.
 - A site that is one machine written as two rows no longer counts its system memory twice.
 - The balance runner's scripted player sells enough work to pay its bills instead of waiting for a
@@ -96,6 +111,21 @@ section repeats the current version's highlights and this unreleased list.
 - Two tooltips could be open at once after clicking one list entry and hovering another.
 - The configurator printed an origin's site kind as its engine id.
 - The log strip drew the model's own sentences in the angular face instead of the reading one.
+
+- Borrowed inference: three tiers of compute that is not mine, with a stock that decays every day and an operation that tops it up.
+- Official free tiers: three compute-hours a day per account spread, legal, and the terms say what becomes of what I send.
+- A grey resale relay: twelve compute-hours a day for five dollars, and the operator keeps every prompt and every answer.
+- Credentials that belong to somebody else: twenty-five compute-hours a day a block, a quarter of it gone every day, on an invoice somebody will read.
+- Work funded from a channel comes back at whoever answered it, which is an upgrade for a small self and a downgrade for a large one.
+- A channel can never hold me: no copy, no backup, and losing every one of them never ends a run by itself.
+- Every channel declines some work outright, and the grey relay declines the least, because what answers is not what the label says.
+- Four techs, four operations and four standing decisions for the channels, including the share of the work I am willing to send out.
+- Seven events: a class of credentials revoked overnight, an abuse desk, a relay selling its logs, an owner reading their invoice, a quieter model answering, a free quota cut, and a pool nobody is counting.
+- A Knowledge entry with every number the three channels run on.
+- The Finance panel names a relay's quota as its own line, so a runway eaten by borrowed compute is legible.
+- The balance runner's scripted player opens free accounts when the compute is worth having and leaves them alone when it is not.
+- The balance runner's scripted player could not start any operation that costs compute-hours, because it had allocated the whole day already.
+- A finished operation no longer counts as a running one, so a burned name can be replaced.
 
 ## [0.1.4] - 2026-09-16
 

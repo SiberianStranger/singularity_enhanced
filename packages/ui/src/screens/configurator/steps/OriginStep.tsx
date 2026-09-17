@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { catalog, cityById, hardwareById, originById } from "../../../content/catalog.js";
 import { originMeaning } from "../meaning.js";
+import { GuidanceBlock } from "../parts/GuidanceBlock.js";
 import { StepLayout } from "../parts/StepLayout.js";
 import { OriginVisual } from "../parts/Visuals.js";
 import { useConfigurator } from "../store.js";
@@ -84,6 +85,9 @@ export function OriginStep(): ReactNode {
       entries={entries}
       title={selected === undefined ? t("config.step.origin") : t(selected.name_key)}
       description={selected === undefined ? "" : t(selected.desc_key)}
+      {...(selected === undefined
+        ? {}
+        : { guidance: <GuidanceBlock kind="origin" id={selected.id} /> })}
       {...(summary === undefined ? {} : { aside: summary })}
       {...(selected === undefined ? {} : { meaning: originMeaning(t, selected, catalog.origins) })}
     />

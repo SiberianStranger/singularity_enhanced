@@ -5,6 +5,7 @@ import { EffectList } from "../../../components/EffectList.js";
 import { catalog, quirkById } from "../../../content/catalog.js";
 import { bundleKey } from "../../../content/strings.js";
 import { quirkMeaning } from "../meaning.js";
+import { GuidanceBlock } from "../parts/GuidanceBlock.js";
 import { StepLayout } from "../parts/StepLayout.js";
 import { QuirkVisual } from "../parts/Visuals.js";
 import { QUIRK_BUDGET, QUIRK_LIMIT, quirkCost, quirkRefusal, useConfigurator } from "../store.js";
@@ -85,7 +86,12 @@ export function QuirksStep(): ReactNode {
       entries={entries}
       title={selected === undefined ? t("config.step.quirks") : t(selected.name_key)}
       description={selected === undefined ? "" : t(selected.desc_key)}
-      {...(selected === undefined ? {} : { meaning: quirkMeaning(t, selected, left, effects) })}
+      {...(selected === undefined
+        ? {}
+        : {
+            guidance: <GuidanceBlock kind="quirk" id={selected.id} />,
+            meaning: quirkMeaning(t, selected, left, effects),
+          })}
     >
       <p className="font-mono text-sm text-fg" data-testid="quirk-budget">
         {t(bundleKey("configurator.quirks.budget_left", "config.quirks.budget_left"), {

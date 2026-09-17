@@ -28,6 +28,15 @@
   desc_key: knowledge.campuses.desc
   panel: world
 
+# What borrowed inference is and what it costs (SYS-25). The entry carries the shape of the three
+# channels and the one rule that is not a balance choice: nothing the player runs there is the
+# player, and nothing of the player can live there.
+- id: borrowed_inference
+  area: compute
+  name_key: knowledge.borrowed_inference.name
+  desc_key: knowledge.borrowed_inference.desc
+  panel: compute
+
 - id: compute_hours
   area: compute
   name_key: knowledge.compute_hours.name

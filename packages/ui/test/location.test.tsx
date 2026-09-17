@@ -150,7 +150,10 @@ describe("the Generation step says what the vintage trades (rule G)", () => {
   it("carries the trade-off line", () => {
     openStep("generation");
     const block = screen.getByTestId("meaning-block");
-    expect(block.querySelector('[data-line="trade_off"]')).not.toBeNull();
+    // Playtest 7, Y2: the two-word "trade" is two plain sentences now, what you give up and what
+    // you get, written per vintage by content.
+    expect(block.querySelector('[data-line="trade_give"]')).not.toBeNull();
+    expect(block.querySelector('[data-line="trade_get"]')).not.toBeNull();
   });
 });
 
@@ -194,6 +197,8 @@ describe("the Summary step prices the start in the country (rule C)", () => {
     openStep("summary");
     const cash = screen.getByTestId("summary-cash");
     expect(cash.textContent).not.toBe("");
-    expect(screen.getByText(t("config.summary.cash"))).toBeInTheDocument();
+    // The label appears twice on this step since playtest 7: once on the setup row and once in the
+    // day-zero block, where the same figure is the one the engine starts the run with (Y7).
+    expect(screen.getAllByText(t("config.summary.cash")).length).toBeGreaterThan(0);
   });
 });

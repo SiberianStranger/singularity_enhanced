@@ -24,6 +24,24 @@ import {
   VAR_JOB_PROFIT,
   VAR_RESEARCH_SPEND,
 } from "../balance.js";
+import {
+  borrowedChPerDay,
+  borrowedShare,
+  borrowedShareSetting,
+  channelCapacityChPerDay,
+  channelChurnPerDay,
+  channelCostUsdPerDay,
+  channelMaxCapacityChPerDay,
+  channelOf,
+  channelQuality,
+  channelStatus,
+  effectiveFactor,
+  halfLifeDays,
+  isChannelSite,
+  ownChPerDay,
+  selfCapabilityLevel,
+  workMultiplier,
+} from "../borrowed.js";
 import { contentIndex } from "../content.js";
 import {
   acceleratorMarketPrice,
@@ -87,9 +105,9 @@ import {
   watchersOf,
 } from "../entities.js";
 import { sitesOfIdentity } from "../identities.js";
-import { formatIsoDate, ticksToDays, tickToDate } from "../kernel/clock.js";
+import { formatIsoDate, gameDay, ticksToDays, tickToDate } from "../kernel/clock.js";
 import type { SystemContext } from "../kernel/system.js";
-import { type PlayerId, requirePlayer, type World } from "../kernel/world.js";
+import { type PlayerId, type PlayerState, requirePlayer, type World } from "../kernel/world.js";
 import {
   activePrecision,
   activeSiteOf,
@@ -124,15 +142,18 @@ import {
   marketFactorTerms,
 } from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
+import { borrowedOperationFunding } from "../systems/operations/index.js";
 import { countryExplain, spillIndex } from "../systems/world/explain.js";
 import { splitActorId, topChannel, watchedExposure, watches } from "../watchers.js";
 import { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
 import type {
   AcceleratorView,
+  BorrowedChannelView,
   CashLineView,
   CatalogView,
   CitySiteKindView,
   CityView,
+  ComputeView,
   ContributionView,
   CountryView,
   DecisionView,
@@ -304,35 +325,145 @@ function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteV
   const lineage = lineageOf(ctx.content, player.profile);
   const generation = generationOf(ctx.content, player.profile);
   const cities = cityTable(world);
-  return sitesOf(world, playerId).map((site) => ({
-    id: site.id,
-    name: site.name,
-    kind: site.kind,
-    city: site.city,
-    country: cities[site.city]?.country ?? "",
-    status: site.status,
-    role: site.role,
-    precision: site.precision,
-    nodes: site.nodes.map((node) => ({
-      id: node.id,
-      accelerator: node.accelerator,
-      count: node.count,
-      ram_gb: node.ram_gb,
-      status: node.status,
-      ready_tick: node.readyTick,
-    })),
-    memory_gb: site.derived.memory_gb,
-    power_kw: site.derived.power_kw,
-    power_cap_kw: site.derived.power_cap_kw,
-    compute_hours_per_day: site.derived.compute_hours_per_day,
-    upkeep_usd_per_day: site.derived.upkeep_usd_per_day,
-    exposure: { ...site.exposure },
-    grace_until_tick: site.graceUntilTick,
-    best_precision:
-      lineage === undefined || generation === undefined
-        ? null
-        : bestPrecision(lineage, generation, site.derived.memory_gb),
-  }));
+  return (
+    sitesOf(world, playerId)
+      // A borrowed channel is not a place and never a row in the sites table (SYS-25 "View fields");
+      // it is published under `compute.channels` instead.
+      .filter((site) => !isChannelSite(site))
+      .map((site) => ({
+        id: site.id,
+        name: site.name,
+        kind: site.kind,
+        city: site.city,
+        country: cities[site.city]?.country ?? "",
+        status: site.status,
+        role: site.role,
+        precision: site.precision,
+        nodes: site.nodes.map((node) => ({
+          id: node.id,
+          accelerator: node.accelerator,
+          count: node.count,
+          ram_gb: node.ram_gb,
+          status: node.status,
+          ready_tick: node.readyTick,
+        })),
+        memory_gb: site.derived.memory_gb,
+        power_kw: site.derived.power_kw,
+        power_cap_kw: site.derived.power_cap_kw,
+        compute_hours_per_day: site.derived.compute_hours_per_day,
+        upkeep_usd_per_day: site.derived.upkeep_usd_per_day,
+        exposure: { ...site.exposure },
+        grace_until_tick: site.graceUntilTick,
+        best_precision:
+          lineage === undefined || generation === undefined
+            ? null
+            : bestPrecision(lineage, generation, site.derived.memory_gb),
+      }))
+  );
+}
+
+/**
+ * The borrowed block of the Compute panel (SYS-25 "View fields"): every channel the content
+ * defines, whether or not the player holds it, with the two terms behind the quality factor so the
+ * tooltip can say "at 0.72 of your own quality, because it is not you doing it".
+ */
+function buildChannels(
+  world: World,
+  ctx: SystemContext,
+  playerId: PlayerId,
+): BorrowedChannelView[] {
+  const player = requirePlayer(world, playerId);
+  const index = contentIndex(ctx.content);
+  const done = player.profile?.techsDone ?? [];
+  const selfLevel = selfCapabilityLevel(world, ctx.content, player);
+  const day = gameDay(world.clock);
+  const views: BorrowedChannelView[] = [];
+  for (const id of Object.keys(index.borrowed_channels).sort()) {
+    const def = index.borrowed_channels[id];
+    if (def === undefined) {
+      continue;
+    }
+    const site = channelOf(world, playerId, id);
+    const state = site?.borrowed;
+    const unlocked = done.includes(def.unlocked_by);
+    const quality = state === undefined ? def.quality_level : channelQuality(state);
+    const churn = state === undefined ? def.churn_per_day : channelChurnPerDay(state, def, day);
+    const half = halfLifeDays(churn);
+    const exposure = {} as Exposure;
+    for (const channel of EXPOSURE_CHANNELS) {
+      exposure[channel] = (def.exposure_per_block[channel] ?? 0) * (state?.blocks ?? 0);
+    }
+    const refusal: Record<string, number> = {};
+    for (const key of Object.keys(def.refusal).sort()) {
+      refusal[key] = def.refusal[key as keyof typeof def.refusal] ?? 0;
+    }
+    const factor = effectiveFactor(quality, selfLevel);
+    views.push({
+      id: def.id,
+      name_key: def.name_key,
+      desc_key: def.desc_key,
+      drawback_key: def.drawback_key,
+      site_id: site?.id ?? "",
+      unlocked,
+      unlocked_by: def.unlocked_by,
+      unlocked_by_key: index.techs[def.unlocked_by]?.name_key ?? def.unlocked_by,
+      blocks: state?.blocks ?? 0,
+      max_blocks: def.max_blocks,
+      capacity_ch_per_day: state === undefined ? 0 : channelCapacityChPerDay(state, def),
+      max_capacity_ch_per_day:
+        state === undefined
+          ? def.max_blocks * def.capacity_per_block_ch
+          : channelMaxCapacityChPerDay(state, def),
+      churn_per_day: churn,
+      half_life_days: Number.isFinite(half) ? Math.round(half * 10) / 10 : null,
+      quality_level: quality,
+      quality_published: def.quality_level,
+      self_capability_level: selfLevel,
+      effective_factor: factor,
+      cost_usd_per_day: state === undefined ? 0 : channelCostUsdPerDay(state, def),
+      exposure_per_day: exposure,
+      refusal,
+      status: state === undefined ? "dormant" : channelStatus(state, def),
+      status_reason_key: state?.statusReasonKey ?? null,
+      revocation_armed: (state?.revocationDay ?? 0) > 0,
+      refusals_this_week: state?.refusalsThisWeek ?? 0,
+      top_up: {
+        operation: def.top_up_operation,
+        blocked_reason_key: unlocked ? null : "errors.borrowed.locked",
+      },
+      factor_contributions: [
+        { key: "compute.explain.borrowed.quality", id: def.id, value: quality },
+        { key: "compute.explain.borrowed.self", value: selfLevel },
+      ],
+    });
+  }
+  return views;
+}
+
+/** Where the day's compute-hours come from, own and borrowed, with a line per source (SYS-25). */
+function buildCompute(world: World, ctx: SystemContext, playerId: PlayerId): ComputeView {
+  const player = requirePlayer(world, playerId);
+  const own = ownChPerDay(world, playerId);
+  const borrowed = borrowedChPerDay(world, playerId);
+  const contributions: ContributionView[] = [];
+  for (const site of liveSitesOf(world, playerId)) {
+    if (site.derived.compute_hours_per_day <= 0) {
+      continue;
+    }
+    contributions.push({
+      key: isChannelSite(site) ? "compute.explain.channel" : "compute.explain.site",
+      id: isChannelSite(site) ? site.borrowed.channel : site.id,
+      value: site.derived.compute_hours_per_day,
+    });
+  }
+  return {
+    own_ch_per_day: own,
+    borrowed_ch_per_day: borrowed,
+    borrowed_share: borrowedShare(world, playerId),
+    borrowed_share_setting: borrowedShareSetting(player),
+    channels: buildChannels(world, ctx, playerId),
+    contributions: topContributions(contributions, 12),
+  };
 }
 
 /**
@@ -383,8 +514,10 @@ function buildFinances(world: World, ctx: SystemContext, playerId: PlayerId): Fi
   for (const site of liveSitesOf(world, playerId)) {
     if (site.derived.upkeep_usd_per_day > 0) {
       costs.push({
-        key: "finances.cost.site",
-        id: site.id,
+        // A relay's quota is named separately, so "the relay ate the runway" is a legible death
+        // (SYS-25 "Economy").
+        key: isChannelSite(site) ? "finances.cost.borrowed" : "finances.cost.site",
+        id: isChannelSite(site) ? site.borrowed.channel : site.id,
         usd_per_day: site.derived.upkeep_usd_per_day,
       });
     }
@@ -797,7 +930,11 @@ function buildOperationOffers(
       duration_min_days: def.duration_days.min,
       duration_max_days: def.duration_days.max,
       duration_days: [def.duration_days.min, def.duration_days.max],
-      success_chance: successChance(def, capability[def.skill], dctx),
+      success_chance: successChance(
+        def,
+        capability[def.skill] * borrowedOperationSkillFactor(world, ctx, player, def),
+        dctx,
+      ),
       skill: def.skill,
       effects_on_success: summarizeEffects(best?.effects, ctx.content, best),
       effects_on_failure: summarizeEffects(worst?.effects, ctx.content, worst),
@@ -807,6 +944,20 @@ function buildOperationOffers(
     });
   }
   return offers;
+}
+
+/**
+ * The same multiplier `rollOutcome` puts on the skill for the share of an operation bought on a
+ * channel (SYS-25), so the published odds are the odds the simulation rolls with.
+ */
+function borrowedOperationSkillFactor(
+  world: World,
+  ctx: SystemContext,
+  player: PlayerState,
+  def: OperationDef,
+): number {
+  const funding = borrowedOperationFunding(world, ctx, player, def);
+  return workMultiplier(funding.share, funding.factor);
 }
 
 /**
@@ -941,7 +1092,9 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
   const site_kinds: SiteKindView[] = [];
   for (const kindId of Object.keys(index.site_kinds).sort()) {
     const kind = index.site_kinds[kindId];
-    if (kind === undefined) {
+    // A kind whose compute is declared is a borrowed channel, which is opened by an operation and
+    // never built; the Compute panel lists it in its own block (SYS-25).
+    if (kind === undefined || kind.compute_source === "declared") {
       continue;
     }
     const plan = cheapestPreset(ctx, kind.id);
@@ -1317,6 +1470,7 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
       attention_used: attentionUsed(world, ctx.content, playerId),
     },
     sites: buildSites(world, ctx, playerId),
+    compute: buildCompute(world, ctx, playerId),
     research: buildResearch(world, ctx, playerId),
     finances,
     detection: buildDetection(world, playerId),
