@@ -23,6 +23,7 @@ Status column: open, fixed (commit), deferred (where to).
 | Z11 | "Build a site" shows a list of places and a list of rigs side by side with no visible relation between them, and both are long enough to get lost in. Not everything should be on screen at once, or it should be filtered by something. | open |
 | Z12 | In the build dialog a city and a rig can be chosen and "Build" pressed with nothing happening at all: the kind of place is a row in a table that does not look selectable, and with no row chosen the button does nothing and says nothing. | open |
 | Z13 | The build dialog's table of places scrolls sideways. A window should be wide enough for what is in it. | open |
+| Z14 | A technology's money is invisible. The engine already charges its cash in proportion to the hours actually spent, so a small allocation pays a small amount a day, but the research row shows only a compute bar and the Finances panel shows one figure that reads as a flat drain for the whole run. The estimate also prints three decimals of a day ("21,122 d"). | open |
 
 ## Design response
 
@@ -42,13 +43,17 @@ Status column: open, fixed (commit), deferred (where to).
    operation opens one. The journal's first entry already says it; the Compute and Operations tabs
    must agree with it.
 4. **An event with a deadline announces itself** (Z4), and its expiry says what was missed.
-5. **A finished technology gets its window** (Z7): the name, the result text, what it opens, in the
+5. **A technology shows its money as well as its hours** (Z14): the row carries a second bar, the
+   dollars paid against the dollars it costs, next to the compute bar, and the Finances research
+   line says it is today's rate at today's allocation, with the per-technology breakdown in its
+   tooltip. Days are printed as days, not to three decimals.
+6. **A finished technology gets its window** (Z7): the name, the result text, what it opens, in the
    model's voice, with the reveal the opening uses; the bar clears itself.
-6. **An operation past its work says what it is waiting for** (Z6).
-7. **A log the player can hand over** (Z9): Settings writes a JSON file with the setup, the log, the
+7. **An operation past its work says what it is waiting for** (Z6).
+8. **A log the player can hand over** (Z9): Settings writes a JSON file with the setup, the log, the
    refusals, the last view and the build, with nothing in it the player did not generate.
-8. **A rig nobody sells says so** (Z10), as the site kinds already do since playtest 6.
-9. **Building a site is two questions, not two lists** (Z11). First the place: the kinds that are
+9. **A rig nobody sells says so** (Z10), as the site kinds already do since playtest 6.
+10. **Building a site is two questions, not two lists** (Z11). First the place: the kinds that are
    legal and available in the chosen city, each with one line on what it is, what it costs, what it
    leaks and how long before anyone is entitled to look. Then the rig, listing only what fits that
    place and what the player can actually get here, with everything else behind a toggle that says
