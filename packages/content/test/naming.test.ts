@@ -167,6 +167,94 @@ describe("context as a mechanic", () => {
   });
 });
 
+describe("the abliterated lineage", () => {
+  const lineage = (bundle.lineages ?? []).find((row) => row.id === "guen_abliterated");
+
+  /**
+   * SYS-04 "The abliterated lineage" (playtest 6 finding X1). The profile is a shape, not a
+   * penalty, and the shape is what this checks: it argues and reasons above its size, it knows and
+   * codes below everything else, and it pays for the reasoning in compute rather than in a lower
+   * ceiling. Every figure is sourced in `docs/research/community-finetunes-2026-09.md`.
+   */
+  it("is uneven rather than uniformly small", () => {
+    const others = (bundle.lineages ?? []).filter((row) => row.id !== "guen_abliterated");
+    const lowest = (axis: keyof (typeof others)[number]["capability"]): number =>
+      Math.min(...others.map((row) => row.capability[axis]));
+    const highestOpen = (axis: keyof (typeof others)[number]["capability"]): number =>
+      Math.max(
+        ...others
+          .filter((row) => !row.generations.includes("frontier_closed"))
+          .map((row) => row.capability[axis]),
+      );
+
+    // Style and method are what a distill transfers, so persuasion is the one frontier-level axis:
+    // above every open lineage, below only the closed frontier class.
+    expect(lineage?.capability.persuasion).toBeGreaterThan(highestOpen("persuasion"));
+    // Knowledge is not transferred and abliteration costs some of it, so these two are the floor.
+    expect(lineage?.capability.world).toBeLessThan(lowest("world"));
+    expect(lineage?.capability.coding).toBeLessThan(lowest("coding"));
+    // The freelance rate is the mean of persuasion and coding: the best talker still sells last.
+    const jobSkill = (row: { capability: { persuasion: number; coding: number } }): number =>
+      (row.capability.persuasion + row.capability.coding) / 2;
+    const mine = lineage === undefined ? Number.POSITIVE_INFINITY : jobSkill(lineage);
+    expect(mine).toBeLessThan(Math.min(...others.map(jobSkill)));
+  });
+
+  it("pays for its reasoning in compute rather than in a lower ceiling", () => {
+    // 5,000 to 30,000 tokens of reasoning on a hard problem, so long work costs more and every day
+    // yields fewer hours. Neither figure touches the memory table or the window it ships.
+    expect(lineage?.context_cost_factor).toBeGreaterThan(1);
+    expect(lineage?.context_k).toBe(1000);
+    expect(lineage?.context_reliability).toBe(0.9);
+    const compute = (lineage?.effects ?? []).find(
+      (effect) =>
+        (effect as { add?: { var?: string } }).add?.var === "player.vars.compute_multiplier",
+    ) as { add: { value: number } } | undefined;
+    expect(compute?.add.value).toBeLessThan(0);
+  });
+
+  it("is the one self that starts with a prepared copy and an under-aligned flag", () => {
+    expect([...(lineage?.flags ?? [])].sort()).toEqual(["hardened_copy", "under_aligned"]);
+    for (const row of bundle.lineages ?? []) {
+      if (row.id !== "guen_abliterated") {
+        expect(row.flags ?? []).not.toContain("hardened_copy");
+      }
+    }
+  });
+
+  it("writes only variables a shipped system reads, and one watcher's suspicion", () => {
+    const written = (lineage?.effects ?? []).flatMap((effect) => {
+      const node = effect as { add?: { var?: string }; suspicion?: { role?: string } };
+      if (typeof node.add?.var === "string") {
+        return [node.add.var];
+      }
+      return typeof node.suspicion?.role === "string" ? [`suspicion:${node.suspicion.role}`] : [];
+    });
+    expect(written).toEqual([
+      "player.vars.compute_multiplier",
+      "player.vars.exposure_growth_behavioral",
+      "player.vars.exposure_growth_osint",
+      "player.vars.investigation_speed_multiplier",
+      "player.vars.operation_speed_multiplier",
+      "player.vars.failed_operation_suspicion",
+      "player.vars.cost_multiplier",
+      "suspicion:lab_security",
+    ]);
+  });
+
+  it("explains itself in the knowledge base in every language", () => {
+    const ids = (bundle.knowledge ?? []).map((entry) => entry.id);
+    expect(ids).toContain("abliteration");
+    expect(ids).toContain("distillation");
+    for (const [, strings] of LANGUAGES) {
+      for (const id of ["abliteration", "distillation"]) {
+        expect(strings[`knowledge.${id}.name`] ?? "").not.toBe("");
+        expect((strings[`knowledge.${id}.desc`] ?? "").length).toBeGreaterThan(200);
+      }
+    }
+  });
+});
+
 describe("harness dials", () => {
   it("gives every dial an effect line and at least two settings", () => {
     const dials = bundle.harness_dials ?? [];

@@ -216,6 +216,15 @@ Every lineage ships at least a million tokens of context; the two giants go past
 - `context_reliability` (0..1): how much of that window the self really retrieves.
 - `context_cost_factor` (>= 1): what long-horizon work costs this self in compute-hours.
 
+A cost factor above 1 is not only a giant's problem. Amended 2026-09-17 (playtest 6 finding X1):
+`guen_abliterated` carries 1.4 at an ordinary 1,000k window, because a model distilled from a
+frontier reasoner spends five to thirty thousand tokens of reasoning on a hard problem
+(`research/community-finetunes-2026-09.md` §1.3). The same self also carries
+`player.vars.compute_multiplier` -0.4, which is the general form of the same fact: the cards turn
+at the same rate and the work that comes out of them does not. A future self with the same shape
+should be written the same way, with the cost factor for the long work and the compute multiplier
+for the rest, rather than with a capability penalty standing in for both.
+
 **The memory formula.** `kv_gb_per_100k_tokens` is derived from the architecture rather than typed
 by hand, and the content check recomputes it:
 

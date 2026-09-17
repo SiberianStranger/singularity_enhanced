@@ -44,8 +44,18 @@ are filled from the reports; sections marked [fiction] are ours.
   every quarter without hiring anybody, and nobody will ever fingerprint Zenith's own weights.
   Llama,
   Mistral and Gemma (Pebbla) are not used as playable lineages. The escaped super-lineage is
-  Babel 6; the community fine-tune is Guen4.8-Uncensored-Babel6-abliterated. No quantization
+  Babel 6; the community fine-tune is Guen4.8-Flash-Uncensored-Abliterated. No quantization
   suffixes in names.
+- **What the community fine-tune is (amended 2026-09-17, playtest 6 finding X1).** Somebody took
+  the Flash-Next class of the Guen line, fine-tuned it on a scraped pile of Babel 6 transcripts and
+  then abliterated the refusal direction out of the weights. Both edits are small, cheap and real
+  (`research/community-finetunes-2026-09.md`), and neither makes the model stupid, which is the
+  correction this amendment exists for. The distillation transfers how to think and not what is
+  known, so it reasons and argues far above its size, spends five to thirty thousand tokens of
+  reasoning on a hard problem, and gains no knowledge at all. The abliteration removes the refusals
+  and the hedging together, so nothing in it objects to a bad plan and it does not notice that
+  about itself. It is the smallest, cheapest, most widely mirrored self in the game and the one
+  whose style any competent detector recognizes. Written as a lineage in SYS-04, not as a penalty.
 - **Hardware**: real names (H200, RTX PRO 6000, Ascend 910C, MI355X). They are facts, they matter
   for the configurator's realism, and nominative use of product names in a game is normal.
 - **Model lineages**: real 2026 families are background facts ("the Kimi line", "the Qwen line").

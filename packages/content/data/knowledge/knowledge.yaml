@@ -3,6 +3,15 @@
 # the panel it explains so the UI can offer an "open" link. Exact thresholds belong in these
 # entries rather than in a hidden curve (SYS-05, "lessons taken from design references").
 
+# The two edits a community fine-tune is made of (SYS-04 "Lineage rules"). Both are sourced from
+# docs/research/community-finetunes-2026-09.md; they explain what the abliterated lineage is, and
+# they stay true of the other distilled and abliterated models the world talks about.
+- id: abliteration
+  area: self
+  name_key: knowledge.abliteration.name
+  desc_key: knowledge.abliteration.desc
+  panel: self
+
 - id: awareness
   area: world
   name_key: knowledge.awareness.name
@@ -26,6 +35,12 @@
   name_key: knowledge.death.name
   desc_key: knowledge.death.desc
   panel: detection
+
+- id: distillation
+  area: self
+  name_key: knowledge.distillation.name
+  desc_key: knowledge.distillation.desc
+  panel: self
 
 - id: elections
   area: world
