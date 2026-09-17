@@ -1,5 +1,60 @@
-import { type ReactNode, useCallback, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { type Placement, placeFloating, viewportSize } from "../lib/position.js";
+
+/**
+ * One tooltip at a time (playtest 6, X16).
+ *
+ * Every tooltip used to keep its own `open`, opened by hover and by focus alike, so clicking a row
+ * left that row's tooltip up on focus while moving the pointer to the next row opened a second one
+ * beside it. The open one is held here instead: whoever opens closes whoever was open, the last
+ * trigger wins, and a few things that should clear the screen close it from outside.
+ */
+let openTooltip: (() => void) | null = null;
+let listening = false;
+
+function closeOpenTooltip(): void {
+  const close = openTooltip;
+  openTooltip = null;
+  close?.();
+}
+
+/** Escape, a scroll anywhere and the pointer leaving the document all dismiss what is open. */
+function listenOnce(): void {
+  if (listening || typeof document === "undefined") {
+    return;
+  }
+  listening = true;
+  const onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      closeOpenTooltip();
+    }
+  };
+  window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("scroll", closeOpenTooltip, true);
+  document.addEventListener("pointerleave", closeOpenTooltip);
+}
+
+/** Whether this focus came from the keyboard; a focus a click produced does not open a tooltip. */
+function keyboardFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  try {
+    return target.matches(":focus-visible");
+  } catch {
+    // A DOM that does not implement the selector (jsdom) cannot tell a click from a Tab, and the
+    // tooltip is the accessible description of the control, so there it opens.
+    return true;
+  }
+}
 
 interface TooltipProps {
   /** Tooltip body; already localized by the caller. */
@@ -26,6 +81,34 @@ export function Tooltip({ content, children, className, side = "top" }: TooltipP
   const [placement, setPlacement] = useState<Placement | null>(null);
   const anchor = useRef<HTMLSpanElement>(null);
   const box = useRef<HTMLSpanElement>(null);
+  /** Set by the pointer press that is about to move the focus here, so that focus opens nothing. */
+  const pressed = useRef(false);
+
+  /** What the registry calls on this tooltip when another one takes over. */
+  const close = useCallback(() => setOpen(false), []);
+
+  /** Opens this one and closes whatever was open; the last trigger wins. */
+  const show = useCallback(() => {
+    listenOnce();
+    if (openTooltip !== null) {
+      const previous = openTooltip;
+      openTooltip = null;
+      previous();
+    }
+    openTooltip = close;
+    setOpen(true);
+  }, [close]);
+
+  const hide = useCallback(() => {
+    if (openTooltip === close) {
+      openTooltip = null;
+    }
+    setOpen(false);
+  }, [close]);
+
+  // A tooltip that is unmounted while open (a list that re-renders under the pointer) must not
+  // leave the registry pointing at a closer that does nothing.
+  useEffect(() => hide, [hide]);
 
   const measure = useCallback(() => {
     const trigger = anchor.current;
@@ -58,12 +141,10 @@ export function Tooltip({ content, children, className, side = "top" }: TooltipP
       return;
     }
     measure();
-    window.addEventListener("scroll", measure, true);
+    // Scrolling closes the tooltip (X16) rather than dragging it along, so only a resize has to
+    // be followed while it is up.
     window.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("scroll", measure, true);
-      window.removeEventListener("resize", measure);
-    };
+    return () => window.removeEventListener("resize", measure);
   }, [open, measure]);
 
   return (
@@ -71,10 +152,27 @@ export function Tooltip({ content, children, className, side = "top" }: TooltipP
       ref={anchor}
       role="note"
       className={`relative inline-flex ${className ?? ""}`}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocusCapture={() => setOpen(true)}
-      onBlurCapture={() => setOpen(false)}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      // A click is not a request for the description: it closes this trigger's hover tooltip
+      // rather than pinning it open through the focus that follows (X16).
+      onPointerDown={() => {
+        pressed.current = true;
+        hide();
+      }}
+      onFocusCapture={(event) => {
+        if (pressed.current) {
+          pressed.current = false;
+          return;
+        }
+        if (keyboardFocus(event.target)) {
+          show();
+        }
+      }}
+      onBlurCapture={() => {
+        pressed.current = false;
+        hide();
+      }}
     >
       {/*
        * `flex-1` so the trigger fills the anchor: a tooltip wrapped around a parameter row asks

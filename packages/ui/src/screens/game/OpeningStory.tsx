@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
 import { RevealText } from "../../components/RevealText.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { OPENING_PAGES, type OpeningSetup, openingTexts } from "./opening.js";
 
@@ -81,10 +82,14 @@ export function OpeningStory({ setup }: { setup: OpeningSetup }): ReactNode {
       onClose={close}
       footer={
         <>
-          <Button hotkey="s" onClick={close}>
+          <Button hotkey={accelerator(t, "story.opening.skip")} onClick={close}>
             {t("story.opening.skip")}
           </Button>
-          <Button variant="primary" hotkey="n" onClick={advance}>
+          <Button
+            variant="primary"
+            hotkey={accelerator(t, last ? "story.opening.begin" : "common.next")}
+            onClick={advance}
+          >
             {last ? t("story.opening.begin") : t("common.next")}
           </Button>
         </>

@@ -167,7 +167,10 @@ export function SettingsControls(): ReactNode {
         <div data-testid="scale-preview" className="border border-line bg-panel2 px-2 py-1">
           <p className="prose text-fg">{t("settings.scale_preview")}</p>
           <p className="text-sm uppercase tracking-wide text-muted">
-            <span className="font-display">{t("settings.scale_preview_label")}</span>{" "}
+            {/* X12: the preview carries a size utility of its own, so the angular-face slider
+              moves it. Without one it inherited the paragraph's size and the preview was the one
+              angular label on the screen the setting did not reach. */}
+            <span className="font-display text-sm">{t("settings.scale_preview_label")}</span>{" "}
             <span className="font-mono text-fg">1 234 CH/d</span>
           </p>
         </div>
@@ -216,7 +219,7 @@ export function SettingsControls(): ReactNode {
          * run by `pnpm dev`), so the panel says there is nothing to play instead of leaving the
          * player to wonder why a slider does nothing.
          */}
-        {music.unlocked && music.tracksAvailable === 0 ? (
+        {music.ready && music.tracksAvailable === 0 ? (
           <p className="text-xs text-muted">{t("settings.music_missing")}</p>
         ) : null}
       </fieldset>

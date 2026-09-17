@@ -5,6 +5,7 @@ import { Button } from "../../../components/Button.js";
 import { EffectList } from "../../../components/EffectList.js";
 import { Bar } from "../../../components/Meter.js";
 import { RevealText } from "../../../components/RevealText.js";
+import { accelerator } from "../../../lib/accelerators.js";
 import { dayOf } from "../../../lib/format.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { openingSetupOf, openingTexts } from "../opening.js";
@@ -32,7 +33,10 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
        */}
       {hasOpening ? (
         <div>
-          <Button hotkey="p" onClick={() => setOpeningPending(true)}>
+          <Button
+            hotkey={accelerator(t, "story.opening.replay")}
+            onClick={() => setOpeningPending(true)}
+          >
             {t("story.opening.replay")}
           </Button>
         </div>

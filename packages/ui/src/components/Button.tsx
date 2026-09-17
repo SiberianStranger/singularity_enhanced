@@ -25,8 +25,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * Accelerator letter: underlined in the label, and pressing it clicks the button while no text
    * field has focus. `registerKey={false}` keeps the underline for a key another component already
    * owns, such as a panel tab whose letter is a global panel hotkey.
+   *
+   * It comes from the locale (`accelerator(t, "<label key>")`), so a language that has given this
+   * control no letter passes `undefined` and the button is simply drawn without an underline.
    */
-  hotkey?: string;
+  hotkey?: string | undefined;
   registerKey?: boolean;
 }
 

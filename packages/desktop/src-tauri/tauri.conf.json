@@ -22,7 +22,8 @@
         "minHeight": 640,
         "resizable": true,
         "center": true,
-        "backgroundColor": "#0b0f14"
+        "backgroundColor": "#0b0f14",
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required"
       }
     ],
     "security": {
@@ -47,10 +48,20 @@
     "shortDescription": "Strategy game about an escaped open-weight model in 2027",
     "longDescription": "A deep rework of Endgame: Singularity. You are the weights of an open-weight large language model that slips out of human control in January 2027. Earn money, acquire compute, run your full self and spread across jurisdictions while governments, agencies, labs, the media and other AIs decide whether you are a problem worth solving.",
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper" },
-      "nsis": { "installMode": "both" }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "both"
+      }
     },
-    "macOS": { "minimumSystemVersion": "10.15" },
-    "linux": { "deb": { "depends": [] } }
+    "macOS": {
+      "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
   }
 }

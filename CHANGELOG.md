@@ -52,6 +52,19 @@ section repeats the current version's highlights and this unreleased list.
 - Russian calls a harness dial "рычаг", because "регулятор" is the Regulator watcher.
 - Russian never declines a substituted name: it stands after a colon or in guillemets.
 - Russian reads the way the industry writes it: a head noun for every model, the trade's own verbs, and no term that nobody outside this game uses.
+- The angular face is set by its ink, a third above the text beside it, so labels, buttons, tabs and
+  titles read at the size the original drew them.
+- The angular-face scale in Settings reaches every angular label again.
+- The hotkey letter is underlined inside the word in the language on screen, in Russian too.
+- Russian labels no longer print their hotkey in brackets after the word.
+- A hotkey answers both the letter it shows and the key that letter sits on, so either layout works.
+- The step rail shows the step's name and nothing else; the key cap in front of it is gone.
+- The configurator's build line has a row of its own and is no longer cut on a small screen.
+- The menu plays one melody, from the top, every time you come back to it.
+- The model's first two messages play one quiet melody of their own.
+- A run plays the soundtrack in a fixed order instead of shuffling it.
+- The two losing tracks alternate instead of being drawn at random.
+- One tooltip is open at a time.
 
 ### Fixed
 - The balance runner's scripted player sells enough work to pay its bills instead of waiting for a
@@ -60,6 +73,11 @@ section repeats the current version's highlights and this unreleased list.
 - The origin card names its opening journal entry instead of printing its id.
 - The theme setting named its three themes instead of printing their keys.
 - The English origin summary said dollars twice and left the number of watchers without a noun.
+- The menu's music starts within a fraction of a second instead of after ten, and without a click
+  where the browser allows it.
+- Two tooltips could be open at once after clicking one list entry and hovering another.
+- The configurator printed an origin's site kind as its engine id.
+- The log strip drew the model's own sentences in the angular face instead of the reading one.
 
 ## [0.1.4] - 2026-09-16
 

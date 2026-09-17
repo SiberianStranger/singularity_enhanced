@@ -575,15 +575,25 @@ world.
 
 ### Sound (S1)
 
-`audio/player.ts` mirrors the original mixer: the `music/` class shuffled with a two-to-twelve second
-pause between tracks, `win/` and `lose/` at the endings. The differences are the ones the web
-forces: nothing is fetched until the first user gesture, and the manifest is read at runtime rather
-than bundled, so a checkout without the pack plays no music and says so in Settings instead of
-failing to build. Everything non-deterministic is injected (the element factory, the random source,
-the timer), so a test can run a whole playlist without a sound card.
+`audio/player.ts` keeps the original mixer's two-to-twelve second pause between tracks and drops its
+shuffle (amended after playtest 6, X14). The soundtrack has roles: the menu one fixed melody played
+from the top whenever the menu is entered, the model's first two windows one quiet melody of their
+own, a run the rest in a fixed order, the endings the pack's `win` and `lose` in the order the pack
+lists them. The roles are in the manifest, written by `scripts/fetch-music.mjs`, so the soundtrack
+is data and the player holds no track names. The manifest is read at runtime rather than bundled,
+so a checkout without the pack plays no music and says so in Settings instead of failing to build.
+Everything non-deterministic is injected (the element factory, the random source, the timer), so a
+test can run a whole playlist without a sound card.
 
-Which class plays is decided in `App` and nowhere else, from the screen and `view.game_over`, so an
-ending cannot keep playing after the player returns to the menu.
+The web's own rule is that nothing may sound before a user gesture, not that nothing may load
+(amended after playtest 6, X15). The manifest is fetched at page load, the first track's element is
+created there with `preload="auto"` and buffers while the player reads the menu, and playback is
+attempted once: a browser that allows it starts immediately, and one that answers `NotAllowedError`
+leaves the buffered element waiting for the gesture, which plays it with no pause in front of it.
+The pause belongs between tracks, never before the first.
+
+Which role plays is decided in `App` and nowhere else, from the screen, the opening flag and
+`view.game_over`, so an ending cannot keep playing after the player returns to the menu.
 
 `audio/sfx.ts` synthesizes the three interface sounds the guide allows with the Web Audio API rather
 than shipping samples: nothing is downloaded and nothing is licensed. The click is on `Button`, so
@@ -1062,7 +1072,33 @@ the preset as a site and calls `siteMemory`, `preferredPrecision`, `siteTokensPe
 
 ## Implementation notes (client, playtest 6), 2026-09-17
 
-Findings X2 to X11 of `docs/playtests/2026-09-17-playtest-6-lineage-layout-and-russian.md`.
+Findings X2 to X18 of `docs/playtests/2026-09-17-playtest-6-lineage-layout-and-russian.md`.
+
+### The angular face at a readable size (X12)
+
+The ladder itself is in the style guide ("Sizes and reveal"): the angular face is set a third above
+the reading step beside it, because its glyphs are 0.375 em tall against DejaVu's 0.73. What that
+cost the layout, and what paid for it:
+
+- The configurator rail's column went from 12rem to 13rem and lost the key cap in front of the step
+  name (X13), which together hold "ПРОИСХОЖДЕНИЕ" on one line at the new size.
+- The configurator footer is two rows: the build line across the whole width, the buttons under it.
+  At one row the wider buttons cut the English build line at 1280 by 720, and the Russian one had
+  been cut since it existed.
+- The top bar drops what it can get elsewhere a screen size earlier. The written speed now appears
+  only above the sizes the layout suite measures, and the hunt level from 1920 by 1080 up; below
+  that it is the alert icon in the same bar and the Detection panel, which is what the drop order
+  always said it was. The order itself is unchanged.
+- The outliner's strip went from 14rem to 15rem and the pinned panel from 32rem to 33rem, which is
+  what the buttons inside its tables now ask for.
+- The log strip was drawing the model's own sentences in the angular face, because the strip is one
+  large button. A log line is prose: it is set in the reading face, on the reading ladder, and its
+  row wraps so the monospace timestamp cannot push the strip past its column.
+
+The size utilities reference the size tokens rather than being compiled with their values written
+into them, which is what lets one rule hand the angular elements a different ladder, and what makes
+the angular-face scale in Settings reach them at all: with `@theme inline` it reached nothing, which
+is the addendum the maintainer reported on the deployed build.
 
 ### The detail card, redistributed (X3, X4, X11)
 

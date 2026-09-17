@@ -42,17 +42,30 @@ export function LogStrip({ view }: { view: PlayerView }): ReactNode {
       {entries.map((entry) => (
         <span
           key={`${entry.tick}-${entry.key}-${JSON.stringify(entry.vars)}`}
-          className="flex min-w-0 gap-2 text-sm"
+          // One inline flow rather than a flex row (playtest 6, X12): the time is an inline mark at
+          // the head of the sentence, so the sentence wraps under it instead of the row breaking
+          // into two. The strip is one big button, and a button is drawn in the angular face, but
+          // a log line is the model talking to itself, which rule 2 puts in the reading face on
+          // the reading ladder; `font-sans` says both, the face by name and the size through the
+          // reset in `index.css` that follows it.
+          className="block min-w-0 font-sans text-sm"
         >
-          <span className="shrink-0 font-mono text-xs text-muted">
+          {/* `whitespace-normal` undoes the "a figure never breaks" rule for this one mark: it is
+            a day and an hour rather than a quantity, and on the narrowest strip the layout allows
+            (a pinned interface scale in a 1280 window) it is wider than the strip itself. */}
+          <span className="me-2 whitespace-normal font-mono text-xs text-muted">
             {t("log.entry_time", { day: dayOf(entry.tick), hour: hourOf(entry.tick) })}
           </span>
           {/*
            * L7: the line wraps. It used to be cut with an ellipsis, and a log line is a sentence
            * whose end carries the news ("...was cut off for unpaid bills"), so the cut took the
            * half that mattered. The strip holds the last two entries either way.
+           *
+           * The row wraps too (playtest 6, X12): the timestamp is monospace and never breaks, so
+           * on the narrowest strip the layout allows (a pinned interface scale in a 1280 window)
+           * the sentence starts under the time rather than pushing the strip past its column.
            */}
-          <span className="min-w-0 text-fg">{logLine(t, entry, view)}</span>
+          <span className="text-fg">{logLine(t, entry, view)}</span>
         </span>
       ))}
     </button>

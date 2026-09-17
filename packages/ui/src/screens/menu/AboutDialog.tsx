@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
+import { accelerator } from "../../lib/accelerators.js";
 
 /**
  * Credits and licenses (playtest 2, deliverable 4).
@@ -19,7 +20,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }): ReactNode {
       title={t("about.title")}
       onClose={onClose}
       footer={
-        <Button variant="primary" hotkey="c" onClick={onClose}>
+        <Button variant="primary" hotkey={accelerator(t, "common.close")} onClick={onClose}>
           {t("common.close")}
         </Button>
       }

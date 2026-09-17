@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { accelerator } from "../../lib/accelerators.js";
+import { matches } from "../../lib/hotkeys.js";
 import { useGameStore } from "../../store/gameStore.js";
-import { OVERLAY_HOTKEYS, PANEL_HOTKEYS, useUiStore } from "../../store/uiStore.js";
+import { KEYED_TABS, OVERLAYS, panelLabelKey, useUiStore } from "../../store/uiStore.js";
 
 /**
  * The speed space resumes at when nothing else is remembered. A game starts paused on its opening
@@ -33,6 +36,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: HotkeyActions): void {
   // The speed space goes back to: whatever the player last chose, or the default on a fresh game.
   const resumeAt = useRef(DEFAULT_SPEED);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -84,21 +88,30 @@ export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: Hotkey
         onMenu();
         return;
       }
-      const key = event.key.toLowerCase();
-      const tab = PANEL_HOTKEYS[key];
-      if (tab !== undefined) {
-        event.preventDefault();
-        useUiStore.getState().toggleTab(tab);
-        return;
+      /*
+       * The panel tabs and the three windows over the map, by the letter each one shows underlined
+       * in the language on screen (playtest 6, X13). The letters come from the locale rather than
+       * from a table of Latin keys, and `matches` accepts the letter itself or the physical key it
+       * sits on, so the same accelerator works on a Cyrillic and on a Latin keyboard.
+       */
+      for (const tab of KEYED_TABS) {
+        const letter = accelerator(t, panelLabelKey(tab));
+        if (letter !== undefined && matches(event, letter)) {
+          event.preventDefault();
+          useUiStore.getState().toggleTab(tab);
+          return;
+        }
       }
-      // L, K and W open the three windows over the map (playtest 3, R8-R10).
-      const overlay = OVERLAY_HOTKEYS[key];
-      if (overlay !== undefined) {
-        event.preventDefault();
-        useUiStore.getState().toggleOverlay(overlay);
+      for (const overlay of OVERLAYS) {
+        const letter = accelerator(t, panelLabelKey(overlay));
+        if (letter !== undefined && matches(event, letter)) {
+          event.preventDefault();
+          useUiStore.getState().toggleOverlay(overlay);
+          return;
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onQuicksave, onQuickload, onMenu, blocked]);
+  }, [onQuicksave, onQuickload, onMenu, blocked, t]);
 }

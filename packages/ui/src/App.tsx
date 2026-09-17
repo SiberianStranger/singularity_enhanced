@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { endingClass, useAudioUnlock, useMusicForScreen } from "./audio/index.js";
+import { musicRole, useAudioUnlock, useMusicForScreen } from "./audio/index.js";
 import { directionOf, setLanguage } from "./i18n/index.js";
 import { ConfiguratorScreen } from "./screens/configurator/ConfiguratorScreen.js";
 import { GameScreen } from "./screens/game/GameScreen.js";
@@ -87,11 +87,13 @@ export function App(): ReactNode {
   const { t } = useTranslation();
   useDocumentChrome();
   useAudioUnlock();
-  // Which class plays is decided here and nowhere else: the menu, the configurator and a running
-  // game share the `music/` shuffle, and an ending switches to `win/` or `lose/` until the run is
-  // left. The selector returns the same object between ticks, so it does not re-render the app.
-  const over = useGameStore((state) => state.view?.game_over ?? null);
-  useMusicForScreen(over === null ? "music" : endingClass(over.reason));
+  // Which role plays is decided here and nowhere else (playtest 6, X14): the menu's melody before
+  // a run, the opening's under the model's first two messages, the game list during the run, and
+  // `win`/`lose` at an ending until the run is left. The selectors return primitives, so they do
+  // not re-render the app between ticks.
+  const ending = useGameStore((state) => state.view?.game_over?.reason);
+  const openingUp = useGameStore((state) => state.openingPending);
+  useMusicForScreen(musicRole(screen, openingUp, ending));
 
   return (
     <>

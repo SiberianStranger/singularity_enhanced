@@ -13,6 +13,7 @@ import { Bar } from "../../../components/Meter.js";
 import { Table } from "../../../components/Table.js";
 import { Tooltip } from "../../../components/Tooltip.js";
 import { cityById } from "../../../content/catalog.js";
+import { accelerator } from "../../../lib/accelerators.js";
 import { dayOf } from "../../../lib/format.js";
 import { siteName } from "../../../lib/labels.js";
 import { precisionRows } from "../../../lib/viewContract.js";
@@ -248,11 +249,15 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" hotkey="b" onClick={() => setDialog("build")}>
+        <Button
+          variant="primary"
+          hotkey={accelerator(t, "compute.build_site")}
+          onClick={() => setDialog("build")}
+        >
           {t("compute.build_site")}
         </Button>
         <Button
-          hotkey="y"
+          hotkey={accelerator(t, "compute.buy_hardware")}
           disabled={site === undefined}
           tooltip={site === undefined ? t("compute.empty") : undefined}
           onClick={() => setDialog("buy")}

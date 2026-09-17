@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Hotkey } from "../../components/Hotkey.js";
 import { CloseIcon } from "../../components/Icon.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { HOTKEY_ATTRIBUTE } from "../../lib/hotkeys.js";
-import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
+import { PRIMARY_TABS, type PrimaryTab, panelLabelKey, useUiStore } from "../../store/uiStore.js";
 import { ComputeTab } from "./tabs/ComputeTab.js";
 import { DetectionTab } from "./tabs/DetectionTab.js";
 import { FinancesTab } from "./tabs/FinancesTab.js";
@@ -13,21 +14,6 @@ import { JournalTab } from "./tabs/JournalTab.js";
 import { OperationsTab } from "./tabs/OperationsTab.js";
 import { OverviewTab } from "./tabs/OverviewTab.js";
 import { ResearchTab } from "./tabs/ResearchTab.js";
-
-/**
- * The accelerator each tab shows underlined (style guide rule 4). They are the same letters
- * `PANEL_HOTKEYS` registers globally, so the strip advertises the keys that already work; the key
- * itself stays registered once, in `useHotkeys`, rather than a second time per visible tab.
- */
-const TAB_HOTKEY: Readonly<Record<PrimaryTab, string | undefined>> = {
-  overview: "v",
-  compute: "c",
-  research: "r",
-  finances: "f",
-  detection: "d",
-  operations: "o",
-  journal: "j",
-};
 
 function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
   switch (tab) {
@@ -59,6 +45,13 @@ function tabContent(tab: PrimaryTab, view: PlayerView): ReactNode {
  */
 export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
+  /*
+   * The letter each tab shows underlined (style guide rule 4). It is a letter of the tab's own
+   * name in the language on screen, and `useHotkeys` reads the same locale key, so the strip
+   * advertises exactly the keys that work; the key itself stays registered once, globally, rather
+   * than a second time per visible tab.
+   */
+  const letterOf = (entry: PrimaryTab): string | undefined => accelerator(t, panelLabelKey(entry));
   const open = useUiStore((state) => state.primaryOpen);
   const tab = useUiStore((state) => state.primaryTab);
   const openTab = useUiStore((state) => state.openTab);
@@ -80,7 +73,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
       // The panel is the top of the left column of the screen grid: it never floats over another
       // region, and its height is what the row leaves it (L8). Below 40rem of map region it takes
       // the whole grid, which is the last step of the reflow order (L11).
-      className="pointer-events-auto col-start-1 row-start-1 flex max-h-full min-h-0 w-[32rem] max-w-full flex-col self-start border border-line bg-panel/97 @max-[40rem]/screen:col-span-3 @max-[40rem]/screen:w-full"
+      className="pointer-events-auto col-start-1 row-start-1 flex max-h-full min-h-0 w-[33rem] max-w-full flex-col self-start border border-line bg-panel/97 @max-[40rem]/screen:col-span-3 @max-[40rem]/screen:w-full"
     >
       <div className="flex items-center gap-1 border-b border-line px-1 py-1">
         <div
@@ -94,9 +87,9 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
               type="button"
               role="tab"
               aria-selected={entry === tab}
-              {...(TAB_HOTKEY[entry] === undefined
+              {...(letterOf(entry) === undefined
                 ? {}
-                : { [HOTKEY_ATTRIBUTE]: TAB_HOTKEY[entry] })}
+                : { [HOTKEY_ATTRIBUTE]: (letterOf(entry) as string).toLowerCase() })}
               className={`border px-2 py-1 text-xs uppercase tracking-wide ${
                 entry === tab
                   ? "border-linestrong bg-accent text-accentfg"
@@ -104,7 +97,7 @@ export function PrimaryPanel({ view }: { view: PlayerView }): ReactNode {
               }`}
               onClick={() => openTab(entry)}
             >
-              <Hotkey label={t(`panel.${entry}`)} letter={TAB_HOTKEY[entry]} />
+              <Hotkey label={t(panelLabelKey(entry))} letter={letterOf(entry)} />
             </button>
           ))}
         </div>

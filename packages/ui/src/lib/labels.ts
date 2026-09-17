@@ -64,6 +64,18 @@ export function siteName(t: Translate, site: Pick<SiteView, "name" | "kind" | "c
  * national institution (a lab's own security, an AI institute, a cloud provider, the press) always
  * did.
  */
+/**
+ * A site kind's name ("Colocation cage", "Stolen time"), from the content locale.
+ *
+ * X18: the configurator's "What this means in the game" block printed the engine id here
+ * (`stolen_time`, `colo`, `cloud`), because it looked the name up under a `site_kind.` prefix that
+ * nothing writes. The kinds are named in `sites.<id>.name`, which is the same key the site list,
+ * the log and the refusal texts already use.
+ */
+export function siteKindName(t: Translate, kind: string): string {
+  return keyed(t, `sites.${kind}.name`) ?? kind;
+}
+
 export function agencyName(t: Translate, countryId: string, role: string): string | undefined {
   return keyed(t, `world.country.${countryId}.agency.${role}`);
 }

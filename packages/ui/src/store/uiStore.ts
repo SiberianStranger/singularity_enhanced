@@ -43,23 +43,31 @@ export type Overlay = (typeof OVERLAYS)[number];
 export const MENU_SECTIONS = ["root", "save", "load", "settings", "messages", "about"] as const;
 export type MenuSection = (typeof MENU_SECTIONS)[number];
 
-/** Panel hotkeys (SYS-11). `A` opens Detection, which is where M1 keeps actors. */
-export const PANEL_HOTKEYS: Readonly<Record<string, PrimaryTab>> = {
-  c: "compute",
-  r: "research",
-  f: "finances",
-  d: "detection",
-  a: "detection",
-  o: "operations",
-  j: "journal",
-};
+/**
+ * Panel and window accelerators (SYS-11; playtest 3 R8-R10; playtest 6 X13).
+ *
+ * The letters are not here any more. Each tab and each window is keyed by a letter of its own name
+ * in the language on screen, which lives in the locale beside that name (`panel.compute.key`), so
+ * this is only the list of things that have one. `useHotkeys` resolves the letters through
+ * `accelerator()` and matches both the letter itself and the physical key it sits on.
+ *
+ * The `A` that used to be a second key for Detection is gone with the table: an alias nobody
+ * documented cannot be kept unique across two languages, and Detection answers its own letter.
+ */
+export const KEYED_TABS: readonly PrimaryTab[] = [
+  "overview",
+  "compute",
+  "research",
+  "finances",
+  "detection",
+  "operations",
+  "journal",
+];
 
-/** The three windows and the keys that open them (playtest 3, R8-R10). */
-export const OVERLAY_HOTKEYS: Readonly<Record<string, Overlay>> = {
-  l: "log",
-  k: "knowledge",
-  w: "world",
-};
+/** The label key each tab and window is named and keyed by. */
+export function panelLabelKey(entry: PrimaryTab | Overlay): string {
+  return `panel.${entry}`;
+}
 
 export type SelectionKind = "country" | "city" | "site";
 

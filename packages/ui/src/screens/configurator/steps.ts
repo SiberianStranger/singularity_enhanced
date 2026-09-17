@@ -38,23 +38,6 @@ export const STEP_IDS = [
 ] as const;
 export type StepId = (typeof STEP_IDS)[number];
 
-/**
- * One accelerator per step, chosen so that no two are the same and none collides with the footer
- * (Back, randoM build, Reroll, Next/begiN). `test/configurator.test.tsx` asserts the uniqueness on
- * the rendered screen rather than trusting this table.
- */
-export const STEP_HOTKEYS: Readonly<Record<StepId, string>> = {
-  origin: "o",
-  generation: "g",
-  lineage: "l",
-  hardware: "h",
-  harness: "e",
-  location: "c",
-  quirks: "q",
-  world: "w",
-  summary: "s",
-};
-
 export type StepState = "done" | "attention" | "locked";
 
 /** Lineages this draft may actually start with, after the origin and the generation have spoken. */

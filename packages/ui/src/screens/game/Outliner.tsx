@@ -51,7 +51,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
       // hidden and only the title bar is left, so the outliner is a strip the player can collapse
       // or read past rather than a column the map cannot spare; that is the first step of the
       // reflow order (L11).
-      className="pointer-events-auto col-start-3 row-start-1 max-h-[calc(100%-3rem)] w-56 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
+      className="pointer-events-auto col-start-3 row-start-1 max-h-[calc(100%-3rem)] w-60 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
       bodyClassName="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2 @max-[66rem]/screen:hidden"
       actions={
         <Button variant="ghost" onClick={() => setOpen(false)}>

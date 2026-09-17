@@ -485,9 +485,11 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
     await play();
     await openTab(/^Compute and sites$/);
     const section = panel();
-    // 32rem is 512 px at the base size; the map keeps the rest of a 1280 px screen, which is the
-    // width the layout is drawn for (playtest 5, L11).
-    expect(section.className).toContain("w-[32rem]");
+    // 33rem is 528 px at the base size; the map keeps the rest of a 1280 px screen, which is the
+    // width the layout is drawn for (playtest 5, L11). It grew a rem with the angular face
+    // (playtest 6, X12): the buttons inside its tables are a third larger, and the precision
+    // table was the first thing that no longer fit.
+    expect(section.className).toContain("w-[33rem]");
     expect(section.className).toContain("max-w-full");
     // And it is the first row of the grid's left column rather than a card floating over a corner.
     expect(section.className).toContain("col-start-1");

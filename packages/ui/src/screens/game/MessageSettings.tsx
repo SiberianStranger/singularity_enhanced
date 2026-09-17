@@ -62,7 +62,7 @@ export function MessageSettings(): ReactNode {
           <thead>
             <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
               <th scope="col" className="px-2 py-1 text-start font-medium">
-                {t("messages.key")}
+                {t("messages.alert")}
               </th>
               <th scope="col" className="px-2 py-1 text-start font-medium">
                 {t("messages.mode.toast")}

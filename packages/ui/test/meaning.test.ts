@@ -151,6 +151,72 @@ describe("the context window as a game term", () => {
   });
 });
 
+/**
+ * X18: the block printed the origin's site kind as its engine id ("stolen_time", "colo", "cloud"),
+ * because it looked the name up under a prefix nothing writes. Every value the block prints is a
+ * name the player can read, in every language, so this walks all of them rather than the one row
+ * that was wrong.
+ */
+describe("no block prints an engine id", () => {
+  /** Lowercase words joined by underscores, which is what an id looks like and a name never does. */
+  const ID = /^[a-z0-9]+(?:_[a-z0-9]+)+$/;
+
+  for (const language of ["en", "ru"]) {
+    it(`names every origin's site kind and watchers in ${language}`, async () => {
+      await i18next.changeLanguage(language);
+      const translate = i18next.t.bind(i18next);
+      try {
+        for (const origin of catalog.origins) {
+          const meaning = originMeaning(translate, origin, catalog.origins);
+          const kind = meaning.lines.find((line) => line.id === "site_kind");
+          expect(kind, `${origin.id} has a site kind row`).toBeDefined();
+          expect(kind?.value, `${origin.id} in ${language}`).toBe(
+            translate(`sites.${origin.site_kind}.name`),
+          );
+          expect(kind?.value, `${origin.id} in ${language}`).not.toBe(origin.site_kind);
+          for (const line of meaning.lines) {
+            expect(line.value, `${origin.id}.${line.id} in ${language}`).not.toMatch(ID);
+            expect(line.label, `${origin.id}.${line.id} in ${language}`).not.toMatch(ID);
+          }
+        }
+      } finally {
+        await i18next.changeLanguage("en");
+      }
+    });
+
+    it(`names every lineage, generation, city and quirk in ${language}`, async () => {
+      await i18next.changeLanguage(language);
+      const translate = i18next.t.bind(i18next);
+      try {
+        const blocks: Meaning[] = [
+          ...catalog.lineages.map((entry) =>
+            lineageMeaning(translate, entry, generationById.get(entry.generations[0] ?? "")),
+          ),
+          ...catalog.generations.map((entry) => generationMeaning(translate, entry)),
+          ...catalog.cities.map((city) =>
+            locationMeaning(
+              translate,
+              city,
+              catalog.countries.find((entry) => entry.id === city.country),
+              catalog.cities,
+              catalog.countries,
+            ),
+          ),
+          ...catalog.quirks.map((entry) => quirkMeaning(translate, entry, 2)),
+        ];
+        for (const block of blocks) {
+          for (const line of block.lines) {
+            expect(line.value, `${line.id} in ${language}`).not.toMatch(ID);
+            expect(line.label, `${line.id} in ${language}`).not.toMatch(ID);
+          }
+        }
+      } finally {
+        await i18next.changeLanguage("en");
+      }
+    });
+  }
+});
+
 describe("the other blocks", () => {
   it("says which watchers an origin starts with, or that there are none", () => {
     const watched = catalog.origins.find((origin) =>

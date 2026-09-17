@@ -1,11 +1,22 @@
 /**
- * The music player (ui-style-guide.md rule 10, playtest 2, S1).
+ * The music player (ui-style-guide.md rule 10; playtest 2 S1; playtest 6 X14 and X15).
  *
- * It mirrors the original game's mixer: the tracks of the `music/` class play one after another in
- * shuffled order with a pause between them, and the endings play the `win/` and `lose/` classes.
- * The differences are the ones the web forces: nothing is loaded until the player asks for a track
- * (so the first paint never waits on 107 MB of Ogg Vorbis), and nothing plays at all until the
- * first user gesture, because browsers refuse to start audio before one.
+ * The original's mixer drew a track at random from a folder every time one ended, with a pause of
+ * two to twelve seconds between them, and did that for the menu and for the game alike. This game
+ * keeps the pause and drops the randomness: the menu has one melody of its own, the model's first
+ * two messages have one quiet melody of their own, and a run plays the rest in a fixed order. Which
+ * track has which role is in the manifest, not here, so changing the soundtrack is changing data.
+ *
+ * What the web adds is a start-up problem the original never had (X15). Nothing may *play* before
+ * a user gesture, but everything may *load*, and the version before this one did neither until the
+ * gesture: the manifest was fetched on the first click, the first 3 MB Ogg started downloading
+ * after that, and the menu stayed silent for ten seconds or more. So the manifest is fetched at
+ * page load, the menu track's element is created at page load with `preload="auto"` and buffers
+ * while the player reads the menu, and playback is attempted once straight away: a browser that
+ * allows it (one the player has used before) starts immediately, and one that does not hands back
+ * `NotAllowedError`, which is not an error but "wait for the gesture". On the gesture the buffered
+ * element is played with no delay, because the original's pause is between tracks, never before
+ * the first one.
  *
  * Everything that is not deterministic is injected: the element factory, the random source and the
  * timer. A test can therefore run a whole playlist without a sound card and assert the order.
@@ -14,8 +25,8 @@
 import {
   EMPTY_MANIFEST,
   loadManifest,
-  type MusicClass,
   type MusicManifest,
+  type MusicRole,
   musicBase,
   type Track,
 } from "./manifest.js";
@@ -38,47 +49,45 @@ export interface MusicPlayerOptions {
   clearTimer?(handle: number): void;
 }
 
-/** Pause between tracks, as in the original mixer: two to twelve seconds. */
+/** Pause between tracks, as in the original mixer: two to twelve seconds. Never before the first. */
 export const PAUSE_MIN_MS = 2000;
 export const PAUSE_SPAN_MS = 10_000;
 
 function defaultCreateAudio(src: string): AudioHandle {
   const element = new Audio(src);
-  element.preload = "none";
+  /*
+   * X15: the browser starts buffering as soon as the element exists, which is allowed before a
+   * gesture even though playing is not. `preload="none"` meant the first track only began
+   * downloading after the player clicked, and 3 to 5 MB of Ogg Vorbis is several seconds of
+   * silence on a normal connection.
+   */
+  element.preload = "auto";
   return element;
 }
 
-/**
- * Fisher-Yates over a copy, with the injected random source.
- *
- * A shuffled queue rather than the original's "pick one at random every time": with seventeen
- * tracks, independent draws repeat one often enough to be noticed, and the pack is the soundtrack
- * of a long game.
- */
-export function shuffle<T>(items: readonly T[], random: () => number): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    const a = out[i];
-    const b = out[j];
-    if (a !== undefined && b !== undefined) {
-      out[i] = b;
-      out[j] = a;
-    }
+/** Whether a rejected `play()` means "not yet, no gesture" rather than "this track is broken". */
+export function autoplayBlocked(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
   }
-  return out;
+  const name = (error as { name?: unknown }).name;
+  // Chrome and Firefox reject with NotAllowedError; Safari has used AbortError for the same thing.
+  return name === "NotAllowedError" || name === "AbortError" || name === "NotSupportedError";
 }
 
 export class MusicPlayer {
   private manifest: MusicManifest = EMPTY_MANIFEST;
   private loaded = false;
   private loading: Promise<MusicManifest> | null = null;
-  private queue: Track[] = [];
+  /** How far through the current role's list the player is; the order never changes. */
+  private index = 0;
   private current: AudioHandle | null = null;
   private currentTrack: Track | null = null;
   private timer: number | null = null;
-  private klass: MusicClass | null = null;
+  private role: MusicRole | null = null;
   private started = false;
+  /** An element that exists and has buffered, but that the browser refused to play without one. */
+  private waitingForGesture = false;
   private volume = 0.5;
   private muted = false;
 
@@ -97,9 +106,19 @@ export class MusicPlayer {
     this.stopTimer = options.clearTimer ?? ((handle) => clearTimeout(handle));
   }
 
-  /** True once a user gesture has unlocked audio; before that nothing is fetched or played. */
+  /** True once something has actually played; before that the player is still asking permission. */
   get unlocked(): boolean {
     return this.started;
+  }
+
+  /** True while a track is loaded and waiting for the first gesture to be allowed to sound. */
+  get pendingGesture(): boolean {
+    return this.waitingForGesture;
+  }
+
+  /** True once the manifest has been read, whether or not it found any tracks. */
+  get ready(): boolean {
+    return this.loaded;
   }
 
   /** What is playing right now, for the Settings panel and for tests. */
@@ -108,7 +127,8 @@ export class MusicPlayer {
   }
 
   get tracksAvailable(): number {
-    return this.manifest.music.length + this.manifest.win.length + this.manifest.lose.length;
+    const { menu, opening, game, win, lose } = this.manifest;
+    return new Set([...menu, ...opening, ...game, ...win, ...lose].map((track) => track.file)).size;
   }
 
   setVolume(volume: number): void {
@@ -130,16 +150,34 @@ export class MusicPlayer {
   }
 
   /**
-   * The first user gesture: from here on the player may fetch the manifest and start a track. It is
-   * called once from a pointer or key handler, which is what browsers count as consent.
+   * Page load: fetch the manifest (a few hundred bytes) and, if a role has already been asked for,
+   * create its first track and try to play it. The try is what makes music instant for a returning
+   * player, whose browser has already learned that this site may sound.
+   */
+  async prime(): Promise<void> {
+    await this.ensureManifest();
+    if (this.role !== null && this.current === null && this.timer === null) {
+      this.next(0);
+    }
+  }
+
+  /**
+   * The first user gesture. Whatever was buffered and refused now plays, with no pause in front of
+   * it; if nothing was buffered (no role yet, or no manifest yet) the current role starts.
    */
   async unlock(): Promise<void> {
     if (this.started) {
       return;
     }
     this.started = true;
+    if (this.waitingForGesture && this.current !== null) {
+      this.waitingForGesture = false;
+      const element = this.current;
+      void Promise.resolve(element.play()).then(undefined, () => this.skip(element));
+      return;
+    }
     await this.ensureManifest();
-    if (this.klass !== null) {
+    if (this.role !== null && this.current === null) {
       this.next(0);
     }
   }
@@ -155,30 +193,29 @@ export class MusicPlayer {
   }
 
   /**
-   * Switches to a class and starts it. Calling it again with the class already playing does
-   * nothing, so a re-render cannot restart the soundtrack.
+   * Switches to a role and starts it from the top of that role's list. Calling it again with the
+   * role already playing does nothing, so a re-render cannot restart the soundtrack; leaving the
+   * role and coming back to it does restart it, which is how the menu's melody begins again every
+   * time the player reaches the menu.
    */
-  play(klass: MusicClass): void {
-    if (this.klass === klass && (this.current !== null || this.timer !== null)) {
+  play(role: MusicRole): void {
+    if (this.role === role && (this.current !== null || this.timer !== null)) {
       return;
     }
-    this.klass = klass;
-    this.queue = [];
+    this.role = role;
+    this.index = 0;
     this.stopCurrent();
-    if (!this.started) {
-      return;
-    }
     void this.ensureManifest().then(() => {
-      if (this.klass === klass) {
+      if (this.role === role && this.current === null) {
         this.next(0);
       }
     });
   }
 
-  /** Stops the music and forgets the class; the next `play` starts from a fresh shuffle. */
+  /** Stops the music and forgets the role; the next `play` starts from the top of its list. */
   stop(): void {
-    this.klass = null;
-    this.queue = [];
+    this.role = null;
+    this.index = 0;
     this.stopCurrent();
   }
 
@@ -187,6 +224,7 @@ export class MusicPlayer {
       this.stopTimer(this.timer);
       this.timer = null;
     }
+    this.waitingForGesture = false;
     if (this.current !== null) {
       this.current.pause();
       this.current = null;
@@ -199,26 +237,25 @@ export class MusicPlayer {
     return PAUSE_MIN_MS + Math.floor(this.random() * PAUSE_SPAN_MS);
   }
 
+  /**
+   * The next track of the current role, in the manifest's order, wrapping round at the end.
+   *
+   * The menu and the opening are one-track lists, so wrapping is that track again after the usual
+   * pause: the menu is a place a player can sit in for a long time, and silence after four minutes
+   * would read as something broken.
+   */
   private take(): Track | null {
-    const klass = this.klass;
-    if (klass === null) {
+    const role = this.role;
+    if (role === null) {
       return null;
     }
-    const tracks = this.manifest[klass];
+    const tracks = this.manifest[role];
     if (tracks.length === 0) {
       return null;
     }
-    if (this.queue.length === 0) {
-      this.queue = shuffle(tracks, this.random);
-      // Two cycles in a row must not start with the track that just ended.
-      if (this.queue.length > 1 && this.queue[0]?.file === this.currentTrack?.file) {
-        const first = this.queue.shift();
-        if (first !== undefined) {
-          this.queue.push(first);
-        }
-      }
-    }
-    return this.queue.shift() ?? null;
+    const track = tracks[this.index % tracks.length];
+    this.index = (this.index + 1) % tracks.length;
+    return track ?? null;
   }
 
   /** Starts the next track after `delay` milliseconds of silence. */
@@ -239,24 +276,45 @@ export class MusicPlayer {
       const onDone = (): void => {
         element.removeEventListener("ended", onDone);
         element.removeEventListener("error", onDone);
-        if (this.current === element) {
-          this.current = null;
-          this.currentTrack = null;
-          this.next(this.pause());
-        }
+        this.skip(element);
       };
       element.addEventListener("ended", onDone);
       // A track the browser cannot decode is skipped rather than ending the soundtrack.
       element.addEventListener("error", onDone);
       this.current = element;
       this.currentTrack = track;
-      void Promise.resolve(element.play()).catch(() => onDone());
+      void Promise.resolve(element.play()).then(
+        () => {
+          this.started = true;
+          this.waitingForGesture = false;
+        },
+        (error: unknown) => {
+          if (autoplayBlocked(error) && !this.started) {
+            // Not a broken track: the browser wants a gesture first. The element stays, and goes
+            // on buffering, so the gesture starts it without waiting for a download.
+            this.waitingForGesture = true;
+            return;
+          }
+          onDone();
+        },
+      );
     };
     if (delay <= 0) {
       start();
     } else {
       this.timer = this.startTimer(start, delay);
     }
+  }
+
+  /** A track ended or failed: move on to the next one after the original's pause. */
+  private skip(element: AudioHandle): void {
+    if (this.current !== element) {
+      return;
+    }
+    this.current = null;
+    this.currentTrack = null;
+    this.waitingForGesture = false;
+    this.next(this.pause());
   }
 
   dispose(): void {

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { type Overlay, useUiStore } from "../../store/uiStore.js";
 import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
 import { LogTab } from "./tabs/LogTab.js";
@@ -38,7 +39,7 @@ export function GameOverlays({ view }: { view: PlayerView }): ReactNode {
       title={t(TITLE_KEY[overlay])}
       onClose={close}
       footer={
-        <Button variant="primary" hotkey="c" onClick={close}>
+        <Button variant="primary" hotkey={accelerator(t, "common.close")} onClick={close}>
           {t("common.close")}
         </Button>
       }

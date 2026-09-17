@@ -16,9 +16,10 @@ import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { beforeEach, describe, expect, it } from "vitest";
 import { catalog, fitHardware } from "../src/content/catalog.js";
+import { accelerator } from "../src/lib/accelerators.js";
 import { ConfiguratorScreen } from "../src/screens/configurator/ConfiguratorScreen.js";
 import { lineageLock } from "../src/screens/configurator/locks.js";
-import { STEP_HOTKEYS, STEP_IDS } from "../src/screens/configurator/steps.js";
+import { STEP_IDS } from "../src/screens/configurator/steps.js";
 import { useConfigurator } from "../src/screens/configurator/store.js";
 import { useUiStore } from "../src/store/uiStore.js";
 import { startSession } from "./helpers.js";
@@ -293,13 +294,17 @@ describe("the step order follows the constraints (playtest 4, P4)", () => {
     expect(drawn).toEqual([...STEP_IDS]);
 
     for (const id of STEP_IDS) {
-      // The accelerator is a key cap in the leading slot rather than a bracket after the label
-      // (playtest 5, continuation): it costs the label no characters, so no row is taller than
-      // the others in a language whose words cannot carry a Latin underline.
-      const letter = STEP_HOTKEYS[id];
-      expect(rail(id).textContent?.trim().startsWith(letter.toUpperCase()), id).toBe(true);
-      expect(rail(id)).toHaveAttribute("aria-keyshortcuts", letter.toUpperCase());
-      expect(rail(id).textContent, id).not.toContain(`(${letter.toUpperCase()})`);
+      // The accelerator is a letter of the step's own name, underlined inside the word (playtest
+      // 6, X13): no key cap in a slot of its own, and no "(O)" bolted onto the end.
+      const letter = accelerator(i18next.t.bind(i18next), `config.step.${id}`);
+      expect(letter, id).toBeDefined();
+      const label = i18next.t(`config.step.${id}`);
+      expect(rail(id)).toHaveAttribute("aria-keyshortcuts", (letter as string).toUpperCase());
+      expect(rail(id).querySelector("u")?.textContent?.toLowerCase(), id).toBe(
+        (letter as string).toLowerCase(),
+      );
+      expect(rail(id).textContent, id).not.toContain(`(${(letter as string).toUpperCase()})`);
+      expect(rail(id).textContent, id).toContain(label);
     }
     expect(rail(STEP_IDS[0] as string)).toHaveAttribute("aria-current", "step");
   });

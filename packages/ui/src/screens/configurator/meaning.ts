@@ -46,7 +46,13 @@ import {
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
 import { bundleKey } from "../../content/strings.js";
-import { agencyCompetence, agencyName, journalTitle, type Translate } from "../../lib/labels.js";
+import {
+  agencyCompetence,
+  agencyName,
+  journalTitle,
+  siteKindName,
+  type Translate,
+} from "../../lib/labels.js";
 import type { Draft } from "./store.js";
 
 export type MeaningTone = "good" | "bad" | "neutral";
@@ -533,7 +539,7 @@ export function originMeaning(
     {
       id: "site_kind",
       label: t("config.meaning.site_kind"),
-      value: t(`site_kind.${origin.site_kind}`, { defaultValue: origin.site_kind }),
+      value: siteKindName(t, origin.site_kind),
       tone: "neutral",
       hint: t("config.meaning.site_kind_hint"),
     },

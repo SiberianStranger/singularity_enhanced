@@ -5,6 +5,7 @@ import { Frame } from "../../../components/Frame.js";
 import { Modal } from "../../../components/Modal.js";
 import { Tooltip } from "../../../components/Tooltip.js";
 import { bundleKey } from "../../../content/strings.js";
+import { accelerator } from "../../../lib/accelerators.js";
 import { useUiStore } from "../../../store/uiStore.js";
 import type { Lock } from "../locks.js";
 import type { Meaning } from "../meaning.js";
@@ -47,8 +48,9 @@ export interface ListEntry {
  * reload and is not part of a save: a new game does not re-explain the configurator to someone who
  * has played five.
  *
- * Its accelerator is T rather than the G of "Got it": the rail behind this window owns G for the
- * Generation step, and two controls on screen at once may not share a letter (style guide rule 4).
+ * Its accelerator is a letter of its own label that the rail behind it does not already claim (T
+ * of "goT it" in English, Т of "поняТно" in Russian): two controls on screen at once may not share
+ * a letter (style guide rule 4).
  */
 function IntroWindow({ step, onClose }: { step: StepId; onClose: () => void }): ReactNode {
   const { t } = useTranslation();
@@ -67,7 +69,7 @@ function IntroWindow({ step, onClose }: { step: StepId; onClose: () => void }): 
       title={t(`config.step.${step}`)}
       onClose={onClose}
       footer={
-        <Button variant="primary" hotkey="t" onClick={onClose}>
+        <Button variant="primary" hotkey={accelerator(t, "config.intro.got_it")} onClick={onClose}>
           {t("config.intro.got_it")}
         </Button>
       }
@@ -264,7 +266,11 @@ export function StepLayout({
                       </span>
                     ) : null}
                   </span>
-                  <span className="flex w-full items-center gap-2">
+                  {/* X12: the row wraps, so the visual summary and the line beside it stack when
+                    the column is too narrow for both. Russian prints "40 тыс. $" with
+                    non-breaking spaces, which cannot be broken, so without this the widest
+                    unbreakable pair set the list's minimum width and the column overflowed. */}
+                  <span className="flex w-full flex-wrap items-center gap-x-2">
                     {entry.visual === undefined ? null : (
                       <span className="shrink-0">{entry.visual}</span>
                     )}

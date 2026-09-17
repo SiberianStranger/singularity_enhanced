@@ -93,6 +93,45 @@ test("Russian fits the smallest supported screen", async ({ page }) => {
     await check(page, `the ${step} step`);
   }
 
+  /*
+   * The rail by its accelerators (playtest 6, X13). The Russian rail underlines a Cyrillic letter
+   * of the Russian word, and a press reaches it either way round: by the letter itself on a
+   * Cyrillic layout, or by the physical key that letter sits on. Playwright types on a US
+   * keyboard, so this walk is the second path, which is the one a player on a Latin layout uses:
+   * KeyG is where П of "Происхождение" lives, KeyP where З of "Железо" does, and so on.
+   */
+  for (const [step, code] of [
+    ["origin", "KeyG"],
+    ["hardware", "KeyP"],
+    ["harness", "KeyJ"],
+    ["location", "KeyV"],
+    ["quirks", "KeyC"],
+    ["world", "KeyB"],
+    ["summary", "KeyU"],
+  ] as const) {
+    if ((await page.getByTestId("config-intro").count()) > 0) {
+      // Т of "поняТно" sits on KeyN.
+      await page.keyboard.press("KeyN");
+      await expect(page.getByTestId("config-intro")).toHaveCount(0);
+    }
+    await page.keyboard.press(code);
+    await expect(
+      page.getByTestId(`step-rail-${step}`),
+      `${code} opens the ${step} step in Russian`,
+    ).toHaveAttribute("aria-current", "step");
+    await check(page, `the ${step} step, reached by its letter`);
+  }
+  await closeIntro(page);
+  await page.getByTestId("step-rail-summary").click();
+  await closeIntro(page);
+
+  // And no label carries the "(O)" the Latin accelerators used to be printed as.
+  const labels = await page.locator("[data-hotkey]").allInnerTexts();
+  expect(
+    labels.filter((label) => /\s\([A-ZА-ЯЁ]\)\s*$/.test(label.trim())),
+    "no Russian label ends in a bracketed Latin letter",
+  ).toEqual([]);
+
   await page.getByLabel(/Вставить строку настройки/).fill(setupString());
   await page.getByRole("button", { name: /Загрузить настройку/ }).click();
   await page.getByRole("button", { name: "Начать", exact: true }).click();
@@ -103,7 +142,8 @@ test("Russian fits the smallest supported screen", async ({ page }) => {
   await check(page, "the game screen");
 
   // The compute panel is the widest one (playtest 3, R4) and the first to break at this width.
-  await page.keyboard.press("c");
+  // В of "Вычисления и площадки" sits on KeyD.
+  await page.keyboard.press("KeyD");
   await expect(page.getByRole("region", { name: "Вычисления и площадки" })).toBeVisible();
   await check(page, "the compute panel");
 
@@ -113,7 +153,8 @@ test("Russian fits the smallest supported screen", async ({ page }) => {
    * and every family of columns is measured, because a header that does not fit is where this
    * language breaks a table first.
    */
-  await page.keyboard.press("w");
+  // М of "Мир" sits on KeyV.
+  await page.keyboard.press("KeyV");
   await expect(page.getByRole("dialog")).toBeVisible();
   for (const tab of ["countries", "map_modes", "world"]) {
     await page.getByTestId(`ledger-tab-${tab}`).click();

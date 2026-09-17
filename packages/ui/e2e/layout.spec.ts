@@ -47,6 +47,7 @@ const VIEWPORTS: readonly Viewport[] = [
   { width: 1366, height: 768 },
   // The maintainer's window: 1920 physical pixels at the display scaling they run.
   { width: 1500, height: 800 },
+  { width: 1600, height: 900 },
   { width: 1920, height: 1080 },
 ];
 
@@ -437,6 +438,74 @@ test("the log names things rather than printing their ids", async ({ page }) => 
   // An engine id is lowercase words joined by underscores; a name the player reads never is.
   const raw = lines.filter((line) => /\b[a-z0-9]+(?:_[a-z0-9]+)+\b/.test(line));
   expect(raw, `log lines still print engine ids:\n${raw.join("\n")}`).toEqual([]);
+});
+
+/**
+ * The angular-face scale in Settings, which is the second half of playtest 6's X12.
+ *
+ * The maintainer turned the slider to its maximum on the deployed build and nothing moved: the
+ * size utilities were compiled with their values written into them (`@theme inline`), so the rule
+ * that redefines `--text-sm` on a button changed nothing that any element read. The tokens are
+ * referenced now, and this is the test that says so, on the labels the finding named: a rail row,
+ * a list entry's title, the step frame's header and a footer button.
+ */
+test("the angular-face scale in Settings reaches every angular label", async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/");
+
+  const LABELS: Readonly<Record<string, string>> = {
+    rail: "[data-testid='step-rail-origin']",
+    title: "[data-testid^='list-entry-'] span.text-sm",
+    header: "h2.text-xs",
+    button: "footer button",
+  };
+
+  const sizes: Record<string, number>[] = [];
+  // The slider's floor, its default and its ceiling (`DISPLAY_SCALE_MIN`/`MAX` in the store).
+  for (const scale of [0.85, 1, 1.3]) {
+    await page.evaluate((value) => {
+      window.localStorage.setItem(
+        "singularity.ui",
+        JSON.stringify({ state: { displayScale: value }, version: 5 }),
+      );
+    }, scale);
+    await page.reload();
+    await page.getByRole("button", { name: "New game" }).click();
+    await closeStepIntro(page);
+    await expect(page.getByTestId("step-rail-origin")).toBeVisible();
+    sizes.push(
+      await page.evaluate((selectors: Record<string, string>) => {
+        const out: Record<string, number> = {};
+        // In rem rather than px: the interface scale moves the root font size with the window,
+        // and this test is about the angular ladder, not about the window.
+        const root = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+        for (const [name, selector] of Object.entries(selectors)) {
+          const element = document.querySelector(selector);
+          out[name] =
+            element === null ? 0 : Number.parseFloat(getComputedStyle(element).fontSize) / root;
+        }
+        return out;
+      }, LABELS),
+    );
+  }
+
+  const [small, normal, large] = sizes as [
+    Record<string, number>,
+    Record<string, number>,
+    Record<string, number>,
+  ];
+  for (const name of Object.keys(LABELS)) {
+    expect(normal[name], `${name} is drawn at all`).toBeGreaterThan(0);
+    // The default is the angular face's own ladder, a third above the reading step it sits on:
+    // a rail row and a list title are `text-sm` (15 px reading, 20 px angular).
+    expect(small[name] ?? 0, `${name} follows the slider down`).toBeLessThan(normal[name] ?? 0);
+    expect(large[name] ?? 0, `${name} follows the slider up`).toBeGreaterThan(normal[name] ?? 0);
+  }
+  // The ladder itself: `sm` is 0.9375rem of reading against 1.25rem of angular, `xs` 0.875 against
+  // 1.1667, which is the third the two faces differ by (`index.css`).
+  expect(normal.rail, "a rail row is on the angular ladder's sm step").toBeCloseTo(1.25, 2);
+  expect(normal.title, "and so is a list entry's title").toBeCloseTo(1.25, 2);
+  expect(normal.header, "a frame header is its xs step").toBeCloseTo(1.1667, 2);
 });
 
 test("the interface scale follows a narrow window", async ({ page }) => {

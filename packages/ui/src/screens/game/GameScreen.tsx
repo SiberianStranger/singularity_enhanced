@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
 import { cityById } from "../../content/catalog.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { dayOf } from "../../lib/format.js";
 import { getSave, putSave, QUICKSAVE_ID } from "../../saves/db.js";
 import { useGameStore } from "../../store/gameStore.js";
@@ -210,7 +211,7 @@ export function GameScreen(): ReactNode {
           <div className="pointer-events-auto col-start-3 row-start-1 self-end justify-self-end">
             <Button
               variant="default"
-              hotkey="w"
+              hotkey={accelerator(t, "panel.world")}
               registerKey={false}
               data-testid="open-world"
               onClick={() => toggleOverlay("world")}

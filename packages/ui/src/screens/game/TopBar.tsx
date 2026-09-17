@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Indicator } from "../../components/Meter.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { contributionLabel, type Translate } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
@@ -110,8 +111,14 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
      * first line, then the hunt level and the awareness, each of which has a panel of its own and
      * an alert icon in this same bar when it moves. The clock, the speed and the cash never go.
      * Nothing here scrolls.
+     *
+     * The thresholds moved up with the angular face (playtest 6, X12): the gauge labels are a
+     * third larger than they were, so the bar runs out of width a screen size earlier. The written
+     * speed now only appears on a screen wider than the four the layout suite measures, and the
+     * hunt level appears from 1920 by 1080 up; below that it is the alert icon in this bar and the
+     * Detection panel, which is what the drop order already said it was.
      */
-    <header className="@container/topbar flex shrink-0 items-center gap-x-1.5 border-b border-line bg-panel px-2 py-0.5">
+    <header className="@container/topbar flex shrink-0 items-center gap-x-0.5 border-b border-line bg-panel px-2 py-0.5">
       <GameClock />
 
       <fieldset className="m-0 flex items-center gap-0.5 border-0 p-0" aria-label={t("game.speed")}>
@@ -127,7 +134,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             {speed}
           </Button>
         ))}
-        <span className="ms-1 text-xs text-muted @max-[82rem]/topbar:hidden">
+        <span className="ms-1 text-xs text-muted @max-[96rem]/topbar:hidden">
           {view.speed === 0 ? t("game.speed.paused") : t("game.speed.value", { value: view.speed })}
         </span>
       </fieldset>
@@ -204,7 +211,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
           onClick={() => toggleOverlay("world")}
         />
       </span>
-      <span className="flex @max-[74rem]/topbar:hidden">
+      <span className="flex @max-[86rem]/topbar:hidden">
         <Indicator
           label={t("game.hunt")}
           value={t("game.hunt_value", { value: view.detection.hunt_level })}
@@ -246,14 +253,14 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
       {/* Knowledge opens from the top-right corner as a window (playtest 3, R9). */}
       <Button
         variant="ghost"
-        hotkey="k"
+        hotkey={accelerator(t, "panel.knowledge")}
         registerKey={false}
         data-testid="open-knowledge"
         onClick={() => toggleOverlay("knowledge")}
       >
         {t("panel.knowledge")}
       </Button>
-      <Button variant="ghost" hotkey="m" registerKey={false} onClick={onMenu}>
+      <Button variant="ghost" hotkey={accelerator(t, "game.menu")} onClick={onMenu}>
         {t("game.menu")}
       </Button>
     </header>

@@ -194,29 +194,6 @@
   --radius-2xl: 0px;
   --radius-3xl: 0px;
   --radius-4xl: 0px;
-  /*
-   * Type scale (playtest 3, R1). The maintainer's reading of 0.1.2 was "a million windows with
-   * tiny cubic text": Tailwind's default scale starts at 12 px, and a 12 px angular face is not
-   * readable at all. The scale is redefined here rather than edited into ninety class lists, so
-   * every existing `text-xs` and `text-sm` grows at once and stays in step:
-   *
-   *   text-xs   14 px  the floor; also the floor the angular face may be set at
-   *   text-sm   15 px  panel bodies and table cells
-   *   text-base 16 px  prose, the base the style guide fixes
-   *
-   * Everything is in rem, so the Small/Normal/Large setting (which scales the root font size)
-   * scales all of it.
-   */
-  --text-xs: 0.875rem;
-  --text-xs--line-height: 1.25rem;
-  --text-sm: 0.9375rem;
-  --text-sm--line-height: 1.375rem;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.125rem;
-  --text-lg--line-height: 1.625rem;
-  --text-xl: 1.25rem;
-  --text-xl--line-height: 1.75rem;
   /* No drop shadows either: the shadow utilities resolve to nothing. */
   --shadow-2xs: none;
   --shadow-xs: none;
@@ -225,6 +202,81 @@
   --shadow-lg: none;
   --shadow-xl: none;
   --shadow-2xl: none;
+}
+
+/*
+ * Two type ladders on the same steps: one for reading, one for the angular face (playtest 3 R1,
+ * playtest 6 X12).
+ *
+ * The reading ladder is DejaVu Sans, whose capitals are 0.73 em tall and whose lowercase is
+ * 0.55 em; 16 px is the base the style guide fixes. The angular face is Acknowledge, a caps-only
+ * face drawn on a three-by-five pixel grid: every glyph is exactly 0.375 em tall, half the ink of
+ * DejaVu at the same nominal size. Set at the reading step it looks half the size of the prose
+ * beside it, which is what "the angular face is tiny" means and what the original game never did:
+ * its `default` text was 20 px and its buttons 36 px in the same Acknowledge, 1.8 times the prose
+ * so the two faces drew capitals of the same height.
+ *
+ * So the display ladder is sized by ink rather than by nominal size: every display step is a third
+ * larger than the reading step it stands beside (`--display-ratio`, 4/3). At the default root size
+ * that is
+ *
+ *   step        reading   display   Acknowledge cap   DejaVu x-height   DejaVu cap
+ *   xs          14 px     18.7 px   7.0 px            7.7 px            10.2 px
+ *   sm          15 px     20.0 px   7.5 px            8.2 px            11.0 px
+ *   base        16 px     21.3 px   8.0 px            8.8 px            11.7 px
+ *   lg          18 px     24.0 px   9.0 px            9.9 px            13.1 px
+ *   xl          20 px     26.7 px  10.0 px           10.9 px            14.6 px
+ *
+ * which is nine tenths of the prose x-height and about two thirds of the prose cap height on every
+ * step, against the half it was before. Matching the cap height outright is what the original game
+ * did (20 px prose against 36 px buttons in this same face), and it is not available here: it
+ * would put a rail row at 31 px, and this client draws a nine-row rail beside a two-column card at
+ * 1280 by 720 where the original drew six buttons.
+ *
+ * Both ladders are in rem, so the interface scale (which scales the root font size) scales all of
+ * it, and `--display-scale` (the Settings slider for the angular face alone) scales the display
+ * ladder on top of that from this new default of 100 %.
+ */
+:root {
+  --size-xs: 0.875rem;
+  --size-sm: 0.9375rem;
+  --size-base: 1rem;
+  --size-lg: 1.125rem;
+  --size-xl: 1.25rem;
+  --display-ratio: 1.3333;
+  --display-xs: calc(var(--size-xs) * var(--display-ratio));
+  --display-sm: calc(var(--size-sm) * var(--display-ratio));
+  --display-base: calc(var(--size-base) * var(--display-ratio));
+  --display-lg: calc(var(--size-lg) * var(--display-ratio));
+  --display-xl: calc(var(--size-xl) * var(--display-ratio));
+  /* Line boxes: 1.2 of the reading step, 1.15 of the display step, which has no descenders. */
+  --lead-xs: 1.25rem;
+  --lead-sm: 1.375rem;
+  --lead-base: 1.5rem;
+  --lead-lg: 1.625rem;
+  --lead-xl: 1.75rem;
+}
+
+/*
+ * The size scale of the utilities, declared without `inline` on purpose.
+ *
+ * `@theme inline` writes the value straight into every `.text-sm { font-size: 0.9375rem }`, which
+ * is why the display ladder could not be switched on per element before: redefining `--text-sm`
+ * on a button changed nothing, because no utility read it (playtest 6, X12). Declared this way the
+ * utility compiles to `font-size: var(--text-sm)`, and the rule further down hands the display
+ * elements a different `--text-sm`.
+ */
+@theme {
+  --text-xs: var(--size-xs);
+  --text-xs--line-height: var(--lead-xs);
+  --text-sm: var(--size-sm);
+  --text-sm--line-height: var(--lead-sm);
+  --text-base: var(--size-base);
+  --text-base--line-height: var(--lead-base);
+  --text-lg: var(--size-lg);
+  --text-lg--line-height: var(--lead-lg);
+  --text-xl: var(--size-xl);
+  --text-xl--line-height: var(--lead-xl);
 }
 
 html {
@@ -263,12 +315,13 @@ h5,
 h6,
 button,
 [role="tab"],
-th {
+th,
+.font-display {
   font-family: var(--c-font-display);
   letter-spacing: 0.02em;
   /*
-   * The second dial of the text-size setting (playtest 3, R13): the angular face alone, for a
-   * player who reads it less easily than the prose face.
+   * The display ladder, and the second dial of the text-size setting (playtest 3 R13, playtest 6
+   * X12): the angular face alone, for a player who reads it less easily than the prose face.
    *
    * It is done by redefining the size tokens on these elements rather than by setting `font-size`
    * directly. A `font-size` here would beat every `text-sm` and `text-xs` in the client, because
@@ -277,11 +330,45 @@ th {
    * where that step lands. An element with no size utility keeps its inherited size, which is the
    * interface scale's business anyway.
    */
-  --text-xs: calc(0.875rem * var(--display-scale, 1));
-  --text-sm: calc(0.9375rem * var(--display-scale, 1));
-  --text-base: calc(1rem * var(--display-scale, 1));
-  --text-lg: calc(1.125rem * var(--display-scale, 1));
-  --text-xl: calc(1.25rem * var(--display-scale, 1));
+  --text-xs: calc(var(--display-xs) * var(--display-scale, 1));
+  --text-xs--line-height: calc(var(--display-xs) * 1.15 * var(--display-scale, 1));
+  --text-sm: calc(var(--display-sm) * var(--display-scale, 1));
+  --text-sm--line-height: calc(var(--display-sm) * 1.15 * var(--display-scale, 1));
+  --text-base: calc(var(--display-base) * var(--display-scale, 1));
+  --text-base--line-height: calc(var(--display-base) * 1.15 * var(--display-scale, 1));
+  --text-lg: calc(var(--display-lg) * var(--display-scale, 1));
+  --text-lg--line-height: calc(var(--display-lg) * 1.15 * var(--display-scale, 1));
+  --text-xl: calc(var(--display-xl) * var(--display-scale, 1));
+  --text-xl--line-height: calc(var(--display-xl) * 1.15 * var(--display-scale, 1));
+}
+
+/*
+ * ...and back to the reading ladder inside one of them. Custom properties inherit, so a paragraph,
+ * a table cell or a field inside a button or a heading would otherwise be laid out on the display
+ * ladder while being drawn in the prose face, which is a third size that belongs to neither.
+ */
+p,
+.prose,
+.measure,
+.numeric,
+.font-mono,
+.font-sans,
+code,
+pre,
+td,
+input,
+textarea,
+select {
+  --text-xs: var(--size-xs);
+  --text-xs--line-height: var(--lead-xs);
+  --text-sm: var(--size-sm);
+  --text-sm--line-height: var(--lead-sm);
+  --text-base: var(--size-base);
+  --text-base--line-height: var(--lead-base);
+  --text-lg: var(--size-lg);
+  --text-lg--line-height: var(--lead-lg);
+  --text-xl: var(--size-xl);
+  --text-xl--line-height: var(--lead-xl);
 }
 
 /*
@@ -334,6 +421,18 @@ textarea.font-mono,
 input.font-mono {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/*
+ * ...and except where the caller says so. `whitespace-normal` on a monospace element is the
+ * explicit way out of the rule, for a mark that is not a quantity: the log strip's "Day 0, 0:00"
+ * is a date and an hour, and on the narrowest strip the layout allows it is wider than the strip
+ * (playtest 6, X12). The utility alone cannot say it, because the rule above is unlayered and
+ * Tailwind's utilities are not.
+ */
+.font-mono.whitespace-normal,
+.numeric.whitespace-normal {
+  white-space: normal;
 }
 
 /* Country outlines brighten under the pointer so the vector layer stays legible over the raster. */

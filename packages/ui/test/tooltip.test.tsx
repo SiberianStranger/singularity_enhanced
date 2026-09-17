@@ -6,7 +6,7 @@
  * that: given a trigger in the corner, the box it renders is inside the viewport.
  */
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Tooltip } from "../src/components/Tooltip.js";
@@ -100,5 +100,65 @@ describe("the tooltip component", () => {
     const tooltip = await screen.findByRole("tooltip");
     expect(tooltip).toHaveClass("whitespace-normal");
     expect(tooltip.className).toContain("max-w-[min(24rem,calc(100vw-1rem))]");
+  });
+});
+
+describe("one tooltip at a time (playtest 6, X16)", () => {
+  function pair(): void {
+    render(
+      <>
+        <Tooltip content="first explanation">
+          <button type="button">first</button>
+        </Tooltip>
+        <Tooltip content="second explanation">
+          <button type="button">second</button>
+        </Tooltip>
+      </>,
+    );
+  }
+
+  it("closes the one that was open when a second trigger is hovered", async () => {
+    withRects(new DOMRect(10, 400, 30, 20), new DOMRect(0, 0, 200, 40));
+    pair();
+    await userEvent.hover(screen.getByRole("button", { name: "first" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("first explanation");
+
+    // The pointer moves to the second row without leaving the first one's box first, which is
+    // exactly what the maintainer did: both used to end up on screen.
+    await userEvent.hover(screen.getByRole("button", { name: "second" }));
+    const open = screen.getAllByRole("tooltip");
+    expect(open).toHaveLength(1);
+    expect(open[0]).toHaveTextContent("second explanation");
+  });
+
+  it("does not leave a tooltip up after a click on its trigger", async () => {
+    withRects(new DOMRect(10, 400, 30, 20), new DOMRect(0, 0, 200, 40));
+    pair();
+    const first = screen.getByRole("button", { name: "first" });
+    await userEvent.hover(first);
+    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
+
+    await userEvent.click(first);
+    // The click moved the focus onto the trigger; the tooltip must not ride along on it.
+    expect(screen.queryAllByRole("tooltip")).toHaveLength(0);
+
+    await userEvent.hover(screen.getByRole("button", { name: "second" }));
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+  });
+
+  it("closes on Escape and on a scroll", async () => {
+    withRects(new DOMRect(10, 400, 30, 20), new DOMRect(0, 0, 200, 40));
+    pair();
+    await userEvent.hover(screen.getByRole("button", { name: "first" }));
+    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryAllByRole("tooltip")).toHaveLength(0);
+
+    await userEvent.hover(screen.getByRole("button", { name: "second" }));
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+    act(() => {
+      window.dispatchEvent(new Event("scroll", { bubbles: false }));
+    });
+    expect(screen.queryAllByRole("tooltip")).toHaveLength(0);
   });
 });

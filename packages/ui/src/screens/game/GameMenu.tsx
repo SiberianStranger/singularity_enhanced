@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
+import { accelerator } from "../../lib/accelerators.js";
 import { dayOf } from "../../lib/format.js";
 import { manualId, putSave, type SaveRecord } from "../../saves/db.js";
 import { useGameStore } from "../../store/gameStore.js";
@@ -98,13 +99,16 @@ export function GameMenu({ section, onClose, ironman }: GameMenuProps): ReactNod
           >
             {t("game.menu.load")}
           </Button>
-          <Button hotkey="s" onClick={() => openMenu("settings")}>
+          <Button
+            hotkey={accelerator(t, "game.menu.settings")}
+            onClick={() => openMenu("settings")}
+          >
             {t("game.menu.settings")}
           </Button>
-          <Button hotkey="m" onClick={() => openMenu("messages")}>
+          <Button hotkey={accelerator(t, "panel.messages")} onClick={() => openMenu("messages")}>
             {t("panel.messages")}
           </Button>
-          <Button hotkey="a" onClick={() => openMenu("about")}>
+          <Button hotkey={accelerator(t, "menu.about")} onClick={() => openMenu("about")}>
             {t("menu.about")}
           </Button>
           <Button
