@@ -21,7 +21,7 @@ export function GameSettings(): ReactNode {
     <div className="flex flex-col gap-4">
       <SettingsControls />
 
-      <fieldset className="flex flex-col gap-1">
+      <fieldset className="flex flex-col gap-1" data-testid="map-style-settings">
         <legend className="text-xs text-muted">{t("settings.map_style")}</legend>
         <div className="flex gap-2">
           {MAP_STYLES.map((option) => (
@@ -36,10 +36,17 @@ export function GameSettings(): ReactNode {
             </label>
           ))}
         </div>
+        <p className="text-xs text-muted">{t("settings.map_style.help", { defaultValue: "" })}</p>
       </fieldset>
 
       <p className="text-xs text-muted">{t("settings.autosave", { days: autosaveDays })}</p>
-      <Button onClick={() => openMenu("messages")}>{t("settings.messages_link")}</Button>
+
+      <div className="flex flex-col items-start gap-1">
+        <Button onClick={() => openMenu("messages")}>{t("settings.messages_link")}</Button>
+        <p className="text-xs text-muted">
+          {t("settings.messages_link.help", { defaultValue: "" })}
+        </p>
+      </div>
     </div>
   );
 }

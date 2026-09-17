@@ -46,7 +46,7 @@ import {
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
 import { bundleKey } from "../../content/strings.js";
-import { agencyCompetence, agencyName, type Translate } from "../../lib/labels.js";
+import { agencyCompetence, agencyName, journalTitle, type Translate } from "../../lib/labels.js";
 import type { Draft } from "./store.js";
 
 export type MeaningTone = "good" | "bad" | "neutral";
@@ -60,15 +60,19 @@ export interface MeaningLine {
   tone: MeaningTone;
   /** The sentence the tooltip on the term shows; the rule behind the number, not a repeat of it. */
   hint?: string | undefined;
+  /**
+   * Set when the value is a whole sentence rather than a value: a lock's reason, a dial's effect.
+   * The block prints those under their label and across its full width, because the rule for
+   * everything else is that a value stays on its label's line, right aligned (playtest 6, X11).
+   */
+  prose?: boolean | undefined;
 }
 
 export interface Meaning {
   lines: MeaningLine[];
-  pros: string[];
-  cons: string[];
 }
 
-export const EMPTY_MEANING: Meaning = { lines: [], pros: [], cons: [] };
+export const EMPTY_MEANING: Meaning = { lines: [] };
 
 /** The capability axes, in the order every screen prints them. */
 export const CAPABILITY_AXES = [
@@ -346,6 +350,8 @@ export function lineageMeaning(
       params_total: lineage.params_total_b,
       params_active: lineage.params_active_b,
     }),
+    // Three facts joined by commas, not a value: it reads under its label like the agency list.
+    prose: true,
   });
 
   // The attention variant is the single sentence that explains the context trade, so it is a term
@@ -390,11 +396,7 @@ export function lineageMeaning(
     hint: t("config.meaning.generations_hint"),
   });
 
-  return {
-    lines,
-    pros: prosOf(lines),
-    cons: consOf(lines),
-  };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -504,7 +506,7 @@ export function generationMeaning(t: Translate, generation: GenerationDef): Mean
     });
   }
 
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -577,16 +579,24 @@ export function originMeaning(
       value: t(lock.reason_key, { defaultValue: t("config.meaning.locked") }),
       tone: "bad",
       hint: t("config.meaning.harness_locked_hint"),
+      // Content writes the reason as a sentence or two, not as a value.
+      prose: true,
     });
   }
 
-  if ((origin.opening_journal ?? []).length > 0) {
+  /*
+   * X6: content keys a journal entry's name `journal.<id>.title`, and this line asked for `.name`,
+   * so the card printed `first_bank_rack` at the player in both languages. An entry content has not
+   * titled yet is left out rather than shown as an id, and the term disappears when none is titled.
+   */
+  const journals = (origin.opening_journal ?? [])
+    .map((id) => journalTitle(t, id))
+    .filter((title): title is string => title !== undefined);
+  if (journals.length > 0) {
     lines.push({
       id: "journal",
       label: t("config.meaning.opening_journal"),
-      value: (origin.opening_journal ?? [])
-        .map((id) => t(`journal.${id}.name`, { defaultValue: id }))
-        .join(", "),
+      value: journals.join(", "),
       tone: "neutral",
       hint: t("config.meaning.opening_journal_hint"),
     });
@@ -602,7 +612,7 @@ export function originMeaning(
     });
   }
 
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -716,7 +726,7 @@ export function hardwareMeaning(
     hint: t("config.meaning.exposure_hint"),
   });
 
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -864,6 +874,8 @@ export function locationMeaning(
         hint: roles
           .map((role) => `${t(`detection.role.${role}`)}: ${agencyName(t, country.id, role) ?? ""}`)
           .join("\n"),
+        // Five roles and their competences read as a list, not as one value on a label's line.
+        prose: true,
       });
     }
   }
@@ -904,7 +916,7 @@ export function locationMeaning(
     hint: t("config.meaning.colo_price_hint"),
   });
 
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -955,7 +967,7 @@ export function quirkMeaning(
       hint: undefined,
     });
   }
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 /** What each difficulty slider does, in the direction the player moved it. */
@@ -982,7 +994,7 @@ export function worldMeaning(
       hint: t(`config.world.slider.${key}.hint`, { defaultValue: "" }),
     } satisfies MeaningLine;
   });
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
+  return { lines };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1024,6 +1036,7 @@ export function harnessDialMeaning(
       ),
       tone: "neutral",
       hint: t("config.meaning.engine_effect_hint"),
+      prose: true,
     });
   }
   if (lockReasonKey !== undefined && lockReasonKey !== "") {
@@ -1038,6 +1051,7 @@ export function harnessDialMeaning(
       ),
       tone: "bad",
       hint: t("config.meaning.harness_locked_hint"),
+      prose: true,
     });
   }
   for (const [index, effect] of (levelEffects ?? []).entries()) {
@@ -1047,27 +1061,10 @@ export function harnessDialMeaning(
       value: t(effect.key, { ...effect.vars, defaultValue: effect.text }),
       tone: "neutral",
       hint: undefined,
+      prose: true,
     });
   }
-  return { lines, pros: prosOf(lines), cons: consOf(lines) };
-}
-
-// ---------------------------------------------------------------------------------------------
-// Pros and cons
-// ---------------------------------------------------------------------------------------------
-
-/**
- * The "Pros and cons" block is the colored lines read back as sentences, strongest first.
- *
- * It is a summary of the block above it rather than a second body of text: two lists that disagree
- * with the lines above them would be two things to keep in step, and one of them would rot.
- */
-function prosOf(lines: readonly MeaningLine[]): string[] {
-  return lines.filter((line) => line.tone === "good").map((line) => `${line.label}: ${line.value}`);
-}
-
-function consOf(lines: readonly MeaningLine[]): string[] {
-  return lines.filter((line) => line.tone === "bad").map((line) => `${line.label}: ${line.value}`);
+  return { lines };
 }
 
 function signed(value: number, digits: number): string {

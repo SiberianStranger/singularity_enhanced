@@ -12,11 +12,12 @@
  * Contributions are in "rating points"; one point is roughly one difficulty step.
  */
 
-import type { GameSetup } from "@singularity/core";
+import { DEFAULT_DIFFICULTY_SLIDERS, type GameSetup } from "@singularity/core";
 import {
   CHALLENGE_MODIFIERS,
   cityById,
   countryById,
+  difficultyById,
   fitHardware,
   generationById,
   hardwareById,
@@ -41,20 +42,29 @@ export interface Rating {
   labelKey: string;
 }
 
-function labelKeyFor(value: number): string {
+/**
+ * The five bands the rating is read in. The opening windows key a paragraph off the same tier, so
+ * the word the summary's footer prints and the line the model says about its own start cannot
+ * disagree (playtest 6, X2).
+ */
+export const CHALLENGE_TIERS = ["story", "gentle", "even", "hard", "brutal"] as const;
+export type ChallengeTier = (typeof CHALLENGE_TIERS)[number];
+
+export function challengeTier(value: number): ChallengeTier {
   if (value <= 2) {
-    return "config.summary.label.story";
+    return "story";
   }
   if (value <= 4) {
-    return "config.summary.label.gentle";
+    return "gentle";
   }
   if (value <= 6) {
-    return "config.summary.label.even";
+    return "even";
   }
-  if (value <= 8) {
-    return "config.summary.label.hard";
-  }
-  return "config.summary.label.brutal";
+  return value <= 8 ? "hard" : "brutal";
+}
+
+function labelKeyFor(value: number): string {
+  return `config.summary.label.${challengeTier(value)}`;
 }
 
 export function rateDraft(draft: Draft): Rating {
@@ -134,6 +144,44 @@ export function rateDraft(draft: Draft): Rating {
     contributions: [...contributions].sort((a, b) => b.points - a.points),
     labelKey: labelKeyFor(value),
   };
+}
+
+/**
+ * The same rating, for a game that has already started (playtest 6, X2).
+ *
+ * The `PlayerView` does not publish the world settings the rating needs, and the `GameSetup` the
+ * client started the run with does, so the opening rebuilds the draft from the setup instead of
+ * guessing. The result is the number the configurator's footer printed for that setup.
+ */
+export function rateSetup(setup: GameSetup, playerId?: string): Rating {
+  const player =
+    setup.players.find((entry) => entry.id === playerId) ??
+    (setup.players[0] as GameSetup["players"][number] | undefined);
+  const origin = player === undefined ? undefined : originById.get(player.origin);
+  const preset = difficultyById.get(setup.world.difficulty_preset);
+  const harness = {
+    ...(origin?.harness ?? { autonomy: 0 }),
+    ...(player?.harness ?? {}),
+  } as Draft["harness"];
+  return rateDraft({
+    lineage: player?.lineage ?? "",
+    generation: (player?.generation ?? "open_2026") as Draft["generation"],
+    origin: player?.origin ?? "",
+    hardware: player?.hardware_preset ?? origin?.hardware_preset ?? "",
+    harness,
+    city: player?.city ?? "",
+    quirks: [...(player?.quirks ?? [])],
+    seed: setup.seed,
+    difficulty: setup.world.difficulty_preset,
+    sliders: {
+      ...DEFAULT_DIFFICULTY_SLIDERS,
+      ...(preset?.sliders ?? {}),
+      ...(setup.world.sliders ?? {}),
+    },
+    storyteller: (setup.world.storyteller ?? "classic") as Draft["storyteller"],
+    modifiers: [...(setup.world.challenge_modifiers ?? [])],
+    ironman: setup.world.ironman === true,
+  });
 }
 
 function toBase64Url(text: string): string {

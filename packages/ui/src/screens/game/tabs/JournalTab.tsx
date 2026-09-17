@@ -7,7 +7,7 @@ import { Bar } from "../../../components/Meter.js";
 import { RevealText } from "../../../components/RevealText.js";
 import { dayOf } from "../../../lib/format.js";
 import { useGameStore } from "../../../store/gameStore.js";
-import { openingTexts } from "../OpeningStory.js";
+import { openingSetupOf, openingTexts } from "../opening.js";
 
 /**
  * Journal entries with progress and the decisions available right now (SYS-10).
@@ -20,7 +20,8 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
   const setOpeningPending = useGameStore((state) => state.setOpeningPending);
-  const hasOpening = openingTexts(t, view.self.origin).length > 0;
+  const setup = useGameStore((state) => state.setup);
+  const hasOpening = openingTexts(t, openingSetupOf(t, view, setup)).length > 0;
 
   return (
     <div className="flex flex-col gap-4">

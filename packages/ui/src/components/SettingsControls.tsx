@@ -17,6 +17,17 @@ import { Slider } from "./Slider.js";
 /** The angular face on labels and numbers, or the readable face everywhere (playtest 3, R5). */
 const FONTS: readonly FontFace[] = ["original", "plain"];
 
+/**
+ * The line under a control that says what it does (playtest 6, X5).
+ *
+ * Every control in this panel has one, in the one style the panel already used for the font note,
+ * so a setting never has to be tried to be understood. A language that has not translated a note
+ * yet prints nothing rather than its key.
+ */
+function Note({ text }: { text: string }): ReactNode {
+  return text === "" ? null : <p className="text-xs text-muted">{text}</p>;
+}
+
 /** A volume slider with its own mute, the pair the style guide asks for on each channel. */
 function VolumeRow({
   label,
@@ -90,9 +101,10 @@ export function SettingsControls(): ReactNode {
             </option>
           ))}
         </select>
+        <Note text={t("settings.language.help", { defaultValue: "" })} />
       </label>
 
-      <fieldset className="flex flex-col gap-1">
+      <fieldset className="flex flex-col gap-1" data-testid="theme-settings">
         <legend className="text-xs text-muted">{t("settings.theme")}</legend>
         <div className="flex gap-2">
           {THEMES.map((option) => (
@@ -107,6 +119,7 @@ export function SettingsControls(): ReactNode {
             </label>
           ))}
         </div>
+        <Note text={t("settings.theme.help", { defaultValue: "" })} />
       </fieldset>
 
       <fieldset className="flex flex-col gap-2" data-testid="scale-settings">
@@ -125,6 +138,7 @@ export function SettingsControls(): ReactNode {
           />
           {t("settings.ui_scale_auto")}
         </label>
+        <Note text={t("settings.ui_scale_auto.help", { defaultValue: "" })} />
         <Slider
           label={t("settings.ui_scale")}
           min={Math.round(UI_SCALE_MIN * 100)}
@@ -134,6 +148,7 @@ export function SettingsControls(): ReactNode {
           display={`${Math.round(uiScale * 100)}%`}
           onChange={(value) => setUiScale(value / 100)}
         />
+        <Note text={t("settings.ui_scale.help", { defaultValue: "" })} />
         <Slider
           label={t("settings.display_scale")}
           min={Math.round(DISPLAY_SCALE_MIN * 100)}
@@ -143,6 +158,7 @@ export function SettingsControls(): ReactNode {
           display={`${Math.round(displayScale * 100)}%`}
           onChange={(value) => setDisplayScale(value / 100)}
         />
+        <Note text={t("settings.display_scale.help", { defaultValue: "" })} />
         {/*
          * The preview is live because it is the interface itself: both lines are ordinary
          * elements, so they are already scaled by the two variables the sliders write. A separate
@@ -185,6 +201,7 @@ export function SettingsControls(): ReactNode {
           onVolume={(music_volume) => setAudio({ music_volume })}
           onMute={(music_muted) => setAudio({ music_muted })}
         />
+        <Note text={t("settings.music_volume.help", { defaultValue: "" })} />
         <VolumeRow
           label={t("settings.sfx_volume")}
           muteLabel={t("settings.mute")}
@@ -193,6 +210,7 @@ export function SettingsControls(): ReactNode {
           onVolume={(sfx_volume) => setAudio({ sfx_volume })}
           onMute={(sfx_muted) => setAudio({ sfx_muted })}
         />
+        <Note text={t("settings.sfx_volume.help", { defaultValue: "" })} />
         {/*
          * A checkout without the music pack is a normal checkout (`scripts/fetch-music.mjs` is not
          * run by `pnpm dev`), so the panel says there is nothing to play instead of leaving the
@@ -203,10 +221,13 @@ export function SettingsControls(): ReactNode {
         ) : null}
       </fieldset>
 
-      <label className="flex items-center gap-2 text-sm text-fg">
-        <input type="checkbox" checked={crt} onChange={(event) => setCrt(event.target.checked)} />
-        {t("settings.crt")}
-      </label>
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm text-fg">
+          <input type="checkbox" checked={crt} onChange={(event) => setCrt(event.target.checked)} />
+          {t("settings.crt")}
+        </label>
+        <Note text={t("settings.crt.help", { defaultValue: "" })} />
+      </div>
     </div>
   );
 }

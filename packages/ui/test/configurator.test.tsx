@@ -189,6 +189,38 @@ describe("the explanation window (K6)", () => {
 });
 
 describe("every step renders finished sentences", () => {
+  it("names an engine id rather than printing it, on every step (X6)", async () => {
+    /*
+     * The origin card printed `first_bank_rack` for its opening journal, because it asked for
+     * `journal.<id>.name` where content writes `journal.<id>.title`. An id is lowercase words
+     * joined by underscores and a name the player reads never is, so every step is walked for one.
+     */
+    introsSeen();
+    render(<ConfiguratorScreen />);
+    const offenders: string[] = [];
+    for (let step = 0; step < STEP_IDS.length; step += 1) {
+      useConfigurator.getState().goToStep(step);
+      const detail = screen.getByTestId("step-detail").textContent ?? "";
+      for (const match of detail.matchAll(/\b[a-z0-9]+(?:_[a-z0-9]+)+\b/g)) {
+        offenders.push(`${STEP_IDS[step]}: ${match[0]}`);
+      }
+    }
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
+  it("gives the opening journal its title (X6)", async () => {
+    introsSeen();
+    render(<ConfiguratorScreen />);
+    useConfigurator.getState().goToStep(STEP_IDS.indexOf("origin"));
+    const origin = catalog.origins.find((entry) => (entry.opening_journal ?? []).length > 0);
+    expect(origin, "an origin opens with a journal entry").toBeDefined();
+    await userEvent.click(screen.getByTestId(`list-entry-${origin?.id ?? ""}`));
+    const line = screen.getByTestId("step-detail").querySelector("[data-line='journal']");
+    const id = (origin?.opening_journal ?? [])[0] ?? "";
+    expect(line?.textContent ?? "", "the id is not on screen").not.toContain(id);
+    expect(line?.textContent ?? "").toContain(i18next.t(`journal.${id}.title`));
+  });
+
   it("leaves no ICU placeholder unfilled on any step", async () => {
     /*
      * Content owns the configurator's prose (`configurator.*`) and supplies the variables it wants;
@@ -400,21 +432,19 @@ describe("the detail card fits its pane (playtest 5, L1-L4)", () => {
   it("switches to two columns on the pane's width, not the window's", () => {
     render_("lineage");
     const split = screen.getByTestId("detail-split");
-    expect(split.className).toContain("@min-[44rem]/detail:grid-cols-");
+    expect(split.className).toContain("@min-[36rem]/detail:grid-cols-");
     // A viewport breakpoint is what broke it: the window was 1366 px and the pane was 822.
     expect(split.className).not.toMatch(/\b(sm|md|lg|xl):/);
     expect(screen.getByTestId("step-detail").className).toContain("@container/detail");
   });
 
-  it("caps the text column rather than fixing its width, and floors the parameters", () => {
+  it("gives the text two fifths of the card and the parameters three (X3)", () => {
     render_("lineage");
     const split = screen.getByTestId("detail-split");
-    // The text track is a maximum with a zero minimum, so it yields; the parameter track has the
-    // 18rem floor the playtest asked for.
-    expect(split.className).toContain("minmax(0,70ch)");
-    expect(split.className).toContain("minmax(18rem,1fr)");
+    // 9fr to 11fr: the text column is the narrower one now, because the parameter rows are what
+    // need room for a long label and its value on one line.
+    expect(split.className).toContain("grid-cols-[minmax(0,9fr)_minmax(0,11fr)]");
     const text = screen.getByTestId("detail-text");
-    expect(text.className).toContain("max-w-[70ch]");
     expect(text.className).not.toMatch(/(?:^|\s)w-\[/);
     // Both children can shrink inside their tracks.
     expect(text.className).toContain("min-w-0");
@@ -425,26 +455,41 @@ describe("the detail card fits its pane (playtest 5, L1-L4)", () => {
     render_("lineage");
     const params = screen.getByTestId("detail-params");
     expect(params.className).toContain("order-first");
-    expect(params.className).toContain("@min-[44rem]/detail:order-none");
+    expect(params.className).toContain("@min-[36rem]/detail:order-none");
   });
 
-  it("puts the value right after its label and lets both wrap", () => {
+  it("keeps a value on its label's line, right against the edge (X11)", () => {
     render_("lineage");
     const block = screen.getByTestId("meaning-block");
-    const terms = block.querySelectorAll("[data-line]");
+    const terms = block.querySelectorAll("[data-line]:not([data-prose])");
     expect(terms.length).toBeGreaterThan(4);
     for (const term of terms) {
-      // A wrapping flex row: the value sits after its label and drops to a second line rather
-      // than printing over the next term, which is what `truncate` did at 18 px wide (L1).
+      // Not a wrapping row: a label longer than the column wraps inside its own box and the
+      // value stays on the first line, hard right, instead of dropping under the label.
       expect(term.className).toContain("flex");
-      expect(term.className).toContain("flex-wrap");
-      expect(term.className).toContain("min-w-0");
+      expect(term.className).not.toContain("flex-wrap");
+      expect(term.className).toContain("items-baseline");
+      expect(term.querySelector("dt")?.className).toContain("flex-1");
+      expect(term.querySelector("dd")?.className).toContain("text-end");
       expect(term.querySelector("dt")?.className).not.toContain("truncate");
       expect(term.querySelector("dd")?.className).not.toContain("truncate");
     }
     // Two columns of terms when the parameter column is wide enough for two, asked of the column.
-    expect(block.querySelector("dl")?.className).toContain("@min-[30rem]/params:grid-cols-2");
+    expect(block.querySelector("dl")?.className).toContain("@min-[48rem]/params:grid-cols-2");
     expect(block.className).toContain("@container/params");
+  });
+
+  it("sets a value that is a whole sentence under its label instead (X11)", () => {
+    render_("origin");
+    const block = screen.getByTestId("meaning-block");
+    const prose = block.querySelectorAll("[data-prose]");
+    // The origin card's locked dials carry a reason, which is prose and not a value.
+    expect(prose.length).toBeGreaterThan(0);
+    for (const term of prose) {
+      expect(term.className).toContain("flex-col");
+      expect(term.className).toContain("col-span-full");
+      expect(term.querySelector("dd")?.className).not.toContain("text-end");
+    }
   });
 
   it("truncates nothing but the footer's build line", () => {

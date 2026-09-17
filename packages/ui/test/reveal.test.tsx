@@ -12,7 +12,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { REVEAL_CHARS_PER_SECOND, RevealText } from "../src/components/RevealText.js";
 import { contentBundle } from "../src/content/bundle.js";
-import { OPENING_PAGES, OpeningStory, openingKey } from "../src/screens/game/OpeningStory.js";
+import { OpeningStory } from "../src/screens/game/OpeningStory.js";
+import { OPENING_PAGES, openingKeys, openingSetupOfOrigin } from "../src/screens/game/opening.js";
 import { useGameStore } from "../src/store/gameStore.js";
 
 /** The first origin the content bundle has written an opening for; none is named in this file. */
@@ -144,7 +145,7 @@ describe("the opening windows (R12)", () => {
     const origin = originWithOpening();
     expect(origin, "content has an opening for at least one origin").not.toBe("");
     useGameStore.getState().setOpeningPending(true);
-    render(<OpeningStory origin={origin} />);
+    render(<OpeningStory setup={openingSetupOfOrigin(origin)} />);
 
     const story = screen.getByTestId("opening-story");
     expect(story).toHaveAttribute("data-page", "0");
@@ -160,7 +161,7 @@ describe("the opening windows (R12)", () => {
     setReducedMotion(true);
     const origin = originWithOpening();
     useGameStore.getState().setOpeningPending(true);
-    render(<OpeningStory origin={origin} />);
+    render(<OpeningStory setup={openingSetupOfOrigin(origin)} />);
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(useGameStore.getState().openingPending).toBe(false);
   });
@@ -168,7 +169,7 @@ describe("the opening windows (R12)", () => {
   it("shows nothing at all for an origin content has no opening for", () => {
     setReducedMotion(true);
     useGameStore.getState().setOpeningPending(true);
-    render(<OpeningStory origin="an_origin_nobody_wrote" />);
+    render(<OpeningStory setup={openingSetupOfOrigin("an_origin_nobody_wrote")} />);
     expect(screen.queryByTestId("opening-story")).toBeNull();
     // And it gets out of the way rather than leaving an empty window over the first event.
     expect(useGameStore.getState().openingPending).toBe(false);
@@ -176,7 +177,9 @@ describe("the opening windows (R12)", () => {
 
   it("keys its texts per origin and per page", () => {
     const origin = originWithOpening();
-    expect(openingKey(origin, "what_happened")).toBe(`story.opening.${origin}.what_happened`);
+    expect(openingKeys(openingSetupOfOrigin(origin), "what_happened")[0]).toBe(
+      `story.opening.${origin}.what_happened`,
+    );
     expect(OPENING_PAGES).toEqual(["what_happened", "what_now"]);
   });
 });

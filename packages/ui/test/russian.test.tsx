@@ -89,6 +89,21 @@ describe("the client in Russian", () => {
     assertRussian("the game screen");
   });
 
+  it("renders the settings and the message settings without English or raw keys", async () => {
+    // Playtest 6, X5: the theme radio printed `settings.theme.default` and friends in both
+    // languages, and half the controls had no description at all.
+    session = await startSession();
+    const { useUiStore } = await import("../src/store/uiStore.js");
+    render(<GameScreen />);
+    for (const section of ["settings", "messages"] as const) {
+      useUiStore.getState().openMenu(section);
+      // The opening window is a dialog too, so the menu is found by its own heading.
+      await screen.findByText(section === "settings" ? "Настройки" : "Настройки сообщений");
+      assertRussian(`the ${section} panel`);
+    }
+    useUiStore.getState().closeMenu();
+  });
+
   it("renders the strings the engine itself emits", async () => {
     session = await startSession();
     session.advance(200);

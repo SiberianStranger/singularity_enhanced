@@ -114,7 +114,7 @@ describe("what a quirk does", () => {
     }
   });
 
-  it("colours the lines and reads them back as pros and cons", () => {
+  it("colours the lines by the direction the effect points in", () => {
     const quirk = catalog.quirks[0] as QuirkDef;
     const effects = quirkEffects(quirk).map((line, index) => ({
       ...line,
@@ -125,9 +125,8 @@ describe("what a quirk does", () => {
       expect.arrayContaining(["cost", "category", "effect.0"]),
     );
     expect(meaning.lines.find((line) => line.id === "effect.0")?.tone).toBe("good");
-    expect(meaning.pros.length).toBeGreaterThan(0);
     if (effects.length > 1) {
-      expect(meaning.cons.length).toBeGreaterThan(0);
+      expect(meaning.lines.filter((line) => line.tone === "bad").length).toBeGreaterThan(0);
     }
   });
 });

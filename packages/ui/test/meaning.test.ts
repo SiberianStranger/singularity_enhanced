@@ -134,13 +134,12 @@ describe("the lineage block", () => {
     );
   });
 
-  it("reads back the colored lines as the pros and cons, and invents nothing", () => {
-    const labels = new Set(meaning.lines.map((line) => `${line.label}: ${line.value}`));
-    for (const line of [...meaning.pros, ...meaning.cons]) {
-      expect(labels.has(line), line).toBe(true);
-    }
-    expect(meaning.pros.length).toBe(meaning.lines.filter((line) => line.tone === "good").length);
-    expect(meaning.cons.length).toBe(meaning.lines.filter((line) => line.tone === "bad").length);
+  it("says each term once, with a direction on it", () => {
+    // Playtest 6, X3: the block used to print every colored line a second time under "Pros and
+    // cons". A term appears once now, and its direction is the tone the card colors it by.
+    const labels = meaning.lines.map((line) => line.label);
+    expect(new Set(labels).size, labels.join(", ")).toBe(labels.length);
+    expect(meaning.lines.some((line) => line.tone !== "neutral")).toBe(true);
   });
 });
 

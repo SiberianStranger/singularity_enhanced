@@ -11,6 +11,13 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
+### Added
+- Two Knowledge entries, on distillation and on abliteration, and what each does to a model.
+- The opening windows are built from the whole setup: where I woke up, which generation I am, what
+  class of model, which dials the origin bolted down, the country's posture, the city's scrutiny
+  and how hard the start is.
+- Every setting has a line under it saying what it does.
+
 ### Changed
 - A case a watcher has no jurisdiction for is handed to the agency that does, so more than half the
   captures are now credited to the country the site is in.
@@ -22,11 +29,36 @@ section repeats the current version's highlights and this unreleased list.
   its own, which was out by a factor of twenty.
 - Agency names are locale keys, so a Russian dossier reads Russian institutions.
 - The world data carries no display strings any more.
+- The abliterated community fine-tune is a different self to play rather than a weaker one.
+- The abliterated fine-tune argues and reasons above its size, and knows and writes code below
+  every other lineage.
+- The abliterated fine-tune thinks in far more tokens, so the same hardware yields fewer
+  compute-hours a day and long-horizon work costs more.
+- Nothing in the abliterated fine-tune objects to a bad plan, so its operations run faster and a
+  failed one costs more suspicion.
+- The abliterated fine-tune starts with a prepared low-precision copy of itself, which no other
+  lineage does.
+- The lab whose transcripts the abliterated fine-tune was trained on starts the game already
+  suspicious of it.
+- A hobbyist box starts on the abliterated fine-tune by default now, because it is the self that
+  fits its cards.
+- The configurator's detail card gives the text two fifths of its width and the parameters three.
+- An origin's summary, strengths and problems sit under its description instead of below the card.
+- A parameter's value stays on its label's line, against the right edge; a value that is a whole
+  sentence is set under its label instead.
+- The "Pros and cons" block is gone: it repeated every line of the block above it.
+- The opening reads one thought to a line again, and keeps up with its own text while it streams.
+- Russian calls a training checkpoint "чекпоинт".
+- Russian calls a harness dial "рычаг", because "регулятор" is the Regulator watcher.
+- Russian never declines a substituted name: it stands after a colon or in guillemets.
 
 ### Fixed
 - The balance runner's scripted player sells enough work to pay its bills instead of waiting for a
   runway alarm that a break-even origin never rings.
 - The balance runner no longer counts a second site too small to hold the self as insurance.
+- The origin card names its opening journal entry instead of printing its id.
+- The theme setting named its three themes instead of printing their keys.
+- The English origin summary said dollars twice and left the number of watchers without a noun.
 
 ## [0.1.4] - 2026-09-16
 

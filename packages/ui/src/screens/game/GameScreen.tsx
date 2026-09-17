@@ -17,6 +17,7 @@ import { GameOverOverlay } from "./GameOverOverlay.js";
 import { LogStrip } from "./LogStrip.js";
 import { OpeningStory } from "./OpeningStory.js";
 import { Outliner } from "./Outliner.js";
+import { openingSetupOf } from "./opening.js";
 import { PrimaryPanel } from "./PrimaryPanel.js";
 import { SelectionPanel } from "./SelectionPanel.js";
 import { Toasts } from "./Toasts.js";
@@ -233,7 +234,7 @@ export function GameScreen(): ReactNode {
         />
       )}
 
-      {openingPending ? <OpeningStory origin={view.self.origin} /> : null}
+      {openingPending ? <OpeningStory setup={openingSetupOf(t, view, setup)} /> : null}
 
       {openingPending || blocking[0] === undefined ? null : (
         <EventWindow view={view} choice={blocking[0]} queued={blocking.length - 1} />

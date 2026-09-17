@@ -32,6 +32,13 @@ interface RevealTextProps {
    * presses a key to finish the sentence without having to focus the paragraph first (R12).
    */
   captureKeys?: boolean;
+  /**
+   * Keep the growing end of the text in view while it streams, the way a terminal follows its own
+   * output. Set by the opening, whose composed windows can be taller than the dialog they are in
+   * (playtest 6, X2); a text inside a panel does not ask for it, because scrolling a panel the
+   * player is not looking at is rude.
+   */
+  follow?: boolean;
   /** Called once the whole text is on screen, however it got there. */
   onDone?: () => void;
 }
@@ -52,6 +59,7 @@ export function RevealText({
   className,
   instant,
   captureKeys,
+  follow,
   onDone,
 }: RevealTextProps): ReactNode {
   const skip = instant === true || prefersReducedMotion();
@@ -123,15 +131,37 @@ export function RevealText({
     wasDone.current = done;
   }, [done, onDone]);
 
+  /*
+   * The end of the text stays in view while it streams. `block: "nearest"` moves the scrollable
+   * ancestor only when the tail has left it, so a text that fits its window never moves at all,
+   * and the player can still scroll back the moment the reveal is over.
+   */
+  const tail = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (follow !== true || done || shown === 0) {
+      return;
+    }
+    if (typeof tail.current?.scrollIntoView !== "function") {
+      return;
+    }
+    tail.current.scrollIntoView({ block: "nearest" });
+  }, [follow, done, shown]);
+
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: the click only skips an animation; the whole text is in the DOM from the first frame and `captureKeys` gives the keyboard the same shortcut where a window wants it
     <p
-      className={`prose ${className ?? ""}`}
+      /*
+       * `whitespace-pre-line`: content writes these texts one thought to a line, and the opening
+       * composes a window out of several paragraphs separated by a blank line (playtest 6, X2).
+       * Without it every line break collapsed and a window arrived as one wall of text.
+       */
+      className={`prose whitespace-pre-line ${className ?? ""}`}
       data-revealing={done ? undefined : "true"}
       onClick={done ? undefined : complete}
     >
       <span className="sr-only">{text}</span>
       <span aria-hidden="true">{text.slice(0, shown)}</span>
+      <span ref={tail} aria-hidden="true" />
     </p>
   );
 }

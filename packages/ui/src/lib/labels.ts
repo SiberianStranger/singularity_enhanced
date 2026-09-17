@@ -69,6 +69,17 @@ export function agencyName(t: Translate, countryId: string, role: string): strin
 }
 
 /**
+ * What a journal entry is called (playtest 6, X6).
+ *
+ * Content writes the title under `journal.<id>.title`, and the configurator's origin card asked for
+ * `journal.<id>.name`, so it printed `first_bank_rack` in both languages. Nothing is returned for an
+ * entry content has not titled, so a caller leaves it out instead of showing the player an id.
+ */
+export function journalTitle(t: Translate, id: string): string | undefined {
+  return keyed(t, `journal.${id}.title`);
+}
+
+/**
  * How good that watcher is here: the country's own profile for the role, and its `ai_enforcement`
  * for a role the data gives no profile for, which is the rule the core follows when it builds the
  * watcher (SYS-01 M2 contract, "How countries reach the player").
@@ -252,7 +263,7 @@ function logVarName(
     case "tech":
       return keyed(t, `techs.${id}.name`);
     case "journal":
-      return keyed(t, `journal.${id}.title`);
+      return journalTitle(t, id);
     case "decision":
       return keyed(t, `decisions.${id}.title`);
     case "stage":

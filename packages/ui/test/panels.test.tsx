@@ -85,10 +85,42 @@ describe("settings live in the menu (U5)", () => {
     await play();
     useUiStore.getState().openMenu("settings");
     const menu = await screen.findByRole("dialog");
-    await userEvent.click(within(menu).getByRole("radio", { name: "Vector" }));
+    // Scoped to its own fieldset: the theme has a Vector too, and it is a different Vector
+    // (the original game's flat palette) from the map's vector shapes.
+    const maps = within(menu).getByTestId("map-style-settings");
+    await userEvent.click(within(maps).getByRole("radio", { name: "Vector" }));
     expect(useUiStore.getState().mapStyle).toBe("vector");
     await userEvent.click(within(menu).getByRole("radio", { name: "Plain" }));
     expect(useUiStore.getState().fontFace).toBe("plain");
+  });
+
+  it("names every theme and describes every control it offers (X5)", async () => {
+    await play();
+    useUiStore.getState().openMenu("settings");
+    const menu = await screen.findByRole("dialog");
+    const themes = within(menu).getByTestId("theme-settings");
+    // The three themes of the original game, by name; the radio used to print its own key.
+    for (const name of ["Default", "Night mode", "Vector"]) {
+      expect(within(themes).getByRole("radio", { name })).toBeInTheDocument();
+    }
+    for (const control of [
+      "settings.language",
+      "settings.theme",
+      "settings.ui_scale",
+      "settings.ui_scale_auto",
+      "settings.display_scale",
+      "settings.music_volume",
+      "settings.sfx_volume",
+      "settings.crt",
+      "settings.map_style",
+      "settings.messages_link",
+    ]) {
+      const help = i18next.t(`${control}.help`);
+      expect(help, `${control} has a description`).not.toBe(`${control}.help`);
+      expect(menu.textContent, `${control} shows its description`).toContain(help);
+    }
+    // And nothing in the panel prints a key at the player.
+    expect(menu.textContent ?? "").not.toMatch(/\bsettings\.[a-z_.]+/);
   });
 });
 

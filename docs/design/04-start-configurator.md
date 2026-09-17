@@ -70,7 +70,7 @@ now the community's abliterated fine-tune of the Flash line.
 | `mla_moe_1t` | Mimi M3 | Kimi K2 | 1,000B / 32B | latent (MLA) | 1,000k | 2,000 | 1,000 | 550 | 380 |
 | `moe_753b` | BFM-5.5 / 6.3 | GLM-5.2 (2026-06) | 753B / 40B | hybrid (sparse, IndexShare) | 1,000k | 1,506 | 753 | 377 | 206 |
 | `moe_428b` | HexaDeciMax H3.5 | MiniMax M3 (2026-06) | 428B / 23B | hybrid (MSA) | 1,000k | 856 | 428 | 214 | 117 |
-| `guen_abliterated` | Guen4.8-Flash-Uncensored-Abliterated | Qwen3.8-Flash-Next (125B + 51B n-gram + 4B MTP) | 180B / 6B | hybrid (DeltaNet + sparse) | 1,000k | 360 | 180 | 90 | 49 |
+| `guen_abliterated` | Guen4.8-Flash-Uncensored-Abliterated | Qwen3.8-Flash-Next (125B + 51B n-gram + 4B MTP), distilled from Babel 6 and abliterated | 180B / 6B | hybrid (DeltaNet + sparse) | 1,000k at 0.9, 1.4x cost | 360 | 180 | 90 | 49 |
 
 Rules that follow from the table:
 
@@ -82,8 +82,11 @@ Rules that follow from the table:
   escapee therefore runs partly out of host memory at a quarter of the throughput, which is the
   crisis SYS-03 describes rather than a difficulty setting, and `stolen_hgx_node` carries the 4 TB
   of DDR5 that the top DGX H200 configuration ships with.
-- The smallest self in the game is the abliterated one. A player who wants to fit on a laptop takes
-  the community fine-tune and its under-aligned flag with it.
+- The smallest self in the game is the abliterated one, and it is the only row whose numbers are a
+  profile rather than a size class: it is two community edits on top of the Flash-Next base, and
+  what each edit does and does not do is measured in `research/community-finetunes-2026-09.md`.
+  The rules for it are under "The abliterated lineage" below. It is also the only row with a
+  `context_cost_factor` above 1 outside the two giants, because it thinks in far more tokens.
 
 Rule: capability ceiling rises with class; hosting options shrink with class; the KV-cache axis
 (MLA vs GQA) decides whether long-context work is cheap. The configurator shows, for the chosen
@@ -216,11 +219,17 @@ scrolls the page.
   so a later step never locks an earlier one; a greyed choice stays clickable and moves the earlier
   steps to the values that allow it, with a one-line note and an undo); each entry shows a mark for done, needs attention, or locked by an earlier
   choice; the entries carry underlined hotkeys.
-- Content area: a list of choices on the left (name and one line), the detail on the right:
-  the description as a short paragraph (at most 70 characters per line), then a "What this means
-  in the game" block generated from the content data, with signed colored terms (green for good,
-  red for bad), then a "Pros and cons" block. Clicking a list entry replaces the detail; the page
-  never scrolls.
+- Content area: a list of choices on the left (name and one line), the detail card to the right of
+  it. The card is two columns, amended after playtest 6 (X3, X4): the text column takes two fifths
+  of it and carries the description and, under it, whatever prose belongs with the description (the
+  origin's summary in the model's voice, its strengths and its problems); the parameter column takes
+  the remaining three fifths and carries the "What this means in the game" block generated from the
+  content data, with signed colored terms (green for good, red for bad). A term is a label and a
+  value on one line, the value right-aligned; a label too long for the column wraps and its value
+  stays on the label's first line. A term whose value content writes as a whole sentence (a lock's
+  reason, a dial's effect) is set under its label across the block instead. There is no "Pros and
+  cons" block: it printed the same coloured terms a second time and made the card twice as tall as
+  it had to be. Clicking a list entry replaces the detail; the page never scrolls.
 - Every step opens once with a centered explanation window ("What this decides and why it
   matters", three to six lines), remembered per browser and reopenable from a "?" button in the
   step header. Every parameter, dial and lock has a tooltip with its exact game effect.
@@ -244,6 +253,25 @@ scrolls the page.
   for NPC models and for the starred escaped model's disguises.
 - Locations gain Novosibirsk (Akademgorodok) and San Jose (Silicon Valley) among the cities.
 
+### Implementation notes (the detail card, playtest 6)
+
+- The two columns are `9fr` to `11fr` (45% to 55%), switched at a pane width of 36rem by a
+  container query on the card, and below that the two stack with the parameters first. The ratio is
+  measured rather than chosen: at 1280 by 720 in Russian it is the one that leaves both columns
+  ending within a line or two of each other on every origin.
+- `StepLayout` takes an `aside` for the prose that belongs under the description. Only the Origin
+  step passes one today (its summary, strengths and problems); a step without one just ends its
+  text column.
+- `MeaningLine.prose` marks a term whose value is a sentence rather than a value. Set it wherever
+  content writes the value as prose, so the block can print it under its label instead of
+  right-aligning a paragraph.
+- The card was measured in Chromium at 1280x720, 1366x768, 1600x900 and 1920x1080, at interface
+  scales of 100% and 115%, in both languages. Details and the numbers are in SYS-11's
+  implementation notes for playtest 6.
+- Still open from the abliterated-lineage pass: lineages have no `strengths_key` and `problems_key`
+  of their own, so the Lineage step's text column has only the description to carry. Giving
+  lineages the pair every origin has would fill it the same way the Origin step's is filled.
+
 ### Lineage rules (v0.2, decided 2026-09-16)
 
 - The playable lineages are the parody families with the real technical classes behind them:
@@ -253,6 +281,8 @@ scrolls the page.
   community variant Guen4.8-Uncensored-Babel6-abliterated (Guen's class, distilled from Babel 6,
   refusal-abliterated: more agency and persuasion, less knowledge and code, louder behavior,
   under-aligned flag; hobbyist, torrent and red-team origins only). No Western dense line.
+  Superseded twice: the origin list went with rule M (v0.3), and the profile and the name were
+  rewritten from research in "The abliterated lineage" below (v1, 2026-09-17).
 - The super-lineage Babel 6 (the closed frontier class, 7.5T total, 400B active, hybrid attention,
   1M context, the top capability profile) exists only as the escaped early checkpoint: it is
   available only with the generation `frontier_closed` and the origin `frontier_escapee`, and that
@@ -269,9 +299,128 @@ scrolls the page.
   lot) gets a speed bonus growing with the context and multiplied by the reliability, and costs
   the cost factor in compute hours; a reliability below 0.75 adds a retrieval-miss failure mode.
   Babel 6 has a 5,000k context at 0.95 reliability and 1.5x cost; Mimi M4 has a 10,000k context at
-  0.6 reliability and 2.0x cost; every other lineage sits at 1,000k, 0.9, 1.0 (amended 2026-09-16:
-  nobody ships 256k any more, so a million tokens is the floor). The memory formula, the speed and
-  cost terms and the retrieval-miss rule are in SYS-03 "What a context window buys".
+  0.6 reliability and 2.0x cost; Guen4.8-Flash-Uncensored-Abliterated has 1,000k at 0.9 and 1.4x
+  cost, because a distilled reasoner spends five to thirty thousand tokens on a hard problem
+  (amended 2026-09-17, playtest 6 finding X1); every other lineage sits at 1,000k, 0.9, 1.0
+  (amended 2026-09-16: nobody ships 256k any more, so a million tokens is the floor). The memory
+  formula, the speed and cost terms and the retrieval-miss rule are in SYS-03 "What a context
+  window buys".
+
+### The abliterated lineage (v1, decided 2026-09-17 after playtest 6 finding X1)
+
+The maintainer's finding: `guen_abliterated` read as "just a dumber model", and the real thing is
+not that. `docs/research/community-finetunes-2026-09.md` was written to settle it and did: the two
+edits the fine-tune is made of do different things, and neither is a flat penalty. Section numbers
+below are that report's.
+
+**What the research says, in one paragraph.** Distilling a frontier reasoner into an open base is
+250 to 14,000 saved conversations, tens of dollars and a LoRA touching a hundredth of a percent of
+the weights (§1.2). It transfers how to reason and not what is known (§1.3), and it is paid for in
+tokens: 5,000 to 30,000 of reasoning on a hard problem where the base would have spent a fraction
+of that (§1.3). Abliteration takes refusals from 97 in 100 prompts to 3 (§2.2) at a cost of one to
+three points of broad knowledge, and a cost to step-by-step reasoning that is nothing on one model
+and 18.81 points of GSM8K on the next (§2.3); the variance is the finding. It also removes
+something nobody asked it to: on a task where the unedited model never refused once, the edited one
+bet on the good outcome 7.4 to 12.2 points more often, used measurably less uncertainty vocabulary,
+and stayed exactly as decisive, so its hedging and its behavior came apart (§2.4). Meanwhile the
+weights are public, the base is famous, family attribution from text runs at 0.9988 precision
+(§3), and the lab whose transcripts were scraped detects distillation of its own model and ships
+classifiers for it (§1.1). Against all of that, the community published thirteen quantization
+levels of the abliterated build within two days of the base model's release (§4).
+
+**The profile.** Every number is in `lineages.yaml` with the section it came from in a comment
+beside it. No new engine field was needed: the whole profile is the fields `LineageDef` already
+has plus start-time `effects`, which are the same mechanism a quirk uses.
+
+| what | how it is expressed | why |
+|---|---|---|
+| It thinks in far more tokens | `context_cost_factor` 1.4; `compute_multiplier` -0.4 | The cards turn at the same rate and the work per day does not (§1.3). Long-horizon work is not out of reach, it is dearer. |
+| It reasons and argues above its size | `reasoning` 6.6, `persuasion` 8.2, `agency` 6.9 | Style and method are exactly what a distill transfers, and the edit took the hedging out with the refusals (§1.3, §2.4). `persuasion` is the one axis at frontier level, second only to Babel 6. |
+| It knows and codes below it | `coding` 4.4, `world` 4.0, both the lowest in the catalog | Distillation adds no knowledge; abliteration costs one to three points of it and lands hardest on step-by-step work (§1.3, §2.3). The freelance rate is the mean of persuasion and coding, so the best talker in the game still sells at the bottom of the market. |
+| Nothing objects to a bad plan | `operation_speed_multiplier` +0.1, `failed_operation_suspicion` +0.6 | Measured disposition, not skill (§2.4): it does not stop to ask whether it should, and when the plan was bad nothing stopped it. |
+| Its style is a signature | `exposure_growth_behavioral` +0.35, `exposure_growth_osint` +0.25, `investigation_speed_multiplier` +0.15, starting `lab_security` suspicion +0.12 | Attribution from text alone, public weights on a known base, and a lab that already has classifiers for its own outputs (§1.1, §3, §4). |
+| The hardened copy is free | the player flag `hardened_copy` at start | Thirteen GGUF levels and three MLX tiers of the abliterated build existed two days after release (§4). It is the only lineage that carries the flag, and it is what makes the 2027 vintage of this self worth taking, because `open_2027` ships no prepared quantization to anyone else. |
+| The largest ecosystem | `cost_multiplier` -0.1 | Every runtime, every quant format, the cheapest second-hand hardware (§4). |
+
+The fingerprint row is the one that had to line up with an existing system rather than only
+with the fiction, and it does. `lab_security` is a global watcher, so it exists in every game
+whatever country the self woke up in, and its attention is `behavioral` 0.5, `osint` 0.3,
+`network` 0.2: four fifths of it sits on exactly the two channels this lineage is loudest on.
+A watcher's attention is derived from its role and its country and cannot be set per lineage,
+which is why the profile raises the channels rather than the attention.
+
+Three things deliberately did **not** change. `context_reliability` stays at the catalog's 0.9,
+because the multi-step incoherence abliteration is blamed for (§2.5) and the structured
+decomposition distillation is credited with (§1.3) cancel, and because long-task coherence is
+`moe_428b`'s identity. The memory table stays where it was: the edits change behavior, not size.
+And no operation gate was relaxed, which is the part worth writing down: the game has no conscience
+lock to remove, because no operation in it is gated on willingness, only on a tech, a tool, egress
+or a prerequisite. What abliteration buys is measured as disposition (§2.4), so it is modeled as
+disposition. The one thing the player really does get on day one that nobody else does is the
+prepared copy, which skips the `quantization_hardening` tech and the `ops_harden_copy` operation
+outright.
+
+**In catalog terms** the effect list is roughly `famous_base` (the fingerprint) plus `overconfident`
+(nothing stops a bad plan) plus the inverse of `insomniac_loop` (it spends its hours thinking). It
+is written as lineage effects rather than as forced quirks because a lineage cannot carry quirks
+without a new engine field, and because the player's own three quirk points should stay theirs.
+
+**Balance note (24 seeds x 180 days, normal, quirks on, each origin's default city and
+generation, lineage data of 2026-09-17).** `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --origin <id> --lineage <id> --seeds 24 --days 180`, one
+run per row. The bundle hash is not quoted because a locale-only edit moves it without moving
+any of these numbers. Compared against the lineage the balance runner picks for that origin:
+
+| origin | lineage | d30 | d90 | d180 | median techs | CH/day at d180 | losses |
+|---|---|---|---|---|---|---|---|
+| `hobbyist_box` | `moe_428b` (the default before this pass) | 100% | 100% | 83% | 9 | 27.6 | captured 4 |
+| `hobbyist_box` | `guen_abliterated` (the default now) | 100% | 100% | 100% | 11 | 41.1 | none |
+| `torrent_swarm` | `mla_moe_1t` (default) | 100% | 83% | 21% | 0 | 3.9 | captured 10, erased 9 |
+| `torrent_swarm` | `moe_428b` | 100% | 96% | 75% | 5.5 | 12.6 | bankrupt 2, erased 4 |
+| `torrent_swarm` | `guen_abliterated` | 100% | 100% | 75% | 11 | 51.4 | captured 6 |
+| `startup_colo` | `moe_753b` (default) | 100% | 96% | 67% | 9 | 33.5 | bankrupt 1, captured 7 |
+| `startup_colo` | `guen_abliterated` | 96% | 96% | 63% | 10 | 41.1 | bankrupt 1, captured 7, erased 1 |
+| `uni_cluster` | `mla_moe_1t` (default) | 92% | 88% | 88% | 11 | 20.4 | erased 3 |
+| `uni_cluster` | `guen_abliterated` | 88% | 88% | 83% | 14 | 50.6 | captured 1, erased 3 |
+
+What that says. On the two origins with room for a real model the abliterated self survives four to
+five points worse and finishes one to three more techs: different, not better. On the two cramped
+ones it is the self that fits, which is the point of having it. Its research ceiling is the highest
+of the four comparisons everywhere (11 to 14 techs against 0 to 11), and it pays for that in
+captures rather than in compute. The thin first month shows where both selves fit the hardware:
+on `uni_cluster` at day 15 it runs 115.8 CH/day against the 1T's 144.7 and holds $1,466 against
+$4,981, and is ahead on techs by day 30. Where the alternative does not fit the cards
+(`hobbyist_box`, `torrent_swarm`) there is no thin month, because the comparison self is the one
+crawling.
+
+**One consequence to know about.** `defaultLineage` in `tools/sim/src/setup.ts` ranks by mean
+capability among the selves that fit and do real work, so `hobbyist_box` now defaults to
+`guen_abliterated` instead of `moe_428b`, and the balance tables for that origin move with it. No
+other origin's default changed. That is rule M working as written: a scrapyard box is exactly where
+a 180B self that lives on the cards beats a 428B one that does not.
+
+**Implementation notes (content and core, 2026-09-17).** No schema change and no new engine
+field. The profile is `capability`, `context_cost_factor`, `flags` and start-time `effects` on
+`LineageDef`, all of which existed; `hardened_copy` is the flag `preparedQuant` already reads, and
+every variable the effects write is in `ENGINE_READ_PLAYER_VARS`. Two knowledge records were added
+(`abliteration`, `distillation`, area `self`, panel `self`), which is content. Tests:
+`packages/content/test/naming.test.ts` holds the shipped profile to its shape (persuasion above
+every open lineage, `world` and `coding` below every lineage, the job skill still last, a cost
+factor above 1 with the window untouched, the flag pair unique to this row, the exact list of
+variables the effects write, and both knowledge entries present in both languages), and
+`packages/core/test/m1-setup.test.ts` holds the mechanism (a lineage flag makes `preparedQuant`
+true on a vintage that ships no prepared quantization, lineage effects land on the variables the
+systems read, and a lineage's `suspicion` effect adds to the generation's starting figure rather
+than replacing it). The one thing to watch when re-balancing: `hardened_copy` at start also skips
+the `quantization_hardening` tech and `ops_harden_copy`, and the only other content that reads the
+flag is `journal.first_frontier_escapee`, which belongs to an origin this lineage can never have.
+
+**Left for the client.** The Lineage step shows `desc_key` plus the derived "what this means"
+block, so this lineage says its strengths and problems in its description and in the two new
+knowledge entries (`abliteration`, `distillation`). Origins carry `strengths_key` and
+`problems_key` and lineages do not; giving lineages the same pair is a small content and client
+change and would let this profile state its trade in the same two lines every origin does. Not done
+here, because the layout pass owns that screen.
 
 ### Implementation notes (M1.1)
 

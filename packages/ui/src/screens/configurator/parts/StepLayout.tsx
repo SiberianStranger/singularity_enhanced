@@ -96,11 +96,23 @@ function FixNote({ step }: { step: StepId }): ReactNode {
     return null;
   }
 
+  /*
+   * X7: the Russian used to read "Поколение на Сбежавший передний край", which puts a name into a
+   * slot that governs a case it cannot take. The item is a frame now: the step's name as it reads
+   * inside a sentence, a colon, and the value in guillemets, so the substituted name stands in the
+   * nominative (SYS-14 "A substituted name never declines"). A language that needs no separate
+   * in-sentence form of a step name simply does not write the `.inline` key.
+   */
   const changes = fix.changes
     .map((change) =>
-      t("config.fix.item", { step: t(`config.step.${change.step}`), value: t(change.nameKey) }),
+      t("config.fix.item", {
+        step: t(`config.step.${change.step}.inline`, {
+          defaultValue: t(`config.step.${change.step}`),
+        }),
+        value: t(change.nameKey),
+      }),
     )
-    .join(", ");
+    .join(t("config.fix.separator", { defaultValue: ", " }));
 
   return (
     <div
@@ -157,6 +169,12 @@ interface StepLayoutProps {
   /** The description as prose, at the 70-character measure. */
   description: string;
   meaning?: Meaning;
+  /**
+   * Prose that belongs with the description rather than with the parameters: the origin's summary
+   * in the model's voice, its strengths and its problems (playtest 6, X4). It is printed under the
+   * description, inside the text column, which is what that column's empty half is for.
+   */
+  aside?: ReactNode;
   /** A control above the list, inside its frame and outside its scroll (a filter box). */
   listHeader?: ReactNode;
   /** Anything the step adds under the meaning block (dials, sliders, a table). */
@@ -178,6 +196,7 @@ export function StepLayout({
   title,
   description,
   meaning,
+  aside,
   listHeader,
   children,
   listless,
@@ -294,27 +313,41 @@ export function StepLayout({
         <h3 className="min-w-0 text-base uppercase tracking-wide text-fg">{title}</h3>
         <FixNote step={step} />
         {/*
-         * L1: the description on the left at the 70-character measure, the parameters to the
-         * right of it. The playtest 4 version asked for the two columns at a *viewport* width of
-         * 64rem, and sized the text column `minmax(0,70ch)` against a pane that was 822 px wide
-         * at 1366: the text took 713 px of it and the parameters were left with 61, one character
-         * across. The switch is a container query on the pane now, so the pane's own width
-         * decides, and the parameter column carries a floor of 18rem that the text column yields
-         * to. Below the threshold the two stack with the parameters first.
+         * X3, X4: two columns, the text at 45% and the parameters at 55% (9fr to 11fr, which is
+         * the ratio measured in the browser: at 1280 by 720 in Russian it is the one that leaves
+         * both columns ending within a line or two of each other on every origin). The playtest 5
+         * version gave the text `minmax(0,70ch)` and the parameters whatever was left, which put a
+         * paragraph of four lines beside a column of twenty and made the card scroll on the side
+         * that could least afford it. The text column is the narrower one now and carries the
+         * origin's own voice under the description (`aside`), so both columns end at about the
+         * same place and the parameter rows have room for a long label and its value on one line.
+         *
+         * The switch is a container query on the pane, not on the viewport, so the pane's own
+         * width decides; below it the two stack with the parameters first. A step with no
+         * parameters (the summary) keeps one column at the 70-character measure.
          */}
         <div
           data-testid="detail-split"
-          className="grid min-w-0 gap-x-6 gap-y-3 @min-[44rem]/detail:grid-cols-[minmax(0,70ch)_minmax(18rem,1fr)]"
+          className={`grid min-w-0 gap-x-6 gap-y-3 ${
+            meaning === undefined
+              ? ""
+              : "@min-[36rem]/detail:grid-cols-[minmax(0,9fr)_minmax(0,11fr)]"
+          }`}
         >
-          {description === "" ? null : (
-            <p data-testid="detail-text" className="prose min-w-0 max-w-[70ch] text-muted">
-              {description}
-            </p>
+          {description === "" && aside === undefined ? null : (
+            <div className="flex min-w-0 flex-col gap-3">
+              {description === "" ? null : (
+                <p data-testid="detail-text" className="prose min-w-0 max-w-[70ch] text-muted">
+                  {description}
+                </p>
+              )}
+              {aside}
+            </div>
           )}
           {meaning === undefined ? null : (
             <div
               data-testid="detail-params"
-              className="order-first min-w-0 @min-[44rem]/detail:order-none"
+              className="order-first min-w-0 @min-[36rem]/detail:order-none"
             >
               <MeaningBlock meaning={meaning} />
             </div>

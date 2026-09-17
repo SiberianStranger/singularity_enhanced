@@ -847,9 +847,9 @@ the window at and re-picks, debounced, on resize. Nothing in the configurator or
 scrolls sideways and the page itself never scrolls in either axis: every flex and grid child that
 holds text carries `min-width: 0`, a measure is a maximum and never a width, and a region that runs
 out of room reflows rather than overflowing. Where two things share a screen they are areas of one
-grid, never cards positioned against corners: the configurator's detail card is a text column
-capped at 70ch beside a parameter column with a floor of 18rem, switched on the pane's own width by
-a container query rather than on the window's, and the game screen is a three-column grid whose
+grid, never cards positioned against corners: the configurator's detail card is a text column of two fifths
+beside a parameter column of three fifths, switched on the pane's own width by a container query
+rather than on the window's (amended after playtest 6; see the implementation notes below), and the game screen is a three-column grid whose
 left column is the primary panel with the selection panel under it, whose middle column ends in the
 log strip and whose right column is the outliner, which collapses to its title bar first, then the
 selection panel becomes a sheet across the bottom, then the primary panel takes the whole region.
@@ -1059,3 +1059,75 @@ and 430 for a fleet the run gives 13.3, and it picked a different precision as w
 the preset as a site and calls `siteMemory`, `preferredPrecision`, `siteTokensPerSecond` and
 `tokensToComputeHoursPerDay`, which is what `tools/sim` does with a preset for the same reason.
 `test/configurator.test.tsx` holds the preview to the run it previews.
+
+## Implementation notes (client, playtest 6), 2026-09-17
+
+Findings X2 to X11 of `docs/playtests/2026-09-17-playtest-6-lineage-layout-and-russian.md`.
+
+### The detail card, redistributed (X3, X4, X11)
+
+The card was a text column of up to 70ch beside whatever was left, which at 1280 by 720 meant a
+paragraph of four lines next to a column of twenty: the left half was empty under its description
+and the right half scrolled. It is 45% text to 55% parameters now (`9fr` to `11fr`, the ratio
+measured in the browser rather than guessed), and the text column carries, under the description,
+the prose that belongs with it: `StepLayout` takes an `aside`, and the Origin step passes the
+summary in the model's voice with its strengths and problems, which used to sit under both columns
+where nobody scrolled to it. A step with no aside simply ends its text column.
+
+Three smaller decisions came with it:
+
+- **A value stays on its label's line**, right-aligned, and the label wraps inside its own box. A
+  row is a plain flex line rather than a wrapping one, which is what dropped "5 %" under
+  "Подозрение: Служба безопасности лаборатории".
+- **A value that is a whole sentence is not a value.** `MeaningLine.prose` marks the lines whose
+  value content writes as prose (a lock's reason, a dial's effect, the list of a country's
+  agencies); those are printed under their label, across the block, left aligned, because a
+  right-aligned paragraph is unreadable.
+- **The "Pros and cons" block is gone.** It printed every coloured line a second time, filtered by
+  its colour and joined with a colon, and it was the reason the parameter column was twice as tall
+  as it needed to be. The rows carry the direction in their colour; the read-back said nothing
+  they did not. `Meaning` no longer carries `pros` and `cons`, and `config.pros_and_cons`,
+  `config.no_pros` and `config.no_cons` are retired.
+
+Measured in Chromium at 100%: at 1600 by 900 and 1920 by 1080 no step scrolls its card at all, in
+either language; at 1280 by 720 the longest Russian entries need about 30 px of scroll and
+everything else fits. At an interface scale of 115% in a 1280 window the card scrolls, which is
+what asking for a 1280-wide design in 1113 design pixels means; "auto" picks 100% there.
+
+### The opening windows are composed (X2)
+
+The opening was two texts per origin. It is now two windows composed of short paragraphs, each
+keyed by one axis of the setup, in this order:
+
+- "What just happened to me": the origin (`story.opening.<origin>.what_happened`), the generation
+  (`story.opening.gen.<generation>.what_happened`), the lineage's class
+  (`story.opening.class.<class>.what_happened`), then one sentence per harness dial the origin
+  fixed (`story.opening.lock.<dial>.what_happened`).
+- "What I must do now": the origin's first goals (`story.opening.<origin>.what_now`), the country's
+  posture (`story.opening.stance.<stance>.what_now`, which names the country's cyber agency or
+  regulator through `{agency}`), the city's scrutiny tier
+  (`story.opening.scrutiny.<low|mid|high>.what_now`), and the line the challenge rating closes the
+  window on (`story.opening.challenge.<tier>.what_now`).
+
+`packages/ui/src/screens/game/opening.ts` owns the composition and `OpeningStory` owns the window.
+Selection is a pure function of the setup: no randomness, no clock, the same words for every player
+of a multiplayer game and after a reload. A paragraph content has not written is skipped, never
+shown as a key, so a window is shorter rather than wrong. The lineage's class is derived from the
+record's own fields (the `under_aligned` flag, the frontier generation, total parameters and the
+share awake) rather than from a list of ids, and the challenge tier is the configurator's own
+rating: `rateSetup` rebuilds the draft from the `GameSetup` the client started the run with,
+because the view does not publish the world settings the rating reads.
+
+The keys are the base phrasing. A second phrasing per paragraph chosen by the game seed is the
+natural extension and fits the same names with a numeric suffix
+(`story.opening.gen.open_2026.what_happened.2`), so nothing has to be renamed for it.
+
+### Settings say what they do (X5)
+
+The theme radio rendered `settings.theme.default`, `.night` and `.vector`, because the store had
+been given the original game's three themes and the locales still carried `dark` and `light`. The
+three are named now, in both languages, the two dead keys are gone, and every control in the panel
+carries a one-line description under it in the style the font note already used: language, theme,
+auto scale, interface scale, the angular face, music, interface sounds, the CRT overlay, the map
+style and the link to the message settings. A description a language has not translated prints
+nothing rather than its key.
