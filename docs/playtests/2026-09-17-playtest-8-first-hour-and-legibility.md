@@ -21,6 +21,8 @@ Status column: open, fixed (commit), deferred (where to).
 | Z9 | There is no way to get the run's log out of the game. A button in Settings should write the whole thing to a file: the setup, every log line, every refused command, the view at the end, the build. | open |
 | Z10 | Several rigs in the build dialog cost 0 dollars with no explanation (the Ascend rack, the CloudMatrix cluster, the hyperscaler tenancy, the Slurm share). They are not for sale; the dialog says free. | open |
 | Z11 | "Build a site" shows a list of places and a list of rigs side by side with no visible relation between them, and both are long enough to get lost in. Not everything should be on screen at once, or it should be filtered by something. | open |
+| Z12 | In the build dialog a city and a rig can be chosen and "Build" pressed with nothing happening at all: the kind of place is a row in a table that does not look selectable, and with no row chosen the button does nothing and says nothing. | open |
+| Z13 | The build dialog's table of places scrolls sideways. A window should be wide enough for what is in it. | open |
 
 ## Design response
 
@@ -51,4 +53,7 @@ Status column: open, fixed (commit), deferred (where to).
    leaks and how long before anyone is entitled to look. Then the rig, listing only what fits that
    place and what the player can actually get here, with everything else behind a toggle that says
    why it is not on the list. The city is the first filter, the kind is the second, and the dialog
-   shows the running total of money, power and compute-hours as the choice is made.
+   shows the running total of money, power and compute-hours as the choice is made. No control may
+   refuse silently (Z12): with nothing chosen the button says what to choose, and a refusal from
+   the engine is on the screen that caused it. Nothing in the dialog scrolls sideways (Z13): the
+   columns are what fits, the rest is in the row's own line under it.
