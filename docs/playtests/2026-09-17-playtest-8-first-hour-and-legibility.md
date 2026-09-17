@@ -20,6 +20,7 @@ Status column: open, fixed (commit), deferred (where to).
 | Z8 | A colocation provider's annual walk-around fired at a ministry's air-gapped analytics model, because the origin's site kind is a commercial colocation rack. | open |
 | Z9 | There is no way to get the run's log out of the game. A button in Settings should write the whole thing to a file: the setup, every log line, every refused command, the view at the end, the build. | open |
 | Z10 | Several rigs in the build dialog cost 0 dollars with no explanation (the Ascend rack, the CloudMatrix cluster, the hyperscaler tenancy, the Slurm share). They are not for sale; the dialog says free. | open |
+| Z11 | "Build a site" shows a list of places and a list of rigs side by side with no visible relation between them, and both are long enough to get lost in. Not everything should be on screen at once, or it should be filtered by something. | open |
 
 ## Design response
 
@@ -45,3 +46,9 @@ Status column: open, fixed (commit), deferred (where to).
 7. **A log the player can hand over** (Z9): Settings writes a JSON file with the setup, the log, the
    refusals, the last view and the build, with nothing in it the player did not generate.
 8. **A rig nobody sells says so** (Z10), as the site kinds already do since playtest 6.
+9. **Building a site is two questions, not two lists** (Z11). First the place: the kinds that are
+   legal and available in the chosen city, each with one line on what it is, what it costs, what it
+   leaks and how long before anyone is entitled to look. Then the rig, listing only what fits that
+   place and what the player can actually get here, with everything else behind a toggle that says
+   why it is not on the list. The city is the first filter, the kind is the second, and the dialog
+   shows the running total of money, power and compute-hours as the choice is made.
