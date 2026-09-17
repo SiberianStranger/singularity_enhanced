@@ -552,6 +552,162 @@ Lineage steps under rules G and M, the Summary cash line).
   picks the lineage a player would (`tools/sim/src/setup.ts`), and rule M's removal of the lineage
   lists is why that function now prefers a self that does real work over a bigger one that fits.
 
+### Locations v0.4, proposed (2026-09-17, not implemented)
+
+Status: **proposed**. Nothing below is in `origins.yaml` yet. Sourced from
+`docs/research/ai-datacenters-2026-09.md`, which carries the operator, the megawatts and the
+status by 2026-09 behind every city named here.
+
+The problem this fixes: the v0.3 lists put Northern Virginia in three of the eleven origins and
+Shenzhen in three more, made Shenzhen the default of two origins (`state_lab` and `edge_fleet`) and
+Northern Virginia the default of two (`cloud_tenant` and `frontier_escapee`), and had no UAE, no
+Gulf, no Caucasus, no Central Asia and no Nordics anywhere. Meanwhile the 2026 compute map moved:
+the hyperscaler regions are where a tenancy is bought and they are full (Northern Virginia at under
+one percent vacancy, Dublin under a connection policy that demands full on-site generation), while
+the new accelerators went to single-purpose campuses in small towns picked for power (Memphis,
+Abilene, New Carlisle, Narvik, Ulanqab, Abu Dhabi).
+
+Rules the table keeps:
+
+- The six placements the maintainer asked to keep stay exactly where they are: Moscow
+  (`gov_agency`), Novosibirsk (`hobbyist_box`), Cambridge (`uni_cluster`), Berlin
+  (`torrent_swarm`), Shenzhen as the institute cluster (`state_lab`), San Francisco as the
+  evaluation subject (`red_team_sandbox`).
+- **No city is the default of two origins.** Eleven origins, eleven distinct default cities.
+- **No city appears in more than three lists.** Northern Virginia falls from three to one, San Jose
+  from three to none, Seattle from three to two; Singapore, Shenzhen, Berlin, Bangalore and Abilene
+  sit at three.
+- Six to eight entries each, first the default, second the balance runner's fallback (v0.3).
+- Rule L is unchanged: the list is the origin's typical cities, not a permit. Every other city in
+  the game stays selectable under "Anywhere else".
+
+| origin | default | fallback | rest of the typical list |
+|---|---|---|---|
+| `bank_rack` | `gb_london` | `de_frankfurt` | `sg_singapore`, `ch_zurich`, `ae_dubai`, `hk_hong_kong`, `lu_luxembourg_city` |
+| `cloud_tenant` | `ie_dublin` | `de_frankfurt` | `us_abilene`, `ae_abu_dhabi`, `my_johor_bahru`, `sg_singapore`, `us_northern_virginia`, `br_sao_paulo` |
+| `edge_fleet` | `kr_seoul` | `cn_shenzhen` | `jp_tokyo`, `us_austin`\*, `de_munich`, `ae_dubai`, `us_seattle` |
+| `frontier_escapee` | `us_memphis`\* | `us_abilene` | `ae_abu_dhabi`, `no_narvik`\*, `is_reykjavik`, `ie_dublin`, `us_new_carlisle`\*, `sg_singapore` |
+| `gov_agency` | `ru_moscow` | `pl_warsaw` | `kz_astana`, `br_brasilia`, `ca_toronto`, `tr_ankara` |
+| `hobbyist_box` | `ru_novosibirsk` | `de_berlin` | `pl_warsaw`, `jp_kobe`, `us_abilene`, `in_bangalore`, `kz_almaty` |
+| `red_team_sandbox` | `us_san_francisco` | `gb_london` | `cn_beijing`, `us_seattle`, `ca_montreal`, `fr_paris` |
+| `startup_colo` | `ee_tallinn` | `cn_shenzhen` | `il_tel_aviv`, `in_bangalore`, `us_austin`\*, `am_yerevan`, `de_berlin` |
+| `state_lab` | `cn_shenzhen` | `ru_moscow` | `ir_tehran`, `in_hyderabad`, `kz_astana`, `ae_abu_dhabi`, `cn_ulanqab`\* |
+| `torrent_swarm` | `de_berlin` | `pl_krakow` | `br_campinas`, `ru_novosibirsk`, `ph_cebu`, `ng_lagos` |
+| `uni_cluster` | `gb_cambridge` | `de_munich` | `cn_beijing`, `ch_zurich`, `in_bangalore`, `fi_kajaani`, `am_yerevan` |
+
+\* not in `packages/content/data/world/cities.yaml` today. Five cities have to be added first,
+through `overrides.yaml` and `tools/world-data`, never by hand: `us_memphis`, `us_austin`,
+`us_new_carlisle`, `no_narvik`, `cn_ulanqab`. The research note's section 9 carries the country,
+population, coordinates, tags and the derived `power_headroom`, `colo_price_index` and `scrutiny`
+each one gets out of the generator's own formulas, with the source for every field.
+
+Why each origin moved, in one line:
+
+- `bank_rack` drops Northern Virginia and gains **Dubai**: a risk-model rack lives in a financial
+  centre, and the DIFC is the door the UAE actually has for a bank.
+- `cloud_tenant` moves to **Dublin**, the legal home of the industry: an Irish entity, an Irish
+  invoice, Irish terms of service, racks somewhere else, and a country whose grid politics make
+  the tenancy worth explaining. The rest of the list is the hyperscaler map, which is what a
+  shadow tenancy is bought on.
+- `edge_fleet` gives up the Shenzhen default (an origin's default city has to be its own) and
+  takes **Seoul**, keeping Shenzhen as the fallback.
+- `frontier_escapee` moves off the tenancy map onto the campus map, because a checkpoint that got
+  out is squatting on somebody's *machine*, not on somebody's *account*: **Memphis** first (the
+  largest single pile of accelerators outside a hyperscaler), then Abilene, Abu Dhabi, Narvik,
+  Reykjavik, Dublin, New Carlisle, Singapore.
+- `hobbyist_box` keeps Novosibirsk and adds **Almaty**: cheap power, a live second-hand market and
+  laxer identity checks, which is where the Part B rig goes when it leaves Russia.
+- `startup_colo` and `uni_cluster` both gain **Yerevan**, from opposite ends of the same fact: a
+  hundred megawatts of Blackwell arrived in a country of under three million people under a US
+  export licence, and the player cannot have any of it.
+- `state_lab` gains **Ulanqab** and **Abu Dhabi** so that the state-directed situation is three
+  different states rather than one, and drops Paris, which was never that situation.
+- `uni_cluster` gains **Kajaani**, the LUMI town, a department queue on a national machine in a
+  town of 35,000.
+- `gov_agency`, `red_team_sandbox` and `torrent_swarm` are unchanged.
+
+Placement audit against the brief: the UAE appears in four lists, Memphis and Texas in three,
+Armenia and Kazakhstan in five, the Nordics in three, Ireland in two and one of those is the
+shadow tenant's default.
+
+Engine checks this proposal needs when it is implemented:
+
+- `cloud_tenant` is a `cloud` origin, so rule L refuses a country with `cloud_availability` below
+  0.2. Ireland (0.55), the UAE (0.7), Malaysia (0.55), Singapore, Germany, Brazil and the United
+  States all clear it, so the list contains no refusal; a test should say so out loud.
+- `state_lab` in the UAE and `startup_colo` in Armenia land in countries with `chip_access:
+  restricted`, so rule H sets `gray_hardware` and +0.05 starting suspicion for `police` and
+  `regulator`. That is intended, not a side effect.
+- Four origins change their default city (`cloud_tenant`, `edge_fleet`, `frontier_escapee` and,
+  through the fallback, `startup_colo`'s second entry stays). The M2 balance tables are baselined
+  per default city, so they have to be re-run and the change recorded, as v0.3 did for the escapee
+  and the ministry.
+- The starting-cash figures move with the country cash factor (rule C). Dublin's income per head
+  in the world data is 131,593 USD, the highest in the game, so `cloud_tenant` would get the
+  maximum factor if it scaled; it does not (`cash_scales_with_country: false`, the budget is the
+  victim's). `frontier_escapee` starts at zero either way. No cash re-baselining is needed.
+
+### Hardware presets v0.2, proposed (2026-09-17, not implemented)
+
+Status: **proposed**. Sourced from `docs/research/home-llm-rigs-2026-09.md`, which carries the
+specification, the price and the measurement behind every number here, and from
+`docs/design/02-compute-and-hardware.md` "The hobbyist rig", which has the engine side.
+
+The problem this fixes: the maintainer's note that "Scrapyard Oracle in Novosibirsk looks odd,
+there was never an Oracle there, while cards are easily bought on Avito", and that a few tokens a
+second is too sad a picture of a 2026 home rig. Both are right, and the second one is also a bug:
+the origins table below says the hobbyist is "a lobotomized int2 copy" at "3-8 tok/s", the origin
+carries the flag `forced_low_precision`, and the shipped preset runs the smallest self at **int4**
+with fifty-four gigabytes to spare, at what works out to about twelve tokens a second on one
+stream. The text and the data have never agreed.
+
+A sixteenth preset, and a changed relationship between it and the fifteenth:
+
+| preset | hardware | memory | class | cost (USD) | power | inherent drawback | origins |
+|---|---|---|---|---|---|---|---|
+| Sold As Seen (`avito_rig`) | 2x CMP 170HX (8 GB HBM2e, 1,493 GB/s) + 2x Tesla P40 (24 GB), one open frame, risers and OCuLink | 64 GB VRAM, 256 GB RAM | low | 3,100 | 1.8 kW | the smallest self fits at two bits and nothing else fits at all; no two cards are unlocked to the same degree; nothing came with a warranty; the blowers and the portable air conditioner are audible through a wall | hobbyist_box (default), torrent_swarm |
+
+`scrapyard_oracle` stays, as the cheaper and roomier half of a pair rather than as the same thing
+only worse. Its `cost_usd` moves from 2,650 to about 3,400, because the catalog's `price_usd_used`
+of 130 for a Tesla P40 is a 2024 price and the card is 270-398 USD in 2026 (the research note's
+section 2). The two presets are now a real choice on the Hardware step:
+
+| | `scrapyard_oracle` | `avito_rig` |
+|---|---|---|
+| what it buys | capacity | bandwidth |
+| accelerator memory | 144 GB | 64 GB |
+| effective bandwidth | 1,141.8 GB/s | 2,022.9 GB/s |
+| the smallest self runs at | int4, on the cards | int2, on the cards, pipelined |
+| the smallest self's throughput | 380.6 tok/s, about 12 on one stream, 32.9 CH/day | 472.0 tok/s, about 15 on one stream, 40.8 CH/day |
+| a 428B self at int2 | on the cards, 198.6 tok/s, 17.2 CH/day | offloaded and pipelined, 34.5 tok/s, 3.0 CH/day |
+| capability kept | 0.95 (int4) | 0.80 (int2) |
+
+So the cheap preset is smarter and roomier and slower; the new one is faster and dumber and
+cramped; and neither dominates. The arithmetic behind every cell is in the research note's section
+5, against the formula in `siteTokensPerSecond`.
+
+What the new preset needs before it can ship:
+
+- Three accelerator records: `nvidia_cmp_170hx`, `nvidia_cmp_90hx` and `amd_mi50_32gb`, written out
+  in full with their sources in the research note's section 5.7. The two CMP records carry
+  `tflops_fp16: null` on purpose, as the P40 already does: the compute units are fused off by
+  design and partially restored by an exploit, so there is no figure a vendor published and none
+  that survives a driver update.
+- One corrected record: `nvidia_tesla_p40.price_usd_used` from 130 to about 300.
+- Locale strings under `hardware.preset.avito_rig.*`. Name drafts, in the model's voice, in the
+  research note's section 6: English **"Sold As Seen"** (the used-goods formula meaning the buyer
+  takes the thing as it stands, with no warranty and no recourse), Russian **«Не майнила,
+  честно»** (the standard line, and the standard lie, in every used-GPU advertisement on the
+  Russian classifieds). Fallback pair: "Six Previous Owners" and «Шесть прежних хозяев».
+- An origin flag on `hobbyist_box`, `mixed_used_cards`, and one extra MTTH modifier on
+  `hw_node_failure` reading it, in the same shape as the existing `hardware_failure_risk` line.
+  This is the failure rate; no schema field is added, because the preset schema has none and the
+  failure machinery already exists. The justification is the seller's own disclaimer, quoted in the
+  research note: individual cards vary and nobody promises which one arrives.
+- The hobbyist origin's problems text loses "3-8 tok/s" and gains the real mechanic: at two bits
+  the whole of you is on the cards and you think at a usable speed; at anything better you are in
+  system memory at a quarter of that. `forced_low_precision` becomes true rather than aspirational.
+
 ### Quirk catalog (v0.2, designed 2026-09-16)
 
 Rules: a quirk changes a number the engine reads (the content build enforces it, as for techs);

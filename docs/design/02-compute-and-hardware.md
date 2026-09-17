@@ -306,3 +306,60 @@ day), times the kind's `upkeep_factor`, which went from 0.4 to 0.9. A partner st
 depreciation, because the operator owns the cards; what it buys is opex instead of capex, at a
 margin, which is why the fee now lands just under what owning the same cards costs. The figures and
 the reasoning are in SYS-01 "Balance notes (M2, second pass)".
+
+## The hobbyist rig (2026-09-17, proposed)
+
+Status: **proposed**, alongside SYS-04 "Hardware presets v0.2". Sourced from
+`docs/research/home-llm-rigs-2026-09.md`. Three things belong in this system rather than in the
+configurator's, because they are about what the engine computes rather than about what the player
+picks.
+
+### Tokens per second is a batch figure
+
+`TOKENS_PER_COMPUTE_HOUR` is a million tokens, and its own comment says that is "roughly a million
+tokens of generation across a working batch". So `siteTokensPerSecond` returns **batch throughput**,
+not the number a person watching a console sees. The single-stream figure is the engine's divided
+by the working batch, and the convention this document adopts is a batch of **32** for a rig of the
+hobbyist class. Every tokens-per-second figure written in prose (origin descriptions, preset
+drawbacks, the knowledge base, tooltips) is the single-stream figure; every figure in a view field
+is the engine's.
+
+This was not written down anywhere, and the result is a contradiction that shipped: SYS-04's
+hobbyist row says "3-8 tok/s" while the same preset computes to 380 tok/s and 32.9 CH/day for the
+smallest self. Both are now expressible: 380.6 batch, about twelve on one stream.
+
+### "Not all of me fits" needs no new field
+
+The mechanic is the gap between a site's accelerator memory and its hostable memory
+(`accelerator_gb` plus host RAM at `RAM_MEMORY_DISCOUNT` 0.5), read through the three terms
+`preferredPrecision`, `split` and `offloaded` that already exist:
+
+- the self fits on the cards at the best precision the cards hold, and runs at full speed;
+- the self fits on the cards only at a worse precision, and pays `precision_factor` in capability;
+- the self is larger than any one node, and pays `CROSS_NODE_FACTOR` 0.35 in throughput;
+- the self is larger than all the cards together, and pays `RAM_OFFLOAD_THROUGHPUT_FACTOR` 0.28 on
+  top of that;
+- the self is larger than the hostable memory, and the site cannot hold it at all.
+
+A preset sized so that exactly one lineage fits on its cards turns all five of those into one
+standing decision the player can read off the Compute panel: be smaller and fast, or be larger and
+crawl. That is the whole design of `avito_rig` and it is why the preset's memory is deliberately
+below what the second-smallest self needs.
+
+### A modelling gap in `siteTokensPerSecond`
+
+The formula pools the memory bandwidth of every accelerator on a site regardless of where the
+weights actually sit. On a homogeneous site that is right. On a **mixed** site it over-credits:
+a rig that pairs an 8 GB HBM card at 1,493 GB/s with 24 GB GDDR5 cards at 346 GB/s is credited
+with the HBM card's full bandwidth even when the self is resident entirely on the GDDR5 ones.
+`CROSS_NODE_FACTOR`'s flat 0.35 is a stand-in for the same effect and only applies when the self
+exceeds the largest single node.
+
+Consequence today: a mixed preset's numbers swing by a factor of three across the `split`
+threshold, so a mixed preset must be sized so the self does not fit inside any one homogeneous
+group. That is also the truthful description of such a machine, so the constraint is not a
+distortion, but it is load-bearing and the next person to touch the preset needs to know it.
+
+The cheap fix, when someone is in this code: weight each node's bandwidth contribution by that
+node's share of the site's accelerator memory whenever the self does not fit in a single node,
+instead of the flat `CROSS_NODE_FACTOR`. Not done here; recorded so that it is not rediscovered.

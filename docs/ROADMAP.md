@@ -22,6 +22,16 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
 5. **Generation axis and the starred origin** (decided 2026-09-16): the configurator lets the
    player be a superseded 2026 open model, a fresh 2027 open model, or an escaped closed frontier
    checkpoint with the hunt already on. See `design/04-start-configurator.md`.
+6. **Borrowed inference** (open, proposed 2026-09-17): whether the game gets a compute source that
+   cannot host the self but executes work at an external model's quality, in three tiers (official
+   free tiers, grey resale relays, harvested credentials). The design is `design/25-borrowed-inference.md`
+   (SYS-25) and the sourced facts are `research/borrowed-inference-2026-09.md`. It needs a decision
+   because it is the first system that makes compute-hours non-fungible, which touches research,
+   operations and the views; the spec lists the engine changes in the order they would be built.
+   Two proposals wait on the same page for the same reason: SYS-04 "Locations v0.4" (the origin
+   location map, from `research/ai-datacenters-2026-09.md`) and SYS-04 "Hardware presets v0.2" plus
+   SYS-02 "The hobbyist rig" (the replacement for `scrapyard_oracle`, from
+   `research/home-llm-rigs-2026-09.md`). All three are marked proposed and none is implemented.
 
 ## Playable-build cadence
 
