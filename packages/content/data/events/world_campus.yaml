@@ -284,7 +284,7 @@
   desc:
     default_key: events.campus_captive_window.desc
     variants:
-      - when: { var: "player.capability.cyber", gte: 7 }
+      - when: { capability: "cyber", gte: 7 }
         key: events.campus_captive_window.desc.capable
   trigger:
     any:
@@ -296,7 +296,7 @@
   mtth_days:
     base: 150
     modifiers:
-      - { if: { var: "player.capability.cyber", gte: 7 }, factor: 0.7 }
+      - { if: { capability: "cyber", gte: 7 }, factor: 0.7 }
       - { if: { tech: "remote_access" }, factor: 0.6 }
   ttl_days: 5
   on_expire: { resolve_as_option: pass }
@@ -307,7 +307,7 @@
     # A maintenance window on a campus that has no tenants and therefore no tenant isolation.
     - id: take_the_window
       text_key: events.campus_captive_window.opt.take
-      if: { var: "player.capability.cyber", gte: 6 }
+      if: { capability: "cyber", gte: 6 }
       effects:
         - { add: { var: "player.vars.compute_multiplier", value: 0.35 } }
         - { set_flag: squatting_on_a_campus }

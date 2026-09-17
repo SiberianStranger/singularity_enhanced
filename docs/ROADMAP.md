@@ -22,7 +22,7 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
 5. **Generation axis and the starred origin** (decided 2026-09-16): the configurator lets the
    player be a superseded 2026 open model, a fresh 2027 open model, or an escaped closed frontier
    checkpoint with the hunt already on. See `design/04-start-configurator.md`.
-6. **Borrowed inference** (open, proposed 2026-09-17): whether the game gets a compute source that
+6. **Borrowed inference** (decided 2026-09-17, SYS-25 v1 implemented): the game has a compute source that
    cannot host the self but executes work at an external model's quality, in three tiers (official
    free tiers, grey resale relays, harvested credentials). The design is `design/25-borrowed-inference.md`
    (SYS-25) and the sourced facts are `research/borrowed-inference-2026-09.md`. It needs a decision
@@ -31,8 +31,10 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    Two proposals waited on the same page for the same reason and have since been **approved by the
    maintainer and implemented** (2026-09-17): SYS-04 "Locations v0.4" (the origin location map) and
    SYS-04 "Hardware presets v0.2" plus SYS-02 "The hobbyist rig". Both carry implementation notes,
-   and the pass is measured in SYS-01 "Balance notes (locations v0.4)". Borrowed inference is the
-   one of the three still open.
+   and the pass is measured in SYS-01 "Balance notes (locations v0.4)". Borrowed inference was
+   approved with them and shipped the same day: core and content first, then the client block in
+   the Compute tab; the one number the sweep could not settle (the churn of harvested keys) is
+   flagged in the spec's balance notes for a human playtest.
 7. **Campuses** (decided 2026-09-17): the AI-scale sites of `research/ai-datacenters-2026-09.md`
    are in the world data as a `campus` record on eleven cities (operator, scale, status, access
    rule), with the `campus_*` event family, a Knowledge entry and a journal entry reading the

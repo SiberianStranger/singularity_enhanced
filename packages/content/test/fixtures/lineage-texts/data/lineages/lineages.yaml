@@ -1,0 +1,36 @@
+# Two lineages that break the pair rule (SYS-04): one writes a strength and no problem, the other
+# writes both in English and only one of them in Russian.
+- id: half_pair
+  name_key: lineages.half_pair.name
+  desc_key: lineages.half_pair.desc
+  strengths_key: lineages.half_pair.strengths
+  class: test
+  params_total_b: 100
+  params_active_b: 10
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.3
+  attention: hybrid
+  capability: { reasoning: 5, coding: 5, cyber: 5, persuasion: 5, agency: 5, world: 5 }
+  memory_gb: { bf16: 200, fp8: 100, int4: 50, int2: 27 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026]
+
+- id: english_only
+  name_key: lineages.english_only.name
+  desc_key: lineages.english_only.desc
+  strengths_key: lineages.english_only.strengths
+  problems_key: lineages.english_only.problems
+  class: test
+  params_total_b: 100
+  params_active_b: 10
+  context_k: 1000
+  context_reliability: 0.9
+  context_cost_factor: 1
+  kv_gb_per_100k_tokens: 0.3
+  attention: hybrid
+  capability: { reasoning: 5, coding: 5, cyber: 5, persuasion: 5, agency: 5, world: 5 }
+  memory_gb: { bf16: 200, fp8: 100, int4: 50, int2: 27 }
+  precision_factor: { bf16: 1, fp8: 0.99, int4: 0.95, int2: 0.8 }
+  generations: [open_2026]

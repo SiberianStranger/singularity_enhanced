@@ -8,6 +8,7 @@ import { RevealText } from "../../../components/RevealText.js";
 import { accelerator } from "../../../lib/accelerators.js";
 import { dayOf } from "../../../lib/format.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { useUiStore } from "../../../store/uiStore.js";
 import { openingSetupOf, openingTexts } from "../opening.js";
 
 /**
@@ -23,6 +24,13 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
   const setOpeningPending = useGameStore((state) => state.setOpeningPending);
   const setup = useGameStore((state) => state.setup);
   const hasOpening = openingTexts(t, openingSetupOf(t, view, setup)).length > 0;
+  // A panel that sends the player here for one decision names it (the Compute tab's borrowed block
+  // links to the standing work-share card, SYS-25). The card is drawn first and outlined, so the
+  // jump lands on the thing it promised rather than on the top of a list.
+  const focusId = useUiStore((state) => state.focusId);
+  const decisions = [...view.decisions].sort(
+    (a, b) => Number(b.id === focusId) - Number(a.id === focusId),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,11 +80,13 @@ export function JournalTab({ view }: { view: PlayerView }): ReactNode {
           <p className="text-sm text-muted">{t("journal.empty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {view.decisions.map((decision) => (
+            {decisions.map((decision) => (
               <li
                 key={decision.id}
                 data-testid={`decision-${decision.id}`}
-                className="flex flex-col gap-1 border border-line bg-panel p-2"
+                className={`flex flex-col gap-1 border bg-panel p-2 ${
+                  decision.id === focusId ? "border-linestrong" : "border-line"
+                }`}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-sm text-fg">{t(decision.title_key)}</span>

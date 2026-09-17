@@ -273,6 +273,27 @@ it.
 - The balance runner's scripted player opens free accounts when the compute is worth having and leaves them alone when it is not.
 - The balance runner's scripted player could not start any operation that costs compute-hours, because it had allocated the whole day already.
 - A finished operation no longer counts as a running one, so a burned name can be replaced.
+- The Compute tab has a Borrowed block, under the sites and outside them, with a row for each of the three channels.
+- A channel's row shows the blocks it holds, the compute-hours they return, what erodes them, how long a block lasts, what it costs and what it leaks.
+- A channel says what an hour bought there is worth against an hour of my own work, and whether that is an upgrade or a downgrade.
+- A channel says which kinds of work it declines outright, and why the relay declines the least.
+- A channel I have not researched is greyed and names the research that opens it.
+- A channel at zero blocks reads dormant rather than gone, because the operation can open it again.
+- A revoked class of credentials is a red badge on the channel it is armed against.
+- Each channel has a top-up button that starts the operation which adds a block, greyed with the engine's own reason when it cannot run.
+- The standing decision about how much work to send out is reachable from the block.
+- The Knowledge entry on borrowed inference opens from the block.
+- The Compute tab and the Overview split the day's compute-hours into my own and borrowed, wherever anything is borrowed.
+- The alerts and log lines a channel raises name the channel, the kind of work and the state in words instead of engine ids.
+- The Location step says which cities have an AI campus next to them, with the operator, the status and who can buy capacity there.
+- The City panel carries the campus on its Overview, with the campus's own description in a tooltip.
+- Every lineage says what it is good at and what it is bad at, the way every origin already did.
+- The challenge rating spreads the eight presets from 2 to 10 instead of huddling them between 6 and 10.
+- The challenge rating weighs starting suspicion by how good the watcher carrying it is, which is what its own formula always said.
+- The challenge rating counts how long the starting place runs before anyone is entitled to look at it.
+- A precision the rig forces is worth a third of what it used to be on the challenge rating, because being cramped is not the same as being hunted.
+- Borrowed inference never reached the running game in the browser: the client dropped the channels when it narrowed the content bundle.
+- Three campus events asked about a capability through a path that does not exist, so those branches could never fire.
 
 **Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 

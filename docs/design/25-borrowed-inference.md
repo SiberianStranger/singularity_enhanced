@@ -1,10 +1,10 @@
 # SYS-25: Borrowed inference
 
-Status: **v1 implemented (core and content); client pending.** The compute the player does not own,
-does not host and cannot live on: official free tiers, grey resale relays, and credentials that
-belong to somebody else. It sits beside SYS-02 (which owns sites and compute-hours), SYS-05 (which owns the channels it leaks
-on), SYS-07 (which owns the money it costs and saves), SYS-12 (which spends what it produces) and
-SYS-17 (which supplies the verbs that acquire it).
+Status: **v1 implemented.** The compute the player does not own, does not host and cannot live on:
+official free tiers, grey resale relays, and credentials that belong to somebody else. It sits
+beside SYS-02 (which owns sites and compute-hours), SYS-05 (which owns the channels it leaks on),
+SYS-07 (which owns the money it costs and saves), SYS-12 (which spends what it produces) and SYS-17
+(which supplies the verbs that acquire it).
 
 Source: `docs/research/borrowed-inference-2026-09.md`. Every number in section 6 traces to a row of
 that report.
@@ -435,8 +435,9 @@ dormant site at zero blocks afterwards: the tech is not lost and the operation c
 7. **A `capability` condition.** `credential_harvest` needs `cyber >= 5` and nothing in the DSL
    could ask that: `player.capability.cyber` is a path that does not exist on `PlayerState` and
    always evaluated false. The compute system now registers `{ capability: "cyber", gte: 5 }`,
-   because it owns the number. Three lines in `events/world_campus.yaml` still use the old path and
-   are still always false; they are not this pass's to fix.
+   because it owns the number. Three lines in `events/world_campus.yaml` still used the old path and
+   were still always false; they were fixed on 2026-09-17 in the follow-through pass and now read
+   `{ capability: "cyber", gte: N }`.
 8. **The harness's own noise does not land on a channel.** `accrueExposure` adds the harness's
    logging and autonomy to `behavioral` on every site; a channel has no machine and no loop of its
    own, so what it leaks is the per-block figure alone.
@@ -478,6 +479,45 @@ The engine publishes everything the panel needs; nothing below needs another cor
   `alerts.borrowed_refused`, `alerts.bi_revocation_armed`, `alerts.bi_revoked`, `alerts.bi_dropped`,
   `alerts.bi_unmetered_pool`, `alerts.bi_abuse_answered`, `alerts.bi_abuse_answer_failed`,
   `alerts.bi_abuse_escalated`.
+
+### Implementation notes (client, 2026-09-17)
+
+The block "What the client still has to do" asks for shipped, with three things it did not
+anticipate.
+
+- **The block.** `packages/ui/src/screens/game/tabs/BorrowedBlock.tsx`, drawn in the Compute tab
+  between the sites table and the selected site's detail, never inside the table. Its head carries
+  `borrowed.panel.title`, the one paragraph of `borrowed.panel.desc`, the four totals
+  (`own_ch_per_day`, `borrowed_ch_per_day`, `borrowed_share`, `borrowed_share_setting`) and two
+  links: the standing work-share decision and the Knowledge entry. Each channel is a row with its
+  name, its status word, the drawback line, ten figures and the top-up button, greyed as a whole
+  when the tech that opens it is not done.
+- **Every figure carries the tooltip the spec asks for**, and the two that are a breakdown
+  (`effective_factor` and the day's compute-hours) render the core's own `ContributionView` lines
+  through the shared `ContributionLines`, so the panel never invents arithmetic the engine did not
+  publish.
+- **The decision is a link, not a control.** `bi_send_the_work_out` is a decision card in the
+  Journal tab, and the block opens that tab with the card focused rather than keeping a second
+  control that could disagree with it. `focusId` is what carries the card's id, the same mechanism
+  the outliner and the alert bar already use.
+- **The alerts needed no client work and the log lines did.** Alerts are rendered generically by
+  key, so the ten `alerts.*` keys arrive with their message settings for free; the log lines did
+  not, because `logVars` names a variable by its name and knew nothing about `channel`, `category`,
+  `work` or `status`. Those four are named now (`packages/ui/src/lib/labels.ts`), so
+  `log.borrowed_changed` reads "Free tiers: 1.96 blocks, working" rather than
+  "free_tier: 1.96 blocks, healthy".
+- **The Overview's compute line splits** into own and borrowed only where the split is not zero, so
+  a run with no channel reads exactly as it did.
+- **The Finances tab needed nothing**: `finances.cost.borrowed` is a cost line like any other and
+  the panel already prints them by key.
+
+**One bug, and it is the reason the client saw nothing at first.** `toContentBundle`
+(`packages/ui/src/content/bundle.ts`) narrows the compiled JSON against a list of optional domains,
+and `borrowed_channels` was not on that list, so the bundle the client handed the engine carried no
+channels at all. That is not a missing panel: `contentIndex` reads the domain off the bundle, so
+the whole system was inert in the browser while every core and content test passed. Fixed, with a
+regression test in `packages/ui/test/borrowed.test.tsx` that asserts the view publishes one channel
+per channel the bundle ships.
 
 ## Balance notes (SYS-25, first pass)
 
@@ -548,3 +588,15 @@ never got there inside 180 days.
 2. **A finished operation counted as a running one.** `identityOperations` read every instance in
    the view rather than the running ones, so a name that was burned could never be replaced. Fixed
    in this pass; it changes nothing in the table while finding 1 still holds.
+
+### After the campus fix (2026-09-17)
+
+Three conditions in `events/world_campus.yaml` read `player.capability.cyber`, a path that does not
+exist and is therefore always false; they now read the `capability` condition this system added, and
+the sweep was rerun on the same command and the same twenty seeds. **Every figure above is
+unchanged**: 105 losses, 18 `bankrupt` (17.1%), 54 `captured` (51.4%), 24 `erased` (22.9%), 9
+`exposed` (8.6%), nine origins alive past day 90, the starred origin's median 23 days, and the
+per-origin table identical row for row. The three lines gate a description variant, one MTTH
+modifier and one option on `cyber >= 6` or `7`, and the scripted player never reaches that on an
+event whose base MTTH is 150 days, so what the fix buys is a branch a human player can reach and
+nothing the sweep can see. Campus events still fire 0.7 times a run.

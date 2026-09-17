@@ -21,6 +21,7 @@ import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
 import { BuildSiteDialog } from "../dialogs/BuildSiteDialog.js";
 import { BuyHardwareDialog } from "../dialogs/BuyHardwareDialog.js";
+import { BorrowedBlock } from "./BorrowedBlock.js";
 
 /** A context window in the units the player reads: thousands of tokens, millions above 1,000k. */
 function contextText(t: ReturnType<typeof useTranslation>["t"], contextK: number): string {
@@ -330,6 +331,13 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
           ]}
         />
       </div>
+
+      {/*
+       * Borrowed inference (SYS-25 "What the client still has to do"): under the sites table and
+       * outside it, because a channel is not a place. The totals at the top of the block are the
+       * only place in the client where own and borrowed compute-hours are named apart.
+       */}
+      <BorrowedBlock view={view} />
 
       {site === undefined ? null : (
         <section className="flex min-w-0 flex-col gap-2 border border-line bg-panel p-2">

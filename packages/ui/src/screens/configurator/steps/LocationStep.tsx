@@ -2,7 +2,7 @@ import type { CityDef } from "@singularity/core";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { catalog, cityById, countryById, originById } from "../../../content/catalog.js";
-import { countryName, refusalText } from "../../../lib/labels.js";
+import { campusLine, countryName, refusalText } from "../../../lib/labels.js";
 import { WorldMap } from "../../game/map/WorldMap.js";
 import { cityRefusal } from "../locks.js";
 import { locationMeaning } from "../meaning.js";
@@ -89,6 +89,11 @@ export function LocationStep(): ReactNode {
           <span className="text-muted">
             {city.tags.map((tag) => t(`world.tag.${tag}`, { defaultValue: tag })).join(", ")}
           </span>
+          {/* Eleven cities carry one of the 2026 AI campuses (SYS-01 "Campuses"); the row says so
+              before the city is selected, because it is a reason to pick one. */}
+          {city.campus === undefined ? null : (
+            <span className="text-fg">{campusLine(t, city.campus)}</span>
+          )}
         </span>
       ),
       onSelect: () => {

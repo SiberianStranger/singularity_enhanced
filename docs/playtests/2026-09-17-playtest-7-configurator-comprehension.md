@@ -80,9 +80,19 @@ The design response, folded into SYS-04 "Configurator v0.4" as "Day zero":
 
 ## What this pass did not do
 
-- The challenge rating still starts a gentle build at six of ten, because `BASE_RATING` is 3 and a
+Both items were closed on 2026-09-17 in the follow-through pass; the status is kept here with what
+was done, because the finding is what the next playtest reads.
+
+- ~~The challenge rating still starts a gentle build at six of ten, because `BASE_RATING` is 3 and a
   home rig forces two bits. The presets are a relative ladder inside that; the rating itself wants
-  its own pass.
-- The lineages still have no `strengths_key` and `problems_key` of their own (open since playtest
+  its own pass.~~ **Closed.** The rating was re-anchored (SYS-04 "Anchors (v0.2)"): the base is
+  0.75, the precision penalty is halved, the compute and cash bands are drawn against the figures
+  the game produces, the suspicion term multiplies by the watcher competence the formula always
+  said it did, awareness is counted from the floor no start begins below, the grace of the starting
+  place is a term, and the difficulty preset is worth three points instead of one. The eight presets
+  read 2, 4, 4, 5, 6, 7, 8, 10 and `packages/ui/test/rating.test.ts` holds the order.
+- ~~The lineages still have no `strengths_key` and `problems_key` of their own (open since playtest
   6). The guidance block fills the same hole from the other side, so this is now a smaller gap than
-  it was.
+  it was.~~ **Closed.** The pair is on `LineageDef`, all eight lineages write it in both languages,
+  the Lineage step prints it the way the Origin step does, and the content build refuses one key
+  without the other or a pair that is not translated.

@@ -1,6 +1,7 @@
 import { CAPABILITY_AXES, type PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { ContributionLines } from "../../../components/Contributions.js";
 import { Bar, Indicator } from "../../../components/Meter.js";
 import { generationById, lineageById, originById } from "../../../content/catalog.js";
 import { computeHours } from "../../../lib/format.js";
@@ -11,6 +12,9 @@ export function OverviewTab({ view }: { view: PlayerView }): ReactNode {
   const lineage = lineageById.get(view.self.lineage);
   const generation = generationById.get(view.self.generation);
   const origin = originById.get(view.self.origin);
+  // Compute-hours the player does not own (SYS-25). Zero for most runs, and the line stays one
+  // figure while it is.
+  const borrowed = view.compute.borrowed_ch_per_day;
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,7 +66,37 @@ export function OverviewTab({ view }: { view: PlayerView }): ReactNode {
           value={t("common.ch_per_day", {
             value: computeHours(view.resources.compute_hours_per_day),
           })}
+          {...(borrowed > 0
+            ? {
+                breakdown: (
+                  <ContributionLines
+                    t={t}
+                    title={t("game.compute")}
+                    lines={view.compute.contributions}
+                    sites={view.sites}
+                    format={(value) => String(computeHours(value))}
+                    note={t("borrowed.tip.contributions")}
+                  />
+                ),
+              }
+            : {})}
         />
+        {/*
+         * The split (SYS-25 "The totals"): own and borrowed as two figures, and only where there
+         * is something borrowed to see. A player with no channel gets the one line it always was.
+         */}
+        {borrowed > 0 ? (
+          <Indicator
+            label={t("borrowed.total.borrowed")}
+            value={t("common.ch_per_day", { value: computeHours(borrowed) })}
+            breakdown={t("borrowed.tip.split", {
+              own: computeHours(view.compute.own_ch_per_day),
+              borrowed: computeHours(borrowed),
+            })}
+            meter={view.compute.borrowed_share}
+            tone="warn"
+          />
+        ) : null}
         <Indicator
           label={t("operations.attention", { value: view.resources.attention_total })}
           value={`${view.resources.attention_used} / ${view.resources.attention_total}`}

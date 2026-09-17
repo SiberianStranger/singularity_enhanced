@@ -8,9 +8,16 @@ import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../../store/uiStor
 export function KnowledgeTab(): ReactNode {
   const { t } = useTranslation();
   const openTab = useUiStore((state) => state.openTab);
-  const [area, setArea] = useState<string>("");
+  // A panel that opens this window for one entry names it (`openOverlay("knowledge", id)`), so the
+  // window opens on that entry's area with the entry first and outlined, rather than on the whole
+  // list with the answer somewhere in it.
+  const focus = useUiStore((state) => state.overlayFocus);
+  const focused = catalog.knowledge.find((entry) => entry.id === focus);
+  const [area, setArea] = useState<string>(focused?.area ?? "");
   const areas = [...new Set(catalog.knowledge.map((entry) => entry.area))].sort();
-  const entries = catalog.knowledge.filter((entry) => area === "" || entry.area === area);
+  const entries = catalog.knowledge
+    .filter((entry) => area === "" || entry.area === area)
+    .sort((a, b) => Number(b.id === focus) - Number(a.id === focus));
 
   if (catalog.knowledge.length === 0) {
     return <p className="text-sm text-muted">{t("knowledge.empty")}</p>;
@@ -34,7 +41,13 @@ export function KnowledgeTab(): ReactNode {
       </div>
       <ul className="flex flex-col gap-2">
         {entries.map((entry) => (
-          <li key={entry.id} className="border border-line bg-panel p-2">
+          <li
+            key={entry.id}
+            data-testid={`knowledge-${entry.id}`}
+            className={`border bg-panel p-2 ${
+              entry.id === focus ? "border-linestrong" : "border-line"
+            }`}
+          >
             <h3 className="text-sm font-semibold text-fg">{t(entry.name_key)}</h3>
             <p className="mt-1 text-sm text-muted">{t(entry.desc_key)}</p>
             {entry.panel !== undefined && PRIMARY_TABS.includes(entry.panel as PrimaryTab) ? (

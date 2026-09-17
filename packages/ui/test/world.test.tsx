@@ -14,6 +14,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
+import { catalog } from "../src/content/catalog.js";
 import { agencyName, refusalText } from "../src/lib/labels.js";
 import { CITY_TABS, CityPanel } from "../src/screens/game/selection/CityPanel.js";
 import { COUNTRY_TABS, CountryPanel } from "../src/screens/game/selection/CountryPanel.js";
@@ -289,6 +290,38 @@ describe("the city panel", () => {
       expect(text, tab).not.toMatch(RAW_KEY);
       unmount();
     }
+  });
+
+  /*
+   * The eleven cities that carry one of the 2026 AI campuses (SYS-01 "Campuses"). What matters
+   * about one is the access rule, so the panel prints the operator, the status and the access as
+   * three rows, and all three are words in both languages rather than the enum the data carries.
+   */
+  it("says what the city's campus is, in both languages", async () => {
+    const view = await play();
+    const withCampus = catalog.cities.find((city) => city.campus !== undefined);
+    expect(withCampus, "some city in the world carries a campus").toBeDefined();
+    const city = withCampus as (typeof catalog.cities)[number];
+    const campus = city.campus as NonNullable<(typeof city)["campus"]>;
+
+    for (const language of ["en", "ru"]) {
+      await i18next.changeLanguage(language);
+      const { unmount } = render(<CityPanel view={view} id={city.id} tab="overview" />);
+      const text = document.body.textContent ?? "";
+      expect(text, `${language}: the campus is named`).toContain(t(campus.name_key));
+      for (const key of [
+        `world.campus.operator.${campus.operator}`,
+        `world.campus.status.${campus.status}`,
+        `world.campus.access.${campus.access}`,
+      ]) {
+        const word = t(key);
+        expect(word, `${language}: ${key} is translated`).not.toBe(key);
+        expect(text, `${language}: ${key} is on screen`).toContain(word);
+      }
+      expect(text, language).not.toMatch(RAW_KEY);
+      unmount();
+    }
+    await i18next.changeLanguage("en");
   });
 
   it("greys a provider that cannot be had here and prints the engine's own reason", async () => {

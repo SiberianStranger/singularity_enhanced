@@ -17,6 +17,13 @@ export const LineageDefSchema = z.object({
   id: z.string(),
   name_key: z.string(),
   desc_key: z.string(),
+  /**
+   * What this self is good at and what it is not, in the same shape the origins carry (SYS-04,
+   * playtests 6 and 7). Optional, and either both or neither: the build refuses one without the
+   * other, and refuses a pair that is not written in every language the bundle ships.
+   */
+  strengths_key: z.string().optional(),
+  problems_key: z.string().optional(),
   /** Display name per generation, for a family that renumbers between vintages. */
   generation_name_keys: z.partialRecord(GenerationIdSchema, z.string()).optional(),
   class: z.string(),

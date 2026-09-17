@@ -50,6 +50,7 @@ import { computeHours } from "../../lib/format.js";
 import {
   agencyCompetence,
   agencyName,
+  campusLine,
   journalTitle,
   siteKindDescription,
   siteKindName,
@@ -1069,6 +1070,24 @@ export function locationMeaning(
     ),
     hint: t("config.meaning.colo_price_hint"),
   });
+
+  /*
+   * The campus, where the city has one (SYS-01 "Campuses"). Eleven cities do, and what matters
+   * about one is not its megawatts but its access rule: a campus that rents to verified tenants is
+   * a different place to wake up in from one that sells to nobody. The line is prose because the
+   * four facts are a sentence, and the campus's own description is the tooltip on the value.
+   */
+  if (city.campus !== undefined) {
+    lines.push({
+      id: "campus",
+      label: t("config.meaning.campus"),
+      value: campusLine(t, city.campus),
+      tone: "neutral",
+      hint: t("config.meaning.campus_hint"),
+      valueHint: t(city.campus.desc_key),
+      prose: true,
+    });
+  }
 
   return { lines };
 }

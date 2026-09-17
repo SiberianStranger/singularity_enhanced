@@ -426,6 +426,13 @@ The field is optional everywhere and a bundle written before it still loads. **N
 needed**: cities are content, not world state, so `serialize` never writes them and `deserialize`
 reads the field from whatever bundle the game is loaded with.
 
+Fixed 2026-09-17: three conditions in the family tested the self's cyber capability through
+`player.capability.cyber`, a path that does not exist on `PlayerState` and was therefore always
+false, so a description variant, an MTTH modifier and one option could never fire. They read the
+`capability` condition SYS-25 added (`{ capability: "cyber", gte: 7 }`). The balance sweep after the
+fix is identical row for row, because the scripted player never reaches that capability on an event
+whose base MTTH is 150 days; what it buys is a branch a human player can reach.
+
 What the DSL cannot do yet, recorded rather than worked around: **there is no condition that reads
 `city.campus`**. A country-scoped event therefore names the countries whose campus it is about in
 `country.id`, and the site-scoped journal entry names the city ids. A `campus_is` condition kind

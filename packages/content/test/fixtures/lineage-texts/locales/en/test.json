@@ -1,0 +1,9 @@
+{
+  "lineages.half_pair.name": "Half a pair",
+  "lineages.half_pair.desc": "A fixture.",
+  "lineages.half_pair.strengths": "One half of the pair.",
+  "lineages.english_only.name": "English only",
+  "lineages.english_only.desc": "A fixture.",
+  "lineages.english_only.strengths": "Written once.",
+  "lineages.english_only.problems": "Translated never."
+}

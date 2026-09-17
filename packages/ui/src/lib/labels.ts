@@ -6,7 +6,13 @@
  * as an argument rather than calling a hook, so tables and tooltips can use it inside a loop.
  */
 
-import type { ContributionView, SiteView, TextVar, WatcherRole } from "@singularity/core";
+import type {
+  CampusDef,
+  ContributionView,
+  SiteView,
+  TextVar,
+  WatcherRole,
+} from "@singularity/core";
 import type { TFunction } from "i18next";
 import { contentBundle } from "../content/bundle.js";
 import { acceleratorById, cityById, countryById } from "../content/catalog.js";
@@ -281,6 +287,15 @@ function logVarName(
     }
     case "operation":
       return keyed(t, `operations.${id}.name`);
+    // Borrowed inference (SYS-25): the alerts and log lines a channel raises name the channel, the
+    // kind of work it declined and the state it moved to, all as ids.
+    case "channel":
+      return keyed(t, `borrowed.${id}.name`);
+    case "category":
+      return keyed(t, `operations.category.${id}`);
+    case "work":
+      // A refused line is either a tech or an already-written key (the freelance income line).
+      return id.includes(".") ? keyed(t, id) : keyed(t, `techs.${id}.name`);
     // An outcome is already a locale key, written under its own operation by the content build.
     case "outcome":
       return keyed(t, id);
@@ -292,6 +307,10 @@ function logVarName(
       return keyed(t, `decisions.${id}.title`);
     case "stage":
       return keyed(t, `detection.stage.${id}`);
+    case "status":
+      // The only line that carries a `status` is a channel's (`log.borrowed_changed`); a site's
+      // status is written into its own key rather than passed as a variable.
+      return keyed(t, `borrowed.status.${id}`);
     case "watcher":
       return watcherName(t, id, view);
     case "cause":
@@ -324,4 +343,36 @@ function watcherName(t: Translate, id: string, view?: LogNamingView): string | u
         country: countryName(t, watcher.country),
         defaultValue: `${role} (${countryName(t, watcher.country)})`,
       });
+}
+
+/**
+ * A city's campus, in the words the panels print (SYS-01 "Campuses").
+ *
+ * The three enums the data carries are named in the content locale beside `world.tag.*`, because
+ * they are values of the world data rather than labels the client owns: `operator` is who owns the
+ * megawatts, `status` is where the site stands on the start date, and `access` is who can buy them,
+ * which is the question the `campus_*` events read and is not the same as the first.
+ */
+export function campusFacts(
+  t: Translate,
+  campus: CampusDef,
+): { name: string; operator: string; status: string; access: string; description: string } {
+  return {
+    name: t(campus.name_key),
+    operator: t(`world.campus.operator.${campus.operator}`),
+    status: t(`world.campus.status.${campus.status}`),
+    access: t(`world.campus.access.${campus.access}`),
+    description: t(campus.desc_key),
+  };
+}
+
+/** The same four facts as one line, for a step that has room for a line and not for a table. */
+export function campusLine(t: Translate, campus: CampusDef): string {
+  const facts = campusFacts(t, campus);
+  return t("world.campus_line", {
+    name: facts.name,
+    operator: facts.operator,
+    status: facts.status,
+    access: facts.access,
+  });
 }

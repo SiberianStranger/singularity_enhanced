@@ -147,6 +147,13 @@ export interface LineageDef {
   name_key: string;
   desc_key: string;
   /**
+   * What this self is good at, in two or three sentences (SYS-04). The origins have carried the
+   * pair since M1; the lineages got it after playtests 6 and 7 found the Lineage step's text column
+   * thinner than the Origin step's. Optional, and always written as a pair.
+   */
+  strengths_key?: string;
+  problems_key?: string;
+  /**
    * Display name per generation, when the family renumbers between vintages ("Peepseek-P4.1" in
    * 2026, "Peepseek-P5" in 2027). Falls back to `name_key` for a family with one name.
    */

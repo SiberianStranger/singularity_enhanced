@@ -355,7 +355,24 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   // The speed buttons, not the number keys: the focus is still in the slider, where the hotkeys
   // deliberately do nothing.
   await page.getByRole("button", { name: "Set speed to 5" }).click();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
+  // The clock is running at its fastest from here, so an event window can arrive between any two
+  // actions and a modal over the panel swallows the click that was meant for the panel. Answer
+  // whatever is up and try the filter again rather than waiting two minutes on a click that can
+  // never land.
+  await expect
+    .poll(
+      async () => {
+        await resolveOpenEvents(page);
+        try {
+          await page.getByRole("button", { name: "Done", exact: true }).click({ timeout: 2_000 });
+          return "shown";
+        } catch {
+          return "blocked";
+        }
+      },
+      { timeout: 30_000, message: "the Completed filter was reachable" },
+    )
+    .toBe("shown");
   await expect
     .poll(
       async () => {

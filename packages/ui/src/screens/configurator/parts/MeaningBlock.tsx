@@ -35,7 +35,9 @@ function TermValue({ line }: { line: MeaningLine }): ReactNode {
       <button
         type="button"
         data-testid={`value-hint-${line.id}`}
-        className="measure cursor-help border-b border-dotted border-line text-inherit"
+        // A button's own `text-align` is `center` in every user agent, which centres a prose value
+        // under its label; the row's alignment is the `dd`'s business, not the trigger's.
+        className="measure cursor-help border-b border-dotted border-line text-start text-inherit"
       >
         {line.value}
       </button>
@@ -127,7 +129,11 @@ export function MeaningBlock({
                 <dt className="min-w-0 text-sm text-muted">
                   <TermLabel line={line} />
                 </dt>
-                <dd className={`prose min-w-0 text-sm ${TONE_CLASS[line.tone]}`}>{line.value}</dd>
+                {/* A prose value carries its own tooltip too, when there is something behind the
+                  named thing it prints: the city's campus says what the campus is (SYS-01). */}
+                <dd className={`prose min-w-0 text-sm ${TONE_CLASS[line.tone]}`}>
+                  <TermValue line={line} />
+                </dd>
               </div>
             ) : (
               <div

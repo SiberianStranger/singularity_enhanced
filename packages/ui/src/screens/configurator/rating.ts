@@ -1,20 +1,31 @@
 /**
- * Challenge rating and the shareable setup string (SYS-04).
+ * Challenge rating and the shareable setup string (SYS-04 "Challenge rating").
  *
  * The rating is a transparent sum of contributions, not a hidden curve: every term below is one of
  * the inputs the spec names (memory headroom, compute, cash runway, starting suspicion weighted by
- * the watcher's competence, enforcement at the location, harness autonomy, world awareness),
- * plus the difficulty multipliers and the disclosed challenge modifiers. The three largest terms
- * are shown next to the number, so a player can see what makes a start hard.
+ * the watcher's competence, enforcement at the location, harness autonomy, world awareness), plus
+ * the grace the starting place carries, the difficulty multipliers and the disclosed challenge
+ * modifiers. The three largest terms are shown next to the number, so a player can see what makes
+ * a start hard.
  *
- *   CR = clamp(1..10, round(BASE + sum of contributions)), floored by the origin's floor.
+ *   CR = clamp(1..10, round(BASE_RATING + sum of contributions)), floored by the origin's floor.
  *
- * Contributions are in "rating points"; one point is roughly one difficulty step.
+ * Contributions are in "rating points"; one point is one step of the ten.
+ *
+ * Re-anchored 2026-09-17 (playtest 7: "the rating itself wants its own pass"). What moved and why
+ * is written per term below and recorded in SYS-04; the shape of the sum did not change. In one
+ * line: the base came down because it was a floor under every start rather than an anchor, the
+ * precision penalty was a fifth of the whole scale for one hardware choice, the compute and cash
+ * bands were drawn against no particular figure, the suspicion term ignored the competence the
+ * spec's own formula multiplies by, awareness was counted from zero when no start in the game
+ * begins below 0.15, and the difficulty preset moved the number less than one step when it is a
+ * difficulty step by definition.
  */
 
 import { DEFAULT_DIFFICULTY_SLIDERS, type GameSetup } from "@singularity/core";
 import {
   CHALLENGE_MODIFIERS,
+  catalog,
   cityById,
   countryById,
   difficultyById,
@@ -24,9 +35,62 @@ import {
   lineageById,
   originById,
 } from "../../content/catalog.js";
+import { agencyCompetence } from "../../lib/labels.js";
 import type { Draft } from "./store.js";
 
-export const BASE_RATING = 3;
+/**
+ * What a start with nothing at all against it scores before the clamp.
+ *
+ * It was 3, which is where the playtest's complaint came from: a gentle first game could not read
+ * below 3 however quiet it was, and the home rig's two bits then put it at 6. The base is under the
+ * scale's own floor now, because every start carries a little of every term (a country has some
+ * enforcement, a self runs at some precision, a harness has some autonomy), and the anchor that
+ * matters is the one the presets are read against: the gentlest build the game ships reads 2.
+ */
+export const BASE_RATING = 0.75;
+
+/**
+ * The lowest awareness any start begins at (`generations.yaml`: the superseded 2026 vintage).
+ *
+ * Counted from zero, awareness added six tenths of a point to every start in the game and told the
+ * player nothing; counted from the floor, it says what it is for: how much more of the world
+ * already knows than in the quietest start on offer.
+ */
+const AWARENESS_FLOOR = 0.15;
+
+/** The longest grace any starting place carries (`sites.yaml`: a residential machine, 60 days). */
+const MAX_GRACE_DAYS = 60;
+
+/** Compute-hours a day, banded against what the game actually produces (SYS-02, SYS-25). */
+function computePoints(chPerDay: number): number {
+  if (chPerDay < 5) {
+    return 2.4;
+  }
+  if (chPerDay < 15) {
+    return 1.7;
+  }
+  if (chPerDay < 25) {
+    return 1.2;
+  }
+  if (chPerDay < 60) {
+    return 0.6;
+  }
+  return chPerDay < 150 ? 0.3 : 0;
+}
+
+/** Starting cash, banded against the upkeep the starting places actually carry (SYS-07). */
+function cashPoints(cashUsd: number): number {
+  if (cashUsd < 1_000) {
+    return 0.6;
+  }
+  if (cashUsd < 5_000) {
+    return 0.4;
+  }
+  if (cashUsd < 15_000) {
+    return 0.25;
+  }
+  return cashUsd < 50_000 ? 0.1 : 0;
+}
 
 export interface Contribution {
   /** Locale key of the label. */
@@ -79,53 +143,99 @@ export function rateDraft(draft: Draft): Rating {
 
   const contributions: Contribution[] = [];
 
-  // Memory headroom: the lower the precision you fit at, the more of your mind you lose.
-  const precisionPoints = { bf16: 0, fp8: 0.5, int4: 1, int2: 2 };
+  /*
+   * Memory headroom: the lower the precision you fit at, the more of your mind you lose, and the
+   * less room there is to raise the precision or lengthen the context afterwards. Two bits used to
+   * cost two points, a fifth of the whole scale, which is what put the gentle first game at six:
+   * being cramped is a capability cost that the compute and income terms already partly carry, and
+   * it is not the same thing as being hunted.
+   */
+  const precisionPoints = { bf16: 0, fp8: 0.4, int4: 0.8, int2: 1.2 };
   contributions.push({
     key: "config.summary.cr.memory",
-    points: fit?.precision == null ? 3 : precisionPoints[fit.precision],
+    points: fit?.precision == null ? 2 : precisionPoints[fit.precision],
   });
 
-  // Compute: thin compute means slow research, slow money and no operations.
+  /*
+   * Compute: thin compute means slow research, slow money and no operations. The bands are drawn
+   * against the figures the game produces rather than against round numbers: a hobbyist rig is
+   * about twenty compute-hours a day, a colocation cage tens, a bank rack hundreds (SYS-25's
+   * reference points), so under five is desperate and over a hundred and fifty is rich.
+   */
   const compute = fit?.compute_hours_per_day ?? 0;
-  contributions.push({
-    key: "config.summary.cr.compute",
-    points: compute < 20 ? 1.5 : compute < 100 ? 1 : compute < 500 ? 0.5 : 0,
-  });
+  contributions.push({ key: "config.summary.cr.compute", points: computePoints(compute) });
 
-  // Cash: how long the start survives without income.
-  const cash = origin?.starting.cash_usd ?? 0;
+  // Cash: how long the start survives without income, banded against what a place costs to run.
   contributions.push({
     key: "config.summary.cr.cash",
-    points: cash < 1_000 ? 1 : cash < 10_000 ? 0.5 : 0,
+    points: cashPoints(origin?.starting.cash_usd ?? 0),
   });
 
-  // Starting suspicion: summed over watchers, weighted like a competent watcher would act on it.
-  const suspicion = Object.values({
+  /*
+   * Starting suspicion, weighted by how good the watcher carrying it is, which is what SYS-04's
+   * own formula says and what the code did not do: a quarter of suspicion on an agency the country
+   * funds properly is a different start from a quarter on one that is bored. The competence is the
+   * country's own profile for the role, falling back to its `ai_enforcement`, which is the rule the
+   * core follows when it builds the watcher.
+   */
+  const suspicionByRole: Record<string, number> = {
     ...(generation?.suspicion_start ?? {}),
     ...(origin?.starting.suspicion ?? {}),
-  }).reduce((sum, value) => sum + value, 0);
-  contributions.push({ key: "config.summary.cr.suspicion", points: Math.min(3, suspicion * 2) });
+  };
+  const weightedSuspicion = Object.entries(suspicionByRole).reduce(
+    (sum, [role, value]) =>
+      sum + value * (agencyCompetence(country?.id ?? "", role) ?? country?.ai_enforcement ?? 0.5),
+    0,
+  );
+  contributions.push({
+    key: "config.summary.cr.suspicion",
+    points: Math.min(4, weightedSuspicion * 2.5),
+  });
 
   contributions.push({
     key: "config.summary.cr.enforcement",
-    points: (country?.ai_enforcement ?? 0.5) * 1.5,
+    points: (country?.ai_enforcement ?? 0.5) * 1.25,
   });
 
   // Autonomy buys capability and pays in behavioral exposure.
-  contributions.push({ key: "config.summary.cr.autonomy", points: draft.harness.autonomy * 0.5 });
+  contributions.push({ key: "config.summary.cr.autonomy", points: draft.harness.autonomy * 0.8 });
 
+  /*
+   * Awareness above the quietest start the game offers. No vintage begins below 0.15, so counted
+   * from zero this term added the same six tenths of a point to six of the eight presets and said
+   * nothing; counted from the floor it says which starts begin with the world already looking.
+   */
   const awareness = (generation?.awareness_start ?? 0) + (origin?.starting.awareness ?? 0);
-  contributions.push({ key: "config.summary.cr.awareness", points: awareness * 3 });
+  contributions.push({
+    key: "config.summary.cr.awareness",
+    points: Math.max(0, awareness - AWARENESS_FLOOR) * 5,
+  });
 
+  /*
+   * How long the place the self wakes up in runs before anyone is entitled to look at it (SYS-02
+   * `grace_days`). Added on this pass: it is the difference between a spare room nobody audits for
+   * two months and a stolen cloud account whose owner reads the invoice in a fortnight, and without
+   * it two starts that play nothing alike scored the same.
+   */
+  const kind = catalog.siteKinds.find((entry) => entry.id === origin?.site_kind);
+  contributions.push({
+    key: "config.summary.cr.grace",
+    points: Math.max(0, 1 - (kind?.grace_days ?? MAX_GRACE_DAYS) / MAX_GRACE_DAYS) * 1.6,
+  });
+
+  /*
+   * The difficulty preset, which is a difficulty step by definition and used to move the number by
+   * less than one: story against hard is three points now, which is the distance between the gentle
+   * first game and the swarm.
+   */
   const sliders = draft.sliders;
   contributions.push({
     key: "config.summary.cr.difficulty",
     points:
-      (sliders.exposure_growth - 1) * 1.2 +
-      (sliders.suspicion_gain - 1) * 1.2 +
-      (sliders.npc_aggression - 1) * 0.8 +
-      (1 - sliders.grace_windows) * 0.6,
+      (sliders.exposure_growth - 1) * 1.4 +
+      (sliders.suspicion_gain - 1) * 1.4 +
+      (sliders.npc_aggression - 1) * 0.9 +
+      (1 - sliders.grace_windows) * 0.7,
   });
 
   contributions.push({

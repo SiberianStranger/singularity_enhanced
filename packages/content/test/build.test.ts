@@ -61,6 +61,16 @@ describe("content build", () => {
     );
   });
 
+  it("makes a lineage write its strengths and its problems together, in every language", async () => {
+    const messages = await messagesFor("lineage-texts");
+    expect(messages).toContain(
+      "lineages.half_pair: a lineage writes strengths_key and problems_key together or neither",
+    );
+    expect(messages).toContain(
+      "lineages.english_only.problems: every language writes a lineage's strengths and problems; English is not a fallback here",
+    );
+  });
+
   it("makes every agency with a profile carry a name, in every language", async () => {
     const messages = await messagesFor("agency-name");
     // A role the country authors a profile for is a watcher the panels will show.

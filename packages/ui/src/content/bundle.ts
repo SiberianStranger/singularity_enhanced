@@ -43,6 +43,10 @@ export function toContentBundle(value: unknown): ContentBundle {
     "accelerators",
     "hardware_presets",
     "site_kinds",
+    // Borrowed inference (SYS-25). Left out when the domain shipped, which made every channel
+    // invisible to the engine running in the browser: `contentIndex` reads the domain off the
+    // bundle, so a dropped domain is not a missing panel, it is a system that never runs.
+    "borrowed_channels",
     "macro_regions",
     "countries",
     "cities",

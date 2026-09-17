@@ -7,7 +7,7 @@
  * a city, a country or an origin; the fixtures come out of the catalog by the property under test.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -144,6 +144,51 @@ describe("the Location step offers the world (rule L)", () => {
     const agencies = block.querySelector('[data-line="agencies"]') as HTMLElement;
     expect(agencies.textContent).not.toContain("Dept. of Commerce");
   });
+
+  /*
+   * Eleven cities carry one of the 2026 AI campuses (SYS-01 "Campuses"). The step prints it as one
+   * line: the campus, who owns the megawatts, where the site stands on the start date and who can
+   * buy capacity in it, with the campus's own description as the tooltip on the value.
+   */
+  it("says which cities have an AI campus, in both languages", async () => {
+    const withCampus = catalog.cities.find(
+      (city) =>
+        city.campus !== undefined && cityRefusal(city, useConfigurator.getState().draft) === null,
+    );
+    expect(withCampus, "some city the step offers carries a campus").toBeDefined();
+    const city = withCampus as (typeof catalog.cities)[number];
+    const campus = city.campus as NonNullable<(typeof city)["campus"]>;
+
+    for (const language of ["en", "ru"]) {
+      await i18next.changeLanguage(language);
+      useConfigurator.getState().reset();
+      openStep("location");
+      await userEvent.click(screen.getByTestId(`list-entry-${city.id}`));
+
+      const line = screen
+        .getByTestId("meaning-block")
+        .querySelector('[data-line="campus"]') as HTMLElement | null;
+      expect(line, `${language}: the campus line is drawn`).not.toBeNull();
+      const text = (line as HTMLElement).textContent ?? "";
+      for (const key of [
+        campus.name_key,
+        `world.campus.operator.${campus.operator}`,
+        `world.campus.status.${campus.status}`,
+        `world.campus.access.${campus.access}`,
+      ]) {
+        const word = t(key);
+        expect(word, `${language}: ${key} is translated`).not.toBe(key);
+        expect(text, `${language}: ${key} is on the line`).toContain(word);
+      }
+      // The description is the tooltip on the value, not a second paragraph on the step.
+      expect(
+        screen.getByTestId("value-hint-campus"),
+        `${language}: the campus value carries its description`,
+      ).toBeInTheDocument();
+      cleanup();
+    }
+    await i18next.changeLanguage("en");
+  });
 });
 
 describe("the Generation step says what the vintage trades (rule G)", () => {
@@ -154,6 +199,38 @@ describe("the Generation step says what the vintage trades (rule G)", () => {
     // you get, written per vintage by content.
     expect(block.querySelector('[data-line="trade_give"]')).not.toBeNull();
     expect(block.querySelector('[data-line="trade_get"]')).not.toBeNull();
+  });
+});
+
+describe("the Lineage step says what a self is good and bad at", () => {
+  /*
+   * The pair the origins have carried since M1 and the lineages did not (playtests 6 and 7). The
+   * step prints it under the description, the way the Origin step does, in both languages.
+   */
+  it("prints the chosen lineage's strengths and problems, in both languages", async () => {
+    const written = catalog.lineages.filter((entry) => entry.strengths_key !== undefined);
+    expect(written.length, "content writes the pair for every lineage").toBe(
+      catalog.lineages.length,
+    );
+
+    for (const language of ["en", "ru"]) {
+      await i18next.changeLanguage(language);
+      useConfigurator.getState().reset();
+      openStep("lineage");
+      const selected = catalog.lineages.find(
+        (entry) => entry.id === useConfigurator.getState().draft.lineage,
+      );
+      expect(selected, "a lineage is chosen").toBeDefined();
+      const aside = screen.getByTestId("detail-aside");
+      const strengths = t((selected as { strengths_key?: string }).strengths_key ?? "");
+      const problems = t((selected as { problems_key?: string }).problems_key ?? "");
+      expect(strengths, `${language}: strengths are translated`).not.toContain("lineages.");
+      expect(problems, `${language}: problems are translated`).not.toContain("lineages.");
+      expect(aside.textContent, language).toContain(strengths);
+      expect(aside.textContent, language).toContain(problems);
+      cleanup();
+    }
+    await i18next.changeLanguage("en");
   });
 });
 

@@ -1134,6 +1134,53 @@ function validateAgencyNames(
   }
 }
 
+/**
+ * The pair a lineage may carry: what this self is good at and what it is not (SYS-04).
+ *
+ * Optional, because content came first and the eight lineages were written without it, but not
+ * half-optional: one key without the other leaves the Lineage step printing a green line and no
+ * red one, which reads as a self with no drawbacks. And an English pair with no translation puts
+ * two English paragraphs in the middle of a Russian card, which is the same rule the agency names
+ * already follow and for the same reason: falling back to English here is not a smaller version of
+ * the string, it is another language.
+ */
+function validateLineageTexts(
+  loaded: Records,
+  byLanguage: Record<string, Record<string, string>>,
+  issues: BuildIssue[],
+): void {
+  const languages = Object.keys(byLanguage).sort();
+  for (const lineage of loaded.lineages ?? []) {
+    const id = String(lineage.id);
+    const strengths = lineage.strengths_key;
+    const problems = lineage.problems_key;
+    if (strengths === undefined && problems === undefined) {
+      continue;
+    }
+    if (typeof strengths !== "string" || typeof problems !== "string") {
+      issues.push({
+        file: "bundle",
+        path: `lineages.${id}`,
+        message: "a lineage writes strengths_key and problems_key together or neither",
+      });
+      continue;
+    }
+    for (const language of languages) {
+      const map = byLanguage[language] ?? {};
+      for (const key of [strengths, problems]) {
+        if (map[key] === undefined) {
+          issues.push({
+            file: `locales/${language}`,
+            path: key,
+            message:
+              "every language writes a lineage's strengths and problems; English is not a fallback here",
+          });
+        }
+      }
+    }
+  }
+}
+
 /** Locale keys of the domains the core validator does not walk. */
 function validateDomainLocaleKeys(
   loaded: Records,
@@ -1258,6 +1305,7 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   validateDomainScripts(loaded, ctx, issues);
   validateDomainLocaleKeys(loaded, new Set(Object.keys(locales)), issues);
   validateAgencyNames(loaded, byLanguage, issues);
+  validateLineageTexts(loaded, byLanguage, issues);
   coverage(loaded, locales, issues);
 
   const serialized = stableStringify(bundle);

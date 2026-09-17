@@ -1,9 +1,15 @@
-import type { PlayerView } from "@singularity/core";
+import type { CampusDef, PlayerView } from "@singularity/core";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ContributionLines } from "../../../components/Contributions.js";
 import { cityById } from "../../../content/catalog.js";
-import { countryName, refusalText, siteName, type Translate } from "../../../lib/labels.js";
+import {
+  campusFacts,
+  countryName,
+  refusalText,
+  siteName,
+  type Translate,
+} from "../../../lib/labels.js";
 import { useUiStore } from "../../../store/uiStore.js";
 import { Fact, FactBar, Rows, SubHeading } from "./parts.js";
 
@@ -268,6 +274,39 @@ export function CityPanel({
       <Fact label={t("config.location.scrutiny")} value={percent(t, row.scrutiny)} />
       <Fact label={t("world.power_headroom")} value={percent(t, row.power_headroom)} />
       <Fact label={t("world.colo_index")} value={factor(t, row.colo_price_index)} />
+
+      {/*
+       * The campus, for the eleven cities that carry one (SYS-01 "Campuses"). Three facts and not
+       * one: who owns the megawatts and who can buy them are different questions, and the second is
+       * the one the `campus_*` events read. The campus's own description is the tooltip on its name.
+       */}
+      {def?.campus === undefined ? null : <CampusSection t={t} campus={def.campus} />}
     </Rows>
+  );
+}
+
+/** The campus rows of the city's Overview tab: its name, its operator, its state and its terms. */
+function CampusSection({ t, campus }: { t: Translate; campus: CampusDef }): ReactNode {
+  const facts = campusFacts(t, campus);
+  return (
+    <>
+      <SubHeading>{t("world.campus")}</SubHeading>
+      <Fact
+        label={facts.name}
+        value={
+          campus.scale_mw === undefined
+            ? t("common.dash")
+            : t("world.campus_mw", { value: campus.scale_mw })
+        }
+        tip={facts.description}
+      />
+      <Fact
+        label={t("world.campus.operator")}
+        value={facts.operator}
+        tip={t("world.campus_hint")}
+      />
+      <Fact label={t("world.campus.status")} value={facts.status} />
+      <Fact label={t("world.campus.access")} value={facts.access} />
+    </>
   );
 }

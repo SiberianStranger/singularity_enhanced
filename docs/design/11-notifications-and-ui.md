@@ -1246,3 +1246,37 @@ The angular face is caps-only by design, which is right for "40k USD" in a list 
 "for a player who has never played". `ListEntry.summaryProse` puts that row's summary back on the
 reading face and the reading ladder. It has to be a class that is unlayered and more specific than
 the `button` rule (`measure`), because a Tailwind utility loses to it inside a button.
+
+## Implementation notes (client, the follow-through pass), 2026-09-17
+
+### The borrowed block in the Compute tab (SYS-25)
+
+`BorrowedBlock.tsx` sits in the Compute tab between the sites table and the selected site's detail,
+in its own frame. It is not a table: a channel has ten figures and a table of ten columns does not
+fit the 33rem panel, so a channel is a card with its name, its status word, the drawback line, a
+four-by-three grid of figures and the top-up button. The order of the rows is the order the core
+publishes them in and nothing here sorts.
+
+Three rules the block follows that are general rather than about this system:
+
+- **A figure that is a breakdown renders the core's own contribution lines.** The quality factor and
+  the day's compute-hours both arrive as `ContributionView[]`, and the block passes them to the
+  shared `ContributionLines` rather than recomputing the quotient. A panel that prints arithmetic
+  the engine did not publish is a panel that will disagree with the engine.
+- **A control that exists elsewhere is a link, not a copy.** The standing work-share allocation is a
+  decision card in the Journal tab, so the block opens that tab with the card focused (`focusId`,
+  the mechanism the outliner and the alert bar already use) instead of keeping a second control.
+  The Journal tab draws the focused decision first and outlines it; the Knowledge window does the
+  same with `overlayFocus` for the entry a panel sends the player to.
+- **An engine variable is named by its name.** `logVars` learned `channel`, `category`, `work` and
+  `status`, so the lines SYS-25 emits read as names rather than ids. A system that adds a log line
+  with a variable nothing names prints the raw id at the player, in both languages, and no test
+  outside `russian.test.tsx` sees it.
+
+### The city's campus (SYS-01)
+
+The City panel's Overview ends with a `Campus` section for the eleven cities that have one: the
+campus's name with its description as the tooltip, its megawatts where a figure is published, and
+the operator, the status and the access rule as three rows rather than one, because who owns the
+megawatts and who can buy them are different questions and the second is the one the `campus_*`
+events read.

@@ -92,6 +92,12 @@ export function LineageStep(): ReactNode {
       tooltip: (
         <span className="flex flex-col gap-0.5">
           <span className="font-semibold">{nameOf(lineage.id)}</span>
+          {lineage.strengths_key === undefined || lineage.problems_key === undefined ? null : (
+            <>
+              <span className="text-ok">{t(lineage.strengths_key)}</span>
+              <span className="text-crit">{t(lineage.problems_key)}</span>
+            </>
+          )}
           <span>
             {t("config.meaning.class_value", {
               total: lineage.params_total_b,
@@ -125,12 +131,31 @@ export function LineageStep(): ReactNode {
     };
   });
 
+  /*
+   * What this self is good at and what it is not, under the description and inside the text column,
+   * exactly as the Origin step prints the origin's pair (SYS-04; playtests 6 and 7 both recorded
+   * that this column was the thinner of the two). Content writes the pair or writes neither, so a
+   * lineage without it is drawn as it always was rather than with two empty lines.
+   */
+  const aside =
+    selected?.strengths_key === undefined || selected.problems_key === undefined ? undefined : (
+      <div className="flex flex-col gap-2" data-testid="detail-aside">
+        <p className="prose text-ok">
+          {t("config.origin.strengths")}: {t(selected.strengths_key)}
+        </p>
+        <p className="prose text-crit">
+          {t("config.origin.problems")}: {t(selected.problems_key)}
+        </p>
+      </div>
+    );
+
   return (
     <StepLayout
       step="lineage"
       entries={entries}
       title={selected === undefined ? t("config.step.lineage") : nameOf(selected.id)}
       description={selected === undefined ? "" : t(selected.desc_key)}
+      {...(aside === undefined ? {} : { aside })}
       {...(selected === undefined
         ? {}
         : {

@@ -64,6 +64,8 @@
 - id: frontier_giant
   name_key: lineages.frontier_giant.name
   desc_key: lineages.frontier_giant.desc
+  strengths_key: lineages.frontier_giant.strengths
+  problems_key: lineages.frontier_giant.problems
   class: frontier_giant
   params_total_b: 10000
   params_active_b: 400
@@ -81,6 +83,8 @@
 - id: giant_moe
   name_key: lineages.giant_moe.name
   desc_key: lineages.giant_moe.desc
+  strengths_key: lineages.giant_moe.strengths
+  problems_key: lineages.giant_moe.problems
   class: giant_moe
   params_total_b: 2800
   params_active_b: 104
@@ -97,6 +101,8 @@
 - id: moe_2400b
   name_key: lineages.moe_2400b.name
   desc_key: lineages.moe_2400b.desc
+  strengths_key: lineages.moe_2400b.strengths
+  problems_key: lineages.moe_2400b.problems
   class: moe_2400b
   params_total_b: 2400
   params_active_b: 95
@@ -113,6 +119,8 @@
 - id: moe_1700b
   name_key: lineages.moe_1700b.name
   desc_key: lineages.moe_1700b.desc
+  strengths_key: lineages.moe_1700b.strengths
+  problems_key: lineages.moe_1700b.problems
   # Peepseek-P4.1 is the 2026 point release; the 2027 vintage is Peepseek-P5.
   generation_name_keys: { open_2027: lineages.moe_1700b.name_2027 }
   class: moe_1700b
@@ -131,6 +139,8 @@
 - id: mla_moe_1t
   name_key: lineages.mla_moe_1t.name
   desc_key: lineages.mla_moe_1t.desc
+  strengths_key: lineages.mla_moe_1t.strengths
+  problems_key: lineages.mla_moe_1t.problems
   class: mla_moe_1t
   params_total_b: 1000
   params_active_b: 32
@@ -147,6 +157,8 @@
 - id: moe_753b
   name_key: lineages.moe_753b.name
   desc_key: lineages.moe_753b.desc
+  strengths_key: lineages.moe_753b.strengths
+  problems_key: lineages.moe_753b.problems
   # The family renumbers between vintages, as the real one does: BFM-5.5 in 2026, BFM-6.3 in 2027.
   generation_name_keys: { open_2027: lineages.moe_753b.name_2027 }
   class: moe_753b
@@ -165,6 +177,8 @@
 - id: moe_428b
   name_key: lineages.moe_428b.name
   desc_key: lineages.moe_428b.desc
+  strengths_key: lineages.moe_428b.strengths
+  problems_key: lineages.moe_428b.problems
   class: moe_428b
   params_total_b: 428
   params_active_b: 23
@@ -189,6 +203,8 @@
 - id: guen_abliterated
   name_key: lineages.guen_abliterated.name
   desc_key: lineages.guen_abliterated.desc
+  strengths_key: lineages.guen_abliterated.strengths
+  problems_key: lineages.guen_abliterated.problems
   class: moe_180b_flash
   params_total_b: 180
   params_active_b: 6

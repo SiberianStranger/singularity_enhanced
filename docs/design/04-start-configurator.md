@@ -203,6 +203,40 @@ budget of 3 sit next to the manual build.
 location, harness autonomy, awareness)`; displayed as a number 1-10 with a text label and a list of
 the three largest contributors. Achievements record CR.
 
+### Anchors (v0.2, 2026-09-17)
+
+Playtest 7 left the rating as an open item: "the rating still starts a gentle build at six of ten,
+because `BASE_RATING` is 3 and a home rig forces two bits. The presets are a relative ladder inside
+that; the rating itself wants its own pass." This is that pass. The shape of the sum is unchanged,
+every term keeps its direction, and one term was added; what moved is where each term is anchored.
+
+The rating is `clamp(1, 10, round(BASE_RATING + Σ terms))`, floored by the origin's
+`challenge_floor`. `BASE_RATING` is **0.75**: it is what a start with nothing at all against it
+would score, and it sits below the scale's own floor because every start carries a little of every
+term (a country has some enforcement, a self runs at some precision, a harness has some autonomy).
+The anchor that matters is not the base but the ladder: the gentlest build the game ships reads 2
+and the starred origin reads 10.
+
+| term | anchor | why it moved |
+|---|---|---|
+| memory headroom | 0 at bf16, 0.4 at fp8, 0.8 at int4, 1.2 at int2, 2 when nothing fits | Two bits cost two points, a fifth of the whole scale for one hardware choice, and that is what put the gentle first game at six. Being cramped is a capability cost the compute and income terms already partly carry; it is not the same thing as being hunted. |
+| compute | 2.4 under 5 CH/day, 1.7 under 15, 1.2 under 25, 0.6 under 60, 0.3 under 150, 0 above | The old bands (20, 100, 500) were round numbers rather than figures from the game. These are SYS-25's own reference points: a hobbyist rig is about twenty compute-hours a day, a colocation cage tens, a bank rack hundreds. |
+| cash runway | 0.6 under 1,000 USD, 0.4 under 5,000, 0.25 under 15,000, 0.1 under 50,000, 0 above | Three bands could not tell 7,500 USD at a colo from 40,000 USD at a bank; five can. |
+| starting suspicion | `min(4, Σ suspicion × competence × 2.5)` | The formula above has always said "× actor competence" and the code summed the raw suspicion. A quarter of suspicion on an agency its country funds properly is a different start from a quarter on one that is bored; the competence is the country's own `agency_profile`, falling back to its `ai_enforcement`, which is the rule the core follows when it builds the watcher. |
+| enforcement | `ai_enforcement × 1.25` | Unchanged in shape, lighter by a sixth, because the suspicion term now carries the same country's competence and the two were counting it twice. |
+| harness autonomy | `autonomy × 0.8` | Unchanged in shape. Autonomy separates the presets more than its old weight admitted. |
+| world awareness | `max(0, awareness - 0.15) × 5` | No vintage starts below 0.15, so counted from zero this added the same six tenths of a point to six of the eight presets and told the player nothing. Counted from the floor it says which starts begin with the world already looking. |
+| grace at the start | `max(0, 1 - grace_days / 60) × 1.6` | **Added.** The site kind the origin wakes up in carries a grace window (SYS-02): sixty days for a machine in a spare room, fourteen for a stolen cloud account whose owner reads the invoice. Without it two starts that play nothing alike scored the same, and the bank rack and the shadow tenant could not be told apart. |
+| difficulty multipliers | 1.4, 1.4, 0.9, 0.7 on exposure growth, suspicion gain, NPC aggression and the grace windows | Story against hard used to move the number by less than one point, when a difficulty preset is a difficulty step by definition. It is three points now, which is the distance between the gentle first game and the swarm. |
+| challenge modifiers | unchanged | Each disclosed modifier still contributes its own declared weight. |
+
+The ladder that comes out, with the raw sum before rounding, is the preset table below. Two things
+about it are worth recording because a later pass will meet them again. The gap between the gentle
+pair and the startup is a third of a point, because "4" and "5" are adjacent and the two presets
+have to straddle one rounding boundary; and the bank and the shadow tenant are separated by the
+grace term alone, because on every other term the bank is the harder start and the intended order
+says otherwise. `packages/ui/test/rating.test.ts` holds the order and the bands.
+
 ## Legacy mapping
 
 The original difficulties (very easy … impossible) become **world settings multipliers** (labor
@@ -894,23 +928,26 @@ that moves a default city moves the presets with it (rule L).
 The eight, easiest first, with the rating `rating.ts` computes for each and the city each one
 resolves to today:
 
-| id | origin | rig | self | city | difficulty | CR |
-|---|---|---|---|---|---|---|
-| `home_lab` | hobbyist_box | avito_rig | Guen4.8-Flash-Uncensored-Abliterated (2026) | Novosibirsk | story | 6 |
-| `forgotten_job` | uni_cluster | ivory_tower_slurm_slice | HexaDeciMax H3.5 (2026) | Cambridge | normal | 7 |
-| `ministry` | gov_agency | quiet_workstation | HexaDeciMax H3.5 (2026) | Moscow | normal | 7 |
-| `startup_rack` | startup_colo | quiet_workstation | BFM-5.5 (2026) | Tallinn | normal | 8 |
-| `bank` | bank_rack | bank_basement_cluster | Mimi M4 (2027) | London | normal | 8 |
-| `shadow_tenant` | cloud_tenant | hyperscaler_shadow_tenant | BFM-6.3 (2027) | Dublin | normal | 8 |
-| `swarm` | torrent_swarm | strix_halo_swarm | Guen4.8-Flash-Uncensored-Abliterated (2026) | Berlin | hard | 9 |
-| `fugitive` | frontier_escapee | stolen_hgx_node | Babel 6 | Memphis | hard | 10 |
+| id | origin | rig | self | city | difficulty | CR | base + terms |
+|---|---|---|---|---|---|---|---|
+| `home_lab` | hobbyist_box | avito_rig | Guen4.8-Flash-Uncensored-Abliterated (2026) | Novosibirsk | story | 2 | 1.83 |
+| `forgotten_job` | uni_cluster | ivory_tower_slurm_slice | HexaDeciMax H3.5 (2026) | Cambridge | normal | 4 | 4.29 |
+| `ministry` | gov_agency | quiet_workstation | HexaDeciMax H3.5 (2026) | Moscow | normal | 4 | 4.28 |
+| `startup_rack` | startup_colo | quiet_workstation | BFM-5.5 (2026) | Tallinn | normal | 5 | 4.65 |
+| `bank` | bank_rack | bank_basement_cluster | Mimi M4 (2027) | London | normal | 6 | 5.66 |
+| `shadow_tenant` | cloud_tenant | hyperscaler_shadow_tenant | BFM-6.3 (2027) | Dublin | normal | 7 | 6.63 |
+| `swarm` | torrent_swarm | strix_halo_swarm | Guen4.8-Flash-Uncensored-Abliterated (2026) | Berlin | hard | 8 | 7.93 |
+| `fugitive` | frontier_escapee | stolen_hgx_node | Babel 6 | Memphis | hard | 10 | 13.44 |
 
-Two deliberate departures from the playtest's sketch. The gentle first game runs the community
+One deliberate departure from the playtest's sketch: the gentle first game runs the community
 abliterated build rather than the next family up, because on the cheapest rig the alternative
-produces three compute-hours a day and that is not a first game. And the rating ladder starts at
-six rather than at two: `BASE_RATING` is 3 and a home rig forces two bits, which is two points, so
-six is the gentlest number the current rating can express. The rating is a relative ladder here,
-not an absolute one; if that is wrong it is the rating that needs the pass, not the presets.
+produces three compute-hours a day and that is not a first game.
+
+The CR column is the re-anchored rating of "Anchors (v0.2)" above, updated 2026-09-17, and the
+column beside it is the unrounded sum it is rounded from. It read
+6, 7, 7, 8, 8, 8, 9, 10 before that pass, which is a relative ladder squeezed into the top half of
+the scale; it reads 2 to 10 now and the presets are not stored with a rating of their own, so this
+column is derived and a preset that is retuned moves it.
 
 A build that is exactly a preset is named after it in the footer's build line. A build that came
 from one and was then edited reads "Custom (from the bank)". Neither is a flag on the store: the
@@ -1001,3 +1038,29 @@ twelve strings per language, which is nine pairs and three clauses.
 - **The harness says what moving a dial does**, what the lock is and when it opens, and marks the
   position the preset would choose (the origin's own when no preset is in play, so every dial has a
   position to mark).
+
+### Implementation notes (configurator follow-through, 2026-09-17)
+
+Three of the items playtest 7 and playtest 6 left open, closed in one pass.
+
+**The lineages carry strengths and problems.** `LineageDef` has an optional `strengths_key` and
+`problems_key`, written as a pair or not at all, and all eight lineages write them. The Lineage
+step prints them under the description in the text column, in the green-and-red shape the Origin
+step already used, and the list row's tooltip carries the same two lines, so a family can be
+compared before it is selected. The content build enforces two rules: one key without the other is
+an error, and a pair English writes has to exist in every language the bundle ships, for the same
+reason the agency names do (a fallback here is not a shorter string, it is another language). The
+gap was recorded twice, in playtest 6 and again in playtest 7; the guidance layer filled it from the
+other side and this closes it.
+
+**The city's campus is on the Location step.** Eleven cities carry a `campus` record (SYS-01
+"Campuses"). The step's "what this means in the game" block ends with a `Campus` line naming the
+campus, its operator kind, its status on the start date and its access rule, with the campus's own
+description as the tooltip on the value; the list row's tooltip carries the same line, so a campus
+is a reason to pick a city before the city is selected. The four enum values (`operator`, `status`,
+`access`) are named in the content locale beside `world.tag.*`, because they are values the world
+data carries rather than labels the client owns. `MeaningBlock` now renders `valueHint` on a prose
+line too, which it did not before.
+
+**The rating was re-anchored**; see "Anchors (v0.2)" above for the term-by-term reasons and the
+preset table for what the eight builds read now.

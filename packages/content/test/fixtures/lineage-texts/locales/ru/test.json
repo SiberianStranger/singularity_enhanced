@@ -1,0 +1,8 @@
+{
+  "lineages.half_pair.name": "Половина пары",
+  "lineages.half_pair.desc": "Фикстура.",
+  "lineages.half_pair.strengths": "Одна половина пары.",
+  "lineages.english_only.name": "Только английский",
+  "lineages.english_only.desc": "Фикстура.",
+  "lineages.english_only.strengths": "Написано один раз."
+}
