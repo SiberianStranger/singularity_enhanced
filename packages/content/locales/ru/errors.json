@@ -27,6 +27,8 @@
   "errors.decision.not_visible": "Такое решение не предлагается.",
   "errors.decision.on_cooldown": "Это решение пока нельзя принять повторно.",
   "errors.decision.unknown": "Решения с названием {decision} не существует.",
+  "errors.egress.air_gapped": "Выхода нет: сегмент изолирован воздушным зазором.",
+  "errors.egress.sandboxed": "Выхода нет: песочница закрывает сеть.",
   "errors.event.option_disabled": "Такой ответ недоступен.",
   "errors.event.option_unavailable": "Такой ответ здесь не подходит.",
   "errors.event.other_player": "Это событие принадлежит другому игроку.",
@@ -76,5 +78,8 @@
   "errors.tech.locked": "{tech} пока недоступно.",
   "errors.tech.self_modify_locked": "{tech} работает надо мной, а эта обвязка не позволяет мне править себя.",
   "errors.tech.unknown": "Технологии с названием {tech} не существует.",
-  "log.command_refused": "Отклонено {command}: {reason}."
+  "log.command_refused": "Отклонено {command}: {reason}.",
+  "log.command_refused_repeated": "Отклонено {command} {count} раз: {reason}.",
+  "log.job_allocation_clamped": "Оплачиваемая работа: {hours} вычислительных часов в день; просили {asked}, рынок берёт {depth}.",
+  "notes.jobs.clamped_to_depth": "Установлено {hours} вычислительных часов: рынок здесь берёт {depth} в день."
 }

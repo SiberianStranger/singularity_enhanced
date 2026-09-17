@@ -25,10 +25,10 @@ import {
   retrievalMissChance,
 } from "../../derive.js";
 import type { ExposureChannel, OperationDef, OperationInstance } from "../../domain.js";
-import { evaluateCondition } from "../../dsl/conditions.js";
+import { createConditionRegistry, evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
-import type { ScopeEnv } from "../../dsl/types.js";
+import type { ConditionRegistry, ScopeEnv } from "../../dsl/types.js";
 import { operationsOf, operationTable, siteTable, watchersOf } from "../../entities.js";
 import { daysToTicks, isDayStart, TICKS_PER_DAY } from "../../kernel/clock.js";
 import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
@@ -453,6 +453,26 @@ const abortOperation: CommandHandler = (world, command, ctx) => {
   return OK;
 };
 
+/**
+ * Conditions the operations system adds. `{ egress: false }` is "there is no route out of here",
+ * which is what an operation that opens one has to be gated on (playtest 8, Z3): the air gap is a
+ * harness dial and an origin flag, not something content could read before.
+ */
+function registerConditions(): ConditionRegistry {
+  const registry = createConditionRegistry();
+
+  registry.register("egress", (node, ctx) => {
+    const player = ctx.world.players[ctx.playerId];
+    if (player === undefined) {
+      return false;
+    }
+    const wanted = node.egress !== false;
+    return egressAllowed(player) === wanted;
+  });
+
+  return registry;
+}
+
 export function createOperationsSystem(): OperationsSystem {
   return {
     manifest: {
@@ -460,6 +480,7 @@ export function createOperationsSystem(): OperationsSystem {
       cadence: "hourly",
       order: OPERATIONS_SYSTEM_ORDER,
       writes: [],
+      conditions: registerConditions(),
     },
     tick(world: World, ctx: SystemContext): void {
       const index = contentIndex(ctx.content);

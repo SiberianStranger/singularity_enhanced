@@ -106,6 +106,84 @@ describe("the sub-hour phase", () => {
     });
     expect(result.current).toBeCloseTo(0.5, 2);
   });
+
+  it("carries the phase across a tick instead of re-anchoring on its arrival (Z5)", async () => {
+    setReducedMotion(false);
+    session = await startSession();
+    const live = session;
+    await unblock(live);
+    let now = 1000;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const draw = (): void => {
+      act(() => {
+        (frames.at(-1) as FrameRequestCallback)(now);
+      });
+    };
+
+    act(() => {
+      useGameStore.getState().setSpeed(1);
+    });
+    const { result } = renderHook(() => useSubHour(60));
+
+    // Half an hour of real time, and the picture is half an hour into the hour.
+    now = 1500;
+    draw();
+    expect(result.current).toBeCloseTo(0.5, 2);
+
+    // The tick lands late, as the host's frame timer makes it: 1.2 s of wall clock for one game
+    // hour. The phase may hold at the end of its hour, but it never runs backwards inside one.
+    now = 2100;
+    draw();
+    const beforeTick = result.current;
+    expect(beforeTick).toBeGreaterThan(0.99);
+    live.advance(1);
+    now = 2200;
+    draw();
+    // The new hour starts where the old one ended: 0.1 s past a tick is 0.1 of an hour, not a
+    // leap to the end of the hour and back to the start of it.
+    expect(result.current).toBeLessThan(0.3);
+    expect(result.current).toBeGreaterThan(0);
+  });
+
+  it("does not jump when the speed changes mid-hour (Z5)", async () => {
+    setReducedMotion(false);
+    session = await startSession();
+    await unblock(session);
+    let now = 1000;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+    const draw = (): void => {
+      act(() => {
+        (frames.at(-1) as FrameRequestCallback)(now);
+      });
+    };
+
+    act(() => {
+      useGameStore.getState().setSpeed(1);
+    });
+    const { result } = renderHook(() => useSubHour(60));
+    now = 1400;
+    draw();
+    expect(result.current).toBeCloseTo(0.4, 2);
+
+    // Speed 2 is two hours a second. The picture carries on from where it was rather than being
+    // recomputed as "0.4 s ago times the new rate", which used to throw it to the end of the hour.
+    act(() => {
+      useGameStore.getState().setSpeed(2);
+    });
+    now = 1450;
+    draw();
+    expect(result.current).toBeCloseTo(0.5, 2);
+  });
 });
 
 describe("the top bar clock", () => {

@@ -121,7 +121,9 @@ function countEventTags(game: Game, content: ContentBundle): Record<string, numb
   const index = contentIndex(content);
   const counts: Record<string, number> = {};
   for (const entry of game.world.log) {
-    if (entry.key !== "log.event_fired") {
+    // An event with a deadline logs itself under its own key (playtest 8, Z4); both are an event
+    // firing, and a family that stopped being counted looks like a family nobody plays with.
+    if (entry.key !== "log.event_fired" && entry.key !== "log.event_fired_deadline") {
       continue;
     }
     const id = entry.vars.event;

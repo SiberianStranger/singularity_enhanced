@@ -59,10 +59,11 @@ describe("playtest 1: the institute cluster", () => {
         hardware_preset: "quiet_workstation",
       }).error,
     ).toEqual({ key: "errors.city.unknown", vars: { city: "atlantis" } });
-    // A programme allocation is access, not hardware anybody sells.
+    // A programme allocation is access, not hardware anybody sells, and since playtest 8 (Z10) the
+    // preset carries the reason the catalog prints rather than the engine's generic one.
     expect(
       game.command({ ...base, kind: "colo", hardware_preset: "institute_rack" }).error,
-    ).toEqual({ key: "errors.preset.is_access", vars: { preset: "institute_rack" } });
+    ).toEqual({ key: "hardware.institute_rack.not_for_sale", vars: { preset: "institute_rack" } });
     // 25,000 USD does not buy a 39,000 USD workstation, and the refusal says both numbers.
     const broke = game.command({ ...base, kind: "colo", hardware_preset: "quiet_workstation" });
     expect(broke.error?.key).toBe("errors.cash.insufficient");
@@ -82,7 +83,11 @@ describe("playtest 1: the institute cluster", () => {
   // C4: what the site kinds differ in, as numbers rather than prose.
   it("publishes a catalog of site kinds with cost, days, upkeep, power and exposure", () => {
     const view = startGame().snapshot("p1");
-    expect(view.catalog.site_kinds.map((kind) => kind.id)).toEqual(["colo", "residential"]);
+    expect(view.catalog.site_kinds.map((kind) => kind.id)).toEqual([
+      "campus_slice",
+      "colo",
+      "residential",
+    ]);
     const colo = view.catalog.site_kinds.find((kind) => kind.id === "colo");
     expect(colo).toMatchObject({
       ownership: "owned",
@@ -455,14 +460,14 @@ describe("playtest 1: the institute cluster", () => {
     expect(refusalsInLog(game)).toEqual([
       "errors.operation.locked",
       "errors.decision.cannot_afford",
-      "errors.preset.is_access",
+      "hardware.institute_rack.not_for_sale",
     ]);
     const entry = game
       .snapshot("p1")
       .log.find((line) => line.key === "log.command_refused" && line.vars.command === "build_site");
     expect(entry?.vars).toMatchObject({
       command: "build_site",
-      reason: "errors.preset.is_access",
+      reason: "hardware.institute_rack.not_for_sale",
       preset: "institute_rack",
     });
   });

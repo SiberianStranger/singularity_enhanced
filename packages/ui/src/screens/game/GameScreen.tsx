@@ -20,6 +20,7 @@ import { OpeningStory } from "./OpeningStory.js";
 import { Outliner } from "./Outliner.js";
 import { openingSetupOf } from "./opening.js";
 import { PrimaryPanel } from "./PrimaryPanel.js";
+import { ResearchDoneWindows } from "./ResearchDone.js";
 import { SelectionPanel } from "./SelectionPanel.js";
 import { Toasts } from "./Toasts.js";
 import { TopBar } from "./TopBar.js";
@@ -240,6 +241,13 @@ export function GameScreen(): ReactNode {
       {openingPending || blocking[0] === undefined ? null : (
         <EventWindow view={view} choice={blocking[0]} queued={blocking.length - 1} />
       )}
+
+      {/*
+       * A finished technology gets the window the original gave it (playtest 8, Z7). It is always
+       * mounted and draws nothing while the opening or a blocking event is up, so a completion
+       * that lands during an event waits its turn instead of being lost.
+       */}
+      <ResearchDoneWindows />
 
       {toasts.popups[0] === undefined ? null : (
         <Modal

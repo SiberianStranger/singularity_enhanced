@@ -152,6 +152,25 @@ export interface SelfView {
    * and "what I must do now" (SYS-13). Empty for a player with no origin yet.
    */
   opening_story: string[];
+  /** Whether the self can reach the outside world, what that forbids, and what would open it. */
+  egress: EgressView;
+}
+
+/**
+ * The route out, or the absence of one (SYS-03 `sandbox`, playtest 8 Z3). An air-gapped origin can
+ * read its whole first hour here: that there is no route, what that forbids, and which operation or
+ * tech opens one.
+ */
+export interface EgressView {
+  allowed: boolean;
+  /** Why not, as a locale key; null while there is a route. */
+  blocked_reason: string | null;
+  /** What it forbids while there is none, as locale keys in a fixed order. */
+  forbids: string[];
+  /** Ids of the operations that would open a route, in id order. */
+  opened_by_operations: string[];
+  /** Ids of the techs that would open one, in id order. */
+  opened_by_techs: string[];
 }
 
 export interface ResourcesView {
@@ -220,6 +239,9 @@ export interface BorrowedChannelView {
  * Where the day's compute-hours come from (SYS-25 "View fields"). The sites table is still
  * `PlayerView.sites`; this is the borrowed block beneath it and the two totals the Research panel
  * needs to say which allocation is being funded from where.
+ *
+ * Since playtest 8 (Z1, Z2) it also carries the day's ledger, which has to add up on screen:
+ * `capacity - reserved = allocatable`, and `allocatable - research - jobs = unallocated`.
  */
 export interface ComputeView {
   /** Compute-hours a day from the player's own hardware. */
@@ -234,6 +256,33 @@ export interface ComputeView {
   channels: BorrowedChannelView[];
   /** The lines behind the day's compute-hours: one per site, one per channel. */
   contributions: ContributionView[];
+  /** The day's compute-hours before anything is taken off the top: own plus borrowed. */
+  capacity_ch_per_day: number;
+  /** What the running operations hold today, off the top of the capacity (SYS-17 costs). */
+  reserved_by_operations_ch_per_day: number;
+  /** One line per running operation, summing to `reserved_by_operations_ch_per_day`. */
+  operation_reservations: ComputeReservationView[];
+  /** Capacity minus what the operations reserve: what research and paid work may be given. */
+  allocatable_ch_per_day: number;
+  /** Of that, what the research lines hold. */
+  allocated_research_ch_per_day: number;
+  /** Of that, what paid work holds. */
+  allocated_jobs_ch_per_day: number;
+  /** What is allocatable and allocated to nothing. */
+  unallocated_ch_per_day: number;
+  /** The most the job slider may be set to right now: the market depth, inside what is allocatable. */
+  job_ceiling_ch_per_day: number;
+  /** Why the slider stops there, as a locale key; null when nothing but the compute limits it. */
+  job_ceiling_reason: string | null;
+}
+
+/** One running operation's hold on the day's compute, for the Compute tab's subtraction line. */
+export interface ComputeReservationView {
+  instance_id: string;
+  operation_id: string;
+  /** Locale key of the operation's name, so the line reads as a sentence. */
+  name_key: string;
+  ch_per_day: number;
 }
 
 export interface NodeView {
@@ -264,7 +313,17 @@ export interface SiteView {
   grace_until_tick: number;
   /** Best precision the self fits at here, or null when it does not fit at all. */
   best_precision: Precision | null;
+  /**
+   * Who carries the power and the standing charge here (SYS-07 "Who pays for the origin's
+   * hardware"): the player, or the host whose machine this is. `host` is what makes
+   * `upkeep_usd_per_day` zero or near it, and the panel says so rather than leaving a blank.
+   */
+  bill_payer: BillPayer;
+  /** One line saying why: owned, rented, a partner's fee, or somebody else's machine. */
+  bill_reason_key: string;
 }
+
+export type BillPayer = "player" | "host";
 
 /** Where a tech stands for one player, for the Research tab's default filter (SYS-12). */
 export type TechStatus = "done" | "in_progress" | "available" | "locked";
@@ -281,6 +340,13 @@ export interface TechView {
   /** The same number the Research tab labels "CH". */
   cost_ch: number;
   cost_cash_usd: number;
+  /**
+   * Compute-hours that have actually landed on this tech so far, against `cost_compute_hours`
+   * (playtest 8, Z14). `progress` is the share of the whole; these two are the figures behind it.
+   */
+  compute_hours_done: number;
+  /** Cash paid into this tech so far, against `cost_cash_usd`. Money follows the hours (SYS-12). */
+  cash_paid_usd: number;
   /** Days it takes however much compute is thrown at it (SYS-12 `min_days`). */
   min_days: number;
   status: TechStatus;
@@ -316,6 +382,11 @@ export interface CashLineView {
   /** Optional subject id (site, identity, tech). */
   id?: string;
   usd_per_day: number;
+  /**
+   * What the line is made of, when it is a sum of several things (playtest 8, Z14): the research
+   * line carries one entry per tech being funded today, and the entries sum to `usd_per_day`.
+   */
+  contributions?: ContributionView[];
 }
 
 /**
@@ -346,6 +417,14 @@ export interface FinancesView {
   identities: IdentityView[];
   /** Where the country factor on the market depth came from (SYS-01 M2 contract "Money"). */
   market_factor_contributions: ContributionView[];
+  /**
+   * The terms behind the depth itself, in compute-hours, summing to `market_depth_ch_per_day`
+   * (playtest 8, Z1): the capability, the job ladder, the tools dial and the country factor, plus
+   * the line that takes the market away when there is no route out.
+   */
+  market_depth_contributions: ContributionView[];
+  /** Why the market takes nothing at all, as a locale key; null when it takes something. */
+  market_depth_blocked_reason: string | null;
 }
 
 /**
@@ -608,6 +687,10 @@ export interface EventView {
   options: EventOptionView[];
   /** The "why did this happen" expander (SYS-11). */
   why: ChoiceReason[];
+  /** Tick the answer stops being possible; null when the event waits indefinitely (playtest 8, Z4). */
+  expires_tick: number | null;
+  /** The same deadline in whole days from now, rounded up; null when there is none. */
+  expires_in_days: number | null;
 }
 
 /**
@@ -625,6 +708,10 @@ export interface SiteKindView {
   build_days: number;
   upkeep_usd_per_day_estimate: number;
   power_cap_kw: number | null;
+  /** Who pays the power and the standing charge on a place of this kind. */
+  bill_payer: BillPayer;
+  /** One line saying why, the same key the site panel prints. */
+  bill_reason_key: string;
   exposure_profile: Exposure;
   can_host_self: boolean;
   max_nodes: number;

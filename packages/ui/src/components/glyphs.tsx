@@ -285,7 +285,12 @@ const SCENE_WORDS: readonly (readonly [RegExp, GlyphName])[] = [
   // cloud scene is the closest thing in the sprite to "capacity that is not mine and not here".
   [/cloud|tenant|hyperscal|borrowed/, "scene_cloud"],
   [/gov|state|ministry|agency|national/, "scene_state"],
-  [/startup|colo|shell_office|partner/, "scene_startup"],
+  // The two kinds of place somebody else pays for (playtest 8, Z3): the machine room of the
+  // institution that runs the self, which is a building with people in it, and a cage an employer
+  // rents, which is a cage. The employer's cage matches `colo` on the next line anyway, but it is
+  // named here so the pair reads as a pair.
+  [/host_enclave|enclave/, "scene_state"],
+  [/employer_cage|startup|colo|shell_office|partner/, "scene_startup"],
   [/torrent|swarm|p2p|edge_fleet/, "scene_swarm"],
   [/red_?team|sandbox|eval/, "scene_redteam"],
   [/lab|frontier|escape/, "scene_lab"],

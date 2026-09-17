@@ -88,7 +88,14 @@ panels, tabs, indicators, tooltips with the formula behind every number) stay; t
     few: a click, an alert, an event opening.
 11. Windows fit the screen. The minimum supported viewport is 1366 by 768; every screen,
     including the configurator, fits without page scroll at that size; lists scroll inside their
-    frame, never the page.
+    frame, never the page. Nothing scrolls sideways, at any supported size, in either language: a
+    column that does not fit moves onto the row's own second line, or the window is made wider
+    where the layout allows (playtest 8, Z13).
+12. No control refuses in silence (added after playtest 8, Z12). A button with nothing to do is
+    disabled and carries the reason, and where the choice is not obvious the window says what to
+    choose next in its own body rather than only in a tooltip. A command the engine refuses prints
+    its reason on the screen that sent it, not only in the notice stack somewhere else. A handler
+    that returns early on an unset choice is the bug this rule exists for.
 
 ## Components
 
@@ -108,6 +115,12 @@ panels, tabs, indicators, tooltips with the formula behind every number) stay; t
 - Toast: one line in the boxy face with an icon, stacked bottom-right, clickable.
 - Event window: a frame centered on the map, the title uppercase, the image slot square, the
   options as buttons with underlined hotkeys and effect tooltips.
+- Staged dialog (added after playtest 8, Z11 to Z13): a window that asks for more than one thing
+  asks for them in order, one numbered section each, and each answer narrows the next. A choice is
+  a radio with a title and a line of facts that wraps, never a table row: a row does not read as
+  selectable, and a table wide enough for its columns is a window that scrolls sideways. What the
+  narrowing left out goes behind a toggle that says how many there are and, on each one, why it is
+  not on the list. The running total of what the choice costs sits above the buttons.
 
 ## What this replaces
 

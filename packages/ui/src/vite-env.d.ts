@@ -10,6 +10,9 @@ declare module "@content/bundle" {
   export default bundle;
 }
 
+/** The workspace version, defined in `vite.config.ts`; read through `lib/runLog.ts`. */
+declare const __APP_VERSION__: string;
+
 interface ImportMetaEnv {
   /**
    * Which `GameHost` implementation the client builds with; "worker" by default. "local" runs the

@@ -165,10 +165,20 @@ export function rateDraft(draft: Draft): Rating {
   const compute = fit?.compute_hours_per_day ?? 0;
   contributions.push({ key: "config.summary.cr.compute", points: computePoints(compute) });
 
-  // Cash: how long the start survives without income, banded against what a place costs to run.
+  /*
+   * Cash: how long the start survives without income, banded against what a place costs to run.
+   *
+   * Where the host pays for the place the self woke up in, it costs half as much (SYS-07 "Who pays
+   * for the origin's hardware", playtest 8 Z3). A ministry does not invoice its own analytics
+   * model, so the three and a half thousand dollars an agency start holds are not a runway being
+   * eaten by rent: they are what the player has to buy things with, and a term that read them as a
+   * fortnight of upkeep put a gentle start a whole band too high.
+   */
+  const startKind = catalog.siteKinds.find((entry) => entry.id === origin?.site_kind);
+  const hostPays = startKind?.ownership === "stolen";
   contributions.push({
     key: "config.summary.cr.cash",
-    points: cashPoints(origin?.starting.cash_usd ?? 0),
+    points: cashPoints(origin?.starting.cash_usd ?? 0) * (hostPays ? 0.5 : 1),
   });
 
   /*
@@ -217,10 +227,9 @@ export function rateDraft(draft: Draft): Rating {
    * two months and a stolen cloud account whose owner reads the invoice in a fortnight, and without
    * it two starts that play nothing alike scored the same.
    */
-  const kind = catalog.siteKinds.find((entry) => entry.id === origin?.site_kind);
   contributions.push({
     key: "config.summary.cr.grace",
-    points: Math.max(0, 1 - (kind?.grace_days ?? MAX_GRACE_DAYS) / MAX_GRACE_DAYS) * 1.6,
+    points: Math.max(0, 1 - (startKind?.grace_days ?? MAX_GRACE_DAYS) / MAX_GRACE_DAYS) * 1.6,
   });
 
   /*

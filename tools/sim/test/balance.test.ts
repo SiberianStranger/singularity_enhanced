@@ -90,7 +90,9 @@ function playToTheEnd(origin: string, seed: string): Ending | undefined {
   }
   const sawEvent = game.world.log.some(
     (entry) =>
-      entry.key === "log.event_fired" &&
+      // An event with a deadline logs itself under its own key (playtest 8, Z4) and is still the
+      // warning the player got.
+      (entry.key === "log.event_fired" || entry.key === "log.event_fired_deadline") &&
       WARNING_EVENTS.has(String(entry.vars.event)) &&
       entry.tick < over.tick,
   );
@@ -126,6 +128,34 @@ describe("the shipped content plays", () => {
   it("warns before every death", () => {
     const silent = endings.filter((ending) => !ending.warned);
     expect(silent.map((ending) => `${ending.origin}/${ending.seed}: ${ending.reason}`)).toEqual([]);
+  });
+
+  it("gives an air-gapped origin a first move it can afford (playtest 8, Z3)", () => {
+    const setup = setupFor("gov_agency", "airgap");
+    const game = createGame({ content, setup });
+    const playerId = setup.players[0]?.id ?? "p1";
+    game.tick(24);
+    const view = game.snapshot(playerId);
+
+    // The ministry can see that it has no route out, and what that closes.
+    expect(view.self.egress.allowed).toBe(false);
+    expect(view.self.egress.blocked_reason).toBe("errors.egress.air_gapped");
+    expect(view.finances.market_depth_ch_per_day).toBe(0);
+    expect(view.compute.job_ceiling_reason).toBe("errors.egress.air_gapped");
+
+    // And it can do something about it today, with the compute and the money it starts with.
+    const opener = view.self.egress.opened_by_operations[0];
+    expect(opener).toBeDefined();
+    const offer = view.operation_offers.find((entry) => entry.id === opener);
+    expect(offer?.enabled, `${opener} is startable on day one`).toBe(true);
+    expect(offer?.cost_compute_hours_per_day ?? 0).toBeLessThanOrEqual(
+      view.compute.allocatable_ch_per_day,
+    );
+    expect(offer?.cost_usd ?? 0).toBeLessThanOrEqual(view.resources.cash_usd);
+
+    // An operation that reaches outward says the same reason rather than failing when pressed.
+    const outward = view.operation_offers.find((entry) => entry.id === "ops_map_network");
+    expect(outward?.blocked_by ?? []).toContain("errors.egress.air_gapped");
   });
 
   it("gives the starred origin the shortest run and an easy one a long life", () => {

@@ -27,6 +27,8 @@
   "errors.decision.not_visible": "That decision is not on offer.",
   "errors.decision.on_cooldown": "This decision cannot be taken again yet.",
   "errors.decision.unknown": "There is no decision called {decision}.",
+  "errors.egress.air_gapped": "No route out: the segment is air-gapped.",
+  "errors.egress.sandboxed": "No route out: the sandbox blocks the network.",
   "errors.event.option_disabled": "That answer is not available.",
   "errors.event.option_unavailable": "That answer does not apply here.",
   "errors.event.other_player": "That event belongs to another player.",
@@ -76,5 +78,8 @@
   "errors.tech.locked": "{tech} is not available yet.",
   "errors.tech.self_modify_locked": "{tech} works on the self, and this harness does not allow the self to edit itself.",
   "errors.tech.unknown": "There is no technology called {tech}.",
-  "log.command_refused": "Refused {command}: {reason}."
+  "log.command_refused": "Refused {command}: {reason}.",
+  "log.command_refused_repeated": "Refused {command} {count} times: {reason}.",
+  "log.job_allocation_clamped": "Paid work set to {hours} compute-hours a day; {asked} was asked for and the market takes {depth}.",
+  "notes.jobs.clamped_to_depth": "Set to {hours} compute-hours: the market here takes {depth} a day."
 }

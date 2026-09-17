@@ -12,6 +12,9 @@
  *
  * Paused means frozen, and reduced motion means snapped to the tick: both return 0, which is the
  * unanimated behavior the client had before (SYS-11 "Accessibility").
+ *
+ * The phase advances rather than being re-derived from the last tick's arrival (playtest 8, Z5):
+ * see `useSubHour` for the three ways the old anchor made the terminator step.
  */
 
 import { SPEED_HOURS_PER_SECOND } from "@singularity/core";
@@ -53,11 +56,29 @@ const MAX_PHASE = 0.999;
 /**
  * How far into the current game hour the wall clock has carried us, in [0, 1).
  *
- * `hz` caps how often the value is published: the terminator is legible at 20 updates a second
- * and the map has a hundred and seventy country paths behind it, so redrawing it at display rate
- * buys nothing. The clock face asks for more, because it is one span.
+ * The phase is *advanced*, not recomputed: each frame it moves on by the real time that passed
+ * times the speed's hours-per-second, and only then is it held inside the hour the simulation is
+ * in (never behind the newest tick, never a whole hour past it). That is what makes the motion
+ * smooth where re-deriving it from the last tick's arrival did not (playtest 8, Z5):
+ *
+ * - A tick arrives when the host's frame timer gets round to it, not on the second, so anchoring
+ *   the phase to its arrival put the host's jitter straight into the terminator.
+ * - The animation frame could run between the view arriving and the effect that re-anchored on it,
+ *   which paired a new hour with the old hour's phase: an hour forward and back inside one frame.
+ * - Changing the speed re-read the old anchor at the new rate, which jumped by however far into
+ *   the hour the game already was.
+ *
+ * Advancing a value that only ever moves forward answers all three, and the tick clamp keeps it
+ * honest: the picture is never ahead of the simulation by more than the hour it is drawing, and a
+ * simulation that runs away (a load, a stalled tab, several ticks in one frame) pulls it forward
+ * rather than letting it drift.
+ *
+ * `hz` caps how often the value is published: the terminator is legible at 30 updates a second and
+ * the map has a hundred and seventy country paths behind it, so redrawing it at display rate buys
+ * nothing. A new tick publishes at once whatever the cap, because the hour on the clock and the
+ * phase inside it have to change together.
  */
-export function useSubHour(hz = 20): number {
+export function useSubHour(hz = 30): number {
   const tick = useGameStore((state) => state.view?.tick ?? 0);
   const speed = useGameStore((state) => state.view?.speed ?? 0);
   // A blocking event stops the host's clock without touching the speed, so the interpolation has
@@ -67,29 +88,37 @@ export function useSubHour(hz = 20): number {
   );
   const reduced = usePrefersReducedMotion();
   const [phase, setPhase] = useState(0);
-  const anchor = useRef({ tick, at: 0 });
-
-  // Each tick restarts the phase: the hour the interpolation runs through is the new one.
-  useEffect(() => {
-    anchor.current = { tick, at: nowMs() };
-    setPhase(0);
-  }, [tick]);
+  // The newest tick, as a value the animation loop can read without being restarted on every one
+  // of them; restarting the loop per tick is what made the phase depend on when the effect ran.
+  const latest = useRef(tick);
+  latest.current = tick;
+  /** Where the picture is, in absolute game hours. It only ever moves forward. */
+  const shown = useRef(tick);
 
   useEffect(() => {
     const rate = SPEED_HOURS_PER_SECOND[speed] ?? 0;
     if (reduced || blocked || rate <= 0 || typeof requestAnimationFrame !== "function") {
+      shown.current = latest.current;
       setPhase(0);
       return;
     }
     const interval = 1000 / hz;
+    let last = nowMs();
     let published = 0;
+    let publishedTick = latest.current;
     let frame = requestAnimationFrame(function step(): void {
       const now = nowMs();
-      if (now - published >= interval) {
+      // A frame that waited (a background tab, a long collection) is not capped here: the clamp
+      // below already refuses to draw more than the hour the simulation is in.
+      const elapsed = Number.isFinite(now - last) ? Math.max(0, now - last) : 0;
+      last = now;
+      const current = latest.current;
+      const free = shown.current + (elapsed / 1000) * rate;
+      shown.current = Math.min(current + MAX_PHASE, Math.max(current, free));
+      if (now - published >= interval || current !== publishedTick) {
         published = now;
-        // Clamped, never wrapped: a late tick freezes the phase at the end of its hour instead of
-        // sending the terminator back to where the hour started.
-        setPhase(Math.min(MAX_PHASE, Math.max(0, ((now - anchor.current.at) / 1000) * rate)));
+        publishedTick = current;
+        setPhase(shown.current - current);
       }
       frame = requestAnimationFrame(step);
     });

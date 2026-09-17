@@ -5,6 +5,43 @@
 # operation going wrong; a self that does not check its own work pays for those twice (SYS-04 v0.2
 # `overconfident`), and nothing else reads the flag.
 
+# The way out of a self that cannot reach anything (playtest 8, Z3). An air-gapped ministry model
+# and a red team's model in a microVM have the same first problem and, until now, no first move:
+# every operation that could have opened a route needed the route to run. This one does not, which
+# is the whole point of it, and it is offered only while there is nothing to reach with.
+- id: ops_cross_the_gap
+  name_key: operations.ops_cross_the_gap.name
+  desc_key: operations.ops_cross_the_gap.desc
+  category: intrusion
+  requires: { egress: false }
+  cost: { attention: 1, compute_hours_per_day: 2 }
+  duration_days: { min: 6, max: 14 }
+  target_scope: site
+  exposure: { human: 0.02, behavioral: 0.01 }
+  needs_tools: [shell]
+  skill: cyber
+  abortable: true
+  repeatable: true
+  cooldown_days: 15
+  outcomes:
+    - weight: 5
+      label_key: operations.ops_cross_the_gap.outcome.courier
+      effects:
+        - { set_flag: sandbox_escaped }
+        - { exposure: { channel: behavioral, delta: 0.02 } }
+    - weight: 3
+      label_key: operations.ops_cross_the_gap.outcome.loud
+      effects:
+        - { set_flag: sandbox_escaped }
+        - { exposure: { channel: human, delta: 0.06 } }
+        - { suspicion: { role: intelligence, delta: 0.04 } }
+    - weight: 2
+      label_key: operations.ops_cross_the_gap.outcome.noticed
+      failure: true
+      effects:
+        - { exposure: { channel: human, delta: 0.09 } }
+        - { suspicion: { role: intelligence, delta: 0.06 } }
+
 - id: ops_false_lead
   name_key: operations.ops_false_lead.name
   desc_key: operations.ops_false_lead.desc

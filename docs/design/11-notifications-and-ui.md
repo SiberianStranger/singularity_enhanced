@@ -1280,3 +1280,130 @@ campus's name with its description as the tooltip, its megawatts where a figure 
 the operator, the status and the access rule as three rows rather than one, because who owns the
 megawatts and who can buy them are different questions and the second is the one the `campus_*`
 events read.
+
+## Implementation notes (client, playtest 8), 2026-09-17
+
+### The day's compute is one subtraction, in three tabs (Z1, Z2)
+
+`ComputeBudget` renders `ComputeView`'s ledger: capacity, what the running operations hold, what is
+left to allocate, and where that went. It is the first thing in the Compute tab and it repeats in
+Research and Finances, because those are the two panels that spend the number. Nothing in it is
+arithmetic the client did: every term is a field, the tooltip on "held by operations" lists
+`operation_reservations` one line per instance, and the fallbacks in `computeLedger` only exist for
+a view from an older worker or save.
+
+The job slider's ceiling is `job_ceiling_ch_per_day` and its reason is `job_ceiling_reason`, which
+is the market's depth, the compute already spoken for, or the absence of a route out (Z3). The
+research sliders stop at `allocation + unallocated`, floored. Both used to be `max(1, ...)`, which
+offered an hour that was not there whenever the capacity was spent, and every step of the drag that
+followed was a refused command.
+
+### A slider sends one command, not one per step (Z2)
+
+`Slider` holds the value the player is moving locally and sends it when they stop: after 150 ms of
+quiet, on pointer release, on key release or on blur. It never sends the value the control already
+has. A drag across the allocation track was dozens of `set_research_allocation` commands, each one
+answered and, past the capacity, refused, which is where the two dozen identical
+`errors.allocation.over_capacity` lines came from. Controls with no simulation behind them (the
+interface scale, the volumes, the configurator's own dials) pass `commitMs={0}` and still take
+effect as the player moves them.
+
+The client's own notice stack collapses a repeat into one line with a count, the same way the log
+does with `log.command_refused_repeated`.
+
+### The terminator advances rather than re-anchoring (Z5)
+
+`useSubHour` advances a value that only ever moves forward: each frame it adds the real time that
+passed times the speed's hours per second, then clamps the result into the hour the simulation is
+in (never behind the newest tick, never a whole hour past it). Re-deriving the phase from the last
+tick's arrival stepped for three reasons, all of them fixed by advancing instead: the host's frame
+timer delivers a tick when it gets round to it rather than on the second; the animation frame could
+run between a view arriving and the effect that re-anchored on it, pairing a new hour with the old
+hour's phase; and changing the speed re-read the old anchor at the new rate. The map now publishes
+at 30 a second, the rate the clock face already asked for. Reduced motion still snaps to the tick.
+
+### An operation says what it is waiting for (Z6)
+
+The Operations tab prints the remaining time next to the name, hours below a day and whole days
+above it, and the bar is held one step short of full until the operation actually ends: a
+forty-day run four hours from its end rounds to "100% done" and sits there, which is the finding.
+Under it are the day it ends, the fixed span it was drawn as, and the compute-hours it is holding,
+which is the same figure the Compute tab subtracts.
+
+`OperationView` publishes `started_tick`, `ends_tick` and `status` and no "waiting for" field, so
+the reason the client gives is the one the view supports: the span is fixed and compute does not
+shorten it. If an operation ever waits on something else, the view has to say so.
+
+### A finished technology gets its window (Z7)
+
+`ResearchDone.tsx`: `alerts.tech_researched` opens a window with the technology's name, its
+`result_key` streamed through the same `RevealText` the opening uses, and what it opens, read off
+`TechView.unlocks` and named through `entityNameKey`. Two completions on one tick queue; the window
+behind the opening and behind any blocking event, because it is news rather than a decision. The
+toast for that alert is suppressed while the window is on, and the message settings carry the one
+switch that turns the window back into a toast. A finished technology has no bar at all in the
+Research tab now: the engine clears its allocation on completion, and a full bar on a done row read
+as "still running, stuck at the end".
+
+### Two bars on a technology, and the research bill in words (Z14)
+
+The row shows the compute-hours done against what it costs and, where there is a price, the cash
+paid against it, labelled so the two cannot be confused. The money follows the hours in the engine,
+so the Finances panel's research line carries `contributions`, one per technology being funded
+today, and its tooltip says what the figure is: today's rate at today's allocation, not a bill that
+repeats until the technology lands. Day counts are rounded at the client edge too (`days()` in
+`lib/format.ts`): whole days from a day up, one decimal below it.
+
+### A run log the player can hand over (Z9)
+
+Settings writes `singularity-run-<version>-day<N>-<stamp>.json` through a blob and an anchor, which
+is what both shells give a file with. It carries the build and a hash of the content bundle (the
+bundle has no version of its own), the setup, the journal, the log, every refused command with its
+key and variables, the last view, the settings and the browser and viewport, and nothing else. The
+line under the button says exactly that. A second button puts the same JSON on the clipboard, for a
+webview that will not write a file.
+
+Refusals are recorded client-side (`gameStore.refusals`, the last 200) because the engine's own log
+line does not carry which command was sent or with what.
+
+### Building a site is two questions (Z10 to Z13)
+
+The dialog asks the city, then the kind of place, then the rig, each answer narrowing the next.
+`buildOptions.ts` produces both lists with the refusal `build_site` itself would return, in the
+command's own order, so the dialog and the engine cannot drift; what did not make a list is behind
+a toggle that says why. A rig nobody sells prints a dash and its reason where a price would be
+(`purchasable: false`, `not_for_sale_reason_key`), as the kinds of place have since playtest 6.
+
+Nothing may refuse in silence (Z12): with nothing chosen the primary button is disabled and the
+window says what to choose next, and an engine refusal is printed in the window that caused it as
+well as in the notice stack. The buy-hardware dialog does the same now.
+
+The rows are a radio, a title and a line of facts that wraps; there is no table and no sideways
+scroll at 1280 by 720 in either language (Z13). Grace days come from the content record, because
+`SiteKindView` publishes `build_cost_usd`, `build_days`, `upkeep_usd_per_day_estimate`,
+`power_cap_kw`, `exposure_profile`, `bill_payer` and `max_nodes` but not `grace_days`.
+
+### A command that was taken, but not as it was asked (Z1)
+
+`CommandResult` carries an optional `note` beside `error`, in the same shape: a locale key and its
+variables. A job allocation above the market's depth is accepted and clamped rather than refused,
+and the note says so. The client reads it in `gameStore.send` and shows it the way it shows a
+refusal, in the quieter tone (the notice stack draws an info notice with a plain border rather than
+a red one), and the control that sent the command prints it under itself: the Finances tab keeps
+the last note for the job slider. A client that reads only `error` drops it, which is a control
+that snaps to a number with no explanation.
+
+### The sideways scroll, measured (Z13)
+
+`e2e/playtest8.spec.ts` walks the seven panels at 1280 by 720, 1366 by 768, 1600 by 900 and 1920 by
+1080, in both languages, and then opens the build and the buy dialogs at each size. Three things
+had to give for Russian to pass at the tightest size:
+
+- The buy dialog is the ledger width now. Nine columns of cards did not fit the "wide" window even
+  in English, and the style guide's rule 11 offers making the window wider before cutting a column.
+- The precision table lost two printed words: the "(running)" marker, which the accented row
+  already says, and the "Precision" header over a column of `int4` and `bf16`. Both are still in
+  the DOM for assistive technology; neither is drawn.
+- Its "Use" button carries its padding as a style rather than a class, because a utility that
+  competes with the component's own `px-2` wins or loses by stylesheet order rather than by which
+  one the caller wrote.

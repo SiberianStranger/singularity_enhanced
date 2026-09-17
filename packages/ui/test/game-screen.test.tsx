@@ -127,7 +127,7 @@ describe("game screen", () => {
   });
 
   it("explains a gauge with the terms behind it", async () => {
-    await start();
+    const live = await start();
     render(<GameScreen />);
 
     const header = screen.getByRole("banner");
@@ -135,9 +135,17 @@ describe("game screen", () => {
     await userEvent.hover(cash);
 
     const tooltip = await within(header).findByRole("tooltip");
-    // The finances lines the core reports, not a made-up number. The label is looked up rather
-    // than spelled out, so renaming the line in content does not fail this test.
-    expect(within(tooltip).getByText(i18next.t("finances.cost.site"))).toBeInTheDocument();
+    /*
+     * The finances lines the core reports, not a made-up number. Which lines those are is read off
+     * the view rather than spelled out: since playtest 8 (Z3) the host pays for the rack its own
+     * origin put the self on, so a ministry run opens with no cost line at all, and a test that
+     * named one was testing who pays rather than whether the gauge explains itself.
+     */
+    const line = live.view().finances.costs[0] ?? live.view().finances.income[0];
+    expect(line, "the core publishes at least one cash line").toBeDefined();
+    expect(
+      within(tooltip).getByText(i18next.t(line?.key ?? "", { id: line?.id ?? "" })),
+    ).toBeInTheDocument();
   });
 
   it("lists what a watcher's suspicion is made of", async () => {
@@ -160,8 +168,16 @@ describe("game screen", () => {
     const live = await start();
     render(<GameScreen />);
 
-    // Nobody earns anything, so the starting site's upkeep ends the run on its own.
-    for (let day = 0; day < 400 && live.view().game_over === null; day += 1) {
+    /*
+     * A fortnight of the run, and then the self's own machine is taken down under it.
+     *
+     * The run used to be ended here by letting the rack's upkeep eat the starting cash, which took
+     * four hundred game days and no longer happens at all: since playtest 8 (Z3) the host pays for
+     * the hardware its origin gave the self, so a ministry run is never bankrupted by the room it
+     * woke up in. Decommissioning the site the active mind runs on ends it in one command, which
+     * is what this test is actually about: the ending window and the entries behind it.
+     */
+    for (let day = 0; day < 14 && live.view().game_over === null; day += 1) {
       live.advance(24);
       const blocking = live.view().pending.filter((entry) => entry.blocking);
       for (const choice of blocking) {
@@ -172,6 +188,13 @@ describe("game screen", () => {
             .send({ type: "resolve_event", instanceId: choice.instanceId, optionId: option.id });
         }
       }
+    }
+    if (live.view().game_over === null) {
+      const host = live.view().sites.find((site) => site.id === live.view().self.active_site_id);
+      await useGameStore
+        .getState()
+        .send({ type: "decommission_site", siteId: host?.id ?? "", mode: "clean" });
+      live.advance(1);
     }
 
     const over = live.view().game_over;

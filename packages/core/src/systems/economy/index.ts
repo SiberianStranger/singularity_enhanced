@@ -11,6 +11,7 @@
  */
 
 import {
+  IDENTITY_UPKEEP_USD_PER_DAY,
   MARKET_FACTOR_HOME_WITHOUT_IDENTITY,
   RUNWAY_ALERT_DAYS,
   RUNWAY_UNLIMITED_DAYS,
@@ -47,14 +48,15 @@ import {
 } from "../../derive.js";
 import type { ExposureChannel } from "../../domain.js";
 import { activeIdentitiesOf, liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
-import { type CommandHandler, fail, OK, wrongCommand } from "../../kernel/commands.js";
+import { type CommandHandler, fail, OK, okWith, wrongCommand } from "../../kernel/commands.js";
 import type { Rng } from "../../kernel/rng.js";
 import type { System, SystemContext } from "../../kernel/system.js";
-import type { PlayerState, World } from "../../kernel/world.js";
+import type { PlayerId, PlayerState, World } from "../../kernel/world.js";
 import { canAfford, creditPlayer, payFromPlayer, playerBalance } from "../../money.js";
 import {
   allocatableCompute,
   effectiveCapabilityOf,
+  egressBlock,
   endGame,
   generationOf,
   isAlive,
@@ -64,7 +66,7 @@ import {
   researchEfficiencyOf,
 } from "../../player.js";
 import { addExposure, canHostMind, loseSite } from "../../sites.js";
-import type { ContributionView } from "../../views/types.js";
+import type { CashLineView, ContributionView } from "../../views/types.js";
 import { rollRefusal } from "../borrowed/index.js";
 import { startJournal } from "../events/index.js";
 
@@ -110,6 +112,45 @@ export function researchSpendPerDay(
     );
   }
   return total;
+}
+
+/**
+ * The same day's research spend, one line per tech being funded (playtest 8, Z14). The lines sum to
+ * `researchSpendPerDay`, so the finance panel's tooltip can name the techs whose bills add up to
+ * the figure it shows.
+ */
+export function researchSpendTerms(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): ContributionView[] {
+  const profile = player.profile;
+  if (profile === null) {
+    return [];
+  }
+  const index = contentIndex(content);
+  const efficiency = researchEfficiencyOf(world, content, player);
+  const terms: ContributionView[] = [];
+  for (const techId of Object.keys(profile.researchAllocation).sort()) {
+    const def = index.techs[techId];
+    const allocation = profile.researchAllocation[techId] ?? 0;
+    if (def === undefined || allocation <= 0 || def.cost.compute_hours <= 0) {
+      continue;
+    }
+    const progress = profile.researchProgress[techId];
+    const remaining = def.cost.cash_usd - (progress?.cash_usd ?? 0);
+    if (remaining <= 0) {
+      continue;
+    }
+    const spend = Math.min(
+      remaining,
+      ((allocation * efficiency) / def.cost.compute_hours) * def.cost.cash_usd,
+    );
+    if (spend > 0) {
+      terms.push({ key: def.name_key, id: def.id, value: spend });
+    }
+  }
+  return terms;
 }
 
 /**
@@ -211,8 +252,14 @@ export function marketFactorTerms(
  * Compute-hours of paid work the market takes from this player today (SYS-07 "market depth"), after
  * the tools dial (SYS-04 v0.2: "tools decide which jobs ... are available") and the country factor
  * of the places the player can invoice from.
+ *
+ * A self with no route out sells nothing: a contract board is on the outside of the air gap
+ * (playtest 8, Z3). The ceiling is then zero and `marketDepthTerms` says why.
  */
 export function marketDepthOf(world: World, content: ContentBundle, player: PlayerState): number {
+  if (egressBlock(player) !== null) {
+    return 0;
+  }
   return (
     jobMarketDepth(
       effectiveCapabilityOf(world, content, player),
@@ -221,6 +268,36 @@ export function marketDepthOf(world: World, content: ContentBundle, player: Play
     jobToolDepthFactor(player.profile?.harness) *
     marketFactorOf(world, content, player)
   );
+}
+
+/**
+ * The terms behind that ceiling, in compute-hours, so the job slider can print where its own limit
+ * came from (playtest 8, Z1: "nothing says why, and the slider simply stops"). The lines sum to
+ * `marketDepthOf`, the way every other contribution list in the views does.
+ */
+export function marketDepthTerms(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): ContributionView[] {
+  const capability = effectiveCapabilityOf(world, content, player);
+  const base = jobMarketDepth(capability, 1);
+  const ladder = jobMarketDepth(capability, modifier(player, VAR_JOB_MARKET_DEPTH)) - base;
+  const tools = jobToolDepthFactor(player.profile?.harness);
+  const country = marketFactorOf(world, content, player);
+  const terms: ContributionView[] = [
+    { key: "finances.depth.capability", value: base },
+    ...(Math.abs(ladder) > 1e-9 ? [{ key: "finances.depth.ladder", value: ladder }] : []),
+    { key: "finances.depth.tools", value: (base + ladder) * (tools - 1) },
+    { key: "finances.depth.country", value: (base + ladder) * tools * (country - 1) },
+  ];
+  const blocked = egressBlock(player);
+  if (blocked === null) {
+    return terms;
+  }
+  // The gap takes the whole market, so the line that says so is the whole market with a minus.
+  const sold = terms.reduce((sum, term) => sum + term.value, 0);
+  return [...terms, { key: blocked, value: -sold }];
 }
 
 /**
@@ -517,6 +594,27 @@ function reportRunway(ctx: SystemContext, player: PlayerState, net: number): voi
   }
 }
 
+/**
+ * What the player's names cost today, one line per active identity (SYS-07 "Who pays for the
+ * origin's hardware"). A name is the thing that makes paid work possible, and it is the first
+ * standing bill most origins ever see.
+ */
+export function identityCostLines(world: World, playerId: PlayerId): CashLineView[] {
+  const lines: CashLineView[] = [];
+  for (const identity of activeIdentitiesOf(world, playerId)) {
+    const usd = IDENTITY_UPKEEP_USD_PER_DAY[identity.kind];
+    if (usd > 0) {
+      lines.push({ key: "finances.cost.identity", id: identity.id, usd_per_day: usd });
+    }
+  }
+  return lines;
+}
+
+/** The same figure as one number, for the day's tick and the runway. */
+export function identityUpkeepUsdPerDay(world: World, playerId: PlayerId): number {
+  return identityCostLines(world, playerId).reduce((sum, line) => sum + line.usd_per_day, 0);
+}
+
 const setJobAllocation: CommandHandler = (world, command, ctx) => {
   if (command.type !== "set_job_allocation") {
     return wrongCommand("economy", command.type);
@@ -541,15 +639,29 @@ const setJobAllocation: CommandHandler = (world, command, ctx) => {
     });
   }
   // Above the market depth there is nobody left to take the contracts, so the extra hours are
-  // clamped away rather than refused: the slider stops, it does not throw (SYS-07).
+  // clamped away rather than refused: the slider stops, it does not throw (SYS-07). What it no
+  // longer does is stop silently (playtest 8, Z1): the result carries the ceiling and its reason,
+  // and the log line says the allocation was cut rather than set.
   const depth = marketDepthOf(world, ctx.content, player);
+  const clamped = hours > depth + ALLOCATION_EPSILON;
   profile.jobAllocation = Math.min(hours, depth);
+  const vars = {
+    hours: Math.round(profile.jobAllocation * 10) / 10,
+    asked: Math.round(hours * 10) / 10,
+    depth: Math.round(depth * 10) / 10,
+  };
   ctx.outbox.log({
-    key: "log.job_allocation",
-    vars: { hours: profile.jobAllocation },
+    key: clamped ? "log.job_allocation_clamped" : "log.job_allocation",
+    vars: clamped ? vars : { hours: vars.hours },
     playerId: player.id,
   });
-  return OK;
+  if (!clamped) {
+    return OK;
+  }
+  // A market of zero is not a small market: it is a self with no way to reach a client, and the
+  // reason for that is the one the Compute tab prints (playtest 8, Z3).
+  const blocked = egressBlock(player);
+  return okWith(blocked ?? "notes.jobs.clamped_to_depth", vars);
 };
 
 export function createEconomySystem(): EconomySystem {
@@ -579,6 +691,12 @@ export function createEconomySystem(): EconomySystem {
         income -= refusedJobIncome(world, ctx, player, sources);
         creditPlayer(player, income);
 
+        // The names are paid before the places, because a name that lapses is not a bill the
+        // player can choose to ignore for a fortnight: it is simply gone (SYS-07).
+        const identities = identityUpkeepUsdPerDay(world, playerId);
+        if (identities > 0) {
+          payFromPlayer(player, identities);
+        }
         let unpaid = 0;
         let billed = 0;
         for (const site of liveSitesOf(world, playerId)) {
@@ -589,7 +707,7 @@ export function createEconomySystem(): EconomySystem {
         const research = researchSpendPerDay(world, ctx.content, player);
         player.vars[VAR_RESEARCH_SPEND] = research;
         if (isAlive(player)) {
-          reportRunway(ctx, player, income - billed - research);
+          reportRunway(ctx, player, income - billed - research - identities);
         }
       }
     },

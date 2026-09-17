@@ -27,6 +27,8 @@ export function MessageSettings(): ReactNode {
   const setPreset = useUiStore((state) => state.setMessagePreset);
   const setMode = useUiStore((state) => state.setMessageMode);
   const reset = useUiStore((state) => state.resetMessageModes);
+  const techWindow = useUiStore((state) => state.techWindow);
+  const setTechWindow = useUiStore((state) => state.setTechWindow);
 
   return (
     <div className="flex flex-col gap-3">
@@ -43,6 +45,22 @@ export function MessageSettings(): ReactNode {
         ))}
         <Button onClick={reset}>{t("messages.reset")}</Button>
       </div>
+
+      {/*
+       * The one alert with a channel of its own (playtest 8, Z7): a finished technology opens a
+       * window with what it changed and what it opens, or, off, arrives as a toast like the rest.
+       */}
+      <label className="flex items-start gap-2 text-sm text-fg" data-testid="tech-window-setting">
+        <input
+          type="checkbox"
+          checked={techWindow}
+          onChange={(event) => setTechWindow(event.target.checked)}
+        />
+        <span className="flex flex-col">
+          <span>{t("messages.tech_window")}</span>
+          <span className="text-xs text-muted">{t("messages.tech_window.help")}</span>
+        </span>
+      </label>
 
       <ul className="flex flex-col gap-1">
         {(["critical", "warning", "opportunity", "info"] as Severity[]).map((severity) => (

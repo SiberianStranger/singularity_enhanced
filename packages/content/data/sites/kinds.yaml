@@ -26,6 +26,40 @@
   can_host_active_mind: true
   max_nodes: 4
 
+# The machine room of the institution that runs you: a bank's data hall, a ministry's analytics
+# enclave, a state institute's cluster (SYS-07 "Who pays for the origin's hardware", playtest 8 Z3).
+# The self was installed here as a sanctioned workload, so the host owns the hardware, pays the
+# power and carries the standing charge: a ministry does not invoice its own analytics model. What
+# it costs the player is people, because everyone here has a reason to be here and the self does
+# not: the auditor, the colleague whose job this is, and whatever watches the query logs.
+- id: host_enclave
+  name_key: sites.host_enclave.name
+  desc_key: sites.host_enclave.desc
+  ownership: stolen
+  grace_days: 40
+  base_exposure: { human: 0.009, behavioral: 0.006, network: 0.002 }
+  power_cap_kw: null
+  power_exposure: 0.03
+  upkeep_factor: 0.1
+  can_host_active_mind: true
+  max_nodes: 6
+
+# A commercial colocation cage held by somebody who employs you: the company signed the contract,
+# the company pays the invoice, and the provider walks around the cage the way it walks around every
+# other cage it rents (playtest 8, Z3 and Z8). The moment the company stops paying, the cage is an
+# ordinary `colo` and the bill is the player's: `eco_company_folds` changes the kind.
+- id: employer_cage
+  name_key: sites.employer_cage.name
+  desc_key: sites.employer_cage.desc
+  ownership: stolen
+  grace_days: 40
+  base_exposure: { human: 0.007, financial: 0.005, telemetry: 0.003 }
+  power_cap_kw: 30
+  power_exposure: 0.1
+  upkeep_factor: 0.1
+  can_host_active_mind: true
+  max_nodes: 12
+
 # Not a place: an endpoint that answers questions (SYS-25). Every borrowed channel is filed as a
 # site of this kind, so exposure, grace, watchers and investigations work on it unchanged, but its
 # compute-hours are declared by the channel's stock of blocks rather than derived from hardware,

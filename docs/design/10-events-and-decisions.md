@@ -338,3 +338,29 @@ both.
 `decisionStatus` now returns a locale key as its `reason` (`errors.decision.on_cooldown` and the
 rest) rather than a bare word, so the greyed-out tooltip and the `take_decision` refusal are the
 same string.
+
+### An event with a deadline announces itself (2026-09-17, playtest 8 Z4)
+
+Playtest 8: "a lot of accelerators is listed: the deadline passed, there was no answer. Nothing
+before that said a lot was waiting, where to answer it, or that it had a deadline." The deadline
+existed in `PendingChoice.expiresTick` from the day `ttl_days` was implemented, and nothing published
+it.
+
+Three changes, all in the engine, so every event with a deadline gets them at once (18 of them in
+the shipped bundle, and every one has an `on_expire`):
+
+- **While it is open**, `EventView.expires_tick` and `EventView.expires_in_days` say when the answer
+  stops being possible, rounded up to whole days. The alert the event raises carries the same figure
+  as `deadline_days` and expires with it, and the log line is `log.event_fired_deadline`
+  ("an answer is wanted within {days} days") rather than the plain "{event} happened".
+- **The window is the loop dial's, not the writer's.** `ttl_days` is multiplied by
+  `reactionWindowFactor` before any of this, as it always was, so what the panel counts down is what
+  the self really has.
+- **When it passes**, `log.event_expired_missed` names what was missed and what it would have cost:
+  the first option that is not the one the deadline resolved as, and the cash its own effects would
+  have taken. An event with nothing to miss keeps the old `log.event_expired`. The `missed` variable
+  is an option id, read against the event the way `option` already is.
+
+The content build holds the shape: an event with `ttl_days` must have an `on_expire` naming an
+option it has, and must have more than one option, because a deadline on a question with one answer
+is not a deadline.

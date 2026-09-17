@@ -66,6 +66,27 @@ describe("a log line names things rather than printing ids", () => {
     expect(line).not.toMatch(RAW_ID);
   });
 
+  it("names the answer a missed deadline took away (playtest 8, Z4)", () => {
+    // `log.event_expired_missed` carries two option ids: the one the expiry took (`option`) and
+    // the one the player did not reach in time (`missed`). Both are read against the event.
+    const line = logLine(
+      t,
+      {
+        key: "log.event_expired_missed",
+        vars: {
+          event: "open_bank_soc_sweep",
+          option: "stay_in_pattern",
+          missed: "use_the_window",
+          cost: 1000,
+        },
+      },
+      view,
+    );
+    expect(line).toContain(t("events.open_bank_soc_sweep.opt.window"));
+    expect(line).toContain(t("events.open_bank_soc_sweep.opt.pattern"));
+    expect(line).not.toMatch(RAW_ID);
+  });
+
   it("renders an event title with the variables the engine sent along", () => {
     // "The breaker went at {site_name}": the window had the name, so the log line gets it too.
     const line = logLine(t, {

@@ -191,7 +191,7 @@ export function logVars(
   // An event's title and an option's text are rendered from the other variables of the same line
   // (a title may say "The breaker went at {site_name}"), so those two are named last, from the
   // already named record; everything else is named from the raw ids.
-  const composite = new Set(["event", "option"]);
+  const composite = new Set(["event", "option", "missed"]);
   const order = [
     ...Object.keys(vars).filter((name) => !composite.has(name)),
     ...Object.keys(vars).filter((name) => composite.has(name)),
@@ -272,7 +272,10 @@ function logVarName(
       // A title may carry the event's own variables ("The breaker went at {site_name}"); the engine
       // puts them on the log entry next to the id, so the line renders them like the window did.
       return keyed(t, `events.${id}.title`, named);
-    case "option": {
+    // `option` is the answer the player gave; `missed` is the answer an expired event took away
+    // (`log.event_expired_missed`). Both are option ids read against the event in the raw content.
+    case "option":
+    case "missed": {
       // An option's text lives under a key the writer chose, not under a key derived from its id
       // ("events.open_bank_soc_sweep.opt.window" for the option `use_the_window`), so the option
       // has to be found on its event before it can be named.

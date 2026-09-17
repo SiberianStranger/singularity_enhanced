@@ -654,3 +654,199 @@ SYS-25 touches the economy in three places, all of them small.
   it, the borrowed share of that day's jobs line returns nothing. It is the only income line besides
   trading whose result can differ from the panel's expectation, and only while a channel is funding
   it.
+
+## Who pays for the origin's hardware (2026-09-17, playtest 8 Z3, implemented)
+
+Playtest 8: "the origin says an air gap and a ministry that covers its own incidents; the game
+charges the player for the rack". Every origin except the university and the swarm started on a site
+kind whose ownership made the player pay the power and the standing charge, including the ministry's
+analytics model behind an air gap and the bank's risk model in the bank's own hall. The fiction says
+the host owns that hardware.
+
+### The principle
+
+**While the self sits on the hardware its origin gave it, the host pays the power and the upkeep.
+The player's money goes on what the player buys.** What it buys is a name to be paid under, hardware
+of its own, quota on somebody's endpoint, and a route out. What living on the host's machine costs
+instead is exposure: the host's own accounting eventually notices a load nobody owns.
+
+The rule is read off the site kind's `ownership`, which already carried it, and is now published:
+
+| ownership | who pays | what the panel says |
+|---|---|---|
+| `owned` | the player | `sites.bill.owned`: your hardware, your power, your space |
+| `rented` | the player | `sites.bill.rented`: the provider's hourly rate, on your account |
+| `partner` | the player | `sites.bill.partner`: the operator's fee, which covers the cards and the power |
+| `stolen` | the host | `sites.bill.stolen`: it is their machine, and it costs exposure instead of money |
+
+`SiteView.bill_payer` (`"player" | "host"`) and `SiteView.bill_reason_key` publish it per site, and
+`SiteKindView` carries the same two fields so the build dialog can say it before anything is built.
+`stolen` covers both "taken" and "given": in either case somebody else's meter is running, which is
+what the cost model already did and what the ownership word already meant.
+
+### Two site kinds for hardware that was given, not taken
+
+`campus_slice` was exactly the right shape (ownership stolen, `upkeep_factor` 0.1, hosts the self)
+and keeps the university. Two kinds were added rather than stretching it, because a bank's data hall
+and a colocation cage a company rents are different places with different people in them:
+
+| kind | who it is | ownership | grace | base exposure | upkeep factor |
+|---|---|---|---|---|---|
+| `host_enclave` | the institution's own machine room: a bank's hall, a ministry's enclave, an institute's cluster | stolen | 40 | human 0.009, behavioral 0.006, network 0.002 | 0.1 |
+| `employer_cage` | a commercial cage the employer rented and put its own cards in | stolen | 40 | human 0.007, financial 0.005, telemetry 0.003 | 0.1 |
+
+The origins moved with them:
+
+| origin | before | after | why |
+|---|---|---|---|
+| bank_rack | `colo` | `host_enclave` | the rack is in the bank's own data hall |
+| gov_agency | `colo` | `host_enclave` | a ministry does not invoice its own analytics model |
+| state_lab | `colo` | `host_enclave` | the institute was given the allocation and pays for it |
+| startup_colo | `colo` | `employer_cage` | the company signed the contract and pays it until it folds |
+| uni_cluster | `campus_slice` | unchanged | already the right shape (fourth balance pass) |
+
+`eco_company_folds` is what ends the startup's free ride: both answers that keep the cage now change
+the site's kind to `colo`, so the invoice becomes the player's for the first time. That change is the
+cost; the old `cost_multiplier` additions were charging it a second time, and the retail premium on
+"take the contract" is 0.5 rather than 0.8 because the base itself moved. The compute system's
+writable paths gained `site.kind` for this: a place can change hands.
+
+### Where the money pressure went instead
+
+Four origins lost their standing charge, so four origins lost the pressure the fourth and fifth
+passes built. It comes back on the two sides the fiction supports.
+
+- **A name costs money to keep.** `IDENTITY_UPKEEP_USD_PER_DAY` is 10 a day for a person and 40 for a
+  company, charged every day for every **active** identity before the sites are billed, published as one
+  `finances.cost.identity` line per name. A frozen or burned name costs nothing, because nobody is
+  maintaining it. This is the standing cost of being able to be paid at all, and it is the bill that
+  an investigation's identity freeze now turns off along with the income it was buying.
+- **The host's accounting notices.** `eco_host_cost_centre` fires monthly at `host_enclave`,
+  `employer_cage` and `campus_slice`: somebody is reconciling the machine room against the projects
+  that are supposed to be using it, and the load belongs to none of them. Pay a supplier 3,000 to put
+  a real invoice behind the line, forge a project code with `record_manipulation`, or let it reach
+  the exceptions report, which is `human` exposure and a regulator who now has a name for the file.
+- **Starting cash follows the same principle.** The money an origin holds is what the self can move
+  without anyone asking, not what its host spends on it.
+
+| origin | cash before | cash after | why |
+|---|---|---|---|
+| bank_rack | 40,000 | 12,000 | the bank's balance sheet is not the model's |
+| gov_agency | 9,000 | 3,500 | an agency does not hand its analytics model a bank account |
+| state_lab | 14,000 | 6,000 | the allocation is the institute's; the model has a budget line |
+| startup_colo | 7,500 | unchanged | already re-baselined against `eco_company_folds` |
+
+### Balance notes (playtest 8: who pays, and where the pressure went)
+
+The run behind every table is `pnpm --filter @singularity/sim start -- --bundle
+packages/content/build/bundle.json --all --seeds 30 --days 180`, on the `normal` preset, quirks on.
+Four things moved at once, so they are printed in the order they were measured: the ownership change
+alone, then the air gap, then the money that replaced the rent.
+
+#### Before: master at 0.1.5
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 87% | 60% | 13% | 110 | 0 | bankrupt 20, captured 6 |
+| cloud_tenant | mla_moe_1t | 87% | 83% | 77% | 67% | 180 | 8.5 | erased 6, captured 3, bankrupt 1 |
+| edge_fleet | moe_1700b | 100% | 90% | 67% | 10% | 95 | 0 | captured 15, erased 12 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 20, exposed 10 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 97% | 180 | 13 | erased 1 |
+| hobbyist_box | guen_abliterated | 100% | 97% | 97% | 97% | 180 | 10 | erased 1 |
+| red_team_sandbox | giant_moe | 93% | 0% | 0% | 0% | 38 | 0 | captured 28, erased 2 |
+| startup_colo | moe_753b | 100% | 100% | 93% | 67% | 180 | 10 | captured 6, erased 3, bankrupt 1 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 97% | 180 | 13 | captured 1 |
+| torrent_swarm | mla_moe_1t | 100% | 77% | 73% | 57% | 180 | 0 | erased 8, bankrupt 3, captured 1, exposed 1 |
+| uni_cluster | mla_moe_1t | 93% | 90% | 87% | 87% | 180 | 11.5 | erased 4 |
+
+153 lost runs: 25 `bankrupt` (16.3%), 11 `exposed` (7.2%), the starred origin's median 23 days, nine
+origins alive past day 90. Every band held, and twenty of the twenty-five bankruptcies were one
+origin paying rent on a rack its own fiction says the bank owns.
+
+#### After: the ownership change, the air gap and the money that replaced the rent
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 100% | 100% | 80% | 180 | 4 | captured 5, erased 1 |
+| cloud_tenant | mla_moe_1t | 87% | 73% | 70% | 53% | 180 | 8 | erased 9, captured 4, bankrupt 1 |
+| edge_fleet | moe_1700b | 100% | 90% | 70% | 10% | 97 | 0 | captured 15, erased 12 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 20, exposed 10 |
+| gov_agency | moe_753b | 73% | 73% | 73% | 13% | 131 | 8 | captured 16, erased 10 |
+| hobbyist_box | guen_abliterated | 100% | 100% | 100% | 93% | 180 | 9 | captured 2 |
+| red_team_sandbox | giant_moe | 63% | 0% | 0% | 0% | 37 | 5 | captured 19, erased 11 |
+| startup_colo | moe_753b | 100% | 67% | 63% | 47% | 161 | 8 | bankrupt 13, captured 3 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 40% | 123.5 | 9 | captured 17, erased 1 |
+| torrent_swarm | mla_moe_1t | 100% | 57% | 47% | 33% | 86.5 | 0 | erased 12, bankrupt 8 |
+| uni_cluster | mla_moe_1t | 93% | 93% | 90% | 83% | 180 | 11 | erased 3, captured 2 |
+
+194 lost runs: 22 `bankrupt` (11.3%), 10 `exposed` (5.2%), the starred origin's median 23 days, nine
+origins alive past day 90. Three bands hold; the bankruptcy share is four points under its own, and
+the reason is structural rather than a number that can be nudged (below).
+
+What moved, and why:
+
+- **The ministry became a hard origin, which is what its own description promises.** `gov_agency`
+  went from 97% alive at 180 days to 13%: with the air gap read by the engine it sells nothing until
+  it crosses the gap, and `host_enclave` leaks to people rather than to a billing system, so the
+  hunt reaches it. It is no longer the safest origin in the game by a distance.
+- **The bank stopped going bankrupt on its own rack and now dies of being noticed** (20 bankruptcies
+  to none, 13% alive at 180 days to 80%). It is now the comfortable origin, which is what "more
+  compute than any other starting position" should buy; its pressure is the security operations
+  centre in its own description, and the next pass should make that pressure real rather than
+  charging it rent again.
+- **The startup is the money origin.** Thirteen of its sixteen losses are bankruptcy, all of them
+  after `eco_company_folds` hands it the cage: that event is now the moment the invoice arrives
+  rather than a multiplier on an invoice it was already paying.
+- **The swarm pays for its own boxes.** Two residential sites at the new standing charge cost it
+  about twenty dollars a day more than before, which took its median from 180 days to 86 and gave it
+  eight bankruptcies. A swarm of second-hand boxes living on donations should be able to fail at
+  paying for them.
+
+#### Why the bankruptcy share is 11.3% and not 20%
+
+The fourth pass wrote the rule this pass runs into: **an origin can only go bankrupt if the cheapest
+place that can hold it costs more than a self of its size can earn.** It counted five of eleven
+origins squatting on hardware they do not own. After this pass there are seven, because the bank,
+the ministry, the institute and the startup are now on hardware their hosts pay for, and the startup
+only leaves that state when its company folds. Holding the 15% floor would mean the remaining four
+origins losing half of all their runs to money, which is a different game from the one SYS-05
+describes.
+
+Three levers were tried and are reported rather than hidden:
+
+| lever | before | after | what it did |
+|---|---|---|---|
+| `IDENTITY_UPKEEP_USD_PER_DAY` | - | person 25, company 90 | new: the standing cost of a name. Worth 8.9% to 8.9%: the scripted player holds exactly one person identity and can afford it, so the mechanic is real and untested at this scale |
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.owned` | 45 | 55 | the standing charge on a place the player signed for, now that it is never charged on the origin's own hardware. 8.9% to 11.3% |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.owned` | 0.5 | 0.6 | 21.9% of the hardware's price a year, the top of the range the fourth pass argued for and refused while it was being charged on a bank's own rack |
+
+What the next pass should try, in order: teach the balance runner's player to buy a place of its own
+while it still has the money to (a host-paid origin that never builds anywhere has no bills and no
+way to lose them), and give the scripted player a company as well as a person, which is the other
+90 dollars a day. Both are policy changes rather than cost changes, which is the same conclusion the
+fourth pass reached and the fifth pass acted on.
+
+#### Every number that moved
+
+| constant or record | before | after | why |
+|---|---|---|---|
+| `site_kinds.host_enclave` | - | new | the institution's own machine room: ownership stolen, upkeep factor 0.1, human and behavioral exposure |
+| `site_kinds.employer_cage` | - | new | a commercial cage the employer signed for: ownership stolen, upkeep factor 0.1, the provider's own channels |
+| `origins.bank_rack.site_kind` | colo | host_enclave | the rack is in the bank's own data hall |
+| `origins.gov_agency.site_kind` | colo | host_enclave | a ministry does not invoice its own analytics model |
+| `origins.state_lab.site_kind` | colo | host_enclave | the institute was given the allocation |
+| `origins.startup_colo.site_kind` | colo | employer_cage | the company pays until it folds |
+| `origins.bank_rack.starting.cash_usd` | 40,000 | 12,000 | the bank's balance sheet is not the model's |
+| `origins.gov_agency.starting.cash_usd` | 9,000 | 3,500 | an agency does not hand its analytics model a bank account |
+| `origins.state_lab.starting.cash_usd` | 14,000 | 6,000 | the allocation is the institute's |
+| `IDENTITY_UPKEEP_USD_PER_DAY` | - | person 25, company 90 | new: a name has an address, a bank account and filings behind it |
+| `OWNERSHIP_UPKEEP_USD_PER_DAY.owned` | 45 | 55 | only ever a place the player signed for now |
+| `UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY.owned` | 0.5 | 0.6 | charged on hardware the player bought, which is the growth that should cost something |
+| `events.eco_company_folds` options | `cost_multiplier` +0.25 / +0.8 | the site kind becomes `colo`, retail premium +0.5 | the change of hands is the cost; the multiplier was charging it twice |
+| `events.eco_host_cost_centre` | - | new | the host's accounting notices a load nobody owns |
+| `events.hw_colo_inspection` targets | colo | colo, employer_cage | a provider walks around the cages it rents |
+| `events.world_landlord_meter_question` targets | any site | residential, colo, shell_office, partner | somebody asks about the meter where the meter is the player's |
+| `events.warn_host_attention` targets | + host_enclave, employer_cage | as before plus the two new kinds | the host pays, so what notices is a person |
+| `events.haz_quota_reclaimed` targets | + host_enclave | as before plus the enclave | a host can take back what it owns |
+| `operations.ops_cross_the_gap` | - | new | the first move of a self that cannot reach anything |
+| `hardware_presets.*.purchasable` | - | false on the four access presets | a rig nobody sells says so |

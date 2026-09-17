@@ -34,7 +34,10 @@ export function GameMap({
   // not throw the player back to the whole world (playtest 3, R14).
   const mapView = useUiStore((state) => state.mapView);
   const setMapView = useUiStore((state) => state.setMapView);
-  const subHour = useSubHour(20);
+  // 30 a second, the rate the clock face already asked for: the map's heavy layers (the country
+  // paths, the markers) are memoized on their own inputs, so a frame between ticks re-runs this
+  // component and redraws one path.
+  const subHour = useSubHour(30);
 
   return (
     <WorldMap

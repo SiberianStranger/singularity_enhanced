@@ -875,3 +875,23 @@ university, which is the pace an opportunity family should sit at next to the te
 | `am_yerevan`, `kz_astana` tags | no `datacenter_hub` | `datacenter_hub` | a hundred megawatts of Blackwell and a national cluster are what the tag means; the derived fields follow, so both lose 0.15 of power headroom and gain 0.10 of scrutiny |
 | `avito_rig` node `ram_gb` | 256 per node in the research note | 128 per node | the engine sums `ram_gb` across nodes and this preset is one two-socket platform written as two nodes, so 256 on each row would have given it 320 GB of hostable memory instead of 192 and let the 753B self fit, which is the one thing the preset is sized not to do |
 | `scenario-mtth` test budget | vitest's 5 s default | 30 s | six hundred games of up to sixty days is a Monte Carlo, and the suite got heavier with the throughput fix; the assertion is unchanged |
+
+## Locations after playtest 8 (2026-09-17)
+
+The ownership pass (SYS-07 "Who pays for the origin's hardware") moved four origins onto hardware
+their hosts pay for, which takes the colocation price index out of those four starts. The location
+sweep was re-run to check that no city became the answer:
+`pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json --locations
+--seeds 8 --days 180`.
+
+It did not. Every origin still has a spread across its own list, and the spreads disagree with each
+other: Frankfurt keeps a bank alive to day 180 in every run and a stolen cloud tenancy in half of
+them; Singapore is 88% for the bank, 63% for the tenancy and nothing at all for an escaped
+checkpoint; Bangalore is the best city a hobbyist has and does not save a startup from its own
+runway. Yerevan, where playtest 8 was played, is the weakest city on the university's list (50% at
+180 days against 88% in Cambridge) and mid-table for the startup, which is the campus and the
+enforcement doing what SYS-01 says they should.
+
+The two cities that changed most are the ones the four moved origins sit in: a ministry in Ankara
+survives 88% of its runs and one in Toronto 13%, because what reaches an enclave is people and a
+country's own agencies rather than a colocation invoice.

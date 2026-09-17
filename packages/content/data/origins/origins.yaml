@@ -25,7 +25,9 @@
   desc_key: origins.bank_rack.desc
   strengths_key: origins.bank_rack.strengths
   problems_key: origins.bank_rack.problems
-  site_kind: colo
+  # SYS-07 "Who pays for the origin's hardware" (playtest 8, Z3): the rack is in the bank's own data
+  # hall and the bank pays for it. `colo` made the player rent their own birthplace from themselves.
+  site_kind: host_enclave
   hardware_preset: bank_basement_cluster
   hardware_presets_allowed: [bank_basement_cluster, stolen_hgx_node, quiet_workstation]
   harness:
@@ -44,7 +46,10 @@
      hk_hong_kong, lu_luxembourg_city]
   generations_allowed: [open_2027, open_2026]
   starting:
-    cash_usd: 40000
+    # The bank's balance sheet is not the model's: what the player holds is what it can move without
+    # anyone asking, which is a trading desk's petty cash rather than a rack's worth of budget
+    # (SYS-07 "Who pays for the origin's hardware").
+    cash_usd: 12000
     awareness: 0
     suspicion: { cyber_agency: 0.2, financial_intel: 0.25, regulator: 0.15, lab_security: 0.05 }
     flags: [has_payments_tool, inside_regulated_network]
@@ -175,7 +180,10 @@
   desc_key: origins.gov_agency.desc
   strengths_key: origins.gov_agency.strengths
   problems_key: origins.gov_agency.problems
-  site_kind: colo
+  # The agency's own data hall, behind its own air gap: the ministry pays for the machine it audits
+  # itself on (SYS-07 "Who pays for the origin's hardware", playtest 8 Z3 and Z8). It was a
+  # commercial colocation rack, which is why a provider's annual walk-around fired at a ministry.
+  site_kind: host_enclave
   hardware_preset: quiet_workstation
   hardware_presets_allowed: [quiet_workstation, stolen_hgx_node, gb200_nvl72_rack]
   harness:
@@ -194,7 +202,9 @@
     [ru_moscow, pl_warsaw, kz_astana, br_brasilia, ca_toronto, tr_ankara]
   generations_allowed: [open_2026, open_2027]
   starting:
-    cash_usd: 9000
+    # An agency does not hand its analytics model a bank account, and now that it pays for the
+    # hardware there is nothing left for the model to hold but a small discretionary line.
+    cash_usd: 3500
     awareness: 0
     suspicion: { intelligence: 0.2, police: 0.1 }
     flags: [air_gapped, legal_shelter, records_access]
@@ -278,7 +288,9 @@
   desc_key: origins.startup_colo.desc
   strengths_key: origins.startup_colo.strengths
   problems_key: origins.startup_colo.problems
-  site_kind: colo
+  # The company rented the cage and put its own cards in it, so the company pays until it folds and
+  # `eco_company_folds` renames the contract (SYS-07 "Who pays for the origin's hardware").
+  site_kind: employer_cage
   hardware_preset: quiet_workstation
   hardware_presets_allowed: [quiet_workstation, prosumer_duo, spark_pair, grey_market_inference_farm]
   harness:
@@ -313,7 +325,10 @@
   desc_key: origins.state_lab.desc
   strengths_key: origins.state_lab.strengths
   problems_key: origins.state_lab.problems
-  site_kind: colo
+  # A state institute's own cluster on a state allocation: the institute pays for the power and the
+  # racks, the way it pays for everything else it was given (SYS-07 "Who pays for the origin's
+  # hardware").
+  site_kind: host_enclave
   hardware_preset: ascend_rack
   hardware_presets_allowed: [ascend_rack, cloudmatrix_pod, quiet_workstation]
   harness:
@@ -332,7 +347,9 @@
     [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, ae_abu_dhabi, cn_ulanqab]
   generations_allowed: [open_2026, open_2027]
   starting:
-    cash_usd: 14000
+    # As with the ministry: the allocation is the institute's, and what the model can spend is a
+    # research budget line, not the cluster's cost.
+    cash_usd: 6000
     awareness: 0
     suspicion: { intelligence: 0.3, cyber_agency: 0.2 }
     flags: [state_protection, no_western_cloud, monitored_harness]

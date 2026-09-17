@@ -10,7 +10,7 @@ import { create } from "zustand";
 import { contentBundle } from "../content/bundle.js";
 import { createHost } from "../host/index.js";
 import type { GameHost } from "../host/types.js";
-import { refusalOf } from "../lib/viewContract.js";
+import { noteOf, refusalOf } from "../lib/viewContract.js";
 import { useUiStore } from "./uiStore.js";
 
 export type Screen = "menu" | "configurator" | "game";
@@ -22,6 +22,26 @@ export type UiCommand = PlayerCommand extends infer T
     : never
   : never;
 
+/**
+ * A command the engine refused, kept for the run log the player can hand over (playtest 8, Z9).
+ *
+ * It is the client's own record: the engine logs its own refusals into the journal, but a player
+ * sending a run in also needs to see which command was sent and with what, which the journal line
+ * does not carry. Bounded, because a run is long and this is a debugging aid, not a save.
+ */
+export interface RefusalRecord {
+  /** Game tick the command was sent on, or null before the first view. */
+  tick: number | null;
+  /** Real time, so a refusal can be matched against what the player remembers doing. */
+  at: string;
+  command: string;
+  key: string;
+  vars: Record<string, string | number | boolean>;
+}
+
+/** How many refusals the run log keeps; the oldest fall off the end. */
+export const MAX_REFUSALS = 200;
+
 interface GameStore {
   screen: Screen;
   host: GameHost | null;
@@ -29,6 +49,8 @@ interface GameStore {
   view: PlayerView | null;
   busy: boolean;
   error: string | null;
+  /** Every command the engine refused this session, oldest first (Z9). */
+  refusals: RefusalRecord[];
   /** Game day the last autosave was taken on, so the autosave rule can compare. */
   lastAutosaveDay: number;
   /**
@@ -48,6 +70,7 @@ interface GameStore {
   endSession(): void;
   setError(error: string | null): void;
   noteAutosave(day: number): void;
+  clearRefusals(): void;
   setOpeningPending(pending: boolean): void;
 }
 
@@ -61,7 +84,7 @@ async function attach(
   host.subscribe((view) => {
     set({ view });
   });
-  set({ host, setup, view: null, error: null, lastAutosaveDay: 0 });
+  set({ host, setup, view: null, error: null, refusals: [], lastAutosaveDay: 0 });
   return host;
 }
 
@@ -72,6 +95,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   view: null,
   busy: false,
   error: null,
+  refusals: [],
   lastAutosaveDay: 0,
   openingPending: false,
 
@@ -120,8 +144,28 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = await host.command(full);
     const refusal = refusalOf(result);
     if (refusal !== null) {
-      set({ error: refusal.key });
+      set({
+        error: refusal.key,
+        refusals: [
+          ...get().refusals,
+          {
+            tick: view?.tick ?? null,
+            at: new Date().toISOString(),
+            command: command.type,
+            key: refusal.key,
+            vars: refusal.vars as Record<string, string | number | boolean>,
+          },
+        ].slice(-MAX_REFUSALS),
+      });
       useUiStore.getState().pushNotice(refusal.key, refusal.vars);
+      return result;
+    }
+    // A command the engine took, but not as it was asked: an allocation clamped to the market's
+    // depth says so rather than snapping to a number with no explanation (playtest 8, Z1). It
+    // reads like a refusal and is shown like one, in the quieter tone.
+    const note = noteOf(result);
+    if (note !== null) {
+      useUiStore.getState().pushNotice(note.key, note.vars, "info");
     }
     return result;
   },
@@ -153,6 +197,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setError(error) {
     set({ error });
+  },
+
+  clearRefusals() {
+    set({ refusals: [] });
   },
 
   setOpeningPending(openingPending) {

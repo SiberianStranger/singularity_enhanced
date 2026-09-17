@@ -53,13 +53,23 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
         <li
           key={notice.id}
           data-testid="refusal-notice"
-          className="flex items-start gap-2 border border-crit bg-panel p-2"
+          data-tone={notice.tone}
+          className={`flex items-start gap-2 border bg-panel p-2 ${
+            notice.tone === "error" ? "border-crit" : "border-line"
+          }`}
         >
-          <span className="text-crit">
-            <SeverityIcon severity="critical" />
+          {/* A refusal is critical; a note is the engine saying what it did instead (Z1). */}
+          <span className={notice.tone === "error" ? "text-crit" : "text-info"}>
+            <SeverityIcon severity={notice.tone === "error" ? "critical" : "info"} />
           </span>
           <span className="flex-1 text-start text-sm text-fg">
             {t(notice.key, logVars(t, notice.key, notice.vars, view ?? undefined))}
+            {/* The same refusal over and over is one line with a count (playtest 8, Z2). */}
+            {notice.count > 1 ? (
+              <span className="ms-1 font-mono text-xs text-muted" data-testid="notice-count">
+                {t("game.notice.repeat", { count: notice.count })}
+              </span>
+            ) : null}
           </span>
           <button
             type="button"

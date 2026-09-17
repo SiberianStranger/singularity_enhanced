@@ -1064,3 +1064,25 @@ line too, which it did not before.
 
 **The rating was re-anchored**; see "Anchors (v0.2)" above for the term-by-term reasons and the
 preset table for what the eight builds read now.
+
+### The origin's site kind matches its own description (2026-09-17, playtest 8 Z3 and Z8)
+
+Playtest 8 found a colocation provider's annual walk-around firing at a ministry's air-gapped
+analytics model, because the origin's site kind was a commercial colocation rack. It was the same
+mistake in five places: every origin that was *given* its hardware was modelled as renting a cage.
+
+The kinds now follow the descriptions, and SYS-07 "Who pays for the origin's hardware" carries the
+table and the balance pass. In short: `bank_rack`, `gov_agency` and `state_lab` start on
+`host_enclave` (the institution's own machine room), `startup_colo` on `employer_cage` (a commercial
+cage the company rented), `uni_cluster` stays on `campus_slice`, and the four remaining origins keep
+the kinds they had, because a stolen tenancy, a fleet, a house and a swarm really are what they were.
+
+Which events may fire where follows from the kind, and that is the point of having more than one:
+
+| event | fires at | why |
+|---|---|---|
+| `hw_colo_inspection` | `colo`, `employer_cage` | a commercial provider walks around the cages it rents, whoever the invoice goes to |
+| `world_landlord_meter_question` | `residential`, `colo`, `shell_office`, `partner` | somebody asks about the meter only where the meter is the player's problem |
+| `warn_host_attention` | adds `host_enclave`, `employer_cage` | the host pays, so nothing warns on a bill; what notices is a person who works here |
+| `haz_quota_reclaimed` | adds `host_enclave` | a host that owns the machine can take it back, which is the real price of living on hardware somebody gave you |
+| `eco_host_cost_centre` | `host_enclave`, `employer_cage`, `campus_slice` | new: somebody has to account for a load that has no owner |

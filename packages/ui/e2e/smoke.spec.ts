@@ -268,19 +268,27 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(tooltip).toContainText("Effects");
   await resolveOpenEvents(page);
 
-  // C1, C4: the build dialog compares the site kinds, and building one adds a site.
+  /*
+   * C1, C4, and playtest 8's Z11 to Z13: the build dialog is a staged choice now. The city it
+   * opens on is the one the self is in, the kinds are the ones that can be had there, and the rigs
+   * are the ones that fit the kind; nothing is built until both have been chosen, and the button
+   * says so until then.
+   */
   await openPanel(page, "Compute and sites");
   const sites = page.getByRole("table", { name: "Sites" }).getByRole("row");
   const sitesBefore = await sites.count();
   await page.getByRole("button", { name: "Build site" }).click();
   const build = page.getByRole("dialog");
-  await expect(build.getByRole("columnheader", { name: "Can host you" })).toBeVisible();
-  await expect(build.getByRole("columnheader", { name: "Upkeep" })).toBeVisible();
-  // A colocation cage with hardware of one's own: cloud tenancies rent, and not every preset is
+  await expect(build.getByTestId("build-city")).toBeVisible();
+  await expect(page.getByTestId("build-confirm")).toBeDisabled();
+  await expect(page.getByTestId("build-blocked")).toBeVisible();
+
+  // A colocation cage with hardware of one's own: cloud tenancies rent, and not every rig is
   // rentable, which is the sort of refusal the dialog now keeps itself open to explain.
-  await build.getByText("Colocation cage").click();
-  await build.getByRole("combobox", { name: "Hardware" }).selectOption("mining_rig_ascendant");
-  await build.getByRole("button", { name: "Build", exact: true }).click();
+  await build.locator("[data-testid='build-kind-colo'] input").check();
+  await build.locator("[data-testid='build-rig-mining_rig_ascendant'] input").check();
+  await expect(build.getByTestId("build-total")).toContainText("kW");
+  await page.getByTestId("build-confirm").click();
   await expect(sites).toHaveCount(sitesBefore + 1);
 
   // C2, U1: the hardware table carries prices and parameters, and an order reaches the engine.
@@ -324,12 +332,15 @@ test("the actions the playtest found broken all work", async ({ page }) => {
     await refusal.first().getByRole("button", { name: "Close" }).click();
   }
 
-  // C7: an operation starts.
+  // C7: an operation starts, and the panel says what it is still waiting for rather than printing
+  // a percentage that rounds to "100% done" hours before the end (playtest 8, Z6).
   await openPanel(page, "Operations");
   const startable = page.getByRole("button", { name: "Start" }).and(page.locator(":enabled"));
   await expect(startable.first()).toBeVisible();
   await startable.first().click();
-  await expect(page.getByText(/% done/)).toBeVisible();
+  const left = page.locator("[data-testid^='operation-left-']").first();
+  await expect(left).toBeVisible();
+  await expect(left).toHaveText(/left|Finishing/i);
 
   // C8: a decision lists what it costs and what it gives, and can be taken.
   await openPanel(page, "Journal and decisions");
@@ -385,7 +396,26 @@ test("the actions the playtest found broken all work", async ({ page }) => {
       { timeout: 60_000, message: "the tech finished and printed what it changed" },
     )
     .toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Set speed to 0" }).click();
+  /*
+   * Pause, with the same patience the filter click above needed. The clock is at its top speed
+   * here, so an event window or a finished technology's own window (playtest 8, Z7) can be drawn
+   * over the top bar between one line of the test and the next, and a click that lands on the
+   * overlay never reaches the button under it.
+   */
+  await expect
+    .poll(
+      async () => {
+        await resolveOpenEvents(page);
+        try {
+          await page.getByRole("button", { name: "Set speed to 0" }).click({ timeout: 2_000 });
+          return "paused";
+        } catch {
+          return "blocked";
+        }
+      },
+      { timeout: 30_000, message: "the clock could be paused" },
+    )
+    .toBe("paused");
   await expect(page.getByTestId(techId ?? "").getByTestId("tech-result")).not.toBeEmpty();
 
   expect(failures.list, "no uncaught errors were logged").toEqual([]);

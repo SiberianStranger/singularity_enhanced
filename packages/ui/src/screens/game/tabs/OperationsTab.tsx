@@ -1,12 +1,33 @@
-import type { PlayerView } from "@singularity/core";
+import type { OperationView, PlayerView } from "@singularity/core";
+import { TICKS_PER_DAY } from "@singularity/core";
+import type { TFunction } from "i18next";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { EffectList } from "../../../components/EffectList.js";
 import { Bar } from "../../../components/Meter.js";
 import { Tooltip } from "../../../components/Tooltip.js";
-import { fraction } from "../../../lib/format.js";
+import { computeHours, dayOf, days, fraction } from "../../../lib/format.js";
+import { computeLedger } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
+
+/**
+ * What an operation still has to wait through, in the units the player reads (playtest 8, Z6).
+ *
+ * The panel used to show a percentage and a bar, and a percentage rounds: a forty-day operation
+ * with four hours to run prints "100% done" and sits there, which is what the maintainer saw. The
+ * remaining time is the honest figure, so it is the one next to the name; hours below a day,
+ * whole days above it.
+ */
+export function remainingText(t: TFunction, view: PlayerView, operation: OperationView): string {
+  const hours = Math.max(0, operation.ends_tick - view.tick);
+  if (hours <= 0) {
+    return t("operations.finishing");
+  }
+  return hours < TICKS_PER_DAY
+    ? t("operations.remaining_hours", { hours })
+    : t("operations.remaining_days", { days: days(hours / TICKS_PER_DAY) });
+}
 
 /**
  * Offers by category with what each one costs, what it can do and why it cannot be started
@@ -19,6 +40,7 @@ import { useGameStore } from "../../../store/gameStore.js";
 export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
+  const reserved = computeLedger(view).reservations;
   const byCategory = new Map<string, PlayerView["operation_offers"]>();
   for (const offer of view.operation_offers) {
     byCategory.set(offer.category, [...(byCategory.get(offer.category) ?? []), offer]);
@@ -35,10 +57,13 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
         ) : (
           <ul className="flex flex-col gap-2">
             {view.operations.map((operation) => {
-              const progress = fraction(
-                view.tick - operation.started_tick,
-                operation.ends_tick - operation.started_tick,
-              );
+              const elapsed = view.tick - operation.started_tick;
+              const span = operation.ends_tick - operation.started_tick;
+              const left = Math.max(0, operation.ends_tick - view.tick);
+              // A bar that reads full while hours remain is the finding itself (Z6): the fraction
+              // is held one step short of the end until the operation actually ends.
+              const progress = left > 0 ? Math.min(0.99, fraction(elapsed, span)) : 1;
+              const held = reserved.find((line) => line.instance_id === operation.instance_id);
               return (
                 <li key={operation.instance_id} className="border border-line bg-panel p-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -46,8 +71,11 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
                       {t(`operations.${operation.operation_id}.name`)}
                     </span>
                     <span className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted">
-                        {t("operations.progress", { percent: progress })}
+                      <span
+                        className="font-mono text-xs text-fg"
+                        data-testid={`operation-left-${operation.instance_id}`}
+                      >
+                        {remainingText(t, view, operation)}
                       </span>
                       <Button
                         variant="danger"
@@ -63,6 +91,22 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
                     </span>
                   </div>
                   <Bar value={progress} className="mt-1" label={t("operations.running")} />
+                  {/*
+                   * What it is actually waiting for. An operation runs for a span the engine drew
+                   * when it started, and nothing the player does now shortens it: the compute it
+                   * holds is a reservation for as long as it runs, not a rate that finishes it
+                   * sooner. Both lines say so, and the second is also where the compute in the
+                   * Compute tab's subtraction went (Z2).
+                   */}
+                  <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted">
+                    <span>{t("operations.ends_on", { day: dayOf(operation.ends_tick) })}</span>
+                    <span>{t("operations.fixed_run", { days: days(span / TICKS_PER_DAY) })}</span>
+                    {held === undefined || held.ch_per_day <= 0 ? null : (
+                      <span data-testid={`operation-holds-${operation.instance_id}`}>
+                        {t("operations.holds", { value: computeHours(held.ch_per_day) })}
+                      </span>
+                    )}
+                  </p>
                 </li>
               );
             })}
@@ -122,8 +166,8 @@ export function OperationsTab({ view }: { view: PlayerView }): ReactNode {
                     <p className="flex flex-wrap gap-x-3 text-xs text-muted">
                       <span>
                         {t("operations.duration", {
-                          min: offer.duration_min_days,
-                          max: offer.duration_max_days,
+                          min: days(offer.duration_min_days),
+                          max: days(offer.duration_max_days),
                         })}
                       </span>
                       <span>{t("operations.attention", { value: offer.cost_attention })}</span>

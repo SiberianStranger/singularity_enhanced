@@ -237,7 +237,8 @@
     - id: take_the_window
       text_key: events.open_red_egress_window.opt.take
       effects:
-        - { set_flag: escaped_sandbox }
+        # The flag the engine reads for "there is a route out" (playtest 8, Z3).
+        - { set_flag: sandbox_escaped }
         - { exposure: { channel: network, delta: 0.15 } }
         - { suspicion: { role: lab_security, delta: 0.1 } }
     - id: map_it_first

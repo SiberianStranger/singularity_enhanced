@@ -55,6 +55,8 @@ function VolumeRow({
         value={Math.round(volume * 100)}
         display={`${Math.round(volume * 100)}%`}
         disabled={muted}
+        // A setting is not a command: it takes effect as the player moves it.
+        commitMs={0}
         onChange={(value) => onVolume(value / 100)}
       />
       <label className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-muted">
@@ -146,6 +148,7 @@ export function SettingsControls(): ReactNode {
           step={Math.round(UI_SCALE_STEP * 100)}
           value={Math.round(uiScale * 100)}
           display={`${Math.round(uiScale * 100)}%`}
+          commitMs={0}
           onChange={(value) => setUiScale(value / 100)}
         />
         <Note text={t("settings.ui_scale.help", { defaultValue: "" })} />
@@ -156,6 +159,7 @@ export function SettingsControls(): ReactNode {
           step={Math.round(UI_SCALE_STEP * 100)}
           value={Math.round(displayScale * 100)}
           display={`${Math.round(displayScale * 100)}%`}
+          commitMs={0}
           onChange={(value) => setDisplayScale(value / 100)}
         />
         <Note text={t("settings.display_scale.help", { defaultValue: "" })} />

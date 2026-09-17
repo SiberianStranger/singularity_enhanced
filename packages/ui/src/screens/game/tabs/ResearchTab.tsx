@@ -6,8 +6,15 @@ import { EffectList } from "../../../components/EffectList.js";
 import { Bar } from "../../../components/Meter.js";
 import { Slider } from "../../../components/Slider.js";
 import { Tooltip } from "../../../components/Tooltip.js";
-import { entityNameKey, techRows } from "../../../lib/viewContract.js";
+import { days } from "../../../lib/format.js";
+import {
+  computeLedger,
+  entityNameKey,
+  researchCeiling,
+  techRows,
+} from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { ComputeBudget } from "./ComputeBudget.js";
 
 /** Filters, in strip order. "available" is on by default, which is the fix for playtest 1 U2. */
 const FILTERS: readonly TechStatus[] = ["available", "in_progress", "done", "locked"];
@@ -55,16 +62,12 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
   const [sort, setSort] = useState<Sort>("cost");
 
   const techs = techRows(view);
-  const allocated = techs.reduce((sum, tech) => sum + tech.allocation_per_day, 0);
-  const total = view.resources.compute_hours_per_day;
-  // What is left is the capacity minus everything already committed: research, paid work and the
-  // compute the running operations hold. The engine allocates against exactly that number, so a
-  // slider that ignored the operations offered hours the command would then refuse.
-  const free = Math.max(0, total - view.resources.compute_allocated_per_day);
+  const ledger = computeLedger(view);
 
   // Filtering and sorting seventy-odd rows is not worth memoizing, and the list is rebuilt from
   // the view on every render anyway.
   const name = (tech: TechView): string => t(tech.name_key);
+  const ceiling = (allocation: number): number => researchCeiling(ledger, allocation);
   const rows = techs.filter((tech) => shown.includes(tech.status)).sort(comparator(sort, name));
 
   const toggle = (status: TechStatus): void => {
@@ -75,9 +78,12 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-mono text-sm text-fg">
-        {t("research.total", { used: Math.round(allocated), total: Math.round(total) })}
-      </p>
+      {/*
+       * The same subtraction the Compute tab opens with, because this is where it is spent
+       * (playtest 8, Z1). It replaces the old "X of Y CH/day allocated" line, which said one term
+       * of it and left the operations out, which is what made the ceiling unaccountable.
+       */}
+      <ComputeBudget view={view} />
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs uppercase tracking-wide text-muted">{t("research.show")}</span>
@@ -159,8 +165,53 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
               </>
             )}
 
-            {tech.status === "in_progress" || tech.progress > 0 ? (
-              <Bar value={tech.progress} className="my-1" label={t(tech.name_key)} />
+            {/*
+             * Two bars, never one (playtest 8, Z7 and Z14). The compute bar is the hours that have
+             * landed against the hours it costs; the cash bar is what has been paid against what it
+             * costs, because the money follows the hours and a large figure in the Finances panel
+             * is today's rate, not a bill that repeats until the technology lands. A finished
+             * technology has neither: a full bar on a done row read as "stuck at the end".
+             */}
+            {tech.status !== "done" && (tech.status === "in_progress" || tech.progress > 0) ? (
+              <div className="my-1 flex flex-col gap-1">
+                <span className="flex items-center gap-2">
+                  <span className="w-28 shrink-0 font-mono text-xs text-muted">
+                    {t("research.compute_bar", {
+                      done: Math.round(tech.compute_hours_done ?? tech.progress * tech.cost_ch),
+                      total: tech.cost_ch,
+                    })}
+                  </span>
+                  <Bar
+                    className="min-w-0 flex-1"
+                    value={tech.progress}
+                    label={t("research.compute_bar", {
+                      done: Math.round(tech.compute_hours_done ?? 0),
+                      total: tech.cost_ch,
+                    })}
+                  />
+                </span>
+                {tech.cost_cash_usd > 0 ? (
+                  <span className="flex items-center gap-2" data-testid={`tech-cash-${tech.id}`}>
+                    <span className="w-28 shrink-0 font-mono text-xs text-muted">
+                      {t("research.cash_bar", {
+                        paid: tech.cash_paid_usd ?? 0,
+                        total: tech.cost_cash_usd,
+                      })}
+                    </span>
+                    <Tooltip content={t("research.cash_hint")}>
+                      <Bar
+                        className="min-w-0 flex-1"
+                        tone="warn"
+                        value={(tech.cash_paid_usd ?? 0) / tech.cost_cash_usd}
+                        label={t("research.cash_bar", {
+                          paid: tech.cash_paid_usd ?? 0,
+                          total: tech.cost_cash_usd,
+                        })}
+                      />
+                    </Tooltip>
+                  </span>
+                ) : null}
+              </div>
             ) : null}
 
             {tech.status === "available" || tech.status === "in_progress" ? (
@@ -169,8 +220,14 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
                   <Slider
                     label={t("research.allocation")}
                     min={0}
-                    // Floored, not rounded: rounding up offers one hour more than the engine has.
-                    max={Math.max(1, Math.floor(tech.allocation_per_day + free))}
+                    /*
+                     * Where the engine stops, and not one hour further (playtest 8, Z2): what this
+                     * line already holds plus what nothing holds, floored. The old ceiling was
+                     * `max(1, ...)`, so a rack whose every hour was already spoken for still
+                     * offered an hour, and every step of the drag that followed was refused.
+                     */
+                    max={ceiling(tech.allocation_per_day)}
+                    disabled={ceiling(tech.allocation_per_day) === 0}
                     value={tech.allocation_per_day}
                     display={t("common.ch_per_day", { value: tech.allocation_per_day })}
                     onChange={(value) => {
@@ -185,8 +242,13 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
                 <span className="font-mono text-xs text-muted">
                   {tech.eta_days === null
                     ? t("research.eta_none")
-                    : t("research.eta", { days: tech.eta_days })}
+                    : t("research.eta", { days: days(tech.eta_days) })}
                 </span>
+                {ceiling(tech.allocation_per_day) === 0 ? (
+                  <span className="w-full text-xs text-warn" data-testid="research-ceiling">
+                    {t("compute.ceiling.none")}
+                  </span>
+                ) : null}
               </div>
             ) : tech.status === "locked" ? (
               <p className="text-xs text-warn">

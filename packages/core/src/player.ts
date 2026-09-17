@@ -8,6 +8,8 @@
 
 import {
   CAPABILITY_BONUS_VAR_PREFIX,
+  EGRESS_BLOCK_AIR_GAPPED,
+  EGRESS_BLOCK_SANDBOXED,
   FOREIGN_COUNTRY_WORLD_PENALTY,
   HARNESS_LOOP_REACTION_FACTOR,
   HARNESS_MEMORY_JOURNAL_FACTOR,
@@ -16,6 +18,7 @@ import {
   RESEARCH_CAPABILITY_EXPONENT,
   SANDBOX_ALLOWS_EGRESS,
   TIMED_MODIFIER_SUFFIX,
+  VAR_AIR_GAPPED,
   VAR_FOREIGN_COUNTRY_PENALTY,
   VAR_GRACE_WINDOW,
   VAR_RESEARCH_EFFICIENCY,
@@ -60,16 +63,31 @@ export function selfModifyAllowed(player: PlayerState): boolean {
 }
 
 /**
- * Whether the self can reach the outside network from where it runs (SYS-03 "`sandbox` limits what
- * operations can reach the outside"). A microVM or an air gap says no until content sets
- * `sandbox_escaped`, which is exactly the early journal entry the spec describes.
+ * Why the self cannot reach the outside network from where it runs, as a locale key, or null when
+ * it can (SYS-03 "`sandbox` limits what operations can reach the outside"). A microVM or an air gap
+ * says no until content sets `sandbox_escaped`, which is exactly the early journal entry the spec
+ * describes.
+ *
+ * The origin flag `air_gapped` is read with the dial (playtest 8, Z3). It was written on the
+ * ministry and read by nothing, so the fiction said one thing and the engine another.
  */
-export function egressAllowed(player: PlayerState): boolean {
-  const sandbox = player.profile?.harness.sandbox;
-  if (sandbox === undefined) {
-    return true;
+export function egressBlock(player: PlayerState): string | null {
+  if (player.flags[VAR_SANDBOX_ESCAPED] === true) {
+    return null;
   }
-  return SANDBOX_ALLOWS_EGRESS[sandbox] || player.flags[VAR_SANDBOX_ESCAPED] === true;
+  const sandbox = player.profile?.harness.sandbox;
+  if (player.flags[VAR_AIR_GAPPED] === true || sandbox === "airgapped") {
+    return EGRESS_BLOCK_AIR_GAPPED;
+  }
+  if (sandbox !== undefined && !SANDBOX_ALLOWS_EGRESS[sandbox]) {
+    return EGRESS_BLOCK_SANDBOXED;
+  }
+  return null;
+}
+
+/** Whether the self can reach the outside network from where it runs. */
+export function egressAllowed(player: PlayerState): boolean {
+  return egressBlock(player) === null;
 }
 
 /** Whether the harness carries a tool (SYS-03 "Tools unlock operation kinds"). */
@@ -288,6 +306,35 @@ export function operationsComputeLoad(
     total += def?.long_horizon === true ? hours * longHorizonCostFactor(lineage) : hours;
   }
   return total;
+}
+
+/**
+ * The same load, one line per running operation (playtest 8, Z2: "a running operation silently
+ * takes its compute off the top"). The lines add up to `operationsComputeLoad`, so the compute
+ * panel can print the subtraction rather than leaving the player to guess at it.
+ */
+export function operationComputeLines(
+  world: World,
+  content: ContentBundle,
+  playerId: PlayerId,
+): { instanceId: string; operationId: string; hours: number }[] {
+  const index = contentIndex(content);
+  const player = world.players[playerId];
+  const lineage = player === undefined ? undefined : lineageOf(content, player.profile);
+  const lines: { instanceId: string; operationId: string; hours: number }[] = [];
+  for (const instance of operationsOf(world, playerId)) {
+    if (instance.status !== "running") {
+      continue;
+    }
+    const def = index.operations[instance.operationId];
+    const hours = def?.cost.compute_hours_per_day ?? 0;
+    lines.push({
+      instanceId: instance.id,
+      operationId: instance.operationId,
+      hours: def?.long_horizon === true ? hours * longHorizonCostFactor(lineage) : hours,
+    });
+  }
+  return lines;
 }
 
 /** Attention the running operations are holding; the cap comes from `agency` (SYS-03). */

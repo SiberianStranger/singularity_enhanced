@@ -8,6 +8,7 @@ import {
   shouldBatchToasts,
   showsPopup,
   showsToast,
+  TECH_DONE_ALERT,
 } from "../../store/selectors.js";
 import { useUiStore } from "../../store/uiStore.js";
 
@@ -48,7 +49,7 @@ export function useToasts(): ToastApi {
     if (notifications === undefined) {
       return;
     }
-    const { messagePreset, messageModes, noteAlertKey } = useUiStore.getState();
+    const { messagePreset, messageModes, noteAlertKey, techWindow } = useUiStore.getState();
     const fresh = notifications.filter((notification) => !seen.current.has(notification.id));
     if (fresh.length === 0) {
       return;
@@ -62,6 +63,11 @@ export function useToasts(): ToastApi {
     for (const notification of fresh) {
       seen.current.add(notification.id);
       noteAlertKey(notification.key);
+      // A finished technology has a window of its own while the player wants one (playtest 8, Z7);
+      // a toast as well would say the same thing twice and expire under the window.
+      if (techWindow && notification.key === TECH_DONE_ALERT) {
+        continue;
+      }
       const mode = modeFor(notification.key, notification.severity, messagePreset, messageModes);
       if (showsPopup(mode)) {
         nextPopups.push(notification);

@@ -252,6 +252,7 @@ export function HarnessStep(): ReactNode {
             value={harness[dial]}
             display={t("common.percent", { value: harness[dial] })}
             disabled={lock !== null}
+            commitMs={0}
             onChange={(value) => setHarness(dial, value)}
           />
         ) : null}

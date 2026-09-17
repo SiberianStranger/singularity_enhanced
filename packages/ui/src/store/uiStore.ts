@@ -176,6 +176,8 @@ export interface Notice {
   key: string;
   vars: Record<string, string | number | boolean>;
   tone: "info" | "error";
+  /** How many times this same message arrived in a row; 1 unless it repeated. */
+  count: number;
 }
 
 export const MESSAGE_MODES: readonly MessageMode[] = [
@@ -266,6 +268,11 @@ interface UiStore {
   /** Client-raised messages (refused commands); never persisted. */
   notices: Notice[];
   messagePreset: MessagePreset;
+  /**
+   * Whether a finished technology opens its own window (playtest 8, Z7). Off, it is a toast like
+   * any other alert, which is what a player who reads the Research tab anyway will want.
+   */
+  techWindow: boolean;
   /** Per alert key override of the preset; only keys the player touched are stored. */
   messageModes: Record<string, MessageMode>;
   /** Alert keys seen this session, so the settings tab can list them. */
@@ -302,6 +309,7 @@ interface UiStore {
   pushNotice(key: string, vars?: Notice["vars"], tone?: Notice["tone"]): void;
   dismissNotice(id: string): void;
   setMessagePreset(preset: MessagePreset): void;
+  setTechWindow(on: boolean): void;
   setMessageMode(key: string, mode: MessageMode): void;
   resetMessageModes(): void;
   noteAlertKey(key: string): void;
@@ -333,6 +341,7 @@ export const useUiStore = create<UiStore>()(
       overlayFocus: null,
       notices: [],
       messagePreset: "default",
+      techWindow: true,
       messageModes: {},
       seenAlertKeys: [],
       autosaveDays: 3,
@@ -430,14 +439,34 @@ export const useUiStore = create<UiStore>()(
       },
       pushNotice(key, vars = {}, tone = "error") {
         const notices = get().notices;
+        const last = notices.at(-1);
+        // The same refusal twice running is one message with a count, not two messages (playtest
+        // 8, Z2). A drag that the engine refuses at every step used to fill the stack with
+        // identical lines, which said nothing the first line had not already said.
+        if (
+          last !== undefined &&
+          last.key === key &&
+          last.tone === tone &&
+          JSON.stringify(last.vars) === JSON.stringify(vars)
+        ) {
+          set({
+            notices: [...notices.slice(0, -1), { ...last, count: last.count + 1 }],
+          });
+          return;
+        }
         noticeSeq += 1;
-        set({ notices: [...notices, { id: `notice_${noticeSeq}`, key, vars, tone }].slice(-4) });
+        set({
+          notices: [...notices, { id: `notice_${noticeSeq}`, key, vars, tone, count: 1 }].slice(-4),
+        });
       },
       dismissNotice(id) {
         set({ notices: get().notices.filter((notice) => notice.id !== id) });
       },
       setMessagePreset(messagePreset) {
         set({ messagePreset, messageModes: {} });
+      },
+      setTechWindow(techWindow) {
+        set({ techWindow });
       },
       setMessageMode(key, mode) {
         set({ messageModes: { ...get().messageModes, [key]: mode } });
@@ -499,6 +528,8 @@ export const useUiStore = create<UiStore>()(
               ? (theme as Theme)
               : "default",
           audio: { ...DEFAULT_AUDIO, ...(stored.audio ?? {}) },
+          // A browser that stored its settings before the completion window existed gets it.
+          techWindow: typeof stored.techWindow === "boolean" ? stored.techWindow : true,
           // A browser that stored a mode M2 renamed lands on presence rather than on a blank map.
           mapMode: (MAP_MODES as readonly string[]).includes(stored.mapMode ?? "")
             ? (stored.mapMode as MapMode)
@@ -521,6 +552,7 @@ export const useUiStore = create<UiStore>()(
         audio: state.audio,
         introSeen: state.introSeen,
         messagePreset: state.messagePreset,
+        techWindow: state.techWindow,
         messageModes: state.messageModes,
         autosaveDays: state.autosaveDays,
       }),

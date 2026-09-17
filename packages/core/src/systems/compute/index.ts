@@ -311,10 +311,11 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   if (kind.ownership === "stolen" || kind.ownership === "partner") {
     return fail("errors.site_kind.not_for_sale", { kind: kind.id });
   }
-  // A preset with no price is access, not ownership: a queue share, a state allocation, a rented
-  // tenancy (SYS-04 "hardware presets"). It cannot be bought and installed somewhere of one's own.
-  if (kind.ownership === "owned" && preset.cost_usd <= 0) {
-    return fail("errors.preset.is_access", { preset: preset.id });
+  // A preset marked not purchasable is access, not ownership: a queue share, a state allocation, a
+  // rented tenancy (SYS-04 "hardware presets", playtest 8 Z10). The data says so and carries its own
+  // reason; a price of zero is the older way of saying it and is still honoured.
+  if (preset.purchasable === false || (kind.ownership === "owned" && preset.cost_usd <= 0)) {
+    return fail(preset.not_for_sale_reason_key ?? "errors.preset.is_access", { preset: preset.id });
   }
   // Rented capacity is only rentable where somebody publishes an hourly price for it: a state
   // accelerator with no cloud market cannot be leased under an identity (SYS-02 "Acquisition").
@@ -811,6 +812,9 @@ export function createComputeSystem(): ComputeSystem {
       effects: registerEffects(),
       writes: [
         "site.name",
+        // A site can change hands: `eco_company_folds` renames the contract, and the kind is what
+        // says who pays for the place (SYS-07 "Who pays for the origin's hardware").
+        "site.kind",
         "site.status",
         "site.role",
         "site.precision",

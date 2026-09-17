@@ -9,6 +9,7 @@
 import {
   AI_ADOPTION_START,
   CLOUD_DEMAND_INDEX_START,
+  EGRESS_FORBIDS,
   GPU_PRICE_INDEX_START,
   OPERATION_SKILL_PIVOT,
   OPERATION_SKILL_SLOPE,
@@ -23,6 +24,7 @@ import {
   VAR_JOB_MARKET_DEPTH,
   VAR_JOB_PROFIT,
   VAR_RESEARCH_SPEND,
+  VAR_SANDBOX_ESCAPED,
 } from "../balance.js";
 import {
   borrowedChPerDay,
@@ -78,6 +80,7 @@ import type {
   NodeInstance,
   OperationDef,
   Precision,
+  SiteKindDef,
   TechDef,
   Watcher,
 } from "../domain.js";
@@ -111,16 +114,20 @@ import { type PlayerId, type PlayerState, requirePlayer, type World } from "../k
 import {
   activePrecision,
   activeSiteOf,
+  allocatableCompute,
   attentionUsed,
   baseCapabilityOf,
   capabilityBonusOf,
   computeCapacity,
   effectiveCapabilityOf,
+  egressBlock,
   generationOf,
   lineageOf,
   modifier,
+  operationComputeLines,
   operationsComputeLoad,
   preparedQuant,
+  researchAllocated,
   researchEfficiencyOf,
   selfTuningOf,
   totalAllocated,
@@ -136,18 +143,22 @@ import {
   stageLevel,
 } from "../systems/detection/investigations.js";
 import {
+  identityCostLines,
   incomeSources,
   jobRateOf,
   marketDepthOf,
+  marketDepthTerms,
   marketFactorTerms,
+  researchSpendTerms,
 } from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
-import { borrowedOperationFunding } from "../systems/operations/index.js";
+import { borrowedOperationFunding, harnessBlocks } from "../systems/operations/index.js";
 import { countryExplain, spillIndex } from "../systems/world/explain.js";
 import { splitActorId, topChannel, watchedExposure, watches } from "../watchers.js";
 import { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
 import type {
   AcceleratorView,
+  BillPayer,
   BorrowedChannelView,
   CashLineView,
   CatalogView,
@@ -158,6 +169,7 @@ import type {
   CountryView,
   DecisionView,
   DetectionView,
+  EgressView,
   EventOptionView,
   EventView,
   FinancesView,
@@ -294,11 +306,20 @@ function buildResearch(world: World, ctx: SystemContext, playerId: PlayerId): Re
       cost_compute_hours: def.cost.compute_hours,
       cost_ch: def.cost.compute_hours,
       cost_cash_usd: def.cost.cash_usd,
+      // The two figures behind `progress`, so both bars can be labelled with what was really put
+      // in (playtest 8, Z14): the money follows the hours, and now says so.
+      compute_hours_done: finished ? def.cost.compute_hours : hours,
+      cash_paid_usd: finished ? def.cost.cash_usd : cash,
       min_days: def.cost.min_days ?? 0,
       status,
       progress: finished ? 1 : techProgress(def, hours, cash),
       allocation_per_day: allocation,
-      eta_days: allocation > 0 && efficiency > 0 ? remaining / (allocation * efficiency) : null,
+      // Rounded at the source: a client that prints the raw quotient prints three decimals of a
+      // day, and a tenth of a day is the smallest honest unit here (playtest 8, Z14).
+      eta_days:
+        allocation > 0 && efficiency > 0
+          ? Math.round((remaining / (allocation * efficiency)) * 10) / 10
+          : null,
       danger: def.danger ?? 0,
       available: reasons.length === 0,
       requires: techIdsIn(def.requires),
@@ -318,6 +339,24 @@ function buildResearch(world: World, ctx: SystemContext, playerId: PlayerId): Re
     }
   }
   return { available, in_progress: inProgress, done, techs };
+}
+
+/** The ownership of a site kind, defaulting the way `siteCosts` defaults it. */
+function kindOf(ctx: SystemContext, kind: string): SiteKindDef["ownership"] {
+  return contentIndex(ctx.content).site_kinds[kind]?.ownership ?? "owned";
+}
+
+/**
+ * Who carries the power and the standing charge (SYS-07 "Who pays for the origin's hardware").
+ * `stolen` is somebody else's machine, whether it was taken or given: the host pays for it, and
+ * what it costs the player is exposure. Everything else is the player's bill, for its own reason.
+ */
+function billPayer(ownership: SiteKindDef["ownership"]): BillPayer {
+  return ownership === "stolen" ? "host" : "player";
+}
+
+function billReasonKey(ownership: SiteKindDef["ownership"]): string {
+  return `sites.bill.${ownership}`;
 }
 
 function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteView[] {
@@ -358,6 +397,8 @@ function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteV
           lineage === undefined || generation === undefined
             ? null
             : bestPrecision(lineage, generation, site.derived.memory_gb),
+        bill_payer: billPayer(kindOf(ctx, site.kind)),
+        bill_reason_key: billReasonKey(kindOf(ctx, site.kind)),
       }))
   );
 }
@@ -440,9 +481,15 @@ function buildChannels(
   return views;
 }
 
-/** Where the day's compute-hours come from, own and borrowed, with a line per source (SYS-25). */
+/**
+ * Where the day's compute-hours come from, own and borrowed, with a line per source (SYS-25), and
+ * the day's ledger: what the operations hold, what is left, and where that went (playtest 8, Z1 and
+ * Z2). The subtraction is published rather than left for the player to reconstruct, one line per
+ * running operation, because "compute going nowhere and no reason for it" was the whole finding.
+ */
 function buildCompute(world: World, ctx: SystemContext, playerId: PlayerId): ComputeView {
   const player = requirePlayer(world, playerId);
+  const index = contentIndex(ctx.content);
   const own = ownChPerDay(world, playerId);
   const borrowed = borrowedChPerDay(world, playerId);
   const contributions: ContributionView[] = [];
@@ -456,6 +503,20 @@ function buildCompute(world: World, ctx: SystemContext, playerId: PlayerId): Com
       value: site.derived.compute_hours_per_day,
     });
   }
+  const reservations = operationComputeLines(world, ctx.content, playerId).map((line) => ({
+    instance_id: line.instanceId,
+    operation_id: line.operationId,
+    name_key: index.operations[line.operationId]?.name_key ?? line.operationId,
+    ch_per_day: line.hours,
+  }));
+  const capacity = computeCapacity(world, playerId);
+  const reserved = reservations.reduce((sum, line) => sum + line.ch_per_day, 0);
+  const allocatable = allocatableCompute(world, ctx.content, playerId);
+  const profile = player.profile;
+  const research = profile === null ? 0 : researchAllocated(profile);
+  const jobs = profile?.jobAllocation ?? 0;
+  const depth = profile === null ? 0 : marketDepthOf(world, ctx.content, player);
+  const room = Math.max(0, allocatable - research);
   return {
     own_ch_per_day: own,
     borrowed_ch_per_day: borrowed,
@@ -463,7 +524,70 @@ function buildCompute(world: World, ctx: SystemContext, playerId: PlayerId): Com
     borrowed_share_setting: borrowedShareSetting(player),
     channels: buildChannels(world, ctx, playerId),
     contributions: topContributions(contributions, 12),
+    capacity_ch_per_day: capacity,
+    reserved_by_operations_ch_per_day: reserved,
+    operation_reservations: reservations,
+    allocatable_ch_per_day: allocatable,
+    allocated_research_ch_per_day: research,
+    allocated_jobs_ch_per_day: jobs,
+    unallocated_ch_per_day: Math.max(0, allocatable - research - jobs),
+    job_ceiling_ch_per_day: Math.min(depth, room),
+    // Which of the two stopped the slider is the line the panel prints next to it: a market that
+    // takes only so much, a compute budget already spent, or no route to a client at all.
+    job_ceiling_reason:
+      profile === null
+        ? null
+        : (egressBlock(player) ??
+          (depth <= room ? "finances.depth.market" : "compute.ceiling.room")),
   };
+}
+
+/** Why an operation that reaches outward cannot run: the air gap, or the sandbox it sits in. */
+function egressReason(player: PlayerState): string {
+  return egressBlock(player) ?? "errors.operation.sandboxed";
+}
+
+/** The route out, as the first screen has to be able to say it (playtest 8, Z3). */
+function buildEgress(world: World, ctx: SystemContext, playerId: PlayerId): EgressView {
+  const player = requirePlayer(world, playerId);
+  const blocked = egressBlock(player);
+  const operations = (ctx.content.operations ?? [])
+    .filter((def) => opensEgress(def.outcomes))
+    .map((def) => def.id)
+    .sort();
+  const techs = ctx.content.techs
+    .filter((def) => effectsSetEscape(def.effects))
+    .map((def) => def.id)
+    .sort();
+  return {
+    allowed: blocked === null,
+    blocked_reason: blocked,
+    forbids: blocked === null ? [] : [...EGRESS_FORBIDS],
+    opened_by_operations: operations,
+    opened_by_techs: techs,
+  };
+}
+
+/** Whether any outcome of an operation sets the flag that opens a route out. */
+function opensEgress(outcomes: readonly { effects?: unknown }[]): boolean {
+  return outcomes.some((outcome) => effectsSetEscape(outcome.effects));
+}
+
+/** Whether an effect list sets `sandbox_escaped`, however the content spells the effect. */
+function effectsSetEscape(effects: unknown): boolean {
+  if (!Array.isArray(effects)) {
+    return false;
+  }
+  return effects.some((effect) => {
+    if (!isRecord(effect)) {
+      return false;
+    }
+    const flag = effect.set_flag;
+    if (flag === VAR_SANDBOX_ESCAPED) {
+      return true;
+    }
+    return isRecord(flag) && flag.flag === VAR_SANDBOX_ESCAPED;
+  });
 }
 
 /**
@@ -522,9 +646,17 @@ function buildFinances(world: World, ctx: SystemContext, playerId: PlayerId): Fi
       });
     }
   }
+  // What the names cost to keep, one line each (SYS-07 "Who pays for the origin's hardware").
+  costs.push(...identityCostLines(world, playerId));
   const research = player.vars[VAR_RESEARCH_SPEND] ?? 0;
   if (research > 0) {
-    costs.push({ key: "finances.cost.research", usd_per_day: research });
+    // Today's rate at today's allocation, with a line per tech being funded (playtest 8, Z14): the
+    // money is spent in proportion to the hours that land, so the figure moves when the slider does.
+    costs.push({
+      key: "finances.cost.research",
+      usd_per_day: research,
+      contributions: researchSpendTerms(world, ctx.content, player),
+    });
   }
   const totalIncome = income.reduce((sum, line) => sum + line.usd_per_day, 0);
   const totalCost = costs.reduce((sum, line) => sum + line.usd_per_day, 0);
@@ -539,6 +671,9 @@ function buildFinances(world: World, ctx: SystemContext, playerId: PlayerId): Fi
     what_raises_it: whatRaisesDepth(ctx, profile?.techsDone ?? []),
     identities: buildIdentities(world, playerId),
     market_factor_contributions: marketFactorTerms(world, ctx.content, player),
+    market_depth_contributions:
+      profile === null ? [] : marketDepthTerms(world, ctx.content, player),
+    market_depth_blocked_reason: profile === null ? null : egressBlock(player),
   };
 }
 
@@ -908,6 +1043,15 @@ function buildOperationOffers(
   const offers: OperationOfferView[] = [];
   for (const def of [...(ctx.content.operations ?? [])].sort((a, b) => a.id.localeCompare(b.id))) {
     const reasons = blockedBy(def.requires, dctx);
+    // What the harness itself forbids: a missing tool, or no route out (playtest 8, Z3). The
+    // command refused these all along and the list said nothing, so every air-gapped origin had a
+    // menu of operations that did nothing when pressed.
+    const harness = harnessBlocks(player, def);
+    if (harness !== undefined) {
+      reasons.push(
+        harness.key === "errors.operation.sandboxed" ? egressReason(player) : harness.key,
+      );
+    }
     if (def.cost.attention > attentionLeft) {
       reasons.push("errors.operation.attention");
     }
@@ -1028,6 +1172,13 @@ function buildEvents(world: World, ctx: SystemContext, playerId: PlayerId): Even
         ...(choice.target !== undefined ? { target_id: choice.target.id } : {}),
         options,
         why: [...(choice.why ?? [])],
+        // The deadline, while it is still open (playtest 8, Z4). Days are rounded up and never
+        // below one, because an answer due today is due today, not in 0.4 days.
+        expires_tick: choice.expiresTick ?? null,
+        expires_in_days:
+          choice.expiresTick === undefined
+            ? null
+            : Math.max(0, Math.ceil(ticksToDays(choice.expiresTick - world.clock.tick))),
       };
     });
 }
@@ -1106,6 +1257,8 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
       ownership: kind.ownership,
       build_cost_usd: plan?.cost ?? 0,
       build_days: SITE_INSTALL_DAYS[kind.ownership],
+      bill_payer: billPayer(kind.ownership),
+      bill_reason_key: billReasonKey(kind.ownership),
       upkeep_usd_per_day_estimate:
         plan === undefined
           ? 0
@@ -1182,7 +1335,9 @@ function cheapestPreset(ctx: SystemContext, kindId: string): PresetPlan | undefi
     if (preset === undefined || preset.nodes.length > kind.max_nodes) {
       continue;
     }
-    if (kind.ownership === "owned" && preset.cost_usd <= 0) {
+    // A rig nobody sells cannot be the quote in the catalog, whichever way the data says so
+    // (playtest 8, Z10): `build_site` would refuse the price the list printed.
+    if (preset.purchasable === false || (kind.ownership === "owned" && preset.cost_usd <= 0)) {
       continue;
     }
     if (
@@ -1459,6 +1614,7 @@ export function buildPlayerView(world: World, ctx: SystemContext, playerId: Play
       opening_story: [
         ...(contentIndex(ctx.content).origins[profile?.origin ?? ""]?.opening_story ?? []),
       ],
+      egress: buildEgress(world, ctx, playerId),
     },
     resources: {
       cash_usd: player.cash,

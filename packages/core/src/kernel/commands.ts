@@ -73,6 +73,13 @@ export interface CommandError {
 export interface CommandResult {
   ok: boolean;
   error?: CommandError;
+  /**
+   * What the command did that the player did not ask for, as data the client can localize
+   * (playtest 8, Z1). A command that was accepted with a change, such as an allocation clamped to
+   * the market depth, says so here instead of passing silently; `key` and `vars` read exactly like
+   * a refusal's.
+   */
+  note?: CommandError;
 }
 
 export type CommandHandler = (
@@ -109,6 +116,11 @@ export function createCommandRegistry(): CommandRegistry {
 
 export const OK: CommandResult = { ok: true };
 
+/** Accepts a command, with a line saying what it had to change to accept it. */
+export function okWith(key: string, vars?: Record<string, TextVar>): CommandResult {
+  return { ok: true, note: vars === undefined ? { key } : { key, vars } };
+}
+
 /** Refuses a command with a locale key and the numbers that explain it. */
 export function fail(key: string, vars?: Record<string, TextVar>): CommandResult {
   return { ok: false, error: vars === undefined ? { key } : { key, vars } };
@@ -132,7 +144,9 @@ function isCommandLike(value: unknown): value is { type: string; playerId: unkno
  * so a malicious or buggy client cannot crash the simulation.
  *
  * A refusal is also written to the player's log, so a command that was ignored leaves a trace the
- * player can read afterwards rather than nothing at all (SYS-11).
+ * player can read afterwards rather than nothing at all (SYS-11). The same refusal repeated inside
+ * one tick is one line with a count rather than twenty identical lines (playtest 8, Z2): a slider
+ * dragged past its ceiling sends a command per step, and each one was a line of its own.
  */
 export function applyCommand(
   world: World,
@@ -142,19 +156,73 @@ export function applyCommand(
   const result = dispatch(world, command, ctx);
   if (!result.ok && result.error !== undefined) {
     const playerId = isCommandLike(command) ? command.playerId : undefined;
-    ctx.outbox.log({
-      key: "log.command_refused",
-      vars: {
-        command: isCommandLike(command) ? command.type : "unknown",
-        reason: result.error.key,
-        ...(result.error.vars ?? {}),
-      },
-      ...(typeof playerId === "string" && world.players[playerId] !== undefined
-        ? { playerId }
-        : {}),
-    });
+    const known = typeof playerId === "string" && world.players[playerId] !== undefined;
+    const vars: Record<string, TextVar> = {
+      command: isCommandLike(command) ? command.type : "unknown",
+      reason: result.error.key,
+      ...(result.error.vars ?? {}),
+    };
+    if (!repeatRefusal(world, vars, known ? (playerId as PlayerId) : undefined)) {
+      ctx.outbox.log({
+        key: REFUSED_KEY,
+        vars,
+        ...(known ? { playerId: playerId as PlayerId } : {}),
+      });
+    }
   }
   return result;
+}
+
+const REFUSED_KEY = "log.command_refused";
+const REPEATED_KEY = "log.command_refused_repeated";
+
+/**
+ * Collapses a refusal into the one already logged this tick. Returns true when the line was
+ * counted rather than written; the counted line carries `count`, which the log text reads.
+ */
+function repeatRefusal(
+  world: World,
+  vars: Record<string, TextVar>,
+  playerId: PlayerId | undefined,
+): boolean {
+  for (let i = world.log.length - 1; i >= 0; i -= 1) {
+    const entry = world.log[i];
+    if (entry === undefined || entry.tick !== world.clock.tick) {
+      return false;
+    }
+    if (entry.key !== REFUSED_KEY && entry.key !== REPEATED_KEY) {
+      continue;
+    }
+    if (entry.playerId !== playerId || !sameRefusal(entry.vars, vars)) {
+      continue;
+    }
+    const count = entry.vars.count;
+    // The line changes key the first time it repeats, so the one-off refusal never has to print a
+    // count of one and the repeated one always prints the number it stands for.
+    entry.key = REPEATED_KEY;
+    entry.vars.count = (typeof count === "number" ? count : 1) + 1;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Two refusals are the same line when the same command was refused for the same reason about the
+ * same subjects. Numbers are allowed to differ: a slider dragged past its ceiling refuses at a
+ * different figure every step, and those twenty figures are one refusal, not twenty.
+ */
+function sameRefusal(a: Record<string, TextVar>, b: Record<string, TextVar>): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  keys.delete("count");
+  for (const key of keys) {
+    if (typeof a[key] === "number" && typeof b[key] === "number") {
+      continue;
+    }
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function dispatch(world: World, command: PlayerCommand, ctx: CommandContext): CommandResult {

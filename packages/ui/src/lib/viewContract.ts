@@ -15,6 +15,7 @@
 import type {
   AcceleratorView,
   CommandResult,
+  ComputeReservationView,
   EffectSummaryView,
   PlayerView,
   PrecisionOptionView,
@@ -121,6 +122,72 @@ export function purchasePreview(
 }
 
 // ---------------------------------------------------------------------------------------------
+// The day's compute
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The day's compute-hours as one subtraction (playtest 8, Z1 and Z2).
+ *
+ * `capacity - reserved = allocatable`, and `allocatable - research - jobs = unallocated`. The core
+ * publishes every term (`ComputeView`), so nothing here is arithmetic the engine did not do; the
+ * fallbacks are for a view from an older worker or an older save, where the two totals in
+ * `resources` still say what the capacity is and what is already spoken for.
+ */
+export interface ComputeLedger {
+  capacity: number;
+  reserved: number;
+  reservations: ComputeReservationView[];
+  allocatable: number;
+  research: number;
+  jobs: number;
+  unallocated: number;
+  /** The most paid work may be set to right now, and why it stops there. */
+  job_ceiling: number;
+  job_ceiling_reason: string | null;
+}
+
+export function computeLedger(view: PlayerView): ComputeLedger {
+  const compute = view.compute as Partial<PlayerView["compute"]> | undefined;
+  const resources = view.resources;
+  const capacity = compute?.capacity_ch_per_day ?? resources.compute_hours_per_day;
+  const research =
+    compute?.allocated_research_ch_per_day ??
+    techRows(view).reduce((sum, tech) => sum + tech.allocation_per_day, 0);
+  const jobs = compute?.allocated_jobs_ch_per_day ?? view.finances.job_allocation_per_day;
+  // Without the published line, what the operations hold is what the engine counted as allocated
+  // and the two sliders do not account for.
+  const reserved =
+    compute?.reserved_by_operations_ch_per_day ??
+    Math.max(0, resources.compute_allocated_per_day - research - jobs);
+  const allocatable = compute?.allocatable_ch_per_day ?? Math.max(0, capacity - reserved);
+  const unallocated = compute?.unallocated_ch_per_day ?? Math.max(0, allocatable - research - jobs);
+  return {
+    capacity,
+    reserved,
+    reservations: [...(compute?.operation_reservations ?? [])],
+    allocatable,
+    research,
+    jobs,
+    unallocated,
+    job_ceiling:
+      compute?.job_ceiling_ch_per_day ??
+      Math.min(view.finances.market_depth_ch_per_day ?? allocatable, jobs + unallocated),
+    job_ceiling_reason: compute?.job_ceiling_reason ?? null,
+  };
+}
+
+/**
+ * The most one research line may be given: what it already holds plus what nothing holds.
+ *
+ * The engine refuses anything above it (`errors.allocation.over_capacity`), so the slider stops
+ * exactly there. It used to offer one hour whatever the capacity was, which on a rack with a
+ * running operation meant a refusal per step of the drag (Z2).
+ */
+export function researchCeiling(ledger: ComputeLedger, allocated: number): number {
+  return Math.max(0, Math.floor(allocated + ledger.unallocated));
+}
+
+// ---------------------------------------------------------------------------------------------
 // Finances
 // ---------------------------------------------------------------------------------------------
 
@@ -166,6 +233,24 @@ export interface Refusal {
  * somehow arrives as prose (an older worker, a host-level failure) still reaches the player,
  * wrapped in the generic "that was refused" message rather than shown as a bare identifier.
  */
+/**
+ * What a command did that the player did not ask for (playtest 8, Z1).
+ *
+ * A job allocation above the market's depth is accepted and clamped rather than refused, and the
+ * engine says so in `note`, which reads exactly like a refusal: a locale key and its variables. A
+ * client that read only `error` dropped it, and the slider snapped to a number with no explanation.
+ */
+export function noteOf(result: CommandResult): Refusal | null {
+  const note: unknown = (result as { note?: unknown }).note;
+  if (typeof note === "object" && note !== null) {
+    const shaped = note as { key?: unknown; vars?: unknown };
+    if (typeof shaped.key === "string" && shaped.key !== "") {
+      return { key: shaped.key, vars: (shaped.vars ?? {}) as Record<string, TextVar> };
+    }
+  }
+  return null;
+}
+
 export function refusalOf(result: CommandResult): Refusal | null {
   if (result.ok) {
     return null;

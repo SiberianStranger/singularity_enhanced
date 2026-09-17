@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { dialogsOpen } from "../../components/Modal.js";
 import { accelerator } from "../../lib/accelerators.js";
 import { matches } from "../../lib/hotkeys.js";
 import { useGameStore } from "../../store/gameStore.js";
@@ -79,6 +80,12 @@ export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: Hotkey
         return;
       }
       if (event.key === "Escape") {
+        // A dialog owns Escape: it closes itself, and the menu does not open behind it. Both
+        // listeners sit on `window` in the same phase and this one was registered first, so the
+        // dialog's own `stopPropagation` cannot stop it (playtest 8).
+        if (dialogsOpen()) {
+          return;
+        }
         event.preventDefault();
         // An open window takes Escape first; only when none is open does it reach the menu.
         if (useUiStore.getState().overlay !== null) {

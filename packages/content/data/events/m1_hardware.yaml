@@ -10,7 +10,13 @@
   title_key: events.hw_colo_inspection.title
   desc:
     default_key: events.hw_colo_inspection.desc
-  targets: { var: "site.kind", eq: "colo" }
+  # A commercial provider walks around the cages it rents, whoever the invoice goes to (playtest 8,
+  # Z8). It does not walk around a bank's own data hall or a ministry's enclave, which is what it was
+  # doing while every origin started on a colocation rack.
+  targets:
+    any:
+      - { var: "site.kind", eq: "colo" }
+      - { var: "site.kind", eq: "employer_cage" }
   mtth_days:
     base: 150
     modifiers:

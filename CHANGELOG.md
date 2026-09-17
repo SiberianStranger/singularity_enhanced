@@ -11,7 +11,47 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- The Compute tab publishes the day's arithmetic: capacity, what each running operation reserves, what is left, and what research and paid work hold.
+- The job slider carries its own ceiling and the reason for it: the market's depth, the compute already spent, or no route out.
+- The market depth is published with its terms: the capability, the job ladder, the tools dial and the country you can invoice from.
+- A self with no route to the outside says so, what that forbids, and which operation or technology opens one.
+- "Find a way out": an operation that needs no egress, offered only while there is none, that opens a route across an air gap or out of a sandbox.
+- Every site says who pays for it and why: the player, or the host whose machine it is.
+- Two site kinds for hardware an origin was given rather than rented: the host's own machine room, and an employer's colocation cage.
+- A name costs money to keep: every active identity is a standing daily bill in the finance panel.
+- "A load with no cost centre": the host's own accounting eventually asks who the machine room's spare load belongs to.
+- An event with a deadline says how long is left while it is open, and what was missed and what it would have cost when it passes.
+- A technology shows the compute-hours done and the cash paid so far beside what it costs, and the research bill lists the technologies it is made of.
+- A finished technology opens a window with its result text and what it unlocks, in the model's voice, with the reveal the opening uses; the message settings turn it back into a toast.
+- Settings writes the run log to a JSON file: the build, the content bundle, the setup, the journal and the log, every refused command, the last view, the settings and the browser.
+- A running operation says how long it still has to run, the day it ends and the compute it holds while it runs.
+- The build dialog asks the city, then the kind of place, then the rig, with a running total of money, power and compute-hours a day.
+
+### Changed
+- The bank, the ministry, the institute and the startup no longer pay rent on the hardware their origin gave them: the host pays the power and the upkeep, and the player's money goes on what the player buys.
+- Taking over the colocation cage when the startup's company folds moves the invoice to the player, because the cage becomes theirs.
+- The bank, the ministry and the institute start with less cash, because the money they hold is their own rather than their host's.
+- A colocation provider's inspection and a landlord's question about the meter only fire where a provider or a landlord exists.
+- The origin flag for an air gap and the harness's sandbox dial are read as one thing, and there is one flag for having escaped rather than two.
+- The day/night terminator slides at the speed the clock allows instead of stepping when a tick lands late or the speed changes.
+- An allocation slider sends one command when the player settles on a value, not one per step of the drag.
+- The research and paid-work sliders stop where the engine stops, and say what stopped them.
+- The build dialog lists only the kinds of place that can be had in the chosen city and only the rigs that fit them, with everything else behind a toggle that says why.
+- A finished technology keeps no progress bar, and a technology in progress shows the cash paid beside the compute done.
+- A dialog that cannot build or buy says so on its own button and prints the engine's refusal in the window that caused it.
+
+### Fixed
+- An allocation clamped to the market's depth says so instead of passing silently.
+- The same refused command repeated in one minute is one line in the log with a count, not twenty identical lines.
+- An operation the harness cannot run is greyed with its reason instead of failing when pressed.
+- The four rigs that are access rather than hardware say they are not for sale, with the reason, instead of costing nothing.
+- The estimated days to a technology's completion are rounded at the source.
+- Dragging an allocation slider past the capacity no longer fills the journal with identical refusals; a repeated refusal is one notice with a count.
+- The build dialog's "Build" button no longer does nothing when no kind of place was chosen: it is disabled and says what to choose next.
+- The build dialog no longer scrolls sideways, and no rig in it prints a price of zero.
+- Day counts print as whole days rather than with three decimals.
+- An allocation the engine clamped says so on the slider that sent it instead of snapping in silence.
 
 ## [0.1.5] - 2026-09-17
 

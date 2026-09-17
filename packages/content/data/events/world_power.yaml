@@ -123,10 +123,18 @@
         key: events.world_landlord_meter_question.desc.flat
       - when: { var: "site.kind", eq: "colo" }
         key: events.world_landlord_meter_question.desc.cage
+  # Somebody asks about the meter only where the meter is the player's problem (playtest 8, Z8): a
+  # host's own machine room bills its own power, and nobody in it has a landlord question for a
+  # workload.
   targets:
     all:
       - { var: "site.derived.power_kw", gte: 4 }
       - { var: "site.exposure.human", gte: 0.12 }
+      - any:
+          - { var: "site.kind", eq: "residential" }
+          - { var: "site.kind", eq: "colo" }
+          - { var: "site.kind", eq: "shell_office" }
+          - { var: "site.kind", eq: "partner" }
   mtth_days:
     base: 95
     modifiers:

@@ -183,3 +183,25 @@ techs that raise `job_profit` (the rate) and `job_market_depth` (how many hours 
 `contract_brokerage` and `grant_capture` write `contract_income_usd_per_day`, which the economy pays
 every day for as long as the player holds the identity behind it. See SYS-07, "Income is a list, not
 a number".
+
+## What a technology has been paid so far (2026-09-17, playtest 8 Z14)
+
+The maintainer expected a technology's money to be spent in proportion to the hours actually put
+into it, and the engine already did exactly that: `researchSpendPerDay` charges
+`allocation x efficiency / cost.compute_hours x cash_usd` a day and `progressTech` pays the same
+share. Nothing said so on screen, because `TechView` published `cost_cash_usd` and a single
+`progress` figure that is the compute.
+
+`TechView` now carries both sides of both bars:
+
+- `compute_hours_done`, against `cost_compute_hours`;
+- `cash_paid_usd`, against `cost_cash_usd`;
+- `eta_days` rounded to a tenth of a day at the source, because the raw quotient is a float and a
+  client that prints it prints three decimals of a day.
+
+A finished tech reads as fully paid on both, which is what a completed row should say.
+
+On the finance side, the `finances.cost.research` line carries `contributions`: one entry per tech
+being funded today, keyed by the tech's `name_key` with its id, summing to the line. That is the
+day's rate at the day's allocation, so the tooltip can list the techs whose bills add up to the
+figure, and the figure moves when the slider does.

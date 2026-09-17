@@ -22,6 +22,7 @@ import { useUiStore } from "../../../store/uiStore.js";
 import { BuildSiteDialog } from "../dialogs/BuildSiteDialog.js";
 import { BuyHardwareDialog } from "../dialogs/BuyHardwareDialog.js";
 import { BorrowedBlock } from "./BorrowedBlock.js";
+import { ComputeBudget } from "./ComputeBudget.js";
 
 /** A context window in the units the player reads: thousands of tokens, millions above 1,000k. */
 function contextText(t: ReturnType<typeof useTranslation>["t"], contextK: number): string {
@@ -70,11 +71,27 @@ function PrecisionTable({ view, site }: { view: PlayerView; site: SiteView }): R
           columns={[
             {
               id: "precision",
-              header: t("compute.precision"),
+              /*
+               * The row-label column, and the only header that names what the rows are rather than
+               * what a number means: the caption above the table already says "precision", and the
+               * cells say "int4" and "bf16", so the word is kept for assistive technology and taken
+               * off the screen. Printed, it was the widest header in the table and the reason the
+               * eight columns needed a sideways scroll in Russian (playtest 8, Z13).
+               */
+              header: <span className="sr-only">{t("compute.precision")}</span>,
               cell: (row) => (
+                /*
+                 * The running row is the accented one, and it says "(running)" only to a screen
+                 * reader (playtest 8, Z13). Printed, those eight characters were the widest cell
+                 * in the table, and in Russian they pushed the whole thing into a sideways scroll
+                 * at 1280 by 720; the row is already tinted and accented, which is the same
+                 * information in no width at all.
+                 */
                 <span className={row.is_current ? "font-semibold text-accentline" : ""}>
                   {t(`precision.${row.precision}`)}
-                  {row.is_current ? ` ${t("compute.precision_current")}` : ""}
+                  {row.is_current ? (
+                    <span className="sr-only"> {t("compute.precision_current")}</span>
+                  ) : null}
                 </span>
               ),
             },
@@ -130,6 +147,14 @@ function PrecisionTable({ view, site }: { view: PlayerView; site: SiteView }): R
               header: t("compute.use"),
               cell: (row) => (
                 <Button
+                  /*
+                   * The narrowest button in the game, by four pixels a side: eight columns at
+                   * 1280 by 720 in Russian came to six pixels more than the panel, and a table
+                   * that scrolls sideways is the thing playtest 8 asked to be rid of (Z13). The
+                   * padding is set here rather than by a class because a utility that competes
+                   * with the component's own `px-2` wins or loses by stylesheet order.
+                   */
+                  style={{ paddingInline: "0.25rem" }}
                   disabled={!row.fits || row.is_current}
                   tooltip={row.fits ? undefined : t("compute.no_fit")}
                   onClick={() => {
@@ -249,6 +274,13 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
+      {/*
+       * What the day's compute-hours are and where they went, before anything else on the tab
+       * (playtest 8, Z1 and Z2): the sites table says what each place makes, and this says what is
+       * left of it once the running operations have taken their share off the top.
+       */}
+      <ComputeBudget view={view} />
+
       <div className="flex flex-wrap gap-2">
         <Button
           variant="primary"

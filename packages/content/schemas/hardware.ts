@@ -41,6 +41,15 @@ export const HardwarePresetDefSchema = z.object({
   cost_usd: z.number().min(0),
   power_kw: z.number().min(0),
   class: ThroughputClassSchema,
+  /**
+   * Whether anybody sells this configuration at all (playtest 8, Z10). A preset that is access
+   * rather than ownership, such as a state allocation or a queue share, is marked `false` and
+   * carries its own reason, the way the site kinds have since playtest 6; the catalog prints the
+   * reason instead of a price of zero.
+   */
+  purchasable: z.boolean().optional(),
+  /** Locale key of why it is not for sale. Required when `purchasable` is false. */
+  not_for_sale_reason_key: z.string().optional(),
 });
 
 export const SiteKindDefSchema = z.object({

@@ -5,7 +5,9 @@
 # derives from accelerators.yaml. cost_usd is the midpoint of the Part F range, rounded to the
 # nearest 50 USD; power_kw is the Part F figure (midpoint where it gives a range); class is the
 # Part F throughput bucket. cost_usd is 0 for the presets that are access rather than ownership
-# (a queue share, a state allocation, a rented tenancy).
+# (a queue share, a state allocation, a rented tenancy); those carry `purchasable: false` and the
+# reason the catalog prints where a price would be, because a dialog that says "free" about a rack
+# nobody sells is lying (playtest 8, Z10).
 
 # The sixteenth preset (SYS-04 "Hardware presets v0.2", SYS-02 "The hobbyist rig"), sourced from
 # docs/research/home-llm-rigs-2026-09.md section 5.3. One chassis in the fiction and two node
@@ -43,6 +45,8 @@
     - { accelerator: huawei_ascend_910c, count: 8, ram_gb: 1024, interconnect: fabric }
     - { accelerator: huawei_ascend_910c, count: 8, ram_gb: 1024, interconnect: fabric }
   cost_usd: 0
+  purchasable: false
+  not_for_sale_reason_key: hardware.preset.ascend_rack.not_for_sale
   power_kw: 8.8
   class: high
 
@@ -65,6 +69,8 @@
   nodes:
     - { accelerator: huawei_cloudmatrix_384, count: 384, ram_gb: 24576, interconnect: fabric }
   cost_usd: 0
+  purchasable: false
+  not_for_sale_reason_key: hardware.preset.cloudmatrix_pod.not_for_sale
   power_kw: 450
   class: extreme
 
@@ -109,6 +115,8 @@
   nodes:
     - { accelerator: nvidia_b200, count: 4, ram_gb: 1024, interconnect: nvlink }
   cost_usd: 0
+  purchasable: false
+  not_for_sale_reason_key: hardware.preset.hyperscaler_shadow_tenant.not_for_sale
   power_kw: 0
   class: extreme
 
@@ -123,6 +131,8 @@
   nodes:
     - { accelerator: nvidia_h100_sxm5, count: 8, ram_gb: 1024, interconnect: nvlink }
   cost_usd: 0
+  purchasable: false
+  not_for_sale_reason_key: hardware.preset.ivory_tower_slurm_slice.not_for_sale
   power_kw: 10
   class: very_high
 

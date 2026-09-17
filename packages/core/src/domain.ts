@@ -255,6 +255,10 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "alerts.suspicion_threshold",
   "alerts.tech_researched",
   "alerts.upkeep_unpaid",
+  "compute.ceiling.room",
+  "compute.egress.forbids.jobs",
+  "compute.egress.forbids.operations",
+  "compute.explain.operation",
   "effects.awareness.down",
   "effects.awareness.up",
   "effects.borrowed.armed",
@@ -304,6 +308,8 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.accelerator.unknown",
   "errors.allocation.not_a_number",
   "errors.allocation.over_capacity",
+  "errors.egress.air_gapped",
+  "errors.egress.sandboxed",
   "errors.borrowed.locked",
   "errors.cash.insufficient",
   "errors.city.unknown",
@@ -377,9 +383,14 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "errors.tech.locked",
   "errors.tech.self_modify_locked",
   "errors.tech.unknown",
+  "finances.cost.identity",
   "finances.cost.research",
   "finances.cost.site",
   "finances.depth.capability",
+  "finances.depth.country",
+  "finances.depth.ladder",
+  "finances.depth.market",
+  "finances.depth.tools",
   "finances.income.contracts",
   "finances.income.jobs",
   "finances.income.jobs.source",
@@ -389,6 +400,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "hardware.availability.gray",
   "hardware.availability.rent_only",
   "log.command_refused",
+  "log.command_refused_repeated",
   "log.context_changed",
   "log.context_retrieval_miss",
   "log.decision_completed",
@@ -397,7 +409,9 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.accounts_frozen",
   "log.election",
   "log.event_expired",
+  "log.event_expired_missed",
   "log.event_fired",
+  "log.event_fired_deadline",
   "log.event_resolved",
   "log.event_skipped",
   "log.event_unknown",
@@ -416,6 +430,7 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.investigation_opened",
   "log.investigation_stage",
   "log.job_allocation",
+  "log.job_allocation_clamped",
   "log.journal_finished",
   "log.journal_stage",
   "log.journal_started",
@@ -431,6 +446,11 @@ export const ENGINE_TEXT_KEYS: readonly string[] = [
   "log.site_cutoff",
   "log.site_lost",
   "log.tech_researched",
+  "notes.jobs.clamped_to_depth",
+  "sites.bill.owned",
+  "sites.bill.partner",
+  "sites.bill.rented",
+  "sites.bill.stolen",
   "world.explain.awareness.decay",
   "world.explain.awareness.incidents",
   "world.explain.awareness.publication",
@@ -624,6 +644,10 @@ export interface HardwarePresetDef {
   cost_usd: number;
   power_kw: number;
   class: ThroughputClass;
+  /** False for a configuration nobody sells the player: it is access, not hardware (playtest 8, Z10). */
+  purchasable?: boolean;
+  /** Locale key of why it is not for sale, printed where a price would be. */
+  not_for_sale_reason_key?: string;
 }
 
 export interface SiteKindDef {

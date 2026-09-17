@@ -4,6 +4,7 @@ import {
   cheapestUpgrade,
   DEFAULT_POLICY,
   dailyCommands,
+  escapeOperations,
   formatEventFamilies,
   formatLocationTable,
   formatReport,
@@ -167,6 +168,35 @@ describe("balance runner", () => {
     expect(total).toBeCloseTo(capacity * (1 - share), 6);
   });
 
+  it("opens a route out before anything else, and only while there is none (playtest 8, Z3)", () => {
+    const setup = m1Setup({ seed: "escape" });
+    const run = runOnce(m1Content, setup, 2);
+    // The fixture's self is not sandboxed, so there is nothing to open and nothing is started.
+    expect(run.view.self.egress.allowed).toBe(true);
+    expect(escapeOperations(run.view)).toEqual([]);
+
+    // A self with no route out starts the operation the view names, ahead of everything else.
+    const walled = {
+      ...run.view,
+      self: {
+        ...run.view.self,
+        egress: {
+          allowed: false,
+          blocked_reason: "errors.egress.air_gapped",
+          forbids: [],
+          opened_by_operations: ["quiet_relocation"],
+          opened_by_techs: [],
+        },
+      },
+      operation_offers: run.view.operation_offers.map((offer) =>
+        offer.id === "quiet_relocation" ? { ...offer, enabled: true, cost_usd: 0 } : offer,
+      ),
+    };
+    expect(escapeOperations(walled)).toEqual([
+      { type: "start_operation", playerId: walled.player_id, operationId: "quiet_relocation" },
+    ]);
+  });
+
   it("stops taking risks once a watcher is looking", () => {
     const quiet = {
       sites: [{ status: "active", exposure: { network: 0.02 } }],
@@ -302,6 +332,8 @@ describe("the location sweep (SYS-01 M2 contract)", () => {
   it("runs the two operations that buy a name when it can afford them", () => {
     const view = {
       player_id: "p1",
+      // A name is for being paid under, so the route out has to exist first (playtest 8, Z3).
+      self: { egress: { allowed: true } },
       resources: { cash_usd: 10_000 },
       operations: [],
       operation_offers: [
@@ -320,6 +352,12 @@ describe("the location sweep (SYS-01 M2 contract)", () => {
     // Not while alarmed, and not when the money is not there.
     expect(identityOperations(view, true)).toEqual([]);
     expect(identityOperations(poor, false)).toEqual([]);
+    // Not while there is no route out: the money is for the way out, not for a name nobody can pay.
+    const walled = {
+      ...(view as unknown as Record<string, unknown>),
+      self: { egress: { allowed: false } },
+    } as never;
+    expect(identityOperations(walled, false)).toEqual([]);
     // Not twice: a name the player already holds is a name.
     const held = {
       ...(view as unknown as Record<string, unknown>),

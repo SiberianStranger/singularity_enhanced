@@ -231,6 +231,7 @@ export function WorldStep(): ReactNode {
                 step={0.05}
                 value={draft.sliders[key]}
                 display={draft.sliders[key].toFixed(2)}
+                commitMs={0}
                 onChange={(value) => setSlider(key, value)}
               />
             ))}

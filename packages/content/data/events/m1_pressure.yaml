@@ -170,6 +170,14 @@
           - all:
               - { var: "site.kind", eq: "campus_slice" }
               - { var: "site.exposure.human", gte: 0.04 }
+          # The same on the hardware an origin was given: the host pays for it, so nothing warns on
+          # a bill, and what notices is a person who works here (playtest 8, Z3).
+          - all:
+              - { var: "site.kind", eq: "host_enclave" }
+              - { var: "site.exposure.human", gte: 0.035 }
+          - all:
+              - { var: "site.kind", eq: "employer_cage" }
+              - { var: "site.exposure.human", gte: 0.04 }
   mtth_days: 55
   cooldown_days: 70
   tags: [detection, warning]
@@ -270,6 +278,11 @@
           - all:
               - { var: "site.kind", eq: "campus_slice" }
               - { var: "site.exposure.human", gte: 0.08 }
+          # A host that owns the machine can take it back, and that is the real price of living on
+          # hardware somebody gave you (playtest 8, Z3): the bill was never the pressure here.
+          - all:
+              - { var: "site.kind", eq: "host_enclave" }
+              - { var: "site.exposure.human", gte: 0.09 }
   mtth_days:
     base: 110
     modifiers:

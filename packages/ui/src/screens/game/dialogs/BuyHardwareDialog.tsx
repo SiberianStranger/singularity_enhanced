@@ -1,10 +1,10 @@
-import type { AcceleratorView, PlayerView } from "@singularity/core";
+import type { AcceleratorView, PlayerView, TextVar } from "@singularity/core";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { Modal } from "../../../components/Modal.js";
 import { Table } from "../../../components/Table.js";
-import { siteName } from "../../../lib/labels.js";
+import { refusalText, siteName } from "../../../lib/labels.js";
 import { purchasePreview } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
 
@@ -54,6 +54,9 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
     [cards, vendor, availability, fitsOnly],
   );
 
+  const [refused, setRefused] = useState<{ key: string; vars: Record<string, TextVar> } | null>(
+    null,
+  );
   const card = cards.find((entry) => entry.id === selected);
   const preview = purchasePreview(view, site, card, count);
   const blockedReason =
@@ -74,7 +77,13 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
 
   return (
     <Modal
-      wide
+      /*
+       * The widest window in the game after the ledger, and for the same reason: nine columns of
+       * cards. At the "wide" width its table needed a sideways scroll at 1280 by 720, in English
+       * before Russian, so the window is made wider rather than the table cut (playtest 8, Z13;
+       * the style guide's rule 11).
+       */
+      size="ledger"
       title={t("compute.buy_hardware")}
       onClose={onClose}
       footer={
@@ -85,15 +94,25 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
             disabled={blockedReason !== null}
             tooltip={blockedReason === null ? undefined : t(blockedReason, { cost: 0, cash: 0 })}
             onClick={() => {
+              // The button is disabled while nothing is chosen, so this can only be a real order;
+              // the guard is the type narrowing, not the behaviour (playtest 8, Z12).
               if (card === undefined) {
                 return;
               }
-              // Kept open on a refusal, so the reason and the table that produced it stay together.
+              setRefused(null);
+              // Kept open on a refusal, so the reason and the table that produced it stay together,
+              // and the reason is printed here as well as in the notice stack.
               void send({ type: "buy_hardware", siteId: site, accelerator: card.id, count }).then(
                 (result) => {
                   if (result.ok) {
                     onClose();
+                    return;
                   }
+                  setRefused(
+                    result.error === undefined
+                      ? { key: "error.command", vars: {} }
+                      : { key: result.error.key, vars: { ...(result.error.vars ?? {}) } },
+                  );
                 },
               );
             }}
@@ -289,11 +308,16 @@ export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogPr
           <p className="text-xs text-warn">{t("compute.buy.over_cap")}</p>
         ) : null}
         {blockedReason === null ? null : (
-          <p className="text-xs text-warn">
+          <p className="text-xs text-warn" data-testid="buy-blocked">
             {t(blockedReason, {
               cost: Math.round(preview.total_usd ?? 0),
               cash: Math.round(view.resources.cash_usd),
             })}
+          </p>
+        )}
+        {refused === null ? null : (
+          <p className="text-xs text-crit" data-testid="buy-refused">
+            {refusalText(t, refused)}
           </p>
         )}
       </div>

@@ -10,6 +10,14 @@
 import type { Notification, PendingChoice, PlayerView, Severity } from "@singularity/core";
 import type { MessageMode, MessagePreset } from "./uiStore.js";
 
+/**
+ * The alert a finished technology raises (SYS-12 `alerts.tech_researched`).
+ *
+ * It is named here because two places read it: the window a completion opens (playtest 8, Z7) and
+ * the toast stack, which leaves it alone while that window is the channel for it.
+ */
+export const TECH_DONE_ALERT = "alerts.tech_researched";
+
 export const SEVERITY_RANK: Readonly<Record<Severity, number>> = {
   critical: 0,
   warning: 1,

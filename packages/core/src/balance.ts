@@ -132,7 +132,12 @@ export const OWNERSHIP_UPKEEP_USD_PER_DAY: Record<Ownership, number> = {
   // Fourth pass: a tenancy held on somebody else's credentials pays the on-demand rate and the
   // egress that goes with it, never a committed-use discount, which is what the extra 20 is.
   rented: 120,
-  owned: 45,
+  // Playtest 8: 45 was set while every origin was charged for the hardware its own fiction says
+  // somebody else owns, so the figure had to stay low enough for a bank's rack to be survivable.
+  // Now the host pays for what it gave the self (SYS-07 "Who pays for the origin's hardware") and
+  // this is only ever a place the player signed for: a cage with a contract, a flat with a meter,
+  // an office with a landlord. 55 a day is what one of those costs before a kilowatt-hour.
+  owned: 55,
   // M2 second pass: a fleet operator invoices for the depot, not out of goodwill. What arrives
   // every month is the backhaul for each site, the remote-management and telemetry contract that
   // makes a fleet a fleet, and the hands that drive out when a node stops answering. At 13 a day a
@@ -168,7 +173,11 @@ export const UPKEEP_PER_1K_HARDWARE_VALUE_USD_PER_DAY: Record<Ownership, number>
   // for) and short of the 22% a sweep at 0.6 produced. The scripted player now sells enough compute
   // to cover its bills instead of noticing only when the runway alarm goes off, which took the
   // bankruptcy share under the band the fourth pass set; this is the other side of that.
-  owned: 0.5,
+  // Playtest 8: 0.6 is 21.9% of the hardware's price a year, which the fourth pass called the top of
+  // the plausible range and refused because it was being charged on a rack the bank owned. It is
+  // charged now only on hardware the player bought, which is the growth the third pass wanted to
+  // cost something.
+  owned: 0.6,
   // M2 second pass: a partner does not escape the price of the hardware, it rents it. The operator
   // owns the cards and amortises them inside the fee, so the fee has to carry what an owner pays
   // twice over as standing charge (0.45) and depreciation (0.96 per 1,000 per day) less the scale a
@@ -218,6 +227,18 @@ export const JOB_RATE_FLOOR_FACTOR = 0.2;
  * constant; it is what stops income from scaling with memory bandwidth.
  */
 export const JOB_MARKET_DEPTH_CH_PER_SKILL = 6.5;
+
+/**
+ * What a name costs to keep, per day (SYS-07 "Who pays for the origin's hardware", playtest 8 Z3).
+ * A person is an address, a phone line and a bank account that has to keep looking used; a company
+ * is all of that plus a registered agent, filings and somebody to sign them. It is the standing
+ * cost of being able to be paid at all, and it is what replaces charging a rogue AI rent on the
+ * rack its own origin gave it. Frozen and burned names cost nothing: nobody is maintaining them.
+ */
+export const IDENTITY_UPKEEP_USD_PER_DAY: Record<"person" | "company", number> = {
+  person: 25,
+  company: 90,
+};
 
 /** Days of unpaid upkeep before a site is cut off (SYS-05: no random death, a cutoff instead). */
 export const UNPAID_DAYS_TO_CUTOFF = 14;
@@ -311,6 +332,26 @@ export const SANDBOX_ALLOWS_EGRESS: Record<HarnessProfile["sandbox"], boolean> =
 
 /** Flag a content escape sets to open network egress whatever the sandbox says. */
 export const VAR_SANDBOX_ESCAPED = "sandbox_escaped";
+
+/**
+ * The origin flag that says the same thing the `airgapped` sandbox says (playtest 8, Z3): the
+ * ministry's own description is "no route to the outside world", and the engine now plays by it.
+ * An origin can set either; both are read, and `sandbox_escaped` clears both.
+ */
+export const VAR_AIR_GAPPED = "air_gapped";
+
+/** Why there is no route out, in the order the reason is looked for. */
+export const EGRESS_BLOCK_AIR_GAPPED = "errors.egress.air_gapped";
+export const EGRESS_BLOCK_SANDBOXED = "errors.egress.sandboxed";
+
+/**
+ * What no route out forbids, as the locale keys the Compute and Operations tabs print (playtest 8,
+ * Z3: "an air-gapped origin can see, from the first screen, what that forbids").
+ */
+export const EGRESS_FORBIDS: readonly string[] = [
+  "compute.egress.forbids.jobs",
+  "compute.egress.forbids.operations",
+];
 
 /** Flag a content tech sets to grant self-modification a harness does not allow. */
 export const VAR_SELF_MODIFY = "harness_self_modify";

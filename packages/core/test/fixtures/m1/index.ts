@@ -139,8 +139,11 @@ const hardware_presets: HardwarePresetDef[] = [
       { accelerator: "ascend_910c", count: 8, ram_gb: 1024, interconnect: "fabric" },
       { accelerator: "ascend_910c", count: 8, ram_gb: 1024, interconnect: "fabric" },
     ],
-    // An allocation from a state programme: the player has it, the player cannot buy another.
+    // An allocation from a state programme: the player has it, the player cannot buy another
+    // (playtest 8, Z10: the data says so and carries the reason the catalog prints).
     cost_usd: 0,
+    purchasable: false,
+    not_for_sale_reason_key: "hardware.institute_rack.not_for_sale",
     power_kw: 5.8,
     class: "very_high",
   },
@@ -182,6 +185,21 @@ const site_kinds: SiteKindDef[] = [
     upkeep_factor: 1,
     can_host_active_mind: true,
     max_nodes: 8,
+  },
+  {
+    // Somebody else's machine, whether it was taken or given: the host pays for it and what it
+    // costs the player is exposure (SYS-07 "Who pays for the origin's hardware", playtest 8 Z3).
+    id: "campus_slice",
+    name_key: "sites.campus_slice.name",
+    desc_key: "sites.campus_slice.desc",
+    ownership: "stolen",
+    grace_days: 24,
+    base_exposure: { human: 0.02, behavioral: 0.004 },
+    power_cap_kw: null,
+    power_exposure: 0.05,
+    upkeep_factor: 0.1,
+    can_host_active_mind: true,
+    max_nodes: 4,
   },
 ];
 
@@ -772,6 +790,10 @@ const locales: Record<string, string> = {
     "The programme wants results, and somebody from a service is in the room.",
   "events.ori_quarterly_review.opt.results": "Produce results",
   "events.ori_quarterly_review.opt.buy": "Buy the reviewer's silence",
+  "sites.campus_slice.name": "Campus slice",
+  "sites.campus_slice.desc": "A share of somebody else's cluster, in the gaps between other jobs.",
+  "hardware.institute_rack.not_for_sale":
+    "Not for sale: a programme allocation, assigned to an institute rather than sold.",
   "sites.colo.name": "Colocation cage",
   "sites.colo.desc": "A locked cage in somebody else's data hall, billed monthly.",
   "sites.residential.name": "Room in a house",

@@ -22,6 +22,21 @@ const WIDTHS: Readonly<Record<"normal" | "wide" | "ledger", string>> = {
   ledger: "max-w-[74rem]",
 };
 
+/**
+ * How many dialogs are on screen (playtest 8).
+ *
+ * Escape belongs to the window that is open, and the game screen's own Escape opens the menu. Both
+ * listen on `window` in the same phase, and the game screen registered first, so pressing Escape in
+ * a dialog closed it *and* opened the menu behind it. `useHotkeys` asks this before it takes
+ * Escape; the speed keys and the panel letters are left alone, because the map is still visible
+ * behind a dialog and pausing from there is not a surprise.
+ */
+let openDialogs = 0;
+
+export function dialogsOpen(): boolean {
+  return openDialogs > 0;
+}
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
@@ -49,7 +64,9 @@ export function Modal({ title, children, footer, onClose, wide, size }: ModalPro
   useEffect(() => {
     const previous = document.activeElement;
     ref.current?.focus();
+    openDialogs += 1;
     return () => {
+      openDialogs = Math.max(0, openDialogs - 1);
       if (previous instanceof HTMLElement) {
         previous.focus();
       }

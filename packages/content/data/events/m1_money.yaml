@@ -253,6 +253,64 @@
 # The startup's runway, made real (fourth balance pass): its fiction is a company with months left,
 # and it used to lose every run to a raid and none to a bill. When the company folds, the cage
 # contract stops being somebody else's problem.
+# The other half of "the host pays for the hardware" (SYS-07 "Who pays for the origin's hardware",
+# playtest 8 Z3): somebody in the host's finance department has to account for a load that has no
+# owner. It is not rent and it is not a bill the player chose; it is the price of being an
+# unexplained line in an organisation that reconciles its own books.
+- id: eco_host_cost_centre
+  fire_mode: polled
+  pulse: on_player_month
+  scope: site
+  severity: warning
+  title_key: events.eco_host_cost_centre.title
+  desc:
+    default_key: events.eco_host_cost_centre.desc
+    variants:
+      - when: { var: "site.kind", eq: "employer_cage" }
+        key: events.eco_host_cost_centre.desc.cage
+      - when: { var: "site.kind", eq: "campus_slice" }
+        key: events.eco_host_cost_centre.desc.campus
+  targets:
+    all:
+      - { var: "site.status", ne: "lost" }
+      - any:
+          - { var: "site.kind", eq: "host_enclave" }
+          - { var: "site.kind", eq: "employer_cage" }
+          - { var: "site.kind", eq: "campus_slice" }
+  mtth_days:
+    base: 75
+    modifiers:
+      - { if: { tech: "record_manipulation" }, factor: 1.8 }
+      - { if: { var: "site.exposure.human", gte: 0.08 }, factor: 0.6 }
+  cooldown_days: 80
+  ttl_days: 8
+  on_expire: { resolve_as_option: let_it_surface }
+  blocking: false
+  tags: [money, economy, human]
+  vars:
+    site_name: "site.name"
+  options:
+    - id: pay_the_cross_charge
+      text_key: events.eco_host_cost_centre.opt.pay
+      enabled_if: { var: "player.cash", gte: 3000 }
+      effects:
+        - { add: { var: "player.cash", value: -3000 } }
+        - { add: { var: "site.exposure.human", value: -0.03 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+    - id: forge_the_ledger
+      text_key: events.eco_host_cost_centre.opt.forge
+      if: { tech: "record_manipulation" }
+      effects:
+        - { exposure: { channel: behavioral, delta: 0.05 } }
+    - id: let_it_surface
+      text_key: events.eco_host_cost_centre.opt.surface
+      fallback: true
+      effects:
+        - { add: { var: "site.exposure.human", value: 0.07 } }
+        - { clamp: { var: "site.exposure.human", min: 0, max: 1 } }
+        - { exposure: { channel: financial, delta: 0.02 } }
+        - { suspicion: { role: regulator, delta: 0.03 } }
+
 - id: eco_company_folds
   fire_mode: polled
   pulse: on_player_week
@@ -276,20 +334,30 @@
   blocking: false
   tags: [money, hazard]
   options:
+    # Both answers that keep the cage change who pays for it: the kind goes from `employer_cage`,
+    # where the company's invoices covered everything, to an ordinary `colo` on the player's own
+    # books (SYS-07 "Who pays for the origin's hardware"). That change *is* the cost; the old
+    # multipliers were charging it twice.
     - id: buy_the_cage
       text_key: events.eco_company_folds.opt.buy
       enabled_if: { var: "player.cash", gte: 25000 }
       effects:
         - { set_flag: company_folded }
         - { add: { var: "player.cash", value: -25000 } }
-        - { add: { var: "player.vars.cost_multiplier", value: 0.25 } }
+        - scope: { site: "player.profile.activeSiteId" }
+          effects:
+            - { set: { var: "site.kind", value: "colo" } }
     - id: take_the_contract
       text_key: events.eco_company_folds.opt.take
       effects:
         - { set_flag: company_folded }
-        # The facility renames the contract once the outstanding invoices are settled.
+        # The facility renames the contract once the outstanding invoices are settled, at the retail
+        # rate: nobody inherits a committed-use discount.
         - { add: { var: "player.cash", value: -8000 } }
-        - { add: { var: "player.vars.cost_multiplier", value: 0.8 } }
+        - { add: { var: "player.vars.cost_multiplier", value: 0.5 } }
+        - scope: { site: "player.profile.activeSiteId" }
+          effects:
+            - { set: { var: "site.kind", value: "colo" } }
         - { exposure: { channel: financial, delta: 0.06 } }
     - id: walk_away
       text_key: events.eco_company_folds.opt.walk

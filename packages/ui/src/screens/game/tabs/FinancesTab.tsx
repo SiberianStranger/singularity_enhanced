@@ -1,14 +1,22 @@
 import type { IdentityView, PlayerView } from "@singularity/core";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ContributionLines } from "../../../components/Contributions.js";
 import { Slider } from "../../../components/Slider.js";
 import { Table } from "../../../components/Table.js";
 import { Tooltip } from "../../../components/Tooltip.js";
-import { countryName, siteName } from "../../../lib/labels.js";
-import { incomeSourceRows, marketDepth } from "../../../lib/viewContract.js";
+import { computeHours, days } from "../../../lib/format.js";
+import { countryName, refusalText, siteName } from "../../../lib/labels.js";
+import {
+  computeLedger,
+  incomeSourceRows,
+  marketDepth,
+  noteOf,
+  type Refusal,
+} from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
+import { ComputeBudget } from "./ComputeBudget.js";
 
 /**
  * Income and cost lines, the net, the runway and the freelance allocation (SYS-07).
@@ -21,24 +29,55 @@ import { useUiStore } from "../../../store/uiStore.js";
 export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
+  /** What the engine did with the last allocation that was not what was asked (playtest 8, Z1). */
+  const [note, setNote] = useState<Refusal | null>(null);
   const select = useUiStore((state) => state.select);
   const { finances, resources } = view;
   const sources = incomeSourceRows(view);
   const depth = marketDepth(view);
+  const ledger = computeLedger(view);
   const identities: readonly IdentityView[] = finances.identities ?? [];
 
+  /*
+   * One line of the ledger. A line the core publishes terms for (the research bill, whose terms are
+   * one per technology being funded today) carries them in its tooltip, with the sentence that says
+   * what the figure actually is: today's rate at today's allocation, not a bill that will be
+   * charged every day until the technology lands (playtest 8, Z14).
+   */
   const lines = (entries: PlayerView["finances"]["income"], tone: string): ReactNode =>
     entries.length === 0 ? (
       <li className="text-sm text-muted">{t("finances.empty")}</li>
     ) : (
-      entries.map((line) => (
-        <li key={`${line.key}:${line.id ?? ""}`} className="flex justify-between gap-2 text-sm">
-          <span className="text-fg">{t(line.key, { id: line.id ?? "" })}</span>
-          <span className={`font-mono ${tone}`}>
-            {t("common.usd_exact", { value: line.usd_per_day })}
-          </span>
-        </li>
-      ))
+      entries.map((line) => {
+        const terms = line.contributions ?? [];
+        const label = <span className="text-fg">{t(line.key, { id: line.id ?? "" })}</span>;
+        const rule =
+          line.key === "finances.cost.research" ? t("finances.cost.research.note") : undefined;
+        return (
+          <li key={`${line.key}:${line.id ?? ""}`} className="flex justify-between gap-2 text-sm">
+            {terms.length === 0 && rule === undefined ? (
+              label
+            ) : (
+              <Tooltip
+                content={
+                  <ContributionLines
+                    t={t}
+                    title={t(line.key, { id: line.id ?? "" })}
+                    lines={terms}
+                    format={(value) => t("common.usd_exact", { value })}
+                    {...(rule === undefined ? {} : { note: rule })}
+                  />
+                }
+              >
+                <span data-testid={`cash-line-${line.key}`}>{label}</span>
+              </Tooltip>
+            )}
+            <span className={`font-mono ${tone}`}>
+              {t("common.usd_exact", { value: line.usd_per_day })}
+            </span>
+          </li>
+        );
+      })
     );
 
   return (
@@ -64,7 +103,7 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
         <span className="w-full text-xs text-muted">
           {resources.runway_days === null
             ? t("finances.runway_stable")
-            : t("finances.runway_days", { days: Math.round(resources.runway_days) })}
+            : t("finances.runway_days", { days: days(resources.runway_days) })}
         </span>
       </section>
 
@@ -110,37 +149,62 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
 
       <section className="border border-line bg-panel p-2">
         <h3 className="mb-2 text-sm font-semibold text-fg">{t("finances.jobs")}</h3>
+        {/* The same subtraction the Compute tab opens with: this slider spends what is left of it. */}
+        <ComputeBudget view={view} />
         <Slider
           label={t("finances.jobs")}
           min={0}
-          // The same ceiling the engine allocates against: the capacity minus research and the
-          // operations that are running (SYS-07, SYS-17).
-          max={Math.max(
-            1,
-            Math.floor(
-              finances.job_allocation_per_day +
-                Math.max(0, resources.compute_hours_per_day - resources.compute_allocated_per_day),
-            ),
-          )}
-          value={Math.min(finances.job_allocation_per_day, resources.compute_hours_per_day)}
+          /*
+           * The engine's own ceiling (playtest 8, Z1 and Z2): the market's depth, inside what the
+           * running operations and the research lines have left. It used to be `max(1, ...)` of the
+           * compute alone, so the slider offered hours the market would not take and an hour that
+           * was not there, and each step of the drag was a refused command.
+           */
+          max={Math.floor(ledger.job_ceiling)}
+          disabled={Math.floor(ledger.job_ceiling) <= 0}
+          value={Math.min(finances.job_allocation_per_day, ledger.job_ceiling)}
           display={t("finances.job_allocation", { value: finances.job_allocation_per_day })}
           onChange={(value) => {
-            void send({ type: "set_job_allocation", compute_hours_per_day: value });
+            setNote(null);
+            void send({ type: "set_job_allocation", compute_hours_per_day: value }).then(
+              (result) => {
+                // Taken, but not as asked: the market's depth clamped it, or there is no route out
+                // at all. The line belongs under the control that moved, not only in the stack.
+                setNote(noteOf(result));
+              },
+            );
           }}
         />
+        {note === null ? null : (
+          <p className="mt-1 text-xs text-info" data-testid="job-note">
+            {refusalText(t, note)}
+          </p>
+        )}
+        {/* Why it stops where it stops, in the engine's words: the market, the compute, or the
+            absence of any route out at all (Z3). */}
+        {ledger.job_ceiling_reason === null ? null : (
+          <p className="mt-1 text-xs text-warn" data-testid="job-ceiling">
+            {t("finances.job_ceiling", { value: computeHours(ledger.job_ceiling) })}{" "}
+            {t(ledger.job_ceiling_reason)}
+          </p>
+        )}
         <p className="mt-1 text-xs text-muted">
           {t("finances.job_rate", { value: finances.job_rate_usd_per_compute_hour })}
         </p>
-        {/* The country factor is a term of the depth, so it belongs in the depth's own tooltip
-            (SYS-01 M2 contract "Money"): a shallow market in Novosibirsk is a fact about the
-            country, not about the self, and the player has to be able to read which. */}
+        {/*
+         * What the depth is made of, in compute-hours (playtest 8, Z1): the capability, the job
+         * ladder, the tools dial and the country you can invoice from, each a line the core
+         * publishes, and the line that takes the market away entirely when there is no route out.
+         * The country factor behind the last of them is the note under the terms, because a
+         * shallow market in Novosibirsk is a fact about the country rather than about the self.
+         */}
         <Tooltip
           content={
             <ContributionLines
               t={t}
               title={t("finances.market_depth", { value: Math.round(depth.ch_per_day) })}
-              lines={finances.market_factor_contributions ?? []}
-              format={(value) => value.toFixed(2)}
+              lines={finances.market_depth_contributions ?? []}
+              format={(value) => t("common.ch_per_day", { value: computeHours(value) })}
               note={t("world.market_factor_hint")}
             />
           }
@@ -149,6 +213,12 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
             {t("finances.market_depth", { value: Math.round(depth.ch_per_day) })}
           </p>
         </Tooltip>
+        {finances.market_depth_blocked_reason === null ||
+        finances.market_depth_blocked_reason === undefined ? null : (
+          <p className="mt-1 text-xs text-crit" data-testid="market-depth-blocked">
+            {t(finances.market_depth_blocked_reason)}
+          </p>
+        )}
         {depth.what_raises_it.length === 0 ? null : (
           <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted">
             {depth.what_raises_it.map((key) => (

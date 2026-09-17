@@ -414,3 +414,51 @@ things that do not are stated as refusals rather than left implicit: the kind ca
 mind (`can_host_active_mind: false`, as for any such kind), `set_site_role` refuses every role on it,
 and `build_site` refuses the kind outright, because a channel is opened by an operation. The sites
 table in the Compute panel does not list them either; they are published under `PlayerView.compute`.
+
+## The day's compute has to add up on screen (2026-09-17, playtest 8 Z1 and Z2, implemented)
+
+Playtest 8: "the run starts at 7.7 compute-hours a day, of which at most 3 can be put on paid work.
+Nothing says why, and the slider simply stops", and "a running operation silently takes its compute
+off the top". Both numbers were right and neither was published, so the player saw compute going
+nowhere and no reason for it.
+
+`ComputeView` now carries the whole subtraction, in the order the panel reads it:
+
+| field | what it is |
+|---|---|
+| `capacity_ch_per_day` | the day's compute-hours before anything is taken off: own plus borrowed |
+| `reserved_by_operations_ch_per_day` | what the running operations hold today |
+| `operation_reservations` | one line per running operation (`instance_id`, `operation_id`, `name_key`, `ch_per_day`), summing to the figure above |
+| `allocatable_ch_per_day` | capacity minus the reservations: what research and paid work may be given |
+| `allocated_research_ch_per_day` | of that, what the research lines hold |
+| `allocated_jobs_ch_per_day` | of that, what paid work holds |
+| `unallocated_ch_per_day` | what is allocatable and allocated to nothing |
+| `job_ceiling_ch_per_day` | the most the job slider may be set to: the market depth, inside what is allocatable |
+| `job_ceiling_reason` | why it stops there, as a locale key |
+
+`capacity - reserved = allocatable` and `allocatable - research - jobs = unallocated` hold exactly,
+which is the point: a panel that prints the lines cannot disagree with the engine that allocates
+them. `job_ceiling_reason` is one of `finances.depth.market` (the market takes no more),
+`compute.ceiling.room` (the compute is already spent) or the egress refusal (`errors.egress.*`),
+so the slider can print its own limit and the reason for it without deriving either.
+
+The market depth's own terms are published beside it in the finance view (SYS-07 "Balance notes,
+M2"): `FinancesView.market_depth_contributions` sums to `market_depth_ch_per_day` with one line for
+the capability, one for the job ladder, one for the tools dial and one for the country factor.
+
+### A rig nobody sells says so (Z10)
+
+Four presets carried `cost_usd: 0` because they are access rather than ownership, and the build
+dialog printed "free". They now carry `purchasable: false` and `not_for_sale_reason_key`, the way
+the site kinds have carried their refusal since playtest 6: `ascend_rack` (a state allocation),
+`cloudmatrix_pod` (a state cloud pod), `hyperscaler_shadow_tenant` (somebody else's tenancy) and
+`ivory_tower_slurm_slice` (a share of a queue). `build_site` refuses with the preset's own reason
+key, the catalog never quotes one as the cheapest plan for a kind, and the content build fails a
+preset with no price that is not marked, so the data and the engine cannot drift apart again.
+
+### A site can change hands
+
+`site.kind` is writable by content now (the compute system declares it). It is how
+`eco_company_folds` renames a colocation contract from the employer to the player: the kind changes
+from `employer_cage` to `colo` and the bill moves with it (SYS-07 "Who pays for the origin's
+hardware").

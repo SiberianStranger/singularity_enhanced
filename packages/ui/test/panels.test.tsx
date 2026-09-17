@@ -282,18 +282,24 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
     expect(live.view().sites[0]?.nodes.length).toBe(before + 1);
   });
 
-  it("compares site kinds before building one", async () => {
+  it("asks where before it asks what, and says what to choose next (Z11, Z12)", async () => {
     const live = await play();
     await openTab(/^Compute and sites$/);
     await userEvent.click(within(panel()).getByRole("button", { name: "Build site" }));
 
     const dialog = await screen.findByRole("dialog");
-    for (const header of ["To build", "Build time", "Upkeep", "Power cap", "Can host you"]) {
-      expect(within(dialog).getByRole("columnheader", { name: header })).toBeInTheDocument();
-    }
-    expect(within(dialog).getAllByRole("row").length).toBeGreaterThan(
-      live.view().catalog.site_kinds.length,
-    );
+    // The city the self is in is the one the dialog opens on.
+    const city = within(dialog).getByTestId("build-city") as HTMLSelectElement;
+    expect(city.value).toBe(live.view().sites[0]?.city);
+
+    // Nothing is chosen yet, so the primary button is disabled and the window says what is next.
+    const build = within(dialog).getByTestId("build-confirm");
+    expect(build).toBeDisabled();
+    expect(within(dialog).getByTestId("build-blocked")).toHaveTextContent(/kind of place|city/i);
+
+    // The kinds on offer are the ones that can be had in that city, as radios, not table rows.
+    const kinds = within(dialog).getAllByRole("radio", { checked: false });
+    expect(kinds.length).toBeGreaterThan(0);
   });
 
   it("builds a site through the engine", async () => {

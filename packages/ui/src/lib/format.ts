@@ -42,3 +42,19 @@ export function computeHours(value: number): number {
 export function shortId(id: string): string {
   return id.length <= 12 ? id : `${id.slice(0, 11)}…`;
 }
+
+/**
+ * A day count as every screen prints it (playtest 8, Z14).
+ *
+ * The estimates come off the engine as floats and ICU prints them in full: "21,122 d" for a
+ * technology at a trickle of an allocation, and three decimals of a day is noise in any language.
+ * A day or more is a whole number of days; less than a day keeps one decimal, because "0 d" would
+ * say the opposite of what a few hours means.
+ */
+export function days(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const absolute = Math.abs(value);
+  return absolute >= 1 ? Math.round(value) : Math.round(value * 10) / 10;
+}

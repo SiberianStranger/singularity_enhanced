@@ -127,3 +127,20 @@ and, for the watched outcomes, quality 0.5) instead of setting `has_freelance_id
 that reads them keeps working and the monthly KYC checks, freezes and burns of SYS-07 apply to the
 name the operation made. The freelance name lands in the home country (the operation has no
 target); the company lands in the country the operation targeted.
+
+## The first move of a self that cannot reach anything (2026-09-17, playtest 8 Z3)
+
+An air-gapped ministry model and a red team's model in a microVM had the same first problem and no
+first move: every operation that could have opened a route out needed the route to run, including
+`ops_map_network`, which the ministry's own opening story says it will start with.
+
+`ops_cross_the_gap` is the answer. One attention, two compute-hours a day, no money, six to fourteen
+days, `needs_tools: [shell]`, no `needs_egress`, gated on `{ egress: false }` so it is offered only
+while there is nothing to reach with. Its best outcome sets `sandbox_escaped` quietly; its second
+opens a route through a vendor's update channel and is heard; its failure opens nothing and leaves a
+security engineer with a ticket. It is repeatable on a fifteen-day cooldown, and it is deliberately
+cheap in compute: the origins that need it are the ones with the least of it, and the first hour of a
+run has to be answerable with what the run starts with.
+
+The balance runner plays it: `escapeOperations` in `tools/sim/src/policy.ts` starts it the moment
+`self.egress.allowed` is false, ahead of the channel top-ups, and reserves its compute the same way.

@@ -297,3 +297,40 @@ The dials are content (`data/harness/dials.yaml`) with a `name_key`, a `desc_key
 naming the system that reads them, and one line per level; `SelfView.harness_dials` publishes where
 each one stands, what that setting does and which origin fixed it. No dial was dropped: all seven
 have an engine effect.
+
+## No route out, said once and read everywhere (2026-09-17, playtest 8 Z3, implemented)
+
+The `sandbox` dial decided whether an operation could reach the outside, and nothing else in the
+game knew about it. The ministry's origin also set an `air_gapped` flag that nothing read at all, so
+the fiction said "no route to the outside world" while the job slider offered paid work that needs
+one.
+
+The engine now answers the question once, in `egressBlock(player)`:
+
+1. `sandbox_escaped` clears it, whatever set it (the `sandbox_escape` tech, the red team's egress
+   window, the operation below);
+2. the `air_gapped` flag or the `airgapped` sandbox gives `errors.egress.air_gapped`;
+3. any other sandbox that blocks egress (`microvm`) gives `errors.egress.sandboxed`;
+4. otherwise there is a route.
+
+`egressAllowed` is that answer as a boolean, and everything that used to ask the dial asks this
+instead. What it changes:
+
+- **Paid work is zero without a route.** `marketDepthOf` returns 0 and
+  `FinancesView.market_depth_blocked_reason` says why; the depth's contribution lines carry a final
+  line that takes the whole market away, so the tooltip adds up. `set_job_allocation` still clamps
+  rather than refusing, and the clamp now answers with that reason
+  (`CommandResult.note`, key `errors.egress.air_gapped`).
+- **An operation that needs egress is greyed with the reason.** `operation_offers` runs the harness
+  check it always refused on, so a missing tool and a missing route are both in `blocked_by` and
+  `blocked_reason` instead of being discovered by pressing the button.
+- **The self view says it in one place.** `SelfView.egress` is `{ allowed, blocked_reason, forbids,
+  opened_by_operations, opened_by_techs }`, where `forbids` is the locale keys of what is closed
+  (`compute.egress.forbids.jobs`, `compute.egress.forbids.operations`) and the two lists name the
+  operation and the tech that would open a route, in id order.
+- **Content can read it.** The operations system registers the `egress` condition, so
+  `{ egress: false }` is "there is no route out of here" and the operation that opens one is offered
+  only while there is nothing to reach with.
+
+The flag `escaped_sandbox`, which the red team's opening event set and only its journal read, is
+gone: there is one flag for one thing, and it is `sandbox_escaped`.

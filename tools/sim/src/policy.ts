@@ -596,8 +596,38 @@ export function resolvePending(
  * for a cage. Both are started at most once at a time, because the operations system refuses a
  * second instance of a running operation anyway.
  */
+/**
+ * The first move of a self that cannot reach anything (playtest 8, Z3). A sandboxed or air-gapped
+ * origin earns nothing and can run no operation that reaches outward, so the one operation that
+ * opens a route is worth more than anything else it could do with the day, alarmed or not.
+ */
+export function escapeOperations(view: PlayerView): PlayerCommand[] {
+  if (view.self.egress.allowed) {
+    return [];
+  }
+  const running = new Set(
+    view.operations
+      .filter((entry) => entry.status === "running")
+      .map((entry) => entry.operation_id),
+  );
+  const commands: PlayerCommand[] = [];
+  for (const id of view.self.egress.opened_by_operations) {
+    const offer = view.operation_offers.find((entry) => entry.id === id);
+    if (offer === undefined || !offer.enabled || running.has(id)) {
+      continue;
+    }
+    if (view.resources.cash_usd < offer.cost_usd) {
+      continue;
+    }
+    commands.push({ type: "start_operation", playerId: view.player_id, operationId: id });
+  }
+  return commands;
+}
+
 export function identityOperations(view: PlayerView, alarmed: boolean): PlayerCommand[] {
-  if (alarmed) {
+  // A name is for being paid under, and a self with no route out cannot be paid at all (playtest 8,
+  // Z3). Buying one first would spend the money the way out is paid for.
+  if (alarmed || !view.self.egress.allowed) {
     return [];
   }
   // Running, not ever run: a finished instance stays in the view, and counting those meant a name
@@ -765,7 +795,13 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // moves every origin's table at once. That is a balance pass of its own (SYS-07), not part of
   // SYS-25, and it is reported rather than folded in.
   const borrowed = borrowedOperations(view, options, alarmed);
-  const reserve = Math.min(capacity * MAX_OPERATION_RESERVE, operationCompute(view, borrowed));
+  // The way out is reserved for on the same terms as a channel top-up: it is cheap, it is the only
+  // thing a walled-in self can do, and an allocation that spent the day would refuse it.
+  const escapes = escapeOperations(view);
+  const reserve = Math.min(
+    capacity * MAX_OPERATION_RESERVE,
+    operationCompute(view, [...escapes, ...borrowed]),
+  );
 
   const targets = researchTargets(view, alarmed, options);
   const perTech =
@@ -896,6 +932,7 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // invoice under first, a company second, each one only while there is money to spare.
   // The channel top-ups go first, because the reserve above was held back for them: an operation
   // that started ahead of them would spend it and the top-up would be refused.
+  commands.push(...escapes);
   commands.push(...borrowed);
   commands.push(...identityOperations(view, alarmed));
 

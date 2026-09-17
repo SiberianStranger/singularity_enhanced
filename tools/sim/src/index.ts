@@ -2,6 +2,7 @@ export {
   cheapestUpgrade,
   DEFAULT_POLICY,
   dailyCommands,
+  escapeOperations,
   identityOperations,
   isAlarmed,
   jobShare,

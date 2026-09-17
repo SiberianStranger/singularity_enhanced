@@ -107,6 +107,9 @@ export const SYSTEM_CONDITION_KINDS: readonly string[] = [
   "has_identity_in",
   "election_within_days",
   "presence_in",
+  // Playtest 8 (Z3), registered by the `operations` system: whether the self can reach the outside
+  // world at all, so content can gate the operation that opens a route on there not being one.
+  "egress",
 ];
 
 export interface BuildIssue {
@@ -613,6 +616,16 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
         `hardware_presets.${String(preset.id)}.nodes[${index}].accelerator`,
       );
     });
+    // A rig nobody sells has to say so and say why, the way the site kinds do (playtest 8, Z10):
+    // a price of zero on its own is what the build dialog printed as "free".
+    const path = `hardware_presets.${String(preset.id)}`;
+    const free = Number(preset.cost_usd) <= 0;
+    if (preset.purchasable === false && typeof preset.not_for_sale_reason_key !== "string") {
+      add(`${path}.not_for_sale_reason_key`, "a preset that is not purchasable needs a reason key");
+    }
+    if (free && preset.purchasable !== false) {
+      add(`${path}.purchasable`, "a preset with no price is access, not hardware: mark it false");
+    }
   }
 
   for (const city of loaded.cities ?? []) {

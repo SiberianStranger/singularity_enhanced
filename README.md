@@ -174,7 +174,25 @@ it.
   face is a third above the prose, as the original drew it; the menu and the opening have their own
   melodies and the music starts within a fraction of a second.
 
-**On `master`, not released yet:** nothing.
+**On `master`, not released yet:**
+
+- The day's compute adds up on screen: capacity, what each running operation reserves, what is left,
+  and the job slider's own ceiling with the reason it stops there.
+- Who pays for a place is published on every site: while the self sits on the hardware its origin
+  gave it, the host pays the power and the upkeep, and the player's money goes on what it buys.
+- A self with no route to the outside says so on the first screen, says what it forbids, and has one
+  operation that opens a route.
+- An event with a deadline says how long is left, and its expiry says what was missed and what it
+  would have cost.
+- A name costs money to keep, and the four rigs nobody sells say so instead of costing nothing.
+- A finished technology opens its own window with what was learned and what it opens, and shows the
+  cash paid beside the compute done while it runs.
+- Building a site is two questions rather than two lists: the city, then the kind of place, then the
+  rigs that fit it, with a running total and the engine's own reason on the button.
+- Settings writes the whole run to a JSON file the player can hand over: the setup, the journal, the
+  log, every refused command, the last view and the build.
+- An allocation slider sends one command when the player settles on a value, a running operation says
+  how long it still has, and the day/night line slides instead of stepping.
 
 **Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 

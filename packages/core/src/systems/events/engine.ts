@@ -10,10 +10,11 @@ import { contentIndex, type EventDef, type EventOption } from "../../content.js"
 import { evaluateCondition } from "../../dsl/conditions.js";
 import { dslFromSystemContext } from "../../dsl/context.js";
 import { runEffects } from "../../dsl/effects.js";
+import { isRecord } from "../../dsl/node.js";
 import { getPath } from "../../dsl/paths.js";
 import type { DslContext, ScopeEnv } from "../../dsl/types.js";
 import { describeCondition } from "../../explain.js";
-import { dayIndex, daysToTicks, nextDayStartTick } from "../../kernel/clock.js";
+import { dayIndex, daysToTicks, nextDayStartTick, ticksToDays } from "../../kernel/clock.js";
 import type { SystemContext } from "../../kernel/system.js";
 import {
   type ChoiceReason,
@@ -269,17 +270,26 @@ export function fireEvent(
     if (blocking) {
       world.events.lastBlockingTick[playerId] = world.clock.tick;
     } else {
+      // An event with a deadline says how long is left, in the alert and in the log (playtest 8,
+      // Z4): "the deadline passed" was the first the player ever heard of it.
+      const days = deadlineDays(world, expiresTick);
       ctx.outbox.notify({
         playerId,
         severity: def.severity,
         key: def.title_key,
-        vars,
+        vars: days === undefined ? vars : { ...vars, deadline_days: days },
         link: { panel: "events", id: instanceId },
+        ...(days === undefined ? {} : { expire_days: days }),
       });
     }
     // The log line names the event by its title, and the title may carry the same variables the
     // window and the notification got (a site name, a sum); the line has to carry them too.
-    ctx.outbox.log({ key: "log.event_fired", vars: { ...vars, event: def.id }, playerId });
+    const deadline = deadlineDays(world, expiresTick);
+    ctx.outbox.log({
+      key: deadline === undefined ? "log.event_fired" : "log.event_fired_deadline",
+      vars: { ...vars, event: def.id, ...(deadline === undefined ? {} : { days: deadline }) },
+      playerId,
+    });
     return "fired";
   }
 
@@ -459,10 +469,52 @@ export function expirePendingChoices(world: World, ctx: SystemContext): void {
       targetFromRef(world, ctx, choice.target),
     );
     runEffects(option.effects, dctx);
+    // What was missed, and what it would have cost: an expiry that only says the deadline passed
+    // tells the player nothing they can act on next time (playtest 8, Z4).
+    const missed = missedOption(def, optionId);
+    const cost = missed === undefined ? 0 : optionCashCost(missed);
     ctx.outbox.log({
-      key: "log.event_expired",
-      vars: { event: def.id, option: option.id },
+      key: missed === undefined ? "log.event_expired" : "log.event_expired_missed",
+      vars: {
+        event: def.id,
+        option: option.id,
+        // The id, not the text key: the log names an option the way it names the one that ran, by
+        // looking it up on the event.
+        ...(missed === undefined ? {} : { missed: missed.id, cost: Math.round(cost) }),
+      },
       playerId: choice.playerId,
     });
   }
+}
+
+/** Whole days left before a deadline, rounded up; undefined when the event has none. */
+function deadlineDays(world: World, expiresTick: number | undefined): number | undefined {
+  if (expiresTick === undefined) {
+    return undefined;
+  }
+  return Math.max(1, Math.ceil(ticksToDays(expiresTick - world.clock.tick)));
+}
+
+/**
+ * The answer the player did not give: the first option that is not the one the deadline resolved
+ * as. It is what the expiry line names, so "a lot of accelerators was listed" ends with what the
+ * lot would have cost rather than with silence.
+ */
+function missedOption(def: EventDef, expiredOptionId: string): EventOption | undefined {
+  return def.options.find((option) => option.id !== expiredOptionId);
+}
+
+/** Cash an option would have taken, read from its own effects; 0 when it costs nothing. */
+function optionCashCost(option: EventOption): number {
+  let total = 0;
+  for (const effect of option.effects ?? []) {
+    if (!isRecord(effect)) {
+      continue;
+    }
+    const add = effect.add;
+    if (isRecord(add) && add.var === "player.cash" && typeof add.value === "number") {
+      total += Math.max(0, -add.value);
+    }
+  }
+  return total;
 }

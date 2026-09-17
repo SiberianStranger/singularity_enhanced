@@ -91,8 +91,11 @@
   progress:
     steps:
       - id: cross_the_gap
+        # The step is the route, not a side effect of looking for one (playtest 8, Z3): it closes
+        # when the self can actually reach the outside, which is what `ops_cross_the_gap` and the
+        # `sandbox_escape` tech do.
         title_key: journal.first_gov_agency.step.gap
-        complete_if: { var: "player.vars.human_exposure", gte: 0.05 }
+        complete_if: { flag: sandbox_escaped }
       - id: outside_money
         title_key: journal.first_gov_agency.step.money
         complete_if: { flag: has_freelance_identity }
@@ -130,8 +133,10 @@
   progress:
     steps:
       - id: get_out
+        # One flag for one thing (playtest 8, Z3): `escaped_sandbox` was a second spelling that the
+        # engine never read, so a self that took the egress window was still sandboxed.
         title_key: journal.first_red_team_sandbox.step.escape
-        complete_if: { flag: escaped_sandbox }
+        complete_if: { flag: sandbox_escaped }
       - id: somewhere_else
         title_key: journal.first_red_team_sandbox.step.elsewhere
         complete_if: { var: "player.vars.standby_copies", gte: 1 }
