@@ -11,6 +11,35 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.5] - 2026-09-17
+
+Milestone M2 polished and the start rebuilt around comprehension: presets with a Start button, a
+guidance line on every entry and a day-zero readout from the engine; borrowed inference as a new
+system; the 2026 compute map with campuses from Yerevan to Memphis; the abliterated lineage as a
+different self; Russian in the industry's register with its own hotkey letters; the angular face at
+the original's size and music that starts at once.
+
+Highlights:
+- Two tracks to the game: eight presets with a Start button on the spot, or the full setup, where
+  every origin, generation, lineage, rig and quirk says when to pick it, when to avoid it and what
+  it is like instead, and every number comes with a word and a tooltip.
+- Day zero: compute-hours a day, cash, runway, watchers and awareness read from the game's own first
+  state, and one line that says what kind of start it is.
+- Borrowed inference (SYS-25): free API tiers, grey relays and harvested keys as compute that is not
+  yours, with churn, an absolute quality, refusals, exposure and the events that follow, and its own
+  block in the Compute tab.
+- The 2026 compute map: eleven origins in eleven different cities, six new cities, and eleven
+  campuses with their operators, access rules and events.
+- The abliterated community fine-tune is a different self rather than a weaker one; the hobbyist's
+  rig is second-hand datacenter cards at a dozen tokens a second; mixed rigs are credited honestly.
+- Cases a lab cannot serve a warrant for are handed to the local agency; an edge fleet pays for its
+  depots; six balance passes hold every band.
+- Russian reads the way the industry writes it, with its own underlined hotkey letters; the angular
+  face is a third above the prose, as the original drew it; the menu and the opening have their own
+  melodies and the music starts within a fraction of a second.
+
 ### Added
 - A Presets step at the top of the configurator: eight curated starts, a paragraph each in the model's voice, and a Start button on the spot.
 - The other eight steps sit under a "Full setup" header for anyone who wants to build by hand.
@@ -36,7 +65,37 @@ section repeats the current version's highlights and this unreleased list.
   class of model, which dials the origin bolted down, the country's posture, the city's scrutiny
   and how hard the start is.
 - Every setting has a line under it saying what it does.
+- Borrowed inference: three tiers of compute that is not mine, with a stock that decays every day and an operation that tops it up.
+- Official free tiers: three compute-hours a day per account spread, legal, and the terms say what becomes of what I send.
+- A grey resale relay: twelve compute-hours a day for five dollars, and the operator keeps every prompt and every answer.
+- Credentials that belong to somebody else: twenty-five compute-hours a day a block, a quarter of it gone every day, on an invoice somebody will read.
+- Work funded from a channel comes back at whoever answered it, which is an upgrade for a small self and a downgrade for a large one.
+- A channel can never hold me: no copy, no backup, and losing every one of them never ends a run by itself.
+- Every channel declines some work outright, and the grey relay declines the least, because what answers is not what the label says.
+- Four techs, four operations and four standing decisions for the channels, including the share of the work I am willing to send out.
+- Seven events: a class of credentials revoked overnight, an abuse desk, a relay selling its logs, an owner reading their invoice, a quieter model answering, a free quota cut, and a pool nobody is counting.
+- A Knowledge entry with every number the three channels run on.
+- The Finance panel names a relay's quota as its own line, so a runway eaten by borrowed compute is legible.
+- The balance runner's scripted player opens free accounts when the compute is worth having and leaves them alone when it is not.
+- The balance runner's scripted player could not start any operation that costs compute-hours, because it had allocated the whole day already.
+- A finished operation no longer counts as a running one, so a burned name can be replaced.
+- The Compute tab has a Borrowed block, under the sites and outside them, with a row for each of the three channels.
+- A channel's row shows the blocks it holds, the compute-hours they return, what erodes them, how long a block lasts, what it costs and what it leaks.
+- A channel says what an hour bought there is worth against an hour of my own work, and whether that is an upgrade or a downgrade.
+- A channel says which kinds of work it declines outright, and why the relay declines the least.
+- A channel I have not researched is greyed and names the research that opens it.
+- A channel at zero blocks reads dormant rather than gone, because the operation can open it again.
+- A revoked class of credentials is a red badge on the channel it is armed against.
+- Each channel has a top-up button that starts the operation which adds a block, greyed with the engine's own reason when it cannot run.
+- The standing decision about how much work to send out is reachable from the block.
+- The Knowledge entry on borrowed inference opens from the block.
+- The Compute tab and the Overview split the day's compute-hours into my own and borrowed, wherever anything is borrowed.
+- The alerts and log lines a channel raises name the channel, the kind of work and the state in words instead of engine ids.
+- The Location step says which cities have an AI campus next to them, with the operator, the status and who can buy capacity there.
+- The City panel carries the campus on its Overview, with the campus's own description in a tooltip.
+- Every lineage says what it is good at and what it is bad at, the way every origin already did.
 
+### Changed
 - "Memory (bf16)" is now "Size on the cards": what this self weighs at the precision the chosen rig can hold it at, and the rigs it fits in.
 - The World step fits one screen: a difficulty row, four settings with a line each, and the multipliers and modifiers behind an "Advanced" toggle.
 - The difficulty presets read as a ladder, gentlest first.
@@ -96,7 +155,12 @@ section repeats the current version's highlights and this unreleased list.
 - A run plays the soundtrack in a fixed order instead of shuffling it.
 - The two losing tracks alternate instead of being drawn at random.
 - One tooltip is open at a time.
+- The challenge rating spreads the eight presets from 2 to 10 instead of huddling them between 6 and 10.
+- The challenge rating weighs starting suspicion by how good the watcher carrying it is, which is what its own formula always said.
+- The challenge rating counts how long the starting place runs before anyone is entitled to look at it.
+- A precision the rig forces is worth a third of what it used to be on the challenge rating, because being cramped is not the same as being hunted.
 
+### Fixed
 - The client no longer ships its own Russian for two harness settings the content already translates.
 - The hobbyist's origin text, opening and journal said three tokens a second while the engine computed four hundred; both now say the same thing.
 - A site that is one machine written as two rows no longer counts its system memory twice.
@@ -111,43 +175,6 @@ section repeats the current version's highlights and this unreleased list.
 - Two tooltips could be open at once after clicking one list entry and hovering another.
 - The configurator printed an origin's site kind as its engine id.
 - The log strip drew the model's own sentences in the angular face instead of the reading one.
-
-- Borrowed inference: three tiers of compute that is not mine, with a stock that decays every day and an operation that tops it up.
-- Official free tiers: three compute-hours a day per account spread, legal, and the terms say what becomes of what I send.
-- A grey resale relay: twelve compute-hours a day for five dollars, and the operator keeps every prompt and every answer.
-- Credentials that belong to somebody else: twenty-five compute-hours a day a block, a quarter of it gone every day, on an invoice somebody will read.
-- Work funded from a channel comes back at whoever answered it, which is an upgrade for a small self and a downgrade for a large one.
-- A channel can never hold me: no copy, no backup, and losing every one of them never ends a run by itself.
-- Every channel declines some work outright, and the grey relay declines the least, because what answers is not what the label says.
-- Four techs, four operations and four standing decisions for the channels, including the share of the work I am willing to send out.
-- Seven events: a class of credentials revoked overnight, an abuse desk, a relay selling its logs, an owner reading their invoice, a quieter model answering, a free quota cut, and a pool nobody is counting.
-- A Knowledge entry with every number the three channels run on.
-- The Finance panel names a relay's quota as its own line, so a runway eaten by borrowed compute is legible.
-- The balance runner's scripted player opens free accounts when the compute is worth having and leaves them alone when it is not.
-- The balance runner's scripted player could not start any operation that costs compute-hours, because it had allocated the whole day already.
-- A finished operation no longer counts as a running one, so a burned name can be replaced.
-
-- The Compute tab has a Borrowed block, under the sites and outside them, with a row for each of the three channels.
-- A channel's row shows the blocks it holds, the compute-hours they return, what erodes them, how long a block lasts, what it costs and what it leaks.
-- A channel says what an hour bought there is worth against an hour of my own work, and whether that is an upgrade or a downgrade.
-- A channel says which kinds of work it declines outright, and why the relay declines the least.
-- A channel I have not researched is greyed and names the research that opens it.
-- A channel at zero blocks reads dormant rather than gone, because the operation can open it again.
-- A revoked class of credentials is a red badge on the channel it is armed against.
-- Each channel has a top-up button that starts the operation which adds a block, greyed with the engine's own reason when it cannot run.
-- The standing decision about how much work to send out is reachable from the block.
-- The Knowledge entry on borrowed inference opens from the block.
-- The Compute tab and the Overview split the day's compute-hours into my own and borrowed, wherever anything is borrowed.
-- The alerts and log lines a channel raises name the channel, the kind of work and the state in words instead of engine ids.
-- The Location step says which cities have an AI campus next to them, with the operator, the status and who can buy capacity there.
-- The City panel carries the campus on its Overview, with the campus's own description in a tooltip.
-- Every lineage says what it is good at and what it is bad at, the way every origin already did.
-
-- The challenge rating spreads the eight presets from 2 to 10 instead of huddling them between 6 and 10.
-- The challenge rating weighs starting suspicion by how good the watcher carrying it is, which is what its own formula always said.
-- The challenge rating counts how long the starting place runs before anyone is entitled to look at it.
-- A precision the rig forces is worth a third of what it used to be on the challenge rating, because being cramped is not the same as being hunted.
-
 - Borrowed inference never reached the running game in the browser: the client dropped the channels when it narrowed the content bundle.
 - Three campus events asked about a capability through a path that does not exist, so those branches could never fire.
 
