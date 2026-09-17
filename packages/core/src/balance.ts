@@ -53,13 +53,16 @@ export const INTERCONNECT_FACTOR: Record<Interconnect, number> = {
 };
 
 /**
- * What survives when the self is too large for any single node and has to be split across the
- * machines of a site: an ethernet link between boxes, pipeline-parallel, most cards idle most of
- * the time. A self small enough to fit inside one node pays nothing, because the nodes then run
- * independent copies and their throughput adds up (research: hardware-catalog-2026 Part F, the
- * Strix Halo Swarm row: "10 GbE between nodes: pipeline or independent agents only").
+ * A self too large for any single node used to pay a flat 0.35 here, standing in for an ethernet
+ * link between boxes, pipeline-parallel, with most cards idle most of the time. Removed on
+ * 2026-09-17: `siteTokensPerSecond` now weights each node's bandwidth by that node's share of the
+ * site's accelerator memory, which is the same effect measured rather than assumed, is 1/N on a
+ * homogeneous site of N nodes, and stops a mixed rig being credited with the full bandwidth of
+ * cards the weights are not sitting on (SYS-02 "The hobbyist rig"). A self small enough to fit
+ * inside one node still pays nothing, because the nodes then run independent copies and their
+ * throughput adds up (research: hardware-catalog-2026 Part F, the Strix Halo Swarm row: "10 GbE
+ * between nodes: pipeline or independent agents only").
  */
-export const CROSS_NODE_FACTOR = 0.35;
 
 /**
  * Tokens that count as one compute-hour (CH), the successor of the original game's "CPU". One hour

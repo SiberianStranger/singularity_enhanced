@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { BYTES_PER_ACTIVE_PARAM, CROSS_NODE_FACTOR, INTERCONNECT_FACTOR } from "../src/balance.js";
+import {
+  BYTES_PER_ACTIVE_PARAM,
+  INTERCONNECT_FACTOR,
+  TOKENS_PER_COMPUTE_HOUR,
+} from "../src/balance.js";
 import { contentIndex } from "../src/content.js";
 import {
   bestPrecision,
@@ -370,13 +374,62 @@ describe("compute: throughput and what a copy costs to run", () => {
     };
     const rate = (precision: "int2" | "int4"): number =>
       siteTokensPerSecond(swarm, index.accelerators, 0, lineage, generation, precision);
-    // int2 (65 GB) fits in one 96 GB box, so the boxes run independent copies; int4 (130 GB) does
-    // not, so the site has to pipeline across the ethernet between them. Both stay on the cards,
-    // so the only difference left is the cross-node factor.
+    // int2 (65 GB) fits in one 96 GB box, so the boxes run independent copies and the site keeps
+    // its whole bandwidth; int4 (130 GB) does not, so the self is pipelined across the two boxes
+    // and each one is credited with its share of the site's accelerator memory, which on two equal
+    // nodes is a half. Both stay on the cards, so that share is the only difference left.
     expect(rate("int2") * BYTES_PER_ACTIVE_PARAM.int2).toBeCloseTo(
-      (rate("int4") * BYTES_PER_ACTIVE_PARAM.int4) / CROSS_NODE_FACTOR,
+      rate("int4") * BYTES_PER_ACTIVE_PARAM.int4 * 2,
       4,
     );
+  });
+
+  it("credits a mixed rig only for the bandwidth the weights sit on", () => {
+    const lineage = index.lineages.guen_abliterated;
+    const generation = index.generations.open_2026;
+    const preset = index.hardware_presets.avito_rig;
+    if (lineage === undefined || generation === undefined || preset === undefined) {
+      throw new Error("fixture is missing the mixed rig");
+    }
+    const site = {
+      status: "active" as const,
+      nodes: preset.nodes.map((node, order) => ({
+        id: `n${order}`,
+        accelerator: node.accelerator,
+        count: node.count,
+        ram_gb: node.ram_gb,
+        interconnect: node.interconnect,
+        status: "active" as const,
+        readyTick: 0,
+      })),
+    };
+    const memory = siteMemory(site, index.accelerators, 0);
+    // 2 x 8 GB of HBM2e and 2 x 24 GB of GDDR5, with the platform's 256 GB of host RAM at the
+    // offload discount.
+    expect(memory.accelerator_gb).toBe(64);
+    expect(memory.total_gb).toBe(192);
+    // The smallest self needs 90 GB at int4 and 49 at int2, so only int2 stays on the cards.
+    expect(preferredPrecision(lineage, generation, memory)).toBe("int2");
+
+    const rate = siteTokensPerSecond(site, index.accelerators, 0, lineage, generation, "int2");
+    // 49 GB is larger than either node (16 and 48 GB), so the self is pipelined across both and
+    // each node is credited for its share of the 64 GB: the HBM pair for a quarter of
+    // 2 x 1,493 x 0.55 and the P40 pair for three quarters of 2 x 346 x 0.55, which is 696.0 GB/s
+    // against the 2,022.9 the site would get if the weights sat everywhere at once. Divided by the
+    // 1.5 GB an int2 token moves through six billion active parameters: 464 tokens a second of
+    // batch throughput (SYS-02 "The hobbyist rig"; the spec's own arithmetic said about 472 with
+    // the flat cross-node factor it replaced).
+    const hbm = 1493 * 2 * INTERCONNECT_FACTOR.pcie;
+    const gddr = 346 * 2 * INTERCONNECT_FACTOR.pcie;
+    const effective = hbm * (16 / 64) + gddr * (48 / 64);
+    expect(effective).toBeCloseTo(696.025, 3);
+    expect(rate).toBeCloseTo(effective / (BYTES_PER_ACTIVE_PARAM.int2 * 6), 6);
+    expect(rate).toBeCloseTo(464.02, 2);
+    // Every figure in prose is single-stream, which is the engine's over a working batch of 32
+    // (SYS-02 "Tokens per second is a batch figure"): about fifteen tokens a second.
+    expect(Math.round(rate / 32)).toBe(15);
+    // And the compute-hours the panel shows for the smallest self.
+    expect((rate * 86400) / TOKENS_PER_COMPUTE_HOUR).toBeCloseTo(40.09, 2);
   });
 
   it("bills owned hardware for power and wear, and stolen hardware for nothing", () => {

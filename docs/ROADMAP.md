@@ -28,10 +28,17 @@ phases mostly are not. Estimates are in agent-sessions, not calendar time.
    (SYS-25) and the sourced facts are `research/borrowed-inference-2026-09.md`. It needs a decision
    because it is the first system that makes compute-hours non-fungible, which touches research,
    operations and the views; the spec lists the engine changes in the order they would be built.
-   Two proposals wait on the same page for the same reason: SYS-04 "Locations v0.4" (the origin
-   location map, from `research/ai-datacenters-2026-09.md`) and SYS-04 "Hardware presets v0.2" plus
-   SYS-02 "The hobbyist rig" (the replacement for `scrapyard_oracle`, from
-   `research/home-llm-rigs-2026-09.md`). All three are marked proposed and none is implemented.
+   Two proposals waited on the same page for the same reason and have since been **approved by the
+   maintainer and implemented** (2026-09-17): SYS-04 "Locations v0.4" (the origin location map) and
+   SYS-04 "Hardware presets v0.2" plus SYS-02 "The hobbyist rig". Both carry implementation notes,
+   and the pass is measured in SYS-01 "Balance notes (locations v0.4)". Borrowed inference is the
+   one of the three still open.
+7. **Campuses** (decided 2026-09-17): the AI-scale sites of `research/ai-datacenters-2026-09.md`
+   are in the world data as a `campus` record on eleven cities (operator, scale, status, access
+   rule), with the `campus_*` event family, a Knowledge entry and a journal entry reading the
+   access rule. See SYS-01 "Campuses" and SYS-08 "The campus family". The two DSL gaps it is
+   written around are listed there: no condition reads `city.campus`, and there is no
+   site-creation effect.
 
 ## Playable-build cadence
 

@@ -28,6 +28,13 @@
   power_headroom: 0.55
   colo_price_index: 1.14
   scrutiny: 0.43
+  campus:
+    name_key: "world.campus.ae_abu_dhabi.name"
+    desc_key: "world.campus.ae_abu_dhabi.desc"
+    operator: "sovereign"
+    scale_mw: 200
+    status: "operating"
+    access: "verified_tenants"
 - id: "ae_dubai"
   country: "ae"
   name_key: "world.city.ae_dubai.name"
@@ -64,10 +71,18 @@
   population: 1100000
   lat: 40.18
   lon: 44.51
-  tags: ["university", "tech"]
-  power_headroom: 0.7
+  tags: ["datacenter_hub", "university", "tech"]
+  power_headroom: 0.55
   colo_price_index: 0.77
-  scrutiny: 0.23
+  scrutiny: 0.33
+  campus:
+    name_key: "world.campus.am_yerevan.name"
+    desc_key: "world.campus.am_yerevan.desc"
+    operator: "licensed_private"
+    scale_mw: 100
+    accelerators: 50000
+    status: "operating"
+    access: "verified_tenants"
 - id: "ao_luanda"
   country: "ao"
   name_key: "world.city.ao_luanda.name"
@@ -358,6 +373,29 @@
   power_headroom: 0.5
   colo_price_index: 0.75
   scrutiny: 0.21
+- id: "cn_ulanqab"
+  country: "cn"
+  name_key: "world.city.cn_ulanqab.name"
+  # source: ai-datacenters-2026-09 sections 4 and 9. Not in world-baseline-2026.json: estimate.
+  # Population is the prefecture-level city (~1.7M). datacenter_hub from nearly 100 datacenters,
+  # 12.5 GW committed and Envision's 2 GW Galaxy Campus (opened 2026-08-06), one of Huawei's
+  # three national hubs. The derived scrutiny lands below Shenzhen's, which is right: a compute
+  # hub on the Inner Mongolian grassland is watched by the state at the national level and by
+  # nobody at the street level.
+  population: 1700000
+  lat: 40.99
+  lon: 113.13
+  tags: ["datacenter_hub", "industry"]
+  power_headroom: 0.55
+  colo_price_index: 0.81
+  scrutiny: 0.44
+  campus:
+    name_key: "world.campus.cn_ulanqab.name"
+    desc_key: "world.campus.cn_ulanqab.desc"
+    operator: "state"
+    scale_mw: 2000
+    status: "ramping"
+    access: "by_application"
 - id: "cn_beijing"
   country: "cn"
   name_key: "world.city.cn_beijing.name"
@@ -618,6 +656,12 @@
   power_headroom: 0.7
   colo_price_index: 1.11
   scrutiny: 0.52
+  campus:
+    name_key: "world.campus.fi_kajaani.name"
+    desc_key: "world.campus.fi_kajaani.desc"
+    operator: "hyperscaler"
+    status: "announced"
+    access: "captive"
 - id: "fi_hamina"
   country: "fi"
   name_key: "world.city.fi_hamina.name"
@@ -974,10 +1018,17 @@
   population: 1400000
   lat: 51.17
   lon: 71.45
-  tags: ["government"]
-  power_headroom: 0.7
+  tags: ["datacenter_hub", "government"]
+  power_headroom: 0.55
   colo_price_index: 0.75
-  scrutiny: 0.4
+  scrutiny: 0.5
+  campus:
+    name_key: "world.campus.kz_astana.name"
+    desc_key: "world.campus.kz_astana.desc"
+    operator: "state"
+    accelerators: 512
+    status: "operating"
+    access: "by_application"
 - id: "kz_almaty"
   country: "kz"
   name_key: "world.city.kz_almaty.name"
@@ -1208,6 +1259,30 @@
   power_headroom: 0.35
   colo_price_index: 1.54
   scrutiny: 0.55
+- id: "no_narvik"
+  country: "no"
+  name_key: "world.city.no_narvik.name"
+  # source: ai-datacenters-2026-09 sections 2.4 and 9. Not in world-baseline-2026.json: estimate.
+  # Population is the Narvik municipality (~22k), which puts the row under the 500k rule and
+  # gives it the headroom bonus and the colocation discount; lat/lon are Narvik town, while the
+  # Stargate Norway site is at Kvandal a few kilometres inland. datacenter_hub from 230 MW
+  # planned and 100,000 GPUs targeted by end 2026; industry from the iron-ore port, which is why
+  # the town has a grid connection at all.
+  population: 22000
+  lat: 68.44
+  lon: 17.43
+  tags: ["datacenter_hub", "industry"]
+  power_headroom: 0.7
+  colo_price_index: 1.34
+  scrutiny: 0.53
+  campus:
+    name_key: "world.campus.no_narvik.name"
+    desc_key: "world.campus.no_narvik.desc"
+    operator: "neocloud"
+    scale_mw: 230
+    accelerators: 100000
+    status: "ramping"
+    access: "verified_tenants"
 - id: "no_oslo"
   country: "no"
   name_key: "world.city.no_oslo.name"
@@ -1403,6 +1478,32 @@
   power_headroom: 0.7
   colo_price_index: 0.8
   scrutiny: 0.29
+- id: "ru_ust_ilimsk"
+  country: "ru"
+  name_key: "world.city.ru_ust_ilimsk.name"
+  # source: ai-datacenters-2026-09 section 6a. Not in world-baseline-2026.json: added for the
+  # Cloud X build at the Ust-Ilimsk hydroelectric plant, the one AI-scale datacenter in Russia
+  # with a published megawatt figure (154 MW, 40-60 billion roubles, completion targeted 2027).
+  # Population is the city itself, 77,034 in 2025, which is under the 500k rule; lat/lon are the
+  # city on the Angara. datacenter_hub from the build, industry from the hydro plant and the
+  # timber combine that are the reason the town exists. The derived fields follow the formulas at
+  # the top of this file with Russia's electricity price, which is why the cheapest colocation
+  # index in the game turns up in a town of seventy-seven thousand people next to 3.8 GW of
+  # hydropower.
+  population: 77034
+  lat: 58
+  lon: 102.67
+  tags: ["datacenter_hub", "industry"]
+  power_headroom: 0.7
+  colo_price_index: 0.68
+  scrutiny: 0.39
+  campus:
+    name_key: "world.campus.ru_ust_ilimsk.name"
+    desc_key: "world.campus.ru_ust_ilimsk.desc"
+    operator: "neocloud"
+    scale_mw: 154
+    status: "ramping"
+    access: "verified_tenants"
 - id: "ru_moscow"
   country: "ru"
   name_key: "world.city.ru_moscow.name"
@@ -1413,6 +1514,12 @@
   power_headroom: 0.55
   colo_price_index: 0.99
   scrutiny: 0.39
+  campus:
+    name_key: "world.campus.ru_moscow.name"
+    desc_key: "world.campus.ru_moscow.desc"
+    operator: "hyperscaler"
+    status: "operating"
+    access: "captive"
 - id: "ru_innopolis"
   country: "ru"
   name_key: "world.city.ru_innopolis.name"
@@ -1667,6 +1774,69 @@
   power_headroom: 0.7
   colo_price_index: 1.45
   scrutiny: 0.45
+- id: "us_austin"
+  country: "us"
+  name_key: "world.city.us_austin.name"
+  # source: ai-datacenters-2026-09 section 9. Not in world-baseline-2026.json: estimate.
+  # Population is the Austin-Round Rock-San Marcos metro (~2.55M); lat/lon are downtown Austin.
+  # Tagged government for the Texas state capital and university for UT Austin, which is what
+  # puts its scrutiny above Abilene's; no datacenter_hub tag, because Austin is where the
+  # companies are and the megawatts are in Abilene and the Milam and Shackelford county sites
+  # (section 1.2).
+  population: 2550000
+  lat: 30.27
+  lon: -97.74
+  tags: ["tech", "university", "government"]
+  power_headroom: 0.7
+  colo_price_index: 1.45
+  scrutiny: 0.6
+- id: "us_memphis"
+  country: "us"
+  name_key: "world.city.us_memphis.name"
+  # source: ai-datacenters-2026-09 sections 1.1 and 9. Not in world-baseline-2026.json: estimate.
+  # Population is the Memphis metropolitan statistical area (~1.34M); lat/lon are downtown
+  # Memphis rather than the Colossus buildings, because the cluster straddles two states and the
+  # game's city is the labour market and the ISP, not the campus. datacenter_hub from the xAI
+  # Colossus campus (about 1 GW live, target 2 GW); industry from the FedEx superhub and the
+  # river freight economy behind the cheap industrial land.
+  population: 1340000
+  lat: 35.15
+  lon: -90.05
+  tags: ["datacenter_hub", "industry"]
+  power_headroom: 0.55
+  colo_price_index: 1.45
+  scrutiny: 0.55
+  campus:
+    name_key: "world.campus.us_memphis.name"
+    desc_key: "world.campus.us_memphis.desc"
+    operator: "hyperscaler"
+    scale_mw: 1000
+    status: "ramping"
+    access: "captive"
+- id: "us_new_carlisle"
+  country: "us"
+  name_key: "world.city.us_new_carlisle.name"
+  # source: ai-datacenters-2026-09 sections 1.3 and 9. Not in world-baseline-2026.json: estimate.
+  # The town itself is under 2,000 people; the population is the South Bend-Mishawaka metro it
+  # belongs to (~325k), which is the labour market the campus hires from. lat/lon are the campus
+  # rather than the town centre, the generator's own rule for single-purpose entries
+  # (Saint-Ghislain, Kajaani, NEOM). datacenter_hub from 1,200 acres, over a million Trainium2
+  # and a 2.2 GW target.
+  population: 325000
+  lat: 41.7
+  lon: -86.5
+  tags: ["datacenter_hub", "industry"]
+  power_headroom: 0.7
+  colo_price_index: 1.32
+  scrutiny: 0.55
+  campus:
+    name_key: "world.campus.us_new_carlisle.name"
+    desc_key: "world.campus.us_new_carlisle.desc"
+    operator: "hyperscaler"
+    scale_mw: 1000
+    accelerators: 1000000
+    status: "ramping"
+    access: "captive"
 - id: "us_san_francisco"
   country: "us"
   name_key: "world.city.us_san_francisco.name"
@@ -1697,6 +1867,13 @@
   power_headroom: 0.7
   colo_price_index: 1.32
   scrutiny: 0.55
+  campus:
+    name_key: "world.campus.us_abilene.name"
+    desc_key: "world.campus.us_abilene.desc"
+    operator: "hyperscaler"
+    scale_mw: 300
+    status: "ramping"
+    access: "captive"
 - id: "us_seattle"
   country: "us"
   name_key: "world.city.us_seattle.name"

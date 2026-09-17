@@ -159,6 +159,27 @@
   availability: ["enterprise", "cloud"]
   cloud_usd_per_hour: null
   source_id: "amd-mi400-mi455x"
+# amd_mi50_32gb: not in hardware-catalog-2026.json, so there is no source_id. Every field is from
+# docs/research/home-llm-rigs-2026-09.md section 5.7: the price band (170-250 USD in 2026) and the
+# ROCm support state are [secondary], from ywian's MI50 LLM benchmark; tflops_fp16 is twice the
+# published FP32 figure, which is the Vega 20 ratio, and is [secondary] rather than read off a
+# vendor sheet.
+- id: "amd_mi50_32gb"
+  vendor: "AMD"
+  name: "Radeon Instinct MI50 (32GB)"
+  arch: "Vega 20 (CDNA precursor)"
+  launch_year: 2018
+  memory_gb: 32
+  memory_bandwidth_gbs: 1024
+  tflops_fp16: 26.5
+  tdp_w: 300
+  form_factor: "PCIe dual-slot, passive"
+  interconnect: { type: "Infinity Fabric (bridge, 2-GPU)", gbs: 184 }
+  price_usd_new: null
+  price_usd_used: 210
+  export_control_to_china: "unrestricted"
+  availability: ["used", "gray"]
+  cloud_usd_per_hour: null
 - id: "amd_radeon_ai_pro_r9700"
   vendor: "AMD"
   name: "Radeon AI PRO R9700"
@@ -1033,6 +1054,53 @@
   availability: ["enterprise", "china_only"]
   cloud_usd_per_hour: null
   source_id: "nvidia-b30a"
+# nvidia_cmp_170hx: not in hardware-catalog-2026.json, so there is no source_id. Every field is
+# from docs/research/home-llm-rigs-2026-09.md sections 1.1, 1.2 and 5.7. Specification from
+# TechPowerUp's teardown (GA100-105F, 70 SM, 8 GB HBM2e on a 4,096-bit bus, 1,493 GB/s, 250 W);
+# price from Habr 1060032, which puts a 5,000 USD launch card at 200-300 USD in 2026. memory_gb is
+# the 8 GB the VBIOS sells, not the 96 GB of HBM physically on the card and not the 64 GB the 2026
+# firmware break reaches: the unlock is an event and a driver update takes it away again.
+# tflops_fp16 is null because the compute units are fused off by design and partially restored by
+# an exploit, so there is no figure a vendor published and none that survives a driver update; the
+# file's convention allows null and nvidia_tesla_p40 already uses it.
+- id: "nvidia_cmp_170hx"
+  vendor: "NVIDIA"
+  name: "CMP 170HX"
+  arch: "Ampere (GA100-105F)"
+  launch_year: 2021
+  memory_gb: 8
+  memory_bandwidth_gbs: 1493
+  tflops_fp16: null
+  tdp_w: 250
+  form_factor: "PCIe dual-slot, no display out, 8-pin CPU connector"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: 250
+  export_control_to_china: "unrestricted"
+  availability: ["used", "gray"]
+  cloud_usd_per_hour: null
+# nvidia_cmp_90hx: not in hardware-catalog-2026.json, so there is no source_id. Specification from
+# VideoCardz (GA102-100, 6,400 CUDA cores, 10 GB GDDR6X on a 320-bit bus, about 760 GB/s, PCIe 1.0
+# x4 as sold); price of about 60 USD from Habr 1060032; tdp_w is the 250 W nameplate, against which
+# the owner of five of them measures about 200 W under sustained LLM load (Habr 1082724), which is
+# what settles the 250/320 W disagreement between databases. tflops_fp16 is null for the same
+# reason as the 170HX: the compute selectors are clamped in firmware.
+- id: "nvidia_cmp_90hx"
+  vendor: "NVIDIA"
+  name: "CMP 90HX"
+  arch: "Ampere (GA102-100)"
+  launch_year: 2021
+  memory_gb: 10
+  memory_bandwidth_gbs: 760
+  tflops_fp16: null
+  tdp_w: 250
+  form_factor: "PCIe dual-slot, no display out, PCIe 1.0 x4 as sold"
+  interconnect: { type: "none", gbs: null }
+  price_usd_new: null
+  price_usd_used: 60
+  export_control_to_china: "unrestricted"
+  availability: ["used", "gray"]
+  cloud_usd_per_hour: null
 - id: "nvidia_dgx_spark"
   vendor: "NVIDIA"
   name: "DGX Spark (GB10)"
@@ -1488,6 +1556,9 @@
   availability: ["used"]
   cloud_usd_per_hour: null
   source_id: "nvidia-tesla-p100"
+# nvidia_tesla_p40: price_usd_used corrected from the catalog's 130 to 300 on 2026-09-17. The 130
+# is a 2024 price; every 2026 source read for docs/research/home-llm-rigs-2026-09.md section 2 puts
+# the card at 270-398 USD. The card did not improve, 24 GB got scarce.
 - id: "nvidia_tesla_p40"
   vendor: "NVIDIA"
   name: "Tesla P40"
@@ -1500,7 +1571,7 @@
   form_factor: "PCIe dual-slot (no display out)"
   interconnect: { type: "none", gbs: null }
   price_usd_new: null
-  price_usd_used: 130
+  price_usd_used: 300
   export_control_to_china: "unrestricted"
   availability: ["used"]
   cloud_usd_per_hour: null

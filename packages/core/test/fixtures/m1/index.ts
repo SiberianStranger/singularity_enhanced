@@ -58,6 +58,22 @@ const accelerators: AcceleratorDef[] = [
     cloud_usd_per_hour: null,
   },
   {
+    // The mining card of the hobbyist's mixed rig: a GA100 relative with eight gigabytes and the
+    // bandwidth of a datacenter part (docs/research/home-llm-rigs-2026-09.md section 1.1).
+    id: "cmp_170hx",
+    vendor: "NVIDIA",
+    name: "CMP 170HX",
+    memory_gb: 8,
+    memory_bandwidth_gbs: 1493,
+    tflops_fp16: null,
+    tdp_w: 250,
+    interconnect: { type: "none", gbs: null },
+    price_usd_new: null,
+    price_usd_used: 250,
+    availability: ["used", "gray"],
+    cloud_usd_per_hour: null,
+  },
+  {
     id: "ascend_910c",
     vendor: "Huawei",
     name: "Ascend 910C",
@@ -97,6 +113,22 @@ const hardware_presets: HardwarePresetDef[] = [
     cost_usd: 2600,
     power_kw: 2,
     class: "minimal",
+  },
+  {
+    // Two fast small cards and two slow large ones on one open frame (SYS-04 `avito_rig`).
+    id: "avito_rig",
+    name_key: "hardware.avito_rig.name",
+    desc_key: "hardware.avito_rig.desc",
+    drawback_key: "hardware.avito_rig.drawback",
+    nodes: [
+      // One two-socket platform with 256 GB, written as two nodes because the engine takes one
+      // accelerator type per node and adds ram_gb up.
+      { accelerator: "cmp_170hx", count: 2, ram_gb: 128, interconnect: "pcie" },
+      { accelerator: "tesla_p40", count: 2, ram_gb: 128, interconnect: "pcie" },
+    ],
+    cost_usd: 3100,
+    power_kw: 1.8,
+    class: "low",
   },
   {
     id: "institute_rack",

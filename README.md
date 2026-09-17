@@ -170,6 +170,24 @@ it.
 
 **On `master`, not released yet:**
 
+- Five cities the 2026 compute map needs: Memphis, Austin, New Carlisle, Narvik and Ulanqab.
+- Ust-Ilimsk, for the one Russian AI datacenter with a published megawatt figure.
+- Eleven cities carry the AI-scale campus next to them: who owns it, how big it is, whether it is running yet, and who can get capacity on it.
+- Five world events about those campuses: a new hall opening, an early-tenancy window, an export-licence audit of tenants, a state quota round, and the campuses that sell to nobody and can only be taken.
+- A Knowledge entry on sovereign campuses and what each access rule means.
+- A journal entry for a site that woke up next door to one of them.
+- "Sold As Seen", a hobbyist rig of four mismatched second-hand cards bought one at a time.
+- Three accelerators: the CMP 170HX, the CMP 90HX and the Radeon Instinct MI50.
+- Every origin's list of typical cities is rebuilt on the 2026 compute map: eleven origins, eleven different default cities, and no city in more than three lists.
+- A shadow tenant now wakes up in Dublin, a delivery fleet in Seoul, and the checkpoint that got out in Memphis.
+- The hobbyist starts on the mismatched second-hand rig, which holds exactly one of you at two bits and nothing larger.
+- The six-P40 server stays as the roomier, slower second option, and is called "Written Off" rather than after a software company.
+- A rig of mismatched cards fails more often, because nobody promised which card would arrive.
+- A Tesla P40 costs what a Tesla P40 costs in 2026, and the presets built on them are priced accordingly.
+- Accelerators on a site now count for the share of the model they actually hold, so a mixed rig is no longer credited with bandwidth its weights never touch.
+- Loose accelerators still reach Russia while whole servers do not, and the country data says so.
+- The hobbyist's origin text, opening and journal said three tokens a second while the engine computed four hundred; both now say the same thing.
+- A site that is one machine written as two rows no longer counts its system memory twice.
 - Two Knowledge entries, on distillation and on abliteration, and what each does to a model.
 - A case a watcher has no jurisdiction for is handed to the agency that does, so more than half the
   captures are now credited to the country the site is in.

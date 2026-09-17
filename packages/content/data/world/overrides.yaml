@@ -448,6 +448,21 @@ countries:
     # since 2022 and dependent on gray-market hardware, with AI policy run from the centre.
     stance: securitize
     kyc_strength: 0.4
+    # source: ai-datacenters-2026-09 section 6a, "Parallel imports, and why the cards still
+    # arrive". chip_access stays `banned`, which the rule turns into hardware_availability 0.15,
+    # and that is right for a server and wrong for a card. Minpromtorg order 4769 of 2025-09-26,
+    # in force 2026-05-27, removed twenty brands from the parallel-import list under exactly two
+    # customs codes, 8471 49 000 0 (computers and servers) and 8471 70 (memory and storage).
+    # Graphics cards are under neither code and NVIDIA is not among the twenty brands, so loose
+    # accelerators still arrive legally while whole servers are what customs now looks at. 0.25 is
+    # the gap between those two facts, and it is the mechanical reason the country's rigs are
+    # assembled a card at a time.
+    hardware_availability: 0.25
+    # source: ai-datacenters-2026-09 section 6a, "The fleet, and its share of the grid": Russia's
+    # commercial datacenters drew 990.6 MW at the end of 2025, against the baseline estimate the
+    # generator's formula was run on. 0.10 + 0.20 * log10(1 + 990.6 / 100) is 0.31, which is the
+    # published figure put through the rule rather than a hand-set number.
+    colo_availability: 0.31
     agency_profile:
       cyber_agency: { competence: 0.7, budget: 0.6 }
       intelligence: { competence: 0.8, budget: 0.75 }
@@ -586,6 +601,160 @@ countries:
     elections:
       - { date: "2027-08-10", kind: "general" }
 
+cities:
+  # AI-scale campuses (SYS-01 "Campuses", SYS-08 `campus_*`). One entry per site
+  # docs/research/ai-datacenters-2026-09.md carries an operator, a scale and a status for, on
+  # 2027-01-01, the game's start date. `operator` is who owns the megawatts and `access` is who can
+  # buy them, which are different questions and are what the events read. `tags_add` puts
+  # `datacenter_hub` on a city the baseline's own "why" text does not describe that way; the
+  # derived fields then follow the formulas at the top of cities.yaml, so a city that gained a
+  # hundred megawatts of accelerators loses headroom and gains scrutiny, which is the point.
+
+  am_yerevan:
+    # source: ai-datacenters-2026-09 section 5, "Armenia": Firebird, a San Francisco and Yerevan
+    # company, opened what NVIDIA's own blog calls the CIS region's largest AI factory. Phase 1 is
+    # about 500 million USD and over 100 MW, launching in 2026 (scale_mw, status). Phase 2,
+    # announced with the US government, scales to 4 billion USD and 50,000 GPUs in 2026, with US
+    # export licensing secured for a further 41,000 GB300 (accelerators, operator). Access is
+    # commercial, and the export licence is what a tenant is checked against.
+    tags_add: ["datacenter_hub"]
+    campus:
+      operator: licensed_private
+      scale_mw: 100
+      accelerators: 50000
+      status: operating
+      access: verified_tenants
+
+  kz_astana:
+    # source: ai-datacenters-2026-09 section 5, "Kazakhstan": Alem.Cloud launched July 2025 as
+    # Central Asia's most powerful cluster, 64 HGX servers and 512 NVIDIA H200, up to two
+    # exaflops, 86th on the TOP500, in a Tier III datacenter in Astana (accelerators, status,
+    # operator). Access is open by application to companies, universities and Astana Hub residents
+    # (access). A Tier IV complex in Astana aiming at up to 100 MW is being financed, which is the
+    # scale the city is heading for rather than the one it has, so no scale_mw is written.
+    tags_add: ["datacenter_hub"]
+    campus:
+      operator: state
+      accelerators: 512
+      status: operating
+      access: by_application
+
+  ae_abu_dhabi:
+    # source: ai-datacenters-2026-09 section 3, "UAE": Stargate UAE inside the UAE-US AI Campus
+    # built by G42 and operated by OpenAI and Oracle, a 1 GW cluster inside a 5 GW campus, with the
+    # first 200 MW phase due in Q3 2026, all long-lead equipment procured (scale_mw, status). A
+    # sovereign compute programme with a registration layer attached, under the July 2026 US export
+    # tier move the country overrides already record, so a tenant is checked hard.
+    campus:
+      operator: sovereign
+      scale_mw: 200
+      status: operating
+      access: verified_tenants
+
+  us_memphis:
+    # source: ai-datacenters-2026-09 section 1.1: Colossus, three buildings across the
+    # Tennessee-Mississippi line, about 1 GW of IT compute as of 2026-03-31 with a stated target of
+    # 2 GW and the building-3 conversion under way (scale_mw, status). It is one company's own
+    # training cluster and sells nothing to anybody (operator, access). The GPU counts are Musk's
+    # own figures repeated by trade press and are [secondary], so none is written here.
+    campus:
+      operator: hyperscaler
+      scale_mw: 1000
+      status: ramping
+      access: captive
+
+  us_abilene:
+    # source: ai-datacenters-2026-09 section 1.2: Abilene is Stargate's flagship, operating at an
+    # estimated 0.3 GW with phase 2 under construction and the next capacity due mid-to-late 2026
+    # (scale_mw, status). Oracle owns and operates the buildings and OpenAI is the tenant, so there
+    # is nothing here to rent (operator, access).
+    campus:
+      operator: hyperscaler
+      scale_mw: 300
+      status: ramping
+      access: captive
+
+  us_new_carlisle:
+    # source: ai-datacenters-2026-09 section 1.3: Amazon's Project Rainier, an 11 billion USD
+    # 1,200-acre campus opened October 2025 and dedicated to training and serving one lab's models,
+    # running over a million Trainium2 on a build-out of 30 planned buildings heading for 2.2 GW
+    # (accelerators, status). scale_mw is the roughly 1 GW of Trainium2/Trainium3 online by the end
+    # of 2026 rather than the 2.2 GW target. Dedicated capacity, no tenants (operator, access).
+    campus:
+      operator: hyperscaler
+      scale_mw: 1000
+      accelerators: 1000000
+      status: ramping
+      access: captive
+
+  no_narvik:
+    # source: ai-datacenters-2026-09 section 2.4, "Norway": Stargate Norway at Kvandal near Narvik,
+    # a joint venture of Nscale and Aker with OpenAI, 230 MW planned with an ambition of 290 MW
+    # more, targeting 100,000 NVIDIA GPUs by the end of 2026, on hydropower (scale_mw,
+    # accelerators, status). Nscale's business is selling the capacity, and trade reporting in
+    # April 2026 says it redirected some of this site to another buyer, which is what a neocloud
+    # does (operator, access).
+    campus:
+      operator: neocloud
+      scale_mw: 230
+      accelerators: 100000
+      status: ramping
+      access: verified_tenants
+
+  cn_ulanqab:
+    # source: ai-datacenters-2026-09 section 4, "China": one of Huawei's three national computing
+    # hubs, nearly 100 datacenters opened or started since 2016, Chinese firms committing 12.5 GW,
+    # and Envision's Galaxy Campus opened 2026-08-06 at 120,000 square metres with 2 GW planned
+    # (scale_mw is the Galaxy Campus plan, status). Capacity on a national hub is allocated by the
+    # state to eligible bodies (operator, access).
+    campus:
+      operator: state
+      scale_mw: 2000
+      status: ramping
+      access: by_application
+
+  ru_moscow:
+    # source: ai-datacenters-2026-09 section 6a, "Sber's training cluster": the country's largest,
+    # and the only one whose hardware is described at all. The operator's own recruiting for the
+    # pretraining team states that training runs on H100 and B200 clusters and that the team
+    # recently trained an MoE model of 700 billion parameters; the model line confirms the scale
+    # from the other end (702B, then 432B with 28B active). It is one company training one
+    # company's models and sells nothing, which is `hyperscaler` plus `captive` in this
+    # vocabulary. No scale_mw and no accelerators: neither the site, the megawatts nor the GPU
+    # count is public, the last published hardware figures are a different machine's from 2021,
+    # and the rule of this file is that no number goes in without a source. The row sits on Moscow
+    # because that is where the country's commercial capacity is concentrated, which is the fact
+    # the operators' own September 2026 proposal to spread datacenters between regions is about
+    # (section 6); the site itself is not published and this row does not claim it is.
+    campus:
+      operator: hyperscaler
+      status: operating
+      access: captive
+
+  ru_ust_ilimsk:
+    # source: ai-datacenters-2026-09 section 6a, "Ust-Ilimsk: the one AI-scale build that is real".
+    # Cloud X, an En+ subsidiary, is building at the Ust-Ilimsk hydroelectric plant with a planned
+    # consumption of 154 MW at 40-60 billion roubles, intending to finish construction in 2027;
+    # En+ plans three of them at the same site. Ramping on 2027-01-01, which is the game's start
+    # date. A cloud provider's own build exists to sell the capacity, so `neocloud` and
+    # `verified_tenants`.
+    campus:
+      operator: neocloud
+      scale_mw: 154
+      status: ramping
+      access: verified_tenants
+
+  fi_kajaani:
+    # source: ai-datacenters-2026-09 section 2.4, "Finland": on 2026-09-09 Google announced at
+    # least 13 billion EUR across 2027 and 2028 in four Finnish locations, Kajaani among them, its
+    # largest single European investment (operator, status). No megawatt figure per location was
+    # published, so none is written. A hyperscaler's own campus rents nothing to a stranger, which
+    # is the joke next to the LUMI queue the university origin already sits in (access).
+    campus:
+      operator: hyperscaler
+      status: announced
+      access: captive
+
 added_cities:
   # Cities the baseline's key_cities lists do not carry but the game needs, because an origin
   # starts there or because the country would otherwise have no plausible compute location. Every
@@ -617,3 +786,99 @@ added_cities:
       metro (~2.0M); lat/lon are downtown San Jose. Derived fields follow the formulas at the top of
       this file, which put it on the same colo price and headroom as the other US tech metros and on
       the tech-only scrutiny of us_seattle rather than the government figure of us_san_francisco.
+  # The five cities the v0.4 location table needs (SYS-04 "Locations v0.4"). Every field below is
+  # sourced in docs/research/ai-datacenters-2026-09.md section 9, which also carries the derived
+  # figures the generator's own formulas produce, so a hand edit to cities.yaml is visible.
+  - id: "us_austin"
+    country: "us"
+    after: "us_abilene"
+    name: "Austin, TX"
+    lat: 30.27
+    lon: -97.74
+    population: 2550000
+    tags: ["tech", "university", "government"]
+    note: |
+      source: ai-datacenters-2026-09 section 9. Not in world-baseline-2026.json: estimate.
+      Population is the Austin-Round Rock-San Marcos metro (~2.55M); lat/lon are downtown Austin.
+      Tagged government for the Texas state capital and university for UT Austin, which is what
+      puts its scrutiny above Abilene's; no datacenter_hub tag, because Austin is where the
+      companies are and the megawatts are in Abilene and the Milam and Shackelford county sites
+      (section 1.2).
+  - id: "us_memphis"
+    country: "us"
+    after: "us_austin"
+    name: "Memphis, TN"
+    lat: 35.15
+    lon: -90.05
+    population: 1340000
+    tags: ["datacenter_hub", "industry"]
+    note: |
+      source: ai-datacenters-2026-09 sections 1.1 and 9. Not in world-baseline-2026.json: estimate.
+      Population is the Memphis metropolitan statistical area (~1.34M); lat/lon are downtown
+      Memphis rather than the Colossus buildings, because the cluster straddles two states and the
+      game's city is the labour market and the ISP, not the campus. datacenter_hub from the xAI
+      Colossus campus (about 1 GW live, target 2 GW); industry from the FedEx superhub and the
+      river freight economy behind the cheap industrial land.
+  - id: "us_new_carlisle"
+    country: "us"
+    after: "us_memphis"
+    name: "New Carlisle, IN"
+    lat: 41.7
+    lon: -86.5
+    population: 325000
+    tags: ["datacenter_hub", "industry"]
+    note: |
+      source: ai-datacenters-2026-09 sections 1.3 and 9. Not in world-baseline-2026.json: estimate.
+      The town itself is under 2,000 people; the population is the South Bend-Mishawaka metro it
+      belongs to (~325k), which is the labour market the campus hires from. lat/lon are the campus
+      rather than the town centre, the generator's own rule for single-purpose entries
+      (Saint-Ghislain, Kajaani, NEOM). datacenter_hub from 1,200 acres, over a million Trainium2
+      and a 2.2 GW target.
+  - id: "ru_ust_ilimsk"
+    country: "ru"
+    after: "ru_novosibirsk"
+    name: "Ust-Ilimsk"
+    lat: 58.0
+    lon: 102.67
+    population: 77034
+    tags: ["datacenter_hub", "industry"]
+    note: |
+      source: ai-datacenters-2026-09 section 6a. Not in world-baseline-2026.json: added for the
+      Cloud X build at the Ust-Ilimsk hydroelectric plant, the one AI-scale datacenter in Russia
+      with a published megawatt figure (154 MW, 40-60 billion roubles, completion targeted 2027).
+      Population is the city itself, 77,034 in 2025, which is under the 500k rule; lat/lon are the
+      city on the Angara. datacenter_hub from the build, industry from the hydro plant and the
+      timber combine that are the reason the town exists. The derived fields follow the formulas at
+      the top of this file with Russia's electricity price, which is why the cheapest colocation
+      index in the game turns up in a town of seventy-seven thousand people next to 3.8 GW of
+      hydropower.
+  - id: "no_narvik"
+    country: "no"
+    after: "no_oslo"
+    name: "Narvik"
+    lat: 68.44
+    lon: 17.43
+    population: 22000
+    tags: ["datacenter_hub", "industry"]
+    note: |
+      source: ai-datacenters-2026-09 sections 2.4 and 9. Not in world-baseline-2026.json: estimate.
+      Population is the Narvik municipality (~22k), which puts the row under the 500k rule and
+      gives it the headroom bonus and the colocation discount; lat/lon are Narvik town, while the
+      Stargate Norway site is at Kvandal a few kilometres inland. datacenter_hub from 230 MW
+      planned and 100,000 GPUs targeted by end 2026; industry from the iron-ore port, which is why
+      the town has a grid connection at all.
+  - id: "cn_ulanqab"
+    country: "cn"
+    after: "cn_shenzhen"
+    name: "Ulanqab"
+    lat: 40.99
+    lon: 113.13
+    population: 1700000
+    tags: ["datacenter_hub", "industry"]
+    note: |
+      source: ai-datacenters-2026-09 sections 4 and 9. Not in world-baseline-2026.json: estimate.
+      Population is the prefecture-level city (~1.7M). datacenter_hub from nearly 100 datacenters,
+      12.5 GW committed and Envision's 2 GW Galaxy Campus (opened 2026-08-06), one of Huawei's
+      three national hubs. The derived scrutiny lands below Shenzhen's, which is right: a compute
+      hub on the Inner Mongolian grassland is watched by the state at the national level and by
+      nobody at the street level.

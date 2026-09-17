@@ -12,6 +12,7 @@ import {
   aiEnforcement,
   aiOpinion,
   aiRegulation,
+  CITY_TAG_ORDER,
   cityTags,
   cloudAvailability,
   coloAvailability,
@@ -30,7 +31,7 @@ import {
   type WatcherRole,
 } from "./derive.js";
 import { Comment, emitDocument, type Fields, InlineMap } from "./emit.js";
-import type { CountryOverride, Overrides } from "./overrides.js";
+import type { CampusOverride, CountryOverride, Overrides } from "./overrides.js";
 
 export interface GeneratedFiles {
   readonly countries: string;
@@ -82,6 +83,8 @@ interface ResolvedCity {
   readonly derived: boolean;
   /** Why this row exists at all, written into the file above its fields. */
   readonly note: readonly string[];
+  /** The AI-scale campus here, from `overrides.cities`, or none (SYS-01 "Campuses"). */
+  readonly campus?: CampusOverride;
 }
 
 /**
@@ -131,7 +134,49 @@ function resolveCities(baseline: Baseline, overrides: Overrides): ResolvedCity[]
       note: added.note.split("\n").filter((line) => line !== ""),
     });
   }
+  // `overrides.cities` adds the campus and the tags the baseline's own "why" text cannot produce.
+  // The tags go in before the derived fields are computed, so a city that gained `datacenter_hub`
+  // loses the headroom and gains the scrutiny the rule gives one, which is the point of saying it.
+  for (const [id, override] of Object.entries(overrides.cities)) {
+    const at = cities.findIndex((city) => city.id === id);
+    if (at < 0) {
+      throw new Error(`city override names an unknown city ${id}`);
+    }
+    const city = cities[at];
+    if (city === undefined) {
+      continue;
+    }
+    const tags = [...city.tags];
+    for (const tag of override.tags_add ?? []) {
+      if (!tags.includes(tag)) {
+        tags.push(tag);
+      }
+    }
+    cities[at] = {
+      ...city,
+      tags: CITY_TAG_ORDER.filter((tag) => tags.includes(tag)).concat(
+        tags.filter((tag) => !(CITY_TAG_ORDER as readonly string[]).includes(tag)),
+      ),
+      note: [...city.note, ...(override.note ?? "").split("\n").filter((line) => line !== "")],
+      ...(override.campus === undefined ? {} : { campus: override.campus }),
+    };
+  }
   return cities;
+}
+
+/** The campus fields, in the order `cities.yaml` writes them. */
+function campusFields(id: string, campus: CampusOverride): Fields {
+  return [
+    ["name_key", `world.campus.${id}.name`],
+    ["desc_key", `world.campus.${id}.desc`],
+    ["operator", campus.operator],
+    ...(campus.scale_mw === undefined ? [] : ([["scale_mw", campus.scale_mw]] as Fields)),
+    ...(campus.accelerators === undefined
+      ? []
+      : ([["accelerators", campus.accelerators]] as Fields)),
+    ["status", campus.status],
+    ["access", campus.access],
+  ];
 }
 
 const COUNTRY_HEADER: readonly string[] = [
@@ -380,6 +425,9 @@ export function generate(baseline: Baseline, overrides: Overrides): GeneratedFil
         ],
         ["colo_price_index", round2((raw.get(city.id) ?? 0) / mean)],
         ["scrutiny", scrutiny(enforcement, city.tags)],
+        ...(city.campus === undefined
+          ? []
+          : ([["campus", campusFields(city.id, city.campus)]] as Fields)),
       ];
     });
 

@@ -368,9 +368,110 @@ public record is thin, which is itself the fact the game should model. What is d
   power-and-grid argument everyone else is having.
   [Vedomosti](https://www.vedomosti.ru/technology/articles/2026/09/04/1226194-operatori-tsodov-predlozhili-delit-data-tsentri-mezhdu-regionami).
 
-No specific Russian GPU count, cluster size or megawatt figure could be sourced in this pass.
-**unverified.** The game should keep Moscow and Novosibirsk as it has them (a ministry's analytics
-rack; an Akademgorodok enthusiast) and should not invent a Russian gigawatt campus.
+No specific Russian GPU count, cluster size or megawatt figure could be sourced in the first
+pass. **unverified.** Section 6a, added 2026-09-17, is the second pass on the same question and
+does find numbers, though not the ones a cluster is measured in.
+
+### 6a. Russia, second pass (2026-09-17)
+
+Read on 2026-09-17. The first pass concluded there was nothing to cite. That was true of *cluster*
+figures and false of everything around them: the fleet, the grid, the rental market, the parallel
+import regime and one company's own recruiting all publish numbers. The headline is that Russia's
+AI capacity is real, is in the hundreds of megawatts across a whole commercial fleet rather than in
+one campus, and is dispersed by the grid rather than by policy.
+
+**The fleet, and its share of the grid.** Russia's commercial datacenters drew **990.6 MW** at the
+end of 2025 and are expected to pass **1.1 GW** in 2026, a growth of 10 to 12 percent, which is
+**2.2 percent of the country's electricity consumption** in 2025 and a projected 2.4 percent in
+2026; the same industry association expects the rate to accelerate to 18-20 percent later. The
+figures are from Mikhail Salikov of the Russian datacenter industry association, against the grid
+operator's own consumption numbers.
+[Finance.Mail](https://finance.mail.ru/article/moshnost-kommercheskih-cod-rossii-vyrastet-na-10-12-v-2026-godu-69222163/)
+(2026-08-11). Trade reporting puts the fleet at roughly **200 datacenters and about 85,800 rack
+spaces** at the end of 2025; **[secondary]**, an aggregate of analyst notes.
+[ServerNews](https://servernews.ru/1148119). For scale: the whole Russian commercial fleet, all
+workloads, is about the IT power of *one* Stargate Abilene, and about a tenth of Memphis.
+
+**Ust-Ilimsk: the one AI-scale build that is real.** **Cloud X**, an En+ subsidiary, is building a
+datacenter at the **Ust-Ilimsk hydroelectric plant** in Irkutsk oblast with a planned consumption of
+**154 MW**, at **40 to 60 billion roubles**, intending to **finish construction in 2027**; En+ plans
+**three** of them at the same site. The argument is the one everybody else is having: the power is
+there, stranded, and the town's mean annual temperature is below freezing.
+[Kommersant](https://www.kommersant.ru/doc/8061270),
+[RusDevelopers](https://rusdevelopers.ru/lenta_novostej/stroitelstvo-cod-cloud-x-v-ust-ilimske-za-60-mlrd-rub),
+[MyUI](https://myui.ru/blog/2026-09-03-2270) (local confirmation that construction is under way,
+2026-09-03). The city itself is **77,034 people (2025)** at **58.00 N, 102.67 E**.
+[Wikipedia](https://ru.wikipedia.org/wiki/%D0%A3%D1%81%D1%82%D1%8C-%D0%98%D0%BB%D0%B8%D0%BC%D1%81%D0%BA).
+On 2027-01-01 this is a **ramping** site, which is exactly the status the world data has for it.
+
+**Sber's training cluster.** The largest in the country, and the only one whose hardware is
+described at all. Sber's own recruiting for the GigaChat pretraining team states that **training
+runs on H100 and B200 clusters** and that the team **recently trained an MoE model of 700 billion
+parameters**; read through an aggregator that mirrors the posting, so **[secondary]** on the
+wording rather than on the fact.
+[freehire](https://freehire.me/jobs/rukovoditel-napravleniia-ml-pretrain-llm-sber-2ds6dwng). The
+model line confirms the scale from the other end: **GigaChat 3.1 Ultra is 702B** and **GigaChat 3.5
+Ultra is 432B total with 28B active**, the first Russian model line to scale a custom hybrid
+architecture (MLA layers with GatedDeltaNet) into the hundreds of billions.
+[Habr](https://habr.com/ru/companies/sberbank/articles/1055826/),
+[Digital-Razor](https://digital-razor.ru/media/news/software/sber-gigachat-ultra-vram-specs/)
+(2026-07-06, **[secondary]**). The last *published* hardware figures are five years old and are for
+a different machine: **Christofari Neo**, 2021, **11.95 petaflops on over 700 A100 80 GB**, with the
+whole SberCloud platform at **18.62 petaflops on over 1,700 GPUs**.
+[CNews](https://www.cnews.ru/news/top/2021-11-11_sberbank_zapustil_samyj). Neither the site, the
+megawatts nor the GPU count of the current H100/B200 clusters is public. Training a 700B MoE is,
+however, a floor: nothing in the published literature trains a model of that size on fewer than
+thousands of accelerators, and the game's data therefore carries the cluster as a captive campus
+with **no scale figure at all** rather than with an estimate.
+
+**The rental market, and how thin it is.** Only **9 percent of Russian organisations** have any AI
+infrastructure. Selectel leads the GPU-service ranking, ahead of ITGLOBAL.COM and Cloud4Y, and
+offers the widest catalogue: **T4, A2, A100, H100 and RTX 4090, up to eight H100 per server**.
+Prices: an average GPU rental of about **100,000 roubles a month** in 2025, an A100 instance at
+**115,000 roubles a month**, and H200-based configurations up **27 percent**. Demand is the story:
+Selectel's GPU revenue **tripled in 2025**, K2 Cloud's GPU requests grew **fourfold year on year**,
+NUBEX's rose **149 percent** since the start of 2026.
+[Computerra](https://www.computerra.ru/346963/zhelezo-dlya-razuma-issledovanie-rossijskogo-rynka-gpu-infrastruktury-i-servisov/)
+(2026-05-28, **[secondary]**: an industry review rather than a filing). Yandex Cloud, VK Cloud and
+Cloud.ru cover the hyperscale and AI cases; Selectel is where bare metal is rented.
+[Cloud4Y](https://www.cloud4y.ru/en/blog/rating-clouds-ai-ml-gpu-2026/) **[secondary]**. The shape
+of this for the game: a real cloud market, a narrow one, and one where an H100 is a competitive
+advantage rather than a commodity.
+
+**The platforms' own datacenters.** **Avito** planned its own datacenter in Moscow oblast at **5 MW
+initially, expandable to 20 MW**, at **7 to 10 billion roubles** for the first phase (a consultant
+put a full 20 MW site at about 200 million USD, roughly 16 billion roubles, before land and
+compute), for generative-AI products it had already committed about 12 billion roubles to; as of
+**2025-09-23 the decision was not approved** and the company was still weighing renting instead,
+because commercial capacity is short.
+[CNews](https://www.cnews.ru/news/top/2025-09-23_avito_sobiraetsya_postroit). That is the whole
+published record for the platform-and-bank tier in this pass: tens of megawatts, mostly announced
+rather than built, and nowhere near the campus scale of section 1.
+
+**Parallel imports, and why the cards still arrive.** Minpromtorg order **No. 4769 of 2025-09-26**
+came into force on **2026-05-27** and removed **20 brands** (Acer, Adata, AIC, Apacer, Asus, Cisco,
+Fujitsu, HP, Hitachi, HPE, Hynix, IBM, Inspur, Intel, Kingston, Samsung, SanDisk, Toshiba,
+Transcend, xFusion) from the parallel-import list under exactly **two** customs codes:
+**8471 49 000 0** (desktop computers, servers, workstations) and **8471 70** (memory and storage).
+**Graphics cards are not on that list**, and neither is NVIDIA.
+[VC.ru](https://vc.ru/legal/2960668-zakrytie-parallelnogo-importa-kompyuternoy-tekhniki-v-rossii)
+**[secondary]**, a legal explainer rather than the order itself;
+[Habr](https://habr.com/ru/articles/1031446/) covers the same change. Alongside it: the import duty
+on components under 8471 is **0 percent**, VAT is **22 percent from 2026-01-01**, and a GPU
+shipment is a customs risk category needing TR TS 004/2011 and 020/2011 certification, TR EAEU
+037/2016 declaration and, for cards with cryptographic modules, an FSB notification.
+[Terminal ZM](https://terminalzm.ru/service/videokarti/) **[secondary]**, a customs broker's own
+page. So in 2026 a server full of accelerators is harder to import into Russia than it was, and
+loose cards are not: that asymmetry is the fact behind both the hobbyist's classified-ad rig and
+the grey-market inference farm, and it is why the world data keeps Russia at `chip_access: banned`
+with a hardware-availability figure that is low but not zero.
+
+**What this means for the game.** Russia is not a campus country and should not be given one. It is
+a country with a gigawatt of dispersed commercial capacity, one real AI-scale build at a hydro
+plant in a town of seventy-seven thousand, one captive training cluster nobody publishes a number
+for, a thin but growing rental market where an H100 is a selling point, and a card trade that runs
+on classified ads because whole servers are the thing customs looks at. The game should keep Moscow
+and Novosibirsk as it has them and should not invent a Russian gigawatt campus.
 
 ## 7. What the game takes from this
 
@@ -522,9 +623,18 @@ site of an operator the map already carries through another city, and the world 
 
 - No town-level location for Anthropic's own Fluidstack sites in Texas and New York; the
   announcement names states only (section 1.3).
-- No megawatt, GPU count or cluster size for any Russian AI datacenter (section 6). Russian
-  operators discuss regional distribution, Yandex publishes a PUE, and nothing public gives a
-  number that could be balanced against.
+- Superseded by section 6a: the Russian *fleet* is published (990.6 MW at the end of 2025) and one
+  Russian AI-scale build is published (Ust-Ilimsk, 154 MW, 2027). What is still missing after the
+  second pass:
+  - no megawatt, GPU count or site for **Sber's** current H100/B200 clusters; the last published
+    hardware figures are Christofari Neo's, from 2021, for a different machine;
+  - no capacity figure in megawatts for **T-Bank's** announced datacenter network: the company's own
+    announcement page served no content on 2026-09-17;
+  - no megawatt figure for **MTS's** or **Yandex's** AI datacenters; Yandex publishes a PUE and a
+    planned Mozhaisk site, and no capacity;
+  - no volume or value for **grey and parallel GPU imports into Russia**. Customs statistics on
+    graphics-card imports were not found in this pass, and press reporting covers the legal regime
+    (order 4769) rather than the tonnage. The regime is sourced; the volumes are **unverified**.
 - No Qatari AI-scale campus; the regional pipeline outside the two sovereign programmes is
   reported as paused (section 3).
 - No confirmed list of EU AI gigafactory sites: 77 proposals across 60 sites exist, awards are

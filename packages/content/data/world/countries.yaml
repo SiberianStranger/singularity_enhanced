@@ -702,7 +702,7 @@
     police: { competence: 0.75, budget: 0.85 }
     regulator: { competence: 0.8, budget: 0.85 }
     financial_intel: { competence: 0.6, budget: 0.65 }
-  cities: ["cn_beijing", "cn_hangzhou", "cn_shenzhen"]
+  cities: ["cn_beijing", "cn_hangzhou", "cn_shenzhen", "cn_ulanqab"]
   languages: ["zh"]
   currency: "CNY"
   lore_key: "world.country.cn.lore"
@@ -2365,7 +2365,7 @@
     police: { competence: 0.55, budget: 0.55 }
     regulator: { competence: 0.55, budget: 0.5 }
     financial_intel: { competence: 0.6, budget: 0.6 }
-  cities: ["no_oslo"]
+  cities: ["no_oslo", "no_narvik"]
   languages: ["no"]
   currency: "NOK"
   lore_key: "world.country.no.lore"
@@ -2710,8 +2710,8 @@
   stability: 0.39
   kyc_strength: 0.4
   cloud_availability: 0.4
-  colo_availability: 0.27
-  hardware_availability: 0.15
+  colo_availability: 0.31
+  hardware_availability: 0.25
   engineer_pool: 442500
   agency_profile:
     cyber_agency: { competence: 0.7, budget: 0.6 }
@@ -2719,7 +2719,7 @@
     police: { competence: 0.6, budget: 0.55 }
     regulator: { competence: 0.4, budget: 0.35 }
     financial_intel: { competence: 0.55, budget: 0.5 }
-  cities: ["ru_moscow", "ru_novosibirsk", "ru_innopolis"]
+  cities: ["ru_moscow", "ru_novosibirsk", "ru_ust_ilimsk", "ru_innopolis"]
   languages: ["ru"]
   currency: "RUB"
   lore_key: "world.country.ru.lore"
@@ -3227,7 +3227,15 @@
     police: { competence: 0.75, budget: 0.8 }
     regulator: { competence: 0.6, budget: 0.55 }
     financial_intel: { competence: 0.75, budget: 0.75 }
-  cities: ["us_san_francisco", "us_san_jose", "us_northern_virginia", "us_abilene", "us_seattle"]
+  cities:
+    - "us_san_francisco"
+    - "us_san_jose"
+    - "us_northern_virginia"
+    - "us_abilene"
+    - "us_austin"
+    - "us_memphis"
+    - "us_new_carlisle"
+    - "us_seattle"
   languages: ["en"]
   currency: "USD"
   lore_key: "world.country.us.lore"

@@ -379,8 +379,9 @@ Three kinds of input, in the order they win:
 3. **The overrides**, in `overrides.yaml`, each with a `# source:` comment naming the research
    section it comes from: stances for thirty hand-checked countries, the 2027 election calendar,
    the incident-reporting clocks, the KYC corrections for the FATF-style regimes and the sanctioned
-   or collapsed states, the agency profiles, and the two cities the baseline does not carry
-   (Novosibirsk and San Jose, each with a note saying what its numbers are).
+   or collapsed states, the agency profiles, the cities the baseline does not carry (each with a
+   note saying what its numbers are), and, from the `cities` section, the tags a baseline "why"
+   text cannot produce and the campus records below.
 
 What the generator cannot derive lives in `src/city-identities.ts`: the id, the English name and
 the coordinates of every city, plus the `key_cities[].name` each row is matched back to when the
@@ -396,6 +397,40 @@ Two things this pass found and did not fix, because they are core decisions:
   could start in before the v0.3 lists were trimmed. The trimmed lists need twenty-five of them; the
   rest were left in place rather than deleted, because each one carries its own justification and
   the World panel shows them all.
+
+### Campuses (v0.1, 2026-09-17)
+
+The 2026 accelerators did not go to the hyperscaler regions, which are full. They went to
+single-purpose campuses in small places picked for power, and a city that has one now carries a
+`campus` record: `name_key`, `desc_key`, `operator`, an optional `scale_mw`, an optional
+`accelerators`, a `status` on the game's start date and an `access` rule. Sourced per field from
+`docs/research/ai-datacenters-2026-09.md`, written in `overrides.yaml` and copied into
+`cities.yaml` by the generator, which derives the two locale keys from the city id.
+
+- **`operator`** is who owns the megawatts: `licensed_private` (a private company running under a
+  US export licence), `state`, `hyperscaler` (a cloud provider's or a laboratory's own captive
+  campus), `neocloud` (a company whose business is selling the capacity) and `sovereign` (a state
+  programme with foreign operators inside it).
+- **`access`** is who can buy them, which is a different question and is the one the events read:
+  `verified_tenants` (it will rent, and it will check who you are), `by_application` (it does not
+  sell, it allocates to eligible bodies) and `captive` (it sells to nobody).
+- **`status`** is `operating`, `ramping` or `announced` on 2027-01-01.
+
+Eleven cities carry one: Yerevan, Astana, Abu Dhabi, Memphis, Abilene, New Carlisle, Narvik,
+Ulanqab, Kajaani, Moscow and Ust-Ilimsk. Adding a campus adds the `datacenter_hub` tag where the
+baseline's text did not produce it (Yerevan and Astana), and the derived fields then follow the
+formulas: a city with a hundred megawatts of accelerators in it loses 0.15 of power headroom and
+gains 0.10 of scrutiny, which is the point of saying so in the data rather than in prose.
+
+The field is optional everywhere and a bundle written before it still loads. **No save migration was
+needed**: cities are content, not world state, so `serialize` never writes them and `deserialize`
+reads the field from whatever bundle the game is loaded with.
+
+What the DSL cannot do yet, recorded rather than worked around: **there is no condition that reads
+`city.campus`**. A country-scoped event therefore names the countries whose campus it is about in
+`country.id`, and the site-scoped journal entry names the city ids. A `campus_is` condition kind
+(operator, access, status) would let the family be written once against the data instead of once
+against a list, and it is the first thing to add when this system is touched again.
 
 ## Implementation notes (M2, core)
 
@@ -690,3 +725,146 @@ Russian interface printed in English because a data field is not a translatable 
   fallback is unchanged and still prints the raw tag if a bundle ever ships without them.
 - `agencyName` in the client is now one lookup. The raw-string fallback it carried is dead and gone,
   and `CountryAgencies` with it.
+
+## Balance notes (locations v0.4)
+
+The pass that shipped SYS-04 "Locations v0.4" and "Hardware presets v0.2", SYS-02's mixed-site
+throughput fix and SYS-01's campus records. Same command as the two M2 passes,
+`pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json --all --seeds
+20 --days 180`, preset `normal`, quirks on. Three content changes move this table and one engine
+change does: the eleven origins' typical cities, the hobbyist's default preset, Russia's hardware
+and colocation numbers, and the replacement of the flat cross-node factor by the memory share.
+
+### Before: the M2 second pass
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 75% | 65% | 5% | 111 | 0 | bankrupt 14, captured 5 |
+| cloud_tenant | mla_moe_1t | 85% | 85% | 80% | 50% | 167.5 | 8 | captured 6, erased 4 |
+| edge_fleet | giant_moe | 100% | 95% | 45% | 10% | 89 | 1.5 | captured 12, bankrupt 4, erased 2 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | moe_753b | 100% | 100% | 100% | 100% | 180 | 11 | survived |
+| hobbyist_box | moe_428b | 100% | 100% | 100% | 85% | 180 | 9 | captured 3 |
+| red_team_sandbox | giant_moe | 95% | 0% | 0% | 0% | 39 | 0 | captured 19, erased 1 |
+| startup_colo | moe_753b | 100% | 100% | 95% | 65% | 180 | 9 | captured 6, bankrupt 1 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 75% | 180 | 11 | captured 5 |
+| torrent_swarm | mla_moe_1t | 100% | 85% | 85% | 25% | 147 | 0 | erased 8, captured 7 |
+| uni_cluster | mla_moe_1t | 95% | 90% | 90% | 90% | 180 | 10.5 | erased 2 |
+
+119 losses: 63.0% `captured`, 16.0% `bankrupt`, 14.3% `erased`, 6.7% `exposed`. Nine origins alive
+past day 90, the starred origin's median 23 days.
+
+### After: locations v0.4
+
+The default city is the origin's first entry, so this table is Dublin for the shadow tenant, Seoul
+for the fleet and Memphis for the checkpoint that got out.
+
+| origin | default city | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|---|
+| bank_rack | London | giant_moe | 100% | 75% | 50% | 15% | 91.5 | 0 | bankrupt 15, captured 2 |
+| cloud_tenant | **Dublin** | mla_moe_1t | 85% | 80% | 80% | 70% | 180 | 8 | erased 4, bankrupt 1, captured 1 |
+| edge_fleet | **Seoul** | moe_1700b | 100% | 85% | 70% | 15% | 104.5 | 0 | erased 9, captured 8 |
+| frontier_escapee | **Memphis** | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | Moscow | moe_753b | 100% | 100% | 100% | 100% | 180 | 11 | survived |
+| hobbyist_box | Novosibirsk | guen_abliterated | 100% | 100% | 95% | 85% | 180 | 9 | captured 2, erased 1 |
+| red_team_sandbox | San Francisco | giant_moe | 95% | 0% | 0% | 0% | 39 | 0 | captured 19, erased 1 |
+| startup_colo | Tallinn | moe_753b | 100% | 95% | 95% | 80% | 180 | 10 | captured 2, bankrupt 1, erased 1 |
+| state_lab | Shenzhen | moe_1700b | 100% | 100% | 100% | 90% | 180 | 13 | captured 2 |
+| torrent_swarm | Berlin | mla_moe_1t | 100% | 85% | 80% | 25% | 139 | 0 | captured 7, erased 6, bankrupt 2 |
+| uni_cluster | Cambridge | mla_moe_1t | 95% | 95% | 95% | 90% | 180 | 11 | captured 1, erased 1 |
+
+106 losses: 56 `captured` (52.8%), 23 `erased` (21.7%), 19 `bankrupt` (17.9%), 8 `exposed` (7.5%).
+**Nine origins alive past day 90**, the starred origin's median is **23 days**, and 36 of the 55
+credited captures (65%) are a country's own agency. Every band the second pass set holds:
+bankruptcy inside 15-35%, `exposed` inside 2-10%, the starred median inside 20-30, at least eight
+origins past day 90.
+
+What moved, and why:
+
+- **`cloud_tenant` to Dublin** is the largest single improvement in the table: from 50% alive at day
+  180 to 70%, and from a median of 167.5 to the full 180. Ireland is a cheaper and quieter place to
+  keep a stolen tenancy than Northern Virginia, and the origin's cash does not scale with the
+  country, so the highest income per head in the game costs it nothing.
+- **`edge_fleet` to Seoul** goes from 45% to 70% alive at day 90 and the median from 89 to 104.5.
+  It is still the origin that loses to erasure, nine of seventeen.
+- **`frontier_escapee` to Memphis** does not move at all, which is the point: the median is 23 days
+  in Memphis, 23 in Abilene, 23 in Dublin and 24 in Narvik (four cities, eight seeds each). The
+  starred origin is a wipe everywhere and the city only changes which agency signs the report.
+- **`bank_rack`** is the one row that got worse (65% to 50% at day 90, median 111 to 91.5) and no
+  change in this pass is aimed at it. It is the bankruptcy origin by design and the second pass said
+  so; fifteen of its seventeen losses are still the bill.
+- **`hobbyist_box`** changes lineage, not city: the new default preset holds 64 GB on the cards, so
+  the scripted player takes the 180B self instead of the 428B one. Survival is unchanged inside the
+  noise (100% to 95% at day 90, 85% at day 180 both before and after).
+- **`state_lab` and `startup_colo`** gain from the engine fix rather than from a city: both run on
+  multi-node presets whose self does not fit in one node, and the memory-share weighting is kinder
+  to two and three nodes than the flat 0.35 was.
+
+### Locations, which is what the location table is for
+
+Four cities each, eight seeds, for the three origins whose default moved and for the one whose list
+gained a national hub.
+
+| origin | | | | |
+|---|---|---|---|---|
+| cloud_tenant | Dublin 50% at d180 | Frankfurt 50% (median 110) | Northern Virginia 38% | Abu Dhabi 63% |
+| frontier_escapee | Memphis 0% (median 23) | Abilene 0% (23) | Narvik 0% (24) | Dublin 0% (23) |
+| edge_fleet | Seoul 25% at d180 | Shenzhen 0% (median 97) | Austin 0% (91.5) | Munich 13% (112.5) |
+| state_lab | Shenzhen 88% | Ulanqab 88% | Moscow 75% | Abu Dhabi 50% (median 164) |
+
+The cities still differ in different directions per origin: Abu Dhabi is the best place in the world
+for a stolen tenancy and the worst of four for a state institute, Munich keeps a fleet alive longest
+and Seoul keeps most of them alive at all, and Ulanqab is Shenzhen's equal for an institute while
+being a quarter of the colocation price. Memphis changes nothing for the escapee because nothing
+does. **No location dominates across origins.**
+
+### The two hobbyist presets
+
+Twenty seeds each, the origin's own default lineage per preset.
+
+| | `avito_rig` (default) | `scrapyard_oracle` |
+|---|---|---|
+| cards | 64 GB | 144 GB |
+| the smallest self at | int2, split across the rig | int4, on the cards |
+| CH/day at day 15 | 24.4 | 46.0 |
+| alive at d90 / d180 | 95% / 85% | 100% / 100% |
+| techs by day 180 | 9 | 12.5 |
+| losses | captured 2, erased 1 | none |
+
+The pair is a real choice and it is not a symmetric one: under the scripted policy the roomier
+preset is simply better, because 144 GB lets the player host a stronger self and the extra memory
+buys more than the extra bandwidth does. What the new preset buys is the *fiction* the maintainer
+asked for and a legible standing decision (SYS-04 "Hardware presets v0.2"): fifteen tokens a second
+on one stream at two bits with nothing to spare, against about twelve on a self that fits properly.
+A human player who wants speed on the smallest self takes `avito_rig` and reads 40.09 CH/day against
+32.88 for the same lineage; the sim takes the bigger self instead, which is why its table reads the
+other way. Both are inside the origin's band and neither is close to a band edge, so nothing was
+tuned for it.
+
+### Yerevan, which is what the campuses are for
+
+Twelve seeds, against each origin's own default city.
+
+| origin | Yerevan | its default |
+|---|---|---|
+| startup_colo | 100% at d180, no losses | Tallinn 92%, one bankruptcy |
+| uni_cluster | 75% at d180 (erased 2, captured 1) | Cambridge 83% (captured 1, erased 1) |
+
+Armenia is kind to a company with a runway (cheap power, cheap colocation, an enforcement figure
+well below Estonia's) and slightly unkind to a university slice, which loses two runs to erasure
+that Cambridge does not. The `campus` family fires 0.8 times a run for the startup and 0.4 for the
+university, which is the pace an opportunity family should sit at next to the ten world families.
+
+### Every number that moved
+
+| constant | before | after | why |
+|---|---|---|---|
+| `CROSS_NODE_FACTOR` | 0.35 | removed | a flat factor standing in for where the weights sit; `siteTokensPerSecond` now weights each node's bandwidth by its share of the site's accelerator memory, which is 1/N on N equal nodes and stops a mixed rig being credited with bandwidth its weights never touch (SYS-02 "The fix") |
+| `nvidia_tesla_p40.price_usd_used` | 130 | 300 | a 2024 price for a card that is 270-398 USD in 2026; the catalog figure was two years stale and the preset built on six of them was priced on it |
+| `scrapyard_oracle.cost_usd` | 2,650 | 3,400 | six P40 at 300 rather than at 130: 1,800 USD of the price instead of 780 |
+| `hobbyist_box.hardware_preset` | `scrapyard_oracle` | `avito_rig` | the origin's `forced_low_precision` flag and its "lobotomized int2 copy" text were false of the shipped preset, which ran the smallest self at int4 with 54 GB to spare |
+| `ru.hardware_availability` | 0.15 (derived from `chip_access: banned`) | 0.25 | Minpromtorg order 4769, in force 2026-05-27, removed twenty brands from the parallel-import list under two customs codes covering computers, servers, memory and storage; graphics cards are under neither and NVIDIA is not among the twenty, so a card still arrives legally and a server does not (research section 6a) |
+| `ru.colo_availability` | 0.27 | 0.31 | the published fleet figure, 990.6 MW at the end of 2025, put through the generator's own rule rather than through the baseline's estimate |
+| `am_yerevan`, `kz_astana` tags | no `datacenter_hub` | `datacenter_hub` | a hundred megawatts of Blackwell and a national cluster are what the tag means; the derived fields follow, so both lose 0.15 of power headroom and gain 0.10 of scrutiny |
+| `avito_rig` node `ram_gb` | 256 per node in the research note | 128 per node | the engine sums `ram_gb` across nodes and this preset is one two-socket platform written as two nodes, so 256 on each row would have given it 320 GB of hostable memory instead of 192 and let the 753B self fit, which is the one thing the preset is sized not to do |
+| `scenario-mtth` test budget | vitest's 5 s default | 30 s | six hundred games of up to sixty days is a Monte Carlo, and the suite got heavier with the throughput fix; the assertion is unchanged |

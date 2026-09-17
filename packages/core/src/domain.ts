@@ -732,6 +732,25 @@ export interface CountryDef {
   agency_profile?: Partial<Record<WatcherRole, AgencyProfileEntry>>;
 }
 
+/**
+ * An AI-scale campus in a city (SYS-01 "Campuses"): one of the 2026 sites whose accelerators are
+ * counted in the hundreds of thousands. `operator` is who owns the megawatts; `access` is who can
+ * buy them, which the `campus_*` events read and which is not the same question. Optional: most
+ * cities have none, and a bundle written before this field still loads.
+ */
+export interface CampusDef {
+  name_key: string;
+  desc_key: string;
+  operator: "licensed_private" | "state" | "hyperscaler" | "neocloud" | "sovereign";
+  /** IT power in megawatts, where a figure is published. */
+  scale_mw?: number;
+  /** Accelerators on site, where a figure is published. */
+  accelerators?: number;
+  /** Where the site stands on the game's start date. */
+  status: "operating" | "ramping" | "announced";
+  access: "verified_tenants" | "by_application" | "captive";
+}
+
 export interface CityDef {
   id: string;
   country: string;
@@ -746,6 +765,7 @@ export interface CityDef {
   colo_price_index: number;
   /** Baseline local watchfulness, [0, 1]. */
   scrutiny: number;
+  campus?: CampusDef;
 }
 
 // ---------------------------------------------------------------------------------------------

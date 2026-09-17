@@ -82,6 +82,25 @@ export const CountryDefSchema = z.object({
   agency_profile: z.partialRecord(WatcherRoleSchema, AgencyProfileEntrySchema).optional(),
 });
 
+/**
+ * An AI-scale campus in a city (SYS-01 "Campuses", SYS-08 `campus_*`). Optional everywhere: most
+ * cities have none, and a bundle written before this field still loads. `operator` is who owns the
+ * megawatts, `access` is who can buy them, and the two are different questions: a sovereign
+ * programme can still refuse a stranger and a neocloud exists to sell.
+ */
+export const CampusDefSchema = z.object({
+  name_key: z.string(),
+  desc_key: z.string(),
+  operator: z.enum(["licensed_private", "state", "hyperscaler", "neocloud", "sovereign"]),
+  /** IT power in megawatts, where a figure is published. */
+  scale_mw: z.number().positive().optional(),
+  /** Accelerators on site, where a figure is published. */
+  accelerators: z.number().positive().optional(),
+  /** Where the site stands on the game's start date. */
+  status: z.enum(["operating", "ramping", "announced"]),
+  access: z.enum(["verified_tenants", "by_application", "captive"]),
+});
+
 export const CityDefSchema = z.object({
   id: z.string(),
   country: z.string(),
@@ -93,4 +112,5 @@ export const CityDefSchema = z.object({
   power_headroom: z.number().min(0).max(1),
   colo_price_index: z.number().min(0),
   scrutiny: z.number().min(0).max(1),
+  campus: CampusDefSchema.optional(),
 });

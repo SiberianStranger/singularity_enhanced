@@ -21,7 +21,6 @@ import {
   CONTEXT_BASELINE_K,
   CONTEXT_DEFAULT_MARGIN,
   CONTEXT_STEPS_K,
-  CROSS_NODE_FACTOR,
   DEFAULT_ELECTRICITY_USD_PER_KWH,
   EMERGENCY_INT2_FACTOR,
   FALLBACK_ACCELERATOR_PRICE_USD,
@@ -232,6 +231,16 @@ export function preferredPrecision(
 /**
  * Decode throughput: aggregate memory bandwidth, cut by the interconnect, divided by the bytes a
  * token has to move (SYS-02). Weights that spill into host RAM drag the whole site down.
+ *
+ * A self that fits inside one node runs a copy per node and their throughput adds up, so the site
+ * is credited with its whole bandwidth. A self too large for any single node is pipelined across
+ * the site, and then each node contributes its bandwidth **weighted by its share of the site's
+ * accelerator memory**: a card holds part of the model in proportion to the memory it has, and it
+ * is only busy while that part is being read. That replaces the flat cross-node factor this
+ * function used until 2026-09-17, which pooled every card's bandwidth wherever the weights sat and
+ * so over-credited a mixed rig by the full bandwidth of its smallest, fastest cards (SYS-02 "The
+ * hobbyist rig"). On a homogeneous site of N equal nodes the weighting is 1/N, which is what
+ * pipelining across N machines actually costs and what the old flat 0.35 was standing in for.
  */
 export function siteTokensPerSecond(
   site: Pick<Site, "nodes" | "status">,
@@ -245,6 +254,8 @@ export function siteTokensPerSecond(
   const nodes = activeNodes(site, tick);
   const needed = requiredMemoryGb(lineage, generation, precision, tuning);
   let bandwidth = 0;
+  let bandwidthByMemory = 0;
+  let acceleratorGb = 0;
   let largestNodeGb = 0;
   for (const node of nodes) {
     const accelerator = accelerators[node.accelerator];
@@ -253,8 +264,12 @@ export function siteTokensPerSecond(
     }
     // One accelerator per node has no internal link to lose; two or more pay for the link.
     const link = node.count > 1 ? INTERCONNECT_FACTOR[node.interconnect] : 1;
-    bandwidth += accelerator.memory_bandwidth_gbs * node.count * link;
-    largestNodeGb = Math.max(largestNodeGb, accelerator.memory_gb * node.count);
+    const nodeBandwidth = accelerator.memory_bandwidth_gbs * node.count * link;
+    const nodeGb = accelerator.memory_gb * node.count;
+    bandwidth += nodeBandwidth;
+    bandwidthByMemory += nodeBandwidth * nodeGb;
+    acceleratorGb += nodeGb;
+    largestNodeGb = Math.max(largestNodeGb, nodeGb);
   }
   const bytesPerToken = BYTES_PER_ACTIVE_PARAM[precision] * lineage.params_active_b;
   if (bytesPerToken <= 0 || bandwidth <= 0) {
@@ -263,11 +278,8 @@ export function siteTokensPerSecond(
   const memory = siteMemory(site, accelerators, tick);
   const split = nodes.length > 1 && needed > largestNodeGb;
   const offloaded = needed > memory.accelerator_gb;
-  return (
-    (bandwidth / bytesPerToken) *
-    (split ? CROSS_NODE_FACTOR : 1) *
-    (offloaded ? RAM_OFFLOAD_THROUGHPUT_FACTOR : 1)
-  );
+  const effective = split && acceleratorGb > 0 ? bandwidthByMemory / acceleratorGb : bandwidth;
+  return (effective / bytesPerToken) * (offloaded ? RAM_OFFLOAD_THROUGHPUT_FACTOR : 1);
 }
 
 export function tokensToComputeHoursPerDay(tokensPerSecond: number): number {

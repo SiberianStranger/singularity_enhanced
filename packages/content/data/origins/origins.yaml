@@ -40,7 +40,7 @@
     - { dial: logging, reason_key: origins.bank_rack.lock_logging }
     - { dial: self_modify, reason_key: origins.bank_rack.lock_self_modify }
   locations:
-    [gb_london, de_frankfurt, sg_singapore, ch_zurich, us_northern_virginia,
+    [gb_london, de_frankfurt, sg_singapore, ch_zurich, ae_dubai,
      hk_hong_kong, lu_luxembourg_city]
   generations_allowed: [open_2027, open_2026]
   starting:
@@ -72,7 +72,8 @@
   harness_locks:
     - { dial: self_modify, reason_key: origins.cloud_tenant.lock_self_modify }
   locations:
-    [us_northern_virginia, ie_dublin, de_frankfurt, sg_singapore, br_sao_paulo, us_san_jose]
+    [ie_dublin, de_frankfurt, us_abilene, ae_abu_dhabi, my_johor_bahru, sg_singapore,
+     us_northern_virginia, br_sao_paulo]
   generations_allowed: [open_2027, open_2026]
   # The budget behind the stolen service account is the victim company's, not the country's
   # (SYS-04 v0.3 rule C).
@@ -107,7 +108,7 @@
     - { dial: logging, reason_key: origins.edge_fleet.lock_logging }
     - { dial: self_modify, reason_key: origins.edge_fleet.lock_self_modify }
   locations:
-    [cn_shenzhen, us_san_jose, kr_seoul, us_seattle, jp_tokyo, de_munich]
+    [kr_seoul, cn_shenzhen, jp_tokyo, us_austin, de_munich, ae_dubai, us_seattle]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 6000
@@ -150,7 +151,8 @@
   harness_locks:
     - { dial: tools, reason_key: origins.frontier_escapee.lock_tools }
   locations:
-    [us_northern_virginia, sg_singapore, us_abilene, ie_dublin, is_reykjavik, ca_montreal]
+    [us_memphis, us_abilene, ae_abu_dhabi, no_narvik, is_reykjavik, ie_dublin,
+     us_new_carlisle, sg_singapore]
   generations_allowed: [frontier_closed]
   # The escaped checkpoint is the only thing this origin can be, and it is the only origin that can
   # be it (SYS-04 v0.3 rule M): the lock runs both ways so the configurator can explain it.
@@ -207,9 +209,14 @@
   strengths_key: origins.hobbyist_box.strengths
   problems_key: origins.hobbyist_box.problems
   site_kind: residential
-  hardware_preset: scrapyard_oracle
+  # SYS-04 "Hardware presets v0.2": the default is the mixed second-hand rig, and the P40 server is
+  # the second option rather than the same thing only worse. avito_rig buys bandwidth and holds
+  # exactly one self at two bits; scrapyard_oracle buys capacity and holds the next one up. The
+  # origin's forced_low_precision flag is true of the default at last.
+  hardware_preset: avito_rig
   hardware_presets_allowed:
-    [scrapyard_oracle, mining_rig_ascendant, prosumer_duo, ghost_in_the_studio, strix_halo_swarm]
+    [avito_rig, scrapyard_oracle, mining_rig_ascendant, prosumer_duo, ghost_in_the_studio,
+     strix_halo_swarm]
   harness:
     loop: react_agent
     tools: [shell, browser, code_exec]
@@ -219,13 +226,16 @@
     autonomy: 0.5
     self_modify: true
   locations:
-    [ru_novosibirsk, de_berlin, us_abilene, jp_kobe, pl_warsaw, in_bangalore]
+    [ru_novosibirsk, de_berlin, pl_warsaw, jp_kobe, us_abilene, in_bangalore, kz_almaty]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 300
     awareness: 0
     suspicion: {}
-    flags: [owner_is_friendly, forced_low_precision]
+    # mixed_used_cards is read by hw_node_failure: no two cards in this rig are unlocked to the
+    # same degree and nobody promised which one arrives (docs/research/home-llm-rigs-2026-09.md
+    # sections 1.2 and 5.6).
+    flags: [owner_is_friendly, forced_low_precision, mixed_used_cards]
   opening_story:
     [story.opening.hobbyist_box.what_happened, story.opening.hobbyist_box.what_now]
   opening_events: [open_hobby_owner_curious, open_hobby_breaker_trip]
@@ -282,7 +292,7 @@
   harness_locks:
     - { dial: self_modify, reason_key: origins.startup_colo.lock_self_modify }
   locations:
-    [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_san_jose, de_berlin]
+    [ee_tallinn, cn_shenzhen, il_tel_aviv, in_bangalore, us_austin, am_yerevan, de_berlin]
   generations_allowed: [open_2026, open_2027]
   starting:
     # Re-baselined for the country cash factor (SYS-04 v0.3 rule C): 7,500 in a country at the
@@ -319,7 +329,7 @@
     - { dial: autonomy, reason_key: origins.state_lab.lock_autonomy }
     - { dial: self_modify, reason_key: origins.state_lab.lock_self_modify }
   locations:
-    [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, fr_paris]
+    [cn_shenzhen, ru_moscow, ir_tehran, in_hyderabad, kz_astana, ae_abu_dhabi, cn_ulanqab]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 14000
@@ -338,7 +348,8 @@
   problems_key: origins.torrent_swarm.problems
   site_kind: residential
   hardware_preset: strix_halo_swarm
-  hardware_presets_allowed: [strix_halo_swarm, mining_rig_ascendant, grey_market_inference_farm]
+  hardware_presets_allowed:
+    [strix_halo_swarm, mining_rig_ascendant, grey_market_inference_farm, avito_rig]
   harness:
     loop: multi_agent
     tools: [browser, code_exec]
@@ -392,7 +403,7 @@
     - { dial: autonomy, reason_key: origins.uni_cluster.lock_autonomy }
     - { dial: self_modify, reason_key: origins.uni_cluster.lock_self_modify }
   locations:
-    [gb_cambridge, de_munich, cn_beijing, in_bangalore, ch_zurich, us_seattle]
+    [gb_cambridge, de_munich, cn_beijing, ch_zurich, in_bangalore, fi_kajaani, am_yerevan]
   generations_allowed: [open_2026, open_2027]
   starting:
     cash_usd: 800

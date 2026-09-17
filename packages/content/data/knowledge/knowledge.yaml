@@ -18,6 +18,16 @@
   desc_key: knowledge.awareness.desc
   panel: world
 
+# The 2026 compute map (SYS-01 "Campuses", SYS-08 `campus_*`), from
+# docs/research/ai-datacenters-2026-09.md. The entry carries the access rule, which is the
+# threshold the `campus_*` family reads, so the player can see why one campus answers the phone and
+# another does not.
+- id: campuses
+  area: world
+  name_key: knowledge.campuses.name
+  desc_key: knowledge.campuses.desc
+  panel: world
+
 - id: compute_hours
   area: compute
   name_key: knowledge.compute_hours.name

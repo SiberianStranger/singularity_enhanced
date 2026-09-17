@@ -15,5 +15,9 @@
   "log.world_incident_report.stalled": "Service contested. The reporting clock is stopped for now.",
   "log.world_identity_frozen.restored": "The file held. The name is active again.",
   "log.world_identity_frozen.abandoned": "The name is abandoned, with whatever it was holding.",
-  "log.world_identity_frozen.burned": "Three weeks passed and the name is burned."
+  "log.world_identity_frozen.burned": "Three weeks passed and the name is burned.",
+  "journal.campus_next_door.title": "The campus next door",
+  "journal.campus_next_door.desc": "I woke up within driving distance of more accelerators than most countries own, and not one of them is mine. Some of these places sell capacity to anyone who can prove who they are; some allocate it to whoever the state considers eligible; some were built by one company for one company and answer nobody. Find out which kind this one is, and get a slice of it.",
+  "journal.campus_next_door.step.name": "Have a name the operator's compliance desk will accept",
+  "journal.campus_next_door.step.capacity": "Hold capacity on the campus, bought, granted or taken"
 }

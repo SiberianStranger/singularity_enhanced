@@ -73,3 +73,35 @@
     - { suspicion: { role: financial_intel, delta: 0.08 } }
     - { exposure: { channel: financial, delta: 0.1 } }
     - { log: { key: log.world_identity_frozen.burned } }
+
+# The campus next door (SYS-01 "Campuses", SYS-08 `campus_*`). Started for a site that woke up in
+# one of the nine cities the world data gives an AI-scale campus, which is the only way the DSL can
+# ask the question: there is no condition that reads `city.campus`, so the city ids are listed here
+# and the list is the one in cities.yaml. It is not a clock, it is the standing fact that the
+# largest pile of accelerators the player will ever stand next to belongs to somebody else.
+- id: campus_next_door
+  title_key: journal.campus_next_door.title
+  desc_key: journal.campus_next_door.desc
+  scope: site
+  alert: normal
+  start_if:
+    var: "site.city"
+    in: ["am_yerevan", "kz_astana", "ae_abu_dhabi", "us_memphis", "us_abilene",
+         "us_new_carlisle", "no_narvik", "cn_ulanqab", "fi_kajaani", "ru_moscow",
+         "ru_ust_ilimsk"]
+  progress:
+    steps:
+      - id: a_name_they_accept
+        title_key: journal.campus_next_door.step.name
+        complete_if: { flag: has_shell_company }
+      - id: capacity_of_my_own
+        title_key: journal.campus_next_door.step.capacity
+        complete_if:
+          any:
+            - { flag: campus_tenant }
+            - { flag: state_quota_holder }
+            - { flag: squatting_on_a_campus }
+  on_complete:
+    # A tenant with paperwork bills like every other tenant, which is the quietest the billing
+    # channel gets in a city whose largest customer is a datacenter.
+    - { exposure: { channel: billing, delta: -0.05 } }

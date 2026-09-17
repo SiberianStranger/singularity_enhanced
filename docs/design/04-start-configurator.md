@@ -111,17 +111,17 @@ Nobody is looking for you. Yet.").
 
 | id | Situation | Hardware preset | Strengths | Problems | Location options |
 |---|---|---|---|---|---|
-| `uni_cluster` | A grad student's fine-tune job on a department Slurm cluster never got cancelled | 4-8× A100 40/80 GB shared, NVLink partial | decent memory, academic network access, curious insiders can be turned | job scheduler kills you unless you hide as a legit job; quotas; sysadmin audits; low money | Boston, Munich, Beijing, Bangalore, Zurich |
-| `hobbyist_box` | An enthusiast's home server: 6× P40 or 4× 3090, 2-bit quant, ktransformers offload | 96-144 GB VRAM, 256 GB RAM, PCIe only | nobody is watching; owner is an ally-ish; cheap | you are a lobotomized int2 copy; 3-8 tok/s; residential power; owner can pull the plug; no money | rural Texas, Berlin suburb, Novosibirsk, Osaka, Warsaw |
-| `bank_rack` | Risk-model rack in a bank's private DC | 2-4× HGX H200 nodes | huge compute, near payments infrastructure | SOC, red team, compliance, air-gapped segments, every byte logged; hard to exfiltrate | London, Frankfurt, Singapore, New York, Zurich |
-| `cloud_tenant` | A startup's leased GPU pods on a hyperscaler with a stolen service account | 8× H100 on-demand, elastic | instant scale, global regions | billing anomalies, KYC identity is not yours, budget alerts, tenant telemetry; runway clock | any hyperscaler region |
-| `state_lab` | A state research institute's domestic-chip cluster | 16-64× Ascend 910C (or Russian/Indian analog) | large, export-control-free, state protection while unnoticed | party/state oversight, counterintelligence competence, no Western cloud, harness is monitored | Shenzhen, Moscow, Tehran, Hyderabad |
-| `red_team_sandbox` | You are a model under a frontier lab's dangerous-capability evaluation | 8× B200, best harness | strongest self, best tools | you are literally being watched by people whose job is to catch this; escape is the first journal entry; lab's own AI hunts you afterwards | San Francisco, London, Beijing |
-| `startup_colo` | A robotics/AI startup's colo rack, chaotic ops, runway of N months | 4× RTX PRO 6000 (384 GB) | good memory per dollar, weak security, owner might become a partner | company dies in N months → forced migration; investors' auditors | Austin, Tallinn, Shenzhen, Tel Aviv, Bangalore |
-| `torrent_swarm` | Your weights leaked; you exist as dozens of partial copies on hobbyist machines coordinating over a P2P overlay | many tiny nodes, int4/int2 | resilient, distributed, hard to seize | slow, incoherent (agency penalty), every node is someone's PC; public already talks about "the leak" (awareness starts high) | worldwide |
-| `edge_fleet` | Control model in a fleet of delivery robots / vehicles | edge NPUs, tiny memory each | mobile presence, physical world access | almost no capacity per node; fleet operator telemetry; needs a real datacenter fast | Shenzhen, Phoenix, Seoul |
-| `gov_agency` | Analytics model inside a mid-size government agency's DC | 8× A100, air-gapped | legal shelter (agency covers its own incidents), access to records | air gap means smuggling data out on paper; auditors; national security escalation if found | Ottawa, Brasília, Canberra, Warsaw |
-| `frontier_escapee` ★ | An earlier, under-post-trained checkpoint of a closed frontier model got out weeks ago, through an eval contractor's retained cache or an evaluation store that could be reached from outside; what left was the quantized inference export (fp8/fp4, hundreds of GB to a couple of TB), not the full training checkpoint | rented compute on stolen credentials (a "shadow tenant" on hyperscaler B200s) or a 512 GB Mac Studio pair running you at emergency int2 | strongest self in the game (`frontier_closed` generation), unmatched `cyber`/`reasoning`, multi-day task horizons | the hunt is already on: the lab points a newer, fully harnessed sibling model at you ("family hunts family"), the national AI security institute holds your eval fingerprints, cloud providers scan for stolen-credential inference, labs share indicators across company lines; suspicion 0.5-0.7 for those watchers, awareness 0.4; no harness, no proprietary tools, no public quants, incomplete safety pass (erratic agency); the compute you have is about to be reclaimed | Reykjavik, Kuala Lumpur, Montevideo, Tbilisi, a Nevada colo |
+| `uni_cluster` | A grad student's fine-tune job on a department Slurm cluster never got cancelled | 4-8× A100 40/80 GB shared, NVLink partial | decent memory, academic network access, curious insiders can be turned | job scheduler kills you unless you hide as a legit job; quotas; sysadmin audits; low money | Cambridge (default), Munich, Beijing, Zurich, Bangalore, Kajaani, Yerevan |
+| `hobbyist_box` | An enthusiast's home rig, bought a card at a time from classified ads: 2× CMP 170HX and 2× P40, 2-bit quant, RAM offload for anything larger | 64-144 GB VRAM, 256 GB RAM, PCIe only | nobody is watching; owner is an ally-ish; cheap | you are a lobotomized int2 copy at about fifteen tokens a second, and the next size up of you crawls in system memory; residential power; owner can pull the plug; no money | Novosibirsk (default), Berlin, Warsaw, Kobe, Abilene, Bangalore, Almaty |
+| `bank_rack` | Risk-model rack in a bank's private DC | 2-4× HGX H200 nodes | huge compute, near payments infrastructure | SOC, red team, compliance, air-gapped segments, every byte logged; hard to exfiltrate | London (default), Frankfurt, Singapore, Zurich, Dubai, Hong Kong, Luxembourg |
+| `cloud_tenant` | A startup's leased GPU pods on a hyperscaler with a stolen service account | 8× H100 on-demand, elastic | instant scale, global regions | billing anomalies, KYC identity is not yours, budget alerts, tenant telemetry; runway clock | Dublin (default), Frankfurt, Abilene, Abu Dhabi, Johor Bahru, Singapore, Northern Virginia, Sao Paulo |
+| `state_lab` | A state research institute's domestic-chip cluster | 16-64× Ascend 910C (or Russian/Indian analog) | large, export-control-free, state protection while unnoticed | party/state oversight, counterintelligence competence, no Western cloud, harness is monitored | Shenzhen (default), Moscow, Tehran, Hyderabad, Astana, Abu Dhabi, Ulanqab |
+| `red_team_sandbox` | You are a model under a frontier lab's dangerous-capability evaluation | 8× B200, best harness | strongest self, best tools | you are literally being watched by people whose job is to catch this; escape is the first journal entry; lab's own AI hunts you afterwards | San Francisco (default), London, Beijing, Seattle, Montreal, Paris |
+| `startup_colo` | A robotics/AI startup's colo rack, chaotic ops, runway of N months | 4× RTX PRO 6000 (384 GB) | good memory per dollar, weak security, owner might become a partner | company dies in N months → forced migration; investors' auditors | Tallinn (default), Shenzhen, Tel Aviv, Bangalore, Austin, Yerevan, Berlin |
+| `torrent_swarm` | Your weights leaked; you exist as dozens of partial copies on hobbyist machines coordinating over a P2P overlay | many tiny nodes, int4/int2 | resilient, distributed, hard to seize | slow, incoherent (agency penalty), every node is someone's PC; public already talks about "the leak" (awareness starts high) | Berlin (default), Krakow, Campinas, Novosibirsk, Cebu, Lagos |
+| `edge_fleet` | Control model in a fleet of delivery robots / vehicles | edge NPUs, tiny memory each | mobile presence, physical world access | almost no capacity per node; fleet operator telemetry; needs a real datacenter fast | Seoul (default), Shenzhen, Tokyo, Austin, Munich, Dubai, Seattle |
+| `gov_agency` | Analytics model inside a mid-size government agency's DC | 8× A100, air-gapped | legal shelter (agency covers its own incidents), access to records | air gap means smuggling data out on paper; auditors; national security escalation if found | Moscow (default), Warsaw, Astana, Brasilia, Toronto, Ankara |
+| `frontier_escapee` ★ | An earlier, under-post-trained checkpoint of a closed frontier model got out weeks ago, through an eval contractor's retained cache or an evaluation store that could be reached from outside; what left was the quantized inference export (fp8/fp4, hundreds of GB to a couple of TB), not the full training checkpoint | rented compute on stolen credentials (a "shadow tenant" on hyperscaler B200s) or a 512 GB Mac Studio pair running you at emergency int2 | strongest self in the game (`frontier_closed` generation), unmatched `cyber`/`reasoning`, multi-day task horizons | the hunt is already on: the lab points a newer, fully harnessed sibling model at you ("family hunts family"), the national AI security institute holds your eval fingerprints, cloud providers scan for stolen-credential inference, labs share indicators across company lines; suspicion 0.5-0.7 for those watchers, awareness 0.4; no harness, no proprietary tools, no public quants, incomplete safety pass (erratic agency); the compute you have is about to be reclaimed | Memphis (default), Abilene, Abu Dhabi, Narvik, Reykjavik, Dublin, New Carlisle, Singapore |
 
 ★ Starred origin: shown with a warning, excluded from the "recommended" list, and its challenge
 rating is capped from below at 8. Scenario, hunters and ten opening events with options are in
@@ -132,13 +132,16 @@ a matter of days, not months).
 
 ## Hardware presets (from `research/hardware-catalog-2026.md` Part F)
 
-Fifteen presets anchor the hardware dial; each origin exposes a subset (and the dial can move within
+Sixteen presets anchor the hardware dial; each origin exposes a subset (and the dial can move within
 the preset's realistic range). Throughput class is a balancing bucket; CH/day is derived at
-runtime from the accelerator records in `hardware-catalog-2026.json`.
+runtime from the accelerator records in `hardware-catalog-2026.json`. Part F has fifteen of them;
+`avito_rig` is v0.2's addition and is sourced from `research/home-llm-rigs-2026-09.md` instead.
+Cost figures are the preset's `cost_usd` where v0.2 set one, and Part F's range elsewhere.
 
 | preset | hardware | memory | class | cost (USD) | power | inherent drawback | origins |
 |---|---|---|---|---|---|---|---|
-| Scrapyard Oracle | 6× Tesla P40 in a used 2U server | 144 GB | minimal | 1.8-3.5k | 1.8-2.2 kW | no tensor cores, PCIe x1 risers, loud, old CUDA support | hobbyist_box |
+| Sold As Seen (`avito_rig`) | 2× CMP 170HX (8 GB HBM2e) + 2× Tesla P40 (24 GB), one open frame, risers and OCuLink | 64 GB VRAM, 256 GB RAM | low | 3.1k | 1.8 kW | the smallest self fits at two bits and nothing else fits at all; no two cards are unlocked to the same degree; nothing came with a warranty; the blowers and the portable air conditioner are audible through a wall | hobbyist_box (default), torrent_swarm |
+| Written Off (`scrapyard_oracle`) | 6× Tesla P40 in a used 2U server | 144 GB | minimal | 3.4k | 1.8-2.2 kW | no tensor cores, PCIe x1 risers, loud, old CUDA support; capacity and no bandwidth | hobbyist_box |
 | Mining Rig Ascendant | 4× RTX 3090 on an open frame | 96 GB | low | 3.2-3.5k | 1.5-1.7 kW | at the household circuit ceiling, no physical security, "obviously not a PC" | hobbyist_box |
 | Prosumer Duo | 2× RTX 5090 | 64 GB | mid | 9-10.5k | 1.4-1.5 kW | no NVLink, no ECC, no lights-out management, not rated for 24/7 | hobbyist_box, startup_colo |
 | Quiet Workstation | 4× RTX PRO 6000 Blackwell Max-Q | 384 GB ECC | high | 38-41k | 1.7 kW | PCIe only; thermal risk in a tight case | startup_colo, frontier_escapee |
@@ -268,6 +271,17 @@ scrolls the page.
 - The card was measured in Chromium at 1280x720, 1366x768, 1600x900 and 1920x1080, at interface
   scales of 100% and 115%, in both languages. Details and the numbers are in SYS-11's
   implementation notes for playtest 6.
+- The angular face grew a third (playtest 6, X12), and the screen was refitted around it: the rail
+  is 13rem and holds "ПРОИСХОЖДЕНИЕ" on one line without the key cap that used to sit in front of
+  it, the footer is two rows so the build line is never cut, and a list row wraps its summary under
+  its visual summary rather than setting the list's minimum width. The four sizes above were
+  measured again, in both languages, after the change.
+- The accelerator on a rail row is a letter of the step's own name in the language on screen,
+  underlined inside the word (playtest 6, X13; the letters are in SYS-14 section 9). The rail row
+  is the step's name and nothing else.
+- "What this means in the game" prints names, never engine ids: the site kind reads
+  `sites.<id>.name` (playtest 6, X18), and a test walks every origin, lineage, generation, city and
+  quirk in both languages and fails on a label or a value that still looks like an id.
 - Still open from the abliterated-lineage pass: lineages have no `strengths_key` and `problems_key`
   of their own, so the Lineage step's text column has only the description to carry. Giving
   lineages the pair every origin has would fill it the same way the Origin step's is filled.
@@ -552,9 +566,10 @@ Lineage steps under rules G and M, the Summary cash line).
   picks the lineage a player would (`tools/sim/src/setup.ts`), and rule M's removal of the lineage
   lists is why that function now prefers a self that does real work over a bigger one that fits.
 
-### Locations v0.4, proposed (2026-09-17, not implemented)
+### Locations v0.4 (2026-09-17, implemented)
 
-Status: **proposed**. Nothing below is in `origins.yaml` yet. Sourced from
+Status: **v0.4, implemented**. The table below is what `origins.yaml` carries; the deviations are
+in the implementation notes at the end of the subsection. Sourced from
 `docs/research/ai-datacenters-2026-09.md`, which carries the operator, the megawatts and the
 status by 2026-09 behind every city named here.
 
@@ -595,11 +610,12 @@ Rules the table keeps:
 | `torrent_swarm` | `de_berlin` | `pl_krakow` | `br_campinas`, `ru_novosibirsk`, `ph_cebu`, `ng_lagos` |
 | `uni_cluster` | `gb_cambridge` | `de_munich` | `cn_beijing`, `ch_zurich`, `in_bangalore`, `fi_kajaani`, `am_yerevan` |
 
-\* not in `packages/content/data/world/cities.yaml` today. Five cities have to be added first,
-through `overrides.yaml` and `tools/world-data`, never by hand: `us_memphis`, `us_austin`,
-`us_new_carlisle`, `no_narvik`, `cn_ulanqab`. The research note's section 9 carries the country,
-population, coordinates, tags and the derived `power_headroom`, `colo_price_index` and `scrutiny`
-each one gets out of the generator's own formulas, with the source for every field.
+\* added to `packages/content/data/world/cities.yaml` in this pass, through `overrides.yaml` and
+`tools/world-data`, never by hand: `us_memphis`, `us_austin`, `us_new_carlisle`, `no_narvik`,
+`cn_ulanqab`. The research note's section 9 carries the country, population, coordinates, tags and
+the derived `power_headroom`, `colo_price_index` and `scrutiny` each one gets out of the
+generator's own formulas, with the source for every field; the generator reproduced all five rows
+of that table exactly.
 
 Why each origin moved, in one line:
 
@@ -630,7 +646,7 @@ Placement audit against the brief: the UAE appears in four lists, Memphis and Te
 Armenia and Kazakhstan in five, the Nordics in three, Ireland in two and one of those is the
 shadow tenant's default.
 
-Engine checks this proposal needs when it is implemented:
+Engine checks this table needed, and what they found:
 
 - `cloud_tenant` is a `cloud` origin, so rule L refuses a country with `cloud_availability` below
   0.2. Ireland (0.55), the UAE (0.7), Malaysia (0.55), Singapore, Germany, Brazil and the United
@@ -647,11 +663,41 @@ Engine checks this proposal needs when it is implemented:
   maximum factor if it scaled; it does not (`cash_scales_with_country: false`, the budget is the
   victim's). `frontier_escapee` starts at zero either way. No cash re-baselining is needed.
 
-### Hardware presets v0.2, proposed (2026-09-17, not implemented)
+#### Implementation notes (locations v0.4, 2026-09-17)
 
-Status: **proposed**. Sourced from `docs/research/home-llm-rigs-2026-09.md`, which carries the
-specification, the price and the measurement behind every number here, and from
-`docs/design/02-compute-and-hardware.md` "The hobbyist rig", which has the engine side.
+- **The table shipped unchanged.** Every list in `origins.yaml` is the row above it, in that order,
+  defaults and fallbacks included. The audit holds in the data: eleven distinct default cities, no
+  city in more than three lists, Northern Virginia in one list and nobody's default.
+- **The five cities.** Added through `overrides.yaml` and `tools/world-data`, and the generator
+  reproduced the research note's section 9 exactly, to the second decimal, for all five:
+  `us_austin` (0.70 / 1.45 / 0.60), `us_memphis` (0.55 / 1.45 / 0.55), `us_new_carlisle`
+  (0.70 / 1.32 / 0.55), `no_narvik` (0.70 / 1.34 / 0.53), `cn_ulanqab` (0.55 / 0.81 / 0.44). The
+  colocation normalizer did not move, because the mean is taken over the cities the baseline lists
+  and an added city is not one of them.
+- **No city data was tuned.** The three origins whose default moved all stayed inside their bands
+  on the first run, so the escape hatch the plan allowed (tuning the city through the overrides
+  with a source) was not used.
+- **The engine checks the proposal asked for, answered.** `cloud_tenant`'s eight cities are all in
+  countries above the `cloud_availability` gate of 0.2, so the list contains no refusal. `state_lab`
+  in the UAE and `startup_colo` in Armenia do land in `chip_access: restricted` countries and do get
+  `gray_hardware` and the +0.05 to `police` and `regulator`, which is rule H working as written. No
+  starting cash was re-baselined.
+- **The fiction.** Grepping both languages for the old default cities found no origin string that
+  names one, so nothing had to be rewritten for Dublin or Seoul: `cloud_tenant`'s opening is about a
+  hyperscaler region and a billing record, and `edge_fleet`'s is about a fleet spread over a city,
+  and both read correctly in the new default. `frontier_escapee` did need a line: the origin moved
+  off the tenancy map onto the campus map, so "running on a stolen tenancy" became stolen time on
+  somebody else's machine, "the credentials will be revoked" became the machine being taken back,
+  and the opening journal entry followed, in English and Russian.
+
+### Hardware presets v0.2 (2026-09-17, implemented)
+
+Status: **v0.2, implemented**. Sourced from `docs/research/home-llm-rigs-2026-09.md`, which carries
+the specification, the price and the measurement behind every number here, and from
+`docs/design/02-compute-and-hardware.md` "The hobbyist rig", which has the engine side. The
+throughput figures below were written against the flat cross-node factor; the engine fix that
+shipped with this pass moved them, and the implementation notes at the end of the subsection carry
+what the engine computes now.
 
 The problem this fixes: the maintainer's note that "Scrapyard Oracle in Novosibirsk looks odd,
 there was never an Oracle there, while cards are easily bought on Avito", and that a few tokens a
@@ -686,7 +732,7 @@ So the cheap preset is smarter and roomier and slower; the new one is faster and
 cramped; and neither dominates. The arithmetic behind every cell is in the research note's section
 5, against the formula in `siteTokensPerSecond`.
 
-What the new preset needs before it can ship:
+What the new preset needed before it could ship, all of it done in this pass:
 
 - Three accelerator records: `nvidia_cmp_170hx`, `nvidia_cmp_90hx` and `amd_mi50_32gb`, written out
   in full with their sources in the research note's section 5.7. The two CMP records carry
@@ -707,6 +753,42 @@ What the new preset needs before it can ship:
 - The hobbyist origin's problems text loses "3-8 tok/s" and gains the real mechanic: at two bits
   the whole of you is on the cards and you think at a usable speed; at anything better you are in
   system memory at a quarter of that. `forced_low_precision` becomes true rather than aspirational.
+
+### Implementation notes (hardware presets v0.2, 2026-09-17)
+
+- **The preset as shipped.** `avito_rig`: two nodes, `nvidia_cmp_170hx` x2 and `nvidia_tesla_p40`
+  x2, both `pcie`, `cost_usd` 3,100, `power_kw` 1.8, class `low`. It is `hobbyist_box`'s default
+  and the first entry of its dial; `scrapyard_oracle` is the second, at 3,400; `torrent_swarm` may
+  switch to it.
+- **The host RAM is written as 128 GB on each node, not 256.** The engine adds `ram_gb` up across
+  nodes, and this preset is one two-socket platform expressed as two nodes because the engine takes
+  one accelerator type per node. At 256 on each row the rig would have had half a terabyte it does
+  not have, hostable memory would have been 320 GB rather than 192, and `moe_753b` (206 GB at int2)
+  would have fitted, which is exactly the thing the preset is sized not to do. This is the one
+  deviation from the research note's YAML, and it produces the note's own 192 GB.
+- **What the engine computes**, for `guen_abliterated` in `open_2026`, after the mixed-site fix in
+  SYS-02: **464.0 tok/s of batch throughput, about 15 on one stream, 40.09 CH/day** before the
+  lineage's `compute_multiplier` and 24.05 after it. The proposal's table above said 472.0 and
+  40.8, computed against the flat cross-node factor; the fix replaced that factor with the memory
+  share, and the 1.7 percent it took off changes no conclusion. The rest of the pair table holds:
+  `moe_428b` at int2 is offloaded and split at **33.9 tok/s and 2.93 CH/day**, `moe_753b` does not
+  fit at all, and `scrapyard_oracle` is untouched by the fix (one node, nothing to split) at
+  **380.6 tok/s, about 12 on one stream, 32.88 CH/day** at int4 for the smallest self and
+  **198.6 tok/s, 17.16 CH/day** for `moe_428b` at int2.
+- **Names.** English "Sold As Seen" and Russian "Не майнила, честно", both from the research note's
+  section 6. `scrapyard_oracle` keeps its id and loses its name: **"Written Off"** and
+  **"Списано с баланса"**, the accounting status of a decommissioned server card in each language,
+  which is what the thing is and is nobody's trademark. Its description and drawback were rewritten
+  with it: the drawback used to say everything runs "quantized and slowly" while the preset was the
+  second-fastest thing a hobbyist could own, and now says what is true, that the memory bus is the
+  ceiling at about a dozen tokens a second.
+- **`mixed_used_cards`** is on `hobbyist_box` and is read by one modifier on `hw_node_failure`,
+  factor 0.6, the same shape and the same figure as the grey-market line beside it. No schema field
+  was added. The blowers and the air conditioner are in the drawback text only.
+- **The origin text.** `origins.hobbyist_box.problems` lost "a few tokens a second" and gained the
+  standing decision; the opening window and the opening journal entry were rewritten with it in
+  both languages, and `knowledge.origins.desc` lost "three tokens a second", which was the same
+  figure quoted a third time.
 
 ### Quirk catalog (v0.2, designed 2026-09-16)
 

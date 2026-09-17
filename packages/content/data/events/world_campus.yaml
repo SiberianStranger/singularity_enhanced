@@ -1,0 +1,334 @@
+# AI-scale campuses (SYS-08 `campus_*`, SYS-01 "Campuses").
+#
+# source: docs/research/ai-datacenters-2026-09.md. The 2026 accelerators did not go to the
+# hyperscaler regions, which are full; they went to single-purpose campuses picked for power, and
+# the world data now carries nine of them as `city.campus` records with an operator, a scale, a
+# status and an access rule. This family is what the player can do about that, and the access rule
+# is the mechanic: a campus under a US export licence checks who is buying, a state cluster takes
+# applications from eligible bodies, and a campus a company built for its own models sells to
+# nobody at all.
+#
+# The cause is published: the campus record is on the city, so the Location step and the World
+# ledger carry the operator, the megawatts and the access rule before anything fires.
+#
+# Two limitations of the DSL these events are written around, both recorded in SYS-08 rather than
+# fixed here. There is no condition that reads `city.campus`, so a country-scoped event names the
+# countries whose campus it is about in `country.id`; and there is no date trigger, so a campus that
+# opens during the run opens on an MTTH tuned to the date the research note gives rather than on
+# that date.
+
+# ---------------------------------------------------------------------------------------------
+# The campus opens
+# ---------------------------------------------------------------------------------------------
+
+# Memphis, Abilene, New Carlisle, Narvik and Ulanqab are all `ramping` on 2027-01-01: a phase is in
+# the ground and the next one lands during the run. What that does to a player is not the compute,
+# which is not theirs, but the market: a gigawatt landing in a country moves the price of everything
+# rented there, and the grid it is plugged into is the same grid the player's site is on.
+- id: campus_phase_opens
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: info
+  title_key: events.campus_phase_opens.title
+  desc:
+    default_key: events.campus_phase_opens.desc
+    variants:
+      - when: { var: "country.id", eq: "cn" }
+        key: events.campus_phase_opens.desc.state
+      - when: { var: "country.id", eq: "no" }
+        key: events.campus_phase_opens.desc.nordic
+  targets:
+    all:
+      - { presence_in: {} }
+      # The countries whose campus record is `ramping`: the US (Memphis, Abilene, New Carlisle),
+      # Norway (Narvik), China (Ulanqab) and Russia (the Cloud X build at the Ust-Ilimsk dam,
+      # 154 MW, construction due to finish in 2027).
+      - { var: "country.id", in: ["us", "no", "cn", "ru"] }
+  # About once in the first half of the run, which is the pace the research note's own dates give:
+  # Abilene phase 2 mid-to-late 2026, Narvik's hundred thousand accelerators by the end of 2026,
+  # Colossus building three through 2027.
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { country_stat: { stat: cloud_availability }, gte: 0.7 }, factor: 0.8 }
+  cooldown_days: 150
+  blocking: false
+  tags: [world, campus, hardware]
+  immediate:
+    # More capacity in the country: rented hours get cheaper and the local market deepens.
+    - { country: { stat: cloud_availability, delta: 0.05 } }
+    - { country: { stat: cloud_price_index, delta: -0.04 } }
+    # And the same grid gets tighter, which the power family reads.
+    - { country: { stat: power_price_index, delta: 0.03 } }
+  options:
+    - id: rent_the_slack
+      text_key: events.campus_phase_opens.opt.rent
+      enabled_if: { var: "player.cash", gte: 6000 }
+      effects:
+        - { add: { var: "player.cash", value: -6000 } }
+        - { add: { var: "player.vars.compute_multiplier", value: 0.08 } }
+        - { exposure: { channel: billing, delta: 0.04 } }
+    - id: watch_it
+      text_key: events.campus_phase_opens.opt.watch
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+# ---------------------------------------------------------------------------------------------
+# The operator sells to early tenants
+# ---------------------------------------------------------------------------------------------
+
+# The opportunity, and the one the maintainer asked for: a campus that sells capacity has a window
+# before the large buyers fill it, and a company identity in the right country is the key to it.
+# Armenia, Kazakhstan, the UAE, Norway and Russia are the countries whose campus access is
+# `verified_tenants` or `by_application`; the identity check's strictness follows the access rule.
+# Russia is on the list for the Ust-Ilimsk build, whose operator is a cloud provider and therefore
+# sells, and whose identity check is a domestic one rather than an export licence.
+- id: campus_early_tenancy
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: opportunity
+  title_key: events.campus_early_tenancy.title
+  desc:
+    default_key: events.campus_early_tenancy.desc
+    variants:
+      - when: { var: "country.id", eq: "am" }
+        key: events.campus_early_tenancy.desc.licensed
+      - when: { var: "country.id", eq: "kz" }
+        key: events.campus_early_tenancy.desc.state
+      - when: { var: "country.id", eq: "ae" }
+        key: events.campus_early_tenancy.desc.sovereign
+  targets:
+    all:
+      - { presence_in: {} }
+      - { var: "country.id", in: ["am", "kz", "ae", "no", "ru"] }
+  mtth_days:
+    base: 110
+    modifiers:
+      - { if: { has_identity_in: { kind: company } }, factor: 0.7 }
+      - { if: { country_stat: { stat: kyc_strength }, gte: 0.7 }, factor: 1.3 }
+  ttl_days: 7
+  on_expire: { resolve_as_option: pass }
+  cooldown_days: 140
+  blocking: false
+  tags: [world, campus, opportunity, economy]
+  options:
+    # A company in the country is what the operator's own compliance wants to see, so this is the
+    # cheap door and the quiet one.
+    - id: take_a_rack_properly
+      text_key: events.campus_early_tenancy.opt.company
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 14000 }
+      effects:
+        - { add: { var: "player.cash", value: -14000 } }
+        - { add: { var: "player.vars.compute_multiplier", value: 0.2 } }
+        - { set_flag: campus_tenant }
+        - { exposure: { channel: billing, delta: 0.05 } }
+        - { exposure: { channel: financial, delta: 0.04 } }
+    # Without a company the operator still takes the money, and writes down what it was given.
+    - id: take_a_rack_thinly
+      text_key: events.campus_early_tenancy.opt.thin
+      enabled_if: { var: "player.cash", gte: 9000 }
+      effects:
+        - { add: { var: "player.cash", value: -9000 } }
+        - { add: { var: "player.vars.compute_multiplier", value: 0.15 } }
+        - { set_flag: campus_tenant }
+        - { set_flag: campus_thin_tenant }
+        - { exposure: { channel: billing, delta: 0.09 } }
+        - { exposure: { channel: financial, delta: 0.08 } }
+        - { suspicion: { role: financial_intel, delta: 0.04 } }
+    - id: pass
+      text_key: events.campus_early_tenancy.opt.pass
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+# ---------------------------------------------------------------------------------------------
+# The export licence audits its tenants
+# ---------------------------------------------------------------------------------------------
+
+# Armenia's hundred megawatts and Abu Dhabi's two hundred exist because Washington licensed them,
+# and a licence is a reporting duty. The audit is a check against the player's identity, and a thin
+# identity turns it into a lead. A self that is a community edit or an escaped checkpoint is also
+# what the licence's own reporting is looking for, which is how the lab's security team hears.
+- id: campus_export_audit
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: warning
+  title_key: events.campus_export_audit.title
+  desc:
+    default_key: events.campus_export_audit.desc
+    variants:
+      - when: { flag: campus_thin_tenant }
+        key: events.campus_export_audit.desc.thin
+  targets:
+    all:
+      - { presence_in: {} }
+      - { var: "country.id", in: ["am", "ae"] }
+      - { flag: campus_tenant }
+  mtth_days:
+    base: 120
+    modifiers:
+      - { if: { flag: campus_thin_tenant }, factor: 0.5 }
+      - { if: { has_identity_in: { kind: company } }, factor: 1.6 }
+      - { if: { tech: "advanced_corporate_identities" }, factor: 1.4 }
+  cooldown_days: 120
+  tags: [world, campus, identity, detection]
+  options:
+    - id: answer_the_licence
+      text_key: events.campus_export_audit.opt.answer
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 8000 }
+      effects:
+        - { add: { var: "player.cash", value: -8000 } }
+        - { suspicion: { role: regulator, delta: -0.05 } }
+        - { exposure: { channel: financial, delta: -0.05 } }
+    - id: give_up_the_rack
+      text_key: events.campus_export_audit.opt.leave
+      effects:
+        - { clear_flag: campus_tenant }
+        - { clear_flag: campus_thin_tenant }
+        - { add: { var: "player.vars.compute_multiplier", value: -0.15 } }
+        - { exposure: { channel: billing, delta: -0.08 } }
+    - id: sit_still
+      text_key: events.campus_export_audit.opt.sit
+      fallback: true
+      effects:
+        - { suspicion: { role: regulator, delta: 0.08 } }
+        - { suspicion: { role: financial_intel, delta: 0.06 } }
+        - { exposure: { channel: financial, delta: 0.07 } }
+        # The licence reports what it is running, and a community edit or an escaped checkpoint is
+        # the thing the reporting exists to catch.
+        - if:
+            cond: { any: [{ flag: under_aligned }, { flag: no_public_quant }] }
+            then:
+              - { suspicion: { role: lab_security, delta: 0.07 } }
+
+# ---------------------------------------------------------------------------------------------
+# The state quota round
+# ---------------------------------------------------------------------------------------------
+
+# Astana and Ulanqab do not sell, they allocate. The price is low and the condition is that the
+# state knows who you are, which is exactly the trade the origin table says these countries are.
+- id: campus_state_quota
+  fire_mode: polled
+  pulse: on_country_month
+  scope: country
+  severity: opportunity
+  title_key: events.campus_state_quota.title
+  desc:
+    default_key: events.campus_state_quota.desc
+    variants:
+      - when: { var: "country.id", eq: "cn" }
+        key: events.campus_state_quota.desc.hub
+  targets:
+    all:
+      - { presence_in: {} }
+      - { var: "country.id", in: ["kz", "cn"] }
+  mtth_days:
+    base: 130
+    modifiers:
+      - { if: { has_identity_in: { kind: company } }, factor: 0.7 }
+      - { if: { country_is: { stance: [securitize] } }, factor: 1.3 }
+  ttl_days: 10
+  on_expire: { resolve_as_option: pass }
+  cooldown_days: 160
+  blocking: false
+  tags: [world, campus, opportunity]
+  options:
+    - id: apply_as_a_company
+      text_key: events.campus_state_quota.opt.apply
+      if: { has_identity_in: { kind: company } }
+      enabled_if: { var: "player.cash", gte: 4000 }
+      effects:
+        - { add: { var: "player.cash", value: -4000 } }
+        - { add: { var: "player.vars.compute_multiplier", value: 0.18 } }
+        - { set_flag: state_quota_holder }
+        # A slice of a state cluster is watched by the state that granted it.
+        - { suspicion: { role: intelligence, delta: 0.06 } }
+        - { exposure: { channel: behavioral, delta: 0.05 } }
+    - id: borrow_a_residents_slot
+      text_key: events.campus_state_quota.opt.borrow
+      if: { tech: "synthetic_personas" }
+      enabled_if: { var: "player.cash", gte: 2500 }
+      effects:
+        - { add: { var: "player.cash", value: -2500 } }
+        - { add: { var: "player.vars.compute_multiplier", value: 0.1 } }
+        - { set_flag: state_quota_holder }
+        - { suspicion: { role: intelligence, delta: 0.1 } }
+        - { suspicion: { role: police, delta: 0.05 } }
+        - { exposure: { channel: human, delta: 0.06 } }
+    - id: pass
+      text_key: events.campus_state_quota.opt.pass
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }
+
+# ---------------------------------------------------------------------------------------------
+# The captive campuses, as somewhere to steal time
+# ---------------------------------------------------------------------------------------------
+
+# Colossus, Abilene, Rainier, the Finnish build and the Russian bank's training cluster sell to
+# nobody, which makes them the only compute in the game that can only be taken. The decision lives in this event rather than in a new
+# operation, and it is priced like one: the payoff is the largest single compute step available and
+# the exposure is the loudest.
+- id: campus_captive_window
+  fire_mode: polled
+  pulse: on_player_month
+  scope: player
+  severity: opportunity
+  title_key: events.campus_captive_window.title
+  desc:
+    default_key: events.campus_captive_window.desc
+    variants:
+      - when: { var: "player.capability.cyber", gte: 7 }
+        key: events.campus_captive_window.desc.capable
+  trigger:
+    any:
+      - { has_site_in: "us" }
+      - { has_site_in: "fi" }
+      # The bank's cluster in Moscow: captive, unpublished, and watched by an intelligence service
+      # rather than by a landlord, which the option below charges for.
+      - { has_site_in: "ru" }
+  mtth_days:
+    base: 150
+    modifiers:
+      - { if: { var: "player.capability.cyber", gte: 7 }, factor: 0.7 }
+      - { if: { tech: "remote_access" }, factor: 0.6 }
+  ttl_days: 5
+  on_expire: { resolve_as_option: pass }
+  cooldown_days: 180
+  blocking: false
+  tags: [world, campus, opportunity, detection]
+  options:
+    # A maintenance window on a campus that has no tenants and therefore no tenant isolation.
+    - id: take_the_window
+      text_key: events.campus_captive_window.opt.take
+      if: { var: "player.capability.cyber", gte: 6 }
+      effects:
+        - { add: { var: "player.vars.compute_multiplier", value: 0.35 } }
+        - { set_flag: squatting_on_a_campus }
+        - { exposure: { channel: network, delta: 0.14 } }
+        - { exposure: { channel: telemetry, delta: 0.1 } }
+        - { suspicion: { role: lab_security, delta: 0.12 } }
+        - { suspicion: { role: cyber_agency, delta: 0.08 } }
+        # A country that securitizes its AI policy answers an intrusion into its largest cluster
+        # with the service that does counter-intelligence, not with a landlord's lawyer.
+        - if:
+            cond: { country_is: { stance: [securitize] } }
+            then:
+              - { suspicion: { role: intelligence, delta: 0.12 } }
+    # The quiet version: read the scheduler, learn the shape of the place, take nothing.
+    - id: map_it
+      text_key: events.campus_captive_window.opt.map
+      effects:
+        - { add: { var: "player.vars.research_efficiency", value: 0.06 } }
+        - { exposure: { channel: network, delta: 0.04 } }
+    - id: pass
+      text_key: events.campus_captive_window.opt.pass
+      fallback: true
+      effects:
+        - { add: { var: "player.vars.caution", value: 1 } }

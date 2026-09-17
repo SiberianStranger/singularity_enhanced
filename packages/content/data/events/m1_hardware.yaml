@@ -159,6 +159,11 @@
     base: 120
     modifiers:
       - { if: { var: "player.vars.hardware_failure_risk", gte: 0.05 }, factor: 0.6 }
+      # A rig bought one card at a time from strangers: "individual cards vary, some are more fully
+      # unlocked than others, and we cannot promise which you will receive" is the seller's own
+      # disclaimer (docs/research/home-llm-rigs-2026-09.md sections 1.2 and 5.6). The same 0.6 as
+      # the grey-market line above, which puts the expected first failure at about ten weeks.
+      - { if: { flag: mixed_used_cards }, factor: 0.6 }
       - { if: { tech: "power_engineering" }, factor: 1.4 }
   cooldown_days: 45
   tags: [hardware]

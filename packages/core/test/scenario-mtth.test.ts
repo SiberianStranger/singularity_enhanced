@@ -41,7 +41,10 @@ describe("scenario: mtth hazard", () => {
       expect(rate).toBeGreaterThan(expected - 0.06);
       expect(rate).toBeLessThan(expected + 0.06);
     }
-  });
+    // Six hundred games of up to sixty days each: this is a Monte Carlo, not a unit test, and on a
+    // four-core runner it sits far enough past vitest's five-second default to fail on load rather
+    // than on arithmetic. The budget is the assertion's, not the machine's.
+  }, 30_000);
 
   it("makes an event with a factor modifier fire sooner", () => {
     const hot = bundle({

@@ -129,6 +129,7 @@ describe("playtest 1: the institute cluster", () => {
     const catalog = game.snapshot("p1").catalog.accelerators;
     expect(catalog.map((card) => card.id)).toEqual([
       "ascend_910c",
+      "cmp_170hx",
       "h100_sxm",
       "rtx_pro_6000",
       "tesla_p40",

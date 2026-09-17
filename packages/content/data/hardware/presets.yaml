@@ -1,10 +1,39 @@
 # Hardware presets (SYS-04, SYS-02). The fifteen configurator presets of
-# docs/research/hardware-catalog-2026.md Part F, one record each, in the order of that table.
+# docs/research/hardware-catalog-2026.md Part F, one record each, in the order of that table, plus
+# avito_rig, which Part F does not have (SYS-04 "Hardware presets v0.2", 2026-09-17).
 # Memory is not stored: it is the sum of the nodes' accelerator memory, which the compute system
 # derives from accelerators.yaml. cost_usd is the midpoint of the Part F range, rounded to the
 # nearest 50 USD; power_kw is the Part F figure (midpoint where it gives a range); class is the
 # Part F throughput bucket. cost_usd is 0 for the presets that are access rather than ownership
 # (a queue share, a state allocation, a rented tenancy).
+
+# The sixteenth preset (SYS-04 "Hardware presets v0.2", SYS-02 "The hobbyist rig"), sourced from
+# docs/research/home-llm-rigs-2026-09.md section 5.3. One chassis in the fiction and two node
+# entries in the data, because the engine takes one accelerator type per node. Two CMP 170HX at
+# 250 USD and two P40 at 300 make 1,100 of the cards; a used two-socket Xeon platform with 256 GB
+# of registered ECC is 700, the quad OCuLink adapter, risers and cables 250, two power supplies
+# 250, shrouds, blowers, filament and wiring 100, and the portable air conditioner 450. That is
+# 2,850; the preset is priced at 3,100 for the cards that arrive dead. power_kw is the wall figure
+# for the whole machine: four cards at 250 W nameplate derate to 0.9 kW of accelerator draw in the
+# engine's own arithmetic, and the two Xeons, the blowers and the air conditioner are the rest.
+# Sized so the self does not fit inside either homogeneous group, which is the truthful
+# description of the machine (research section 5.4).
+- id: avito_rig
+  name_key: hardware.preset.avito_rig.name
+  desc_key: hardware.preset.avito_rig.desc
+  drawback_key: hardware.preset.avito_rig.drawback
+  # ram_gb is per node and the engine adds it up, so the one two-socket platform's 256 GB is
+  # written as 128 and 128: the fiction is one machine, the data is two nodes because the engine
+  # takes one accelerator type per node, and 256 on each row would give the rig half a terabyte it
+  # does not have. Hostable memory is then 64 GB of cards plus 256 x RAM_MEMORY_DISCOUNT = 192 GB,
+  # which is the figure the preset is designed around: the next self up is offloaded and the one
+  # after that does not fit at all (docs/research/home-llm-rigs-2026-09.md section 5.5).
+  nodes:
+    - { accelerator: nvidia_cmp_170hx, count: 2, ram_gb: 128, interconnect: pcie }
+    - { accelerator: nvidia_tesla_p40, count: 2, ram_gb: 128, interconnect: pcie }
+  cost_usd: 3100
+  power_kw: 1.8
+  class: low
 
 - id: ascend_rack
   name_key: hardware.preset.ascend_rack.name
@@ -127,13 +156,17 @@
   power_kw: 1.7
   class: high
 
+# cost_usd moved from 2,650 to 3,400 on 2026-09-17 with the P40's price correction: at 300 USD a
+# card the six cards are 1,800 of the price rather than 780 (docs/research/home-llm-rigs-2026-09.md
+# section 5.7). The preset is unchanged otherwise; it is the capacity half of a pair with avito_rig,
+# which buys bandwidth instead (SYS-04 "Hardware presets v0.2").
 - id: scrapyard_oracle
   name_key: hardware.preset.scrapyard_oracle.name
   desc_key: hardware.preset.scrapyard_oracle.desc
   drawback_key: hardware.preset.scrapyard_oracle.drawback
   nodes:
     - { accelerator: nvidia_tesla_p40, count: 6, ram_gb: 256, interconnect: pcie }
-  cost_usd: 2650
+  cost_usd: 3400
   power_kw: 2
   class: minimal
 

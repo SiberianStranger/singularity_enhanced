@@ -149,15 +149,49 @@ interrupts and the `null` bucket is the explicit chance of a quiet week.
 | job-loss backlash | `on_country_month` | `ai_displacement`, `ai_opinion`, `unemployment`, stability, `election_within_days` | `ai_opinion`, `regulation_target`, `enforcement_budget`, the stance itself, lab-security suspicion, osint exposure | the displacement and opinion lines in the country panel |
 | AML and identity checks | `on_identity_check_failed`, the monthly pool | `kyc_strength`, `contract_income_usd_per_day`, identity kind | burns and freezes identities, financial exposure, financial-intelligence suspicion, contract income | the KYC column, the identity's quality and age, and the published monthly check probability |
 | power as a signal | `on_country_month` and `on_player_month` | `power_price_index`, `site.derived.power_kw`, `site.exposure.human`, government | `power_price_index`, `power_draw`, `compute_multiplier`, telemetry, billing and human exposure | the power price index on the ledger and the site's kilowatts next to its cap |
+| campuses (v0.1, 2026-09-17) | `on_country_month` and the monthly pool | presence, `country.id`, `cloud_availability`, `kyc_strength`, `has_identity_in`, the `campus_tenant` and `campus_thin_tenant` flags, `capability.cyber` | `cloud_availability`, `cloud_price_index`, `power_price_index`, `compute_multiplier`, regulator, financial-intelligence, intelligence, lab-security and cyber-agency suspicion, billing, financial, network, telemetry, behavioral and human exposure | the city's campus record, which carries the operator, the megawatts, the status and the access rule from the first day, and the Knowledge entry `campuses`, which publishes what each access rule means |
 
-Three journal entries: `world_incident_report` (the legal deadline, three days, completed by
+Four journal entries: `world_incident_report` (the legal deadline, three days, completed by
 contesting service and timing out into a public notification), `world_election_watch` (a country of
-presence with a vote inside ninety days, two steps and a final-week alert) and
-`world_identity_frozen` (three weeks to repair a frozen name before it burns).
+presence with a vote inside ninety days, two steps and a final-week alert), `world_identity_frozen`
+(three weeks to repair a frozen name before it burns) and `campus_next_door` (a site that woke up
+in one of the eleven campus cities: get a name the operator's compliance desk accepts, then hold
+capacity on the campus, bought, granted or taken).
 
-Nine knowledge entries carry the thresholds the families read: `stance`, `government_types`,
-`regulation`, `hunt_pressure`, `identities`, `elections`, `market_factor`, `price_indices` and
-`incident_reporting`; the `awareness` entry was rewritten with the M2 numbers.
+Ten knowledge entries carry the thresholds the families read: `stance`, `government_types`,
+`regulation`, `hunt_pressure`, `identities`, `elections`, `market_factor`, `price_indices`,
+`incident_reporting` and `campuses`; the `awareness` entry was rewritten with the M2 numbers.
+
+### The campus family (v0.1, 2026-09-17)
+
+Five events in `events/world_campus.yaml`, sourced from `docs/research/ai-datacenters-2026-09.md`
+and reading the `campus` records SYS-01 "Campuses" added:
+
+- `campus_phase_opens`: a `ramping` campus energises its next hall. It is not the player's compute,
+  it is the player's market and the player's grid: rented capacity in the country gets cheaper and
+  deeper, and the electricity gets dearer.
+- `campus_early_tenancy`: the opportunity. A campus that sells has a window before the large buyers
+  fill it. Signing as a company is cheaper and quieter; signing with a thin name is dearer in
+  exposure and sets `campus_thin_tenant`, which the audit halves its own MTTH on.
+- `campus_export_audit`: the licence's reporting duty, for the two countries whose campus exists
+  because Washington licensed it. A thin tenant is the entry the auditor spends longest on, and a
+  self that is a community edit (`under_aligned`) or an escaped checkpoint (`no_public_quant`) is
+  what the reporting exists to find, which is how `lab_security` hears about it.
+- `campus_state_quota`: Astana and Ulanqab allocate rather than sell. The price is a fraction of the
+  market and the condition is that the state knows exactly what is running, so the slice comes with
+  `intelligence` suspicion rather than with a bill.
+- `campus_captive_window`: the campuses that sell to nobody, which makes them the only compute in
+  the game that can only be taken. The decision lives inside the opportunity rather than in a new
+  operation, its payoff is the largest single compute step available, and in a country that
+  securitizes its AI policy the answer comes from the counter-intelligence service.
+
+Two DSL gaps this family is written around rather than fixing, both listed in SYS-01 "Campuses":
+no condition reads `city.campus`, so the countries and the city ids are listed in the content; and
+there is no calendar trigger, so a campus that opens during the run opens on an MTTH tuned to the
+research note's date rather than on that date. A third gap, from the brief that asked for this
+family: **there is no site-creation effect in the DSL**. `lose_site` exists and nothing creates one,
+so "rent a rack on the campus" is expressed as `compute_multiplier` on the player plus a flag, which
+is the mechanic the engine already has, rather than as a second site.
 
 ### First balance probe (2026-09-16, 20 seeds x 180 days per city, `normal`)
 

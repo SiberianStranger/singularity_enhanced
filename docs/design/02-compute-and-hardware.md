@@ -216,10 +216,11 @@ nothing fits on the cards at all. Before this, a hobbyist's six P40 ran a 235B a
 only where there is something to split: a node holding a single card pays nothing. Across nodes, a
 self that fits inside one node's accelerator memory costs nothing either, because the machines then
 run independent copies and their throughput adds up; a self too large for any one of them is
-pipelined over whatever links the boxes and pays `CROSS_NODE_FACTOR` (0.35). This is what makes the
-Strix Halo Swarm and the Spark Pair behave like the catalog says they do ("10 GbE between nodes:
-pipeline or independent agents only") and what makes choosing a smaller self for a swarm a real
-decision rather than a strictly worse one.
+pipelined over whatever links the boxes, and each node is then credited with its bandwidth times
+its share of the site's accelerator memory, which is 1/N on N equal nodes (a flat 0.35 until
+2026-09-17; see "The fix" below). This is what makes the Strix Halo Swarm and the Spark Pair behave
+like the catalog says they do ("10 GbE between nodes: pipeline or independent agents only") and what
+makes choosing a smaller self for a swarm a real decision rather than a strictly worse one.
 
 ### What a site costs to keep
 
@@ -307,9 +308,9 @@ depreciation, because the operator owns the cards; what it buys is opex instead 
 margin, which is why the fee now lands just under what owning the same cards costs. The figures and
 the reasoning are in SYS-01 "Balance notes (M2, second pass)".
 
-## The hobbyist rig (2026-09-17, proposed)
+## The hobbyist rig (2026-09-17, implemented)
 
-Status: **proposed**, alongside SYS-04 "Hardware presets v0.2". Sourced from
+Status: **implemented**, alongside SYS-04 "Hardware presets v0.2". Sourced from
 `docs/research/home-llm-rigs-2026-09.md`. Three things belong in this system rather than in the
 configurator's, because they are about what the engine computes rather than about what the player
 picks.
@@ -328,6 +329,17 @@ This was not written down anywhere, and the result is a contradiction that shipp
 hobbyist row says "3-8 tok/s" while the same preset computes to 380 tok/s and 32.9 CH/day for the
 smallest self. Both are now expressible: 380.6 batch, about twelve on one stream.
 
+**Which figure a view publishes: neither, and that is the answer.** `siteTokensPerSecond` is
+internal. No view field in `packages/core/src/views` carries tokens per second at all; the two
+places the number reaches a player are `SiteView.derived.compute_hours_per_day` and
+`PrecisionRowView.compute_hours_per_day`, both of them `tokensToComputeHoursPerDay` of the batch
+figure, which is the unit the whole economy is denominated in and is batch-agnostic. So the batch
+convention never leaks into a view field, and the only place it can be got wrong is prose. Every
+tokens-per-second figure in a locale string is therefore the single-stream figure, the engine's
+over 32, and the content check has no way to enforce that: the reviewer does. As of this pass the
+strings that quote one are `hardware.preset.scrapyard_oracle.drawback` (about a dozen) and
+`story.opening.hobbyist_box.what_happened` (fifteen).
+
 ### "Not all of me fits" needs no new field
 
 The mechanic is the gap between a site's accelerator memory and its hostable memory
@@ -336,7 +348,8 @@ The mechanic is the gap between a site's accelerator memory and its hostable mem
 
 - the self fits on the cards at the best precision the cards hold, and runs at full speed;
 - the self fits on the cards only at a worse precision, and pays `precision_factor` in capability;
-- the self is larger than any one node, and pays `CROSS_NODE_FACTOR` 0.35 in throughput;
+- the self is larger than any one node, and each node's bandwidth then counts only for that
+  node's share of the site's accelerator memory;
 - the self is larger than all the cards together, and pays `RAM_OFFLOAD_THROUGHPUT_FACTOR` 0.28 on
   top of that;
 - the self is larger than the hostable memory, and the site cannot hold it at all.
@@ -360,6 +373,29 @@ threshold, so a mixed preset must be sized so the self does not fit inside any o
 group. That is also the truthful description of such a machine, so the constraint is not a
 distortion, but it is load-bearing and the next person to touch the preset needs to know it.
 
-The cheap fix, when someone is in this code: weight each node's bandwidth contribution by that
-node's share of the site's accelerator memory whenever the self does not fit in a single node,
-instead of the flat `CROSS_NODE_FACTOR`. Not done here; recorded so that it is not rediscovered.
+### The fix (2026-09-17, implemented)
+
+Each node's bandwidth is now weighted by that node's share of the site's accelerator memory
+whenever the self does not fit inside a single node, and the flat `CROSS_NODE_FACTOR` is gone from
+`balance.ts`. A node holds part of the model in proportion to the memory it has and is only busy
+while that part is being read, which is what the flat factor was standing in for.
+
+- A self that fits inside one node is unchanged: the nodes run independent copies, their throughput
+  adds up, and the site keeps its whole bandwidth.
+- On a homogeneous site of N equal nodes the weighting is exactly 1/N, so a two-node site moves
+  from 0.35 to 0.5, a three-node site from 0.35 to 0.333 and a four-node site from 0.35 to 0.25.
+  Those are real balance moves and the SYS-01 "Balance notes (locations v0.4)" pass measures them.
+- On the mixed rig it does what it was for: `avito_rig` is credited with 696.0 GB/s rather than
+  2,022.9, because the two HBM cards hold a quarter of the memory and are idle for three quarters
+  of every token. That is **464.0 tok/s of batch throughput, about 15 on one stream and 40.09
+  CH/day** for the 180B self at int2, against the 472.0 / 40.8 the arithmetic gave with the flat
+  factor: a 1.7 percent difference that changes no conclusion in SYS-04's pair table.
+- The sizing constraint above is no longer load-bearing for correctness, only for flavour: a mixed
+  preset whose self fits inside one homogeneous group is now credited with that group's bandwidth
+  weighted by its memory share rather than with the whole site's, so the three-times swing across
+  the `split` threshold is gone.
+
+`packages/core/test/compute.test.ts` holds both halves: "splits a self across machines only when no
+single machine can hold it" asserts the 1/N on two equal nodes, and "credits a mixed rig only for
+the bandwidth the weights sit on" asserts the 696.0 GB/s, the 464 tokens a second, the fifteen on
+one stream and the 40.09 CH/day.
