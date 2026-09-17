@@ -51,6 +51,7 @@ section repeats the current version's highlights and this unreleased list.
 - Russian calls a training checkpoint "чекпоинт".
 - Russian calls a harness dial "рычаг", because "регулятор" is the Regulator watcher.
 - Russian never declines a substituted name: it stands after a colon or in guillemets.
+- Russian reads the way the industry writes it: a head noun for every model, the trade's own verbs, and no term that nobody outside this game uses.
 
 ### Fixed
 - The balance runner's scripted player sells enough work to pay its bills instead of waiting for a

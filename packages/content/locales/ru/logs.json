@@ -3,7 +3,7 @@
   "alerts.ops_site_cutoff.final": "Последнее предупреждение: аккаунт будет заблокирован.",
   "log.accounts_frozen": "{watcher} замораживает {usd} $.",
   "log.context_changed": "Рабочий контекст на площадке {site} выставлен в {context_k}k токенов.",
-  "log.context_retrieval_miss": "Промах извлечения на операции {operation}: ответ лежал в окне, и найти его не удалось. Снова {days} дней.",
+  "log.context_retrieval_miss": "Промах извлечения на операции {operation}: ответ лежал в окне, и найти его не удалось. Снова {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}.",
   "log.decommission_notice": "Закрытие площадки {site} обошлось в {usd} $ на уведомление и незакрытые счета.",
   "log.election": "В стране {country} прошли выборы ({kind}). Линия: {stance}{changed}.",
   "log.gray_hardware": "Железо {preset} попало в страну {country} мимо экспортного режима с отметкой {access}.",

@@ -1,6 +1,6 @@
 {
-  "effects.awareness.down": "Огласка в регионе {where} падает на {delta}",
-  "effects.awareness.up": "Огласка в регионе {where} растёт на {delta}",
+  "effects.awareness.down": "Огласка ({where}) падает на {delta}",
+  "effects.awareness.up": "Огласка ({where}) растёт на {delta}",
   "effects.burn_identity": "Сжигает личность типа «{kind}» в стране {where}",
   "effects.cash.cost": "Стоит {usd} $",
   "effects.cash.gain": "Приносит {usd} $",
@@ -78,7 +78,7 @@
   "effects.var.precision_capability_fp8": "При fp8 от меня сохраняется на {value} больше, но не выше полной точности",
   "effects.var.precision_capability_int2": "При int2 от меня сохраняется на {value} больше",
   "effects.var.precision_capability_int4": "При int4 от меня сохраняется на {value} больше",
-  "effects.var.precision_change_downtime_days": "Смена точности стоит площадке {value} дней вне эфира",
+  "effects.var.precision_change_downtime_days": "Смена точности стоит площадке {value} дней простоя",
   "effects.var.precision_memory_bf16": "Веса при bf16 требуют {value} памяти",
   "effects.var.precision_memory_fp8": "Веса при fp8 требуют {value} памяти",
   "effects.var.precision_memory_int2": "Веса при int2 требуют {value} памяти",

@@ -207,6 +207,7 @@ it.
 - Russian calls a training checkpoint "чекпоинт".
 - Russian calls a harness dial "рычаг", because "регулятор" is the Regulator watcher.
 - Russian never declines a substituted name: it stands after a colon or in guillemets.
+- Russian reads the way the industry writes it: a head noun for every model, the trade's own verbs, and no term that nobody outside this game uses.
 - The origin card names its opening journal entry instead of printing its id.
 - The theme setting named its three themes instead of printing their keys.
 - The English origin summary said dollars twice and left the number of watchers without a noun.

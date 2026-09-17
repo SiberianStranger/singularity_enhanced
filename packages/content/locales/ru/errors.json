@@ -70,7 +70,7 @@
   "errors.site_kind.unknown": "Типа площадки «{kind}» не существует.",
   "errors.tech.already_done": "{tech} уже исследовано.",
   "errors.tech.locked": "{tech} пока недоступно.",
-  "errors.tech.self_modify_locked": "{tech} работает надо мной самим, а эта обвязка не позволяет мне править себя.",
+  "errors.tech.self_modify_locked": "{tech} работает надо мной, а эта обвязка не позволяет мне править себя.",
   "errors.tech.unknown": "Технологии с названием {tech} не существует.",
   "log.command_refused": "Отклонено {command}: {reason}."
 }
