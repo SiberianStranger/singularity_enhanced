@@ -34,6 +34,9 @@ packages/desktop/src-tauri/gen/
 packages/ui/test-results/
 packages/ui/playwright-report/
 packages/ui/blob-report/
+
+# `tools/bundle-source.mjs` writes the whole source as one text file here, for reading elsewhere.
+bundle/
 # The official music pack (107 MB) is fetched by packages/ui/scripts/fetch-music.mjs.
 packages/ui/public/music/
 !.nvmrc
