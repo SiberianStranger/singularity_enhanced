@@ -228,38 +228,79 @@ function isResearch(path) {
   return path.startsWith("docs/research/");
 }
 
+function isToolingOrTest(path) {
+  return path.startsWith("tools/") || isTest(path.split("/").join(sep));
+}
+
+/** Consecutive files of the same section become one section again. */
+function regroup(entries) {
+  const out = [];
+  for (const entry of entries) {
+    const last = out[out.length - 1];
+    if (last !== undefined && last.title === entry.section) last.files.push(entry.file);
+    else out.push({ title: entry.section, files: [entry.file] });
+  }
+  return out;
+}
+
+/** Halves by size, never cutting a file. */
+function halve(entries) {
+  const half = entries.reduce((sum, entry) => sum + entry.file.size, 0) / 2;
+  const first = [];
+  const second = [];
+  let carried = 0;
+  for (const entry of entries) {
+    (carried < half ? first : second).push(entry);
+    carried += entry.file.size;
+  }
+  return [first, second];
+}
+
 /**
- * The four sets: a reviewer reads the game in one file, and the two halves of the research and the
- * translations are there to be read when a question needs them rather than in the way of the code.
+ * How the bundle is cut when it is written as a set of files, in the order a reviewer reads them.
+ * The first file is the one to read if only one is read: every document, the simulation, the
+ * content data and the workspace, which is where the game is decided. The client, the English
+ * strings, the tests with the tools, the research in two halves and the translations follow,
+ * because each of them answers a question that comes up rather than carrying the argument.
  */
 function toSets(sections) {
-  const keep = (test) =>
-    sections
-      .map((section) => ({ title: section.title, files: section.files.filter(test) }))
-      .filter((section) => section.files.length > 0);
-  const game = keep((file) => !isResearch(file.path) && (localeOf(file.path) ?? "en") === "en");
-  const translations = keep((file) => (localeOf(file.path) ?? "en") !== "en");
-  const research = keep((file) => isResearch(file.path));
-  const flat = research.flatMap((section) =>
-    section.files.map((file) => ({ section: section.title, file })),
-  );
-  const half = flat.reduce((sum, entry) => sum + entry.file.size, 0) / 2;
-  const halves = [[], []];
-  let carried = 0;
-  for (const entry of flat) {
-    const which = carried < half ? 0 : 1;
-    carried += entry.file.size;
-    const target = halves[which];
-    const last = target[target.length - 1];
-    if (last !== undefined && last.title === entry.section) last.files.push(entry.file);
-    else target.push({ title: entry.section, files: [entry.file] });
+  const buckets = {
+    design: [],
+    client: [],
+    english: [],
+    tooling: [],
+    research: [],
+    translations: [],
+  };
+  for (const section of sections) {
+    for (const file of section.files) {
+      const entry = { section: section.title, file };
+      const path = file.path;
+      const language = localeOf(path);
+      if (isResearch(path)) buckets.research.push(entry);
+      else if (language !== null && language !== "en") buckets.translations.push(entry);
+      else if (language === "en") buckets.english.push(entry);
+      else if (isToolingOrTest(path)) buckets.tooling.push(entry);
+      else if (path.startsWith("packages/ui/")) buckets.client.push(entry);
+      else buckets.design.push(entry);
+    }
   }
+  const [researchA, researchB] = halve(buckets.research);
   return [
-    { slug: "1-game", title: "the game, its documents and its English text", sections: game },
-    { slug: "2-research-a", title: "the research notes, first half", sections: halves[0] },
-    { slug: "3-research-b", title: "the research notes, second half", sections: halves[1] },
-    { slug: "4-translations", title: "every locale but English", sections: translations },
-  ].filter((set) => set.sections.length > 0);
+    [
+      "1-design-and-core",
+      "the documents, the simulation core, the content data and the workspace",
+      buckets.design,
+    ],
+    ["2-client", "the web client", buckets.client],
+    ["3-english-text", "every string the game ships in English", buckets.english],
+    ["4-tests-and-tools", "the tests, the balance runner and the other tools", buckets.tooling],
+    ["5-research-a", "the research notes, first half", researchA],
+    ["6-research-b", "the research notes, second half", researchB],
+    ["7-translations", "every string the game ships in another language", buckets.translations],
+  ]
+    .map(([slug, title, entries]) => ({ slug, title, sections: regroup(entries) }))
+    .filter((set) => set.sections.length > 0);
 }
 
 function gitFact(command, fallback) {
