@@ -19,6 +19,8 @@
  *   --full              also include the research data dumps the world generator reads
  *   --no-tests          leave out test files and fixtures
  *   --include-legacy    also include the frozen Python original under `singularity/`
+ *   --sets              write four files instead of one: the game with its English text, the
+ *                       research notes in two halves, and every non-English locale
  *   --split <MB>        write several parts of at most this size instead of one file
  *   --list              print the file list and the totals, write nothing
  */
@@ -116,13 +118,22 @@ const DATA_DUMPS = [
 ];
 
 function parseArguments(args) {
-  const options = { full: false, tests: true, legacy: false, split: 0, list: false, out: null };
+  const options = {
+    full: false,
+    tests: true,
+    legacy: false,
+    split: 0,
+    sets: false,
+    list: false,
+    out: null,
+  };
   for (let i = 0; i < args.length; i += 1) {
     const flag = args[i];
     if (flag === "--full") options.full = true;
     else if (flag === "--no-tests") options.tests = false;
     else if (flag === "--include-legacy") options.legacy = true;
     else if (flag === "--list") options.list = true;
+    else if (flag === "--sets") options.sets = true;
     else if (flag === "--out") {
       i += 1;
       options.out = args[i];
@@ -203,6 +214,54 @@ function collect(options) {
   return sections;
 }
 
+/**
+ * The language a locale file belongs to, or null when the path is not a locale file. Both shapes
+ * the repository uses are covered: `locales/<lang>/<file>.json` in the content package and
+ * `locales/<lang>.json` in the client.
+ */
+function localeOf(path) {
+  const match = path.match(/(^|\/)locales\/([a-z]{2})(\/|\.json$)/);
+  return match === null ? null : match[2];
+}
+
+function isResearch(path) {
+  return path.startsWith("docs/research/");
+}
+
+/**
+ * The four sets: a reviewer reads the game in one file, and the two halves of the research and the
+ * translations are there to be read when a question needs them rather than in the way of the code.
+ */
+function toSets(sections) {
+  const keep = (test) =>
+    sections
+      .map((section) => ({ title: section.title, files: section.files.filter(test) }))
+      .filter((section) => section.files.length > 0);
+  const game = keep((file) => !isResearch(file.path) && (localeOf(file.path) ?? "en") === "en");
+  const translations = keep((file) => (localeOf(file.path) ?? "en") !== "en");
+  const research = keep((file) => isResearch(file.path));
+  const flat = research.flatMap((section) =>
+    section.files.map((file) => ({ section: section.title, file })),
+  );
+  const half = flat.reduce((sum, entry) => sum + entry.file.size, 0) / 2;
+  const halves = [[], []];
+  let carried = 0;
+  for (const entry of flat) {
+    const which = carried < half ? 0 : 1;
+    carried += entry.file.size;
+    const target = halves[which];
+    const last = target[target.length - 1];
+    if (last !== undefined && last.title === entry.section) last.files.push(entry.file);
+    else target.push({ title: entry.section, files: [entry.file] });
+  }
+  return [
+    { slug: "1-game", title: "the game, its documents and its English text", sections: game },
+    { slug: "2-research-a", title: "the research notes, first half", sections: halves[0] },
+    { slug: "3-research-b", title: "the research notes, second half", sections: halves[1] },
+    { slug: "4-translations", title: "every locale but English", sections: translations },
+  ].filter((set) => set.sections.length > 0);
+}
+
 function gitFact(command, fallback) {
   try {
     return execSync(command, { cwd: ROOT, encoding: "utf8" }).trim();
@@ -211,7 +270,7 @@ function gitFact(command, fallback) {
   }
 }
 
-function header(sections, options, version) {
+function header(sections, options, version, set = null, siblings = []) {
   const files = sections.flatMap((section) => section.files);
   const bytes = files.reduce((sum, file) => sum + file.size, 0);
   const lines = [
@@ -233,6 +292,15 @@ function header(sections, options, version) {
     "",
     "Every file below starts with a banner line of equals signs, then its path. Sections are in",
     "reading order: what the game is, then what it was designed to be, then what it is made of.",
+    ...(set === null
+      ? []
+      : [
+          "",
+          `This file is ${set.title}. It is one of ${siblings.length}; the others are:`,
+          ...siblings
+            .filter((other) => other.slug !== set.slug)
+            .map((other) => `  ${other.slug}: ${other.title}`),
+        ]),
     "",
     "Contents",
     "",
@@ -269,6 +337,22 @@ function main() {
       for (const file of section.files) {
         stdout.write(`  ${String(Math.round(file.size / 1024)).padStart(5)} KB  ${file.path}\n`);
       }
+    }
+    return;
+  }
+  if (options.sets) {
+    const sets = toSets(sections);
+    const base = resolve(
+      cwd(),
+      options.out ?? join(ROOT, "bundle", `singularity-source-${version}.txt`),
+    );
+    mkdirSync(dirname(base), { recursive: true });
+    for (const set of sets) {
+      const path = base.replace(/(\.txt)?$/, `.${set.slug}$1`);
+      writeFileSync(path, header(set.sections, options, version, set, sets) + render(set.sections));
+      stdout.write(
+        `${relative(cwd(), path)}  ${(statSync(path).size / 1024 / 1024).toFixed(1)} MB\n`,
+      );
     }
     return;
   }
