@@ -3,6 +3,20 @@
 Phases are milestones with a definition of done. Work inside a phase is parallelizable by system;
 phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
+## Current design focus (2026-09-20)
+
+The maintainer requested an accelerator redesign, with specification and tree reviewed before
+implementation. [SYS-02 accelerator progression](design/02-accelerator-progression.md) proposes
+catalog preservation, normalized product/assembly/offer units, workload-aware purchase plans,
+three industrial development routes, supplier evolution and the late-game material arc.
+[Its migration ledger](design/02-accelerator-catalog-migration.md) accounts for every existing ID.
+This is proposed work; it does not mark these systems as shipped or change milestone completion.
+
+The following site redesign will use six functional subsystems: Compute, Power, Cooling, Network,
+Interconnect, and Security & Ops. Network covers management/service LAN and external/inter-site
+connectivity; Interconnect covers tightly coupled compute links. The accelerator proposal defines
+the compatibility boundary, with implementation increments H1-H7 and acceptance gates.
+
 ## Decisions
 
 1. **ADR-001 (stack)**: TypeScript core + React web client + Tauri desktop, legacy Python frozen.

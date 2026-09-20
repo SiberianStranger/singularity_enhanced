@@ -2,6 +2,14 @@
 
 Status: v0. Numbers to be filled from `docs/research/hardware-catalog-2026.json`.
 
+Redesign proposal, 2026-09-20: [accelerator families and progression](02-accelerator-progression.md)
+defines normalized installation units, purpose-based purchase plans, three industrial routes,
+late computational bodies and the interface to six future site subsystems. It is a specification
+for review, not implemented behavior. The [migration ledger](02-accelerator-catalog-migration.md)
+preserves all 94 existing accelerator IDs. The dated implementation notes below still describe
+the current runtime; older speculative physical claims should be checked against the proposal's
+[evidence note](../research/accelerator-redesign-2026-09.md) before implementation.
+
 ## Concepts
 
 - **Accelerator spec** (content): a GPU/NPU model with memory, bandwidth, compute, power, interconnect,

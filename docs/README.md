@@ -2,6 +2,10 @@
 
 - `ARCHITECTURE.md`: package layout, kernel, data flow, quality gates.
 - `ROADMAP.md`: phases M0-M11, definitions of done, decisions pending.
+- [Accelerator redesign proposal](design/02-accelerator-progression.md): SYS-02 families, access,
+  own-silicon routes, supplier evolution, late computational bodies and the six-subsystem site boundary.
+  [Catalog migration ledger](design/02-accelerator-catalog-migration.md) retains all existing IDs;
+  [evidence note](research/accelerator-redesign-2026-09.md) records current sources and physical limits.
 - `decisions/`: architecture decision records (ADR-001 stack, ADR-002 content format and DSL,
   ADR-003 simulation model).
 - `design/`: one document per game system (SYS-xx). Numbering is stable; add new systems at the
