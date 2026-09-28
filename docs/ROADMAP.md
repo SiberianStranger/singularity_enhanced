@@ -16,8 +16,9 @@ Six site subsystems now have content and engine rules: Compute, Power, Cooling, 
 Interconnect, and Security & Ops. Research reveals and unlocks equipment; authoritative quotes
 check rights, resources and capacity; orders progress through a prototype where needed and then
 manufacturing/delivery. Save schema 5 retains installed equipment and pending orders while older
-sites inherit their existing infrastructure. This describes the implementation scope, not a
-claim that release artifacts or deployment have already been verified.
+sites inherit their existing infrastructure. Local verification, three-OS CI, Pages deployment
+and the six published artifacts are recorded in the
+[verification report](playtests/2026-09-28-equipment-archetypes.md).
 
 [The implementation contract](design/02-hardware-archetypes.md) defines the acceptance work.
 This increment does not complete M3: actors, diplomacy and NPC AI behavior remain the next planned

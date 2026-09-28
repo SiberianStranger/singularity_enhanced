@@ -69,5 +69,13 @@ orders are not a foundry/yield simulator. Workload-specific hardware efficiency,
 by calendar, biological substrates and offworld placement remain the explicitly marked design
 branches in [the Russian guide](../design/02-hardware-player-guide.ru.md).
 
-Deployment is performed by the existing Pages and Release workflows. Their observed completion
-is recorded in the publication follow-up, not inferred from the local build.
+## Publication observed
+
+- Shipped code: [1ece894](https://github.com/SiberianStranger/singularity_enhanced/commit/1ece894098e5be93329267c4a000ee4c2d573fcc), tagged v0.2.0.
+- [Workspace CI](https://github.com/SiberianStranger/singularity_enhanced/actions/runs/36479733098) passed on Windows, macOS and Ubuntu. Ubuntu also ran the complete built-browser suite.
+- [Pages deployment](https://github.com/SiberianStranger/singularity_enhanced/actions/runs/36479733017) passed. A clean browser loaded the public menu; the served application script contained version 0.2.0 and the new equipment command/UI.
+- [Release build](https://github.com/SiberianStranger/singularity_enhanced/actions/runs/36480666704) completed successfully for web, Windows, universal macOS and Linux, then published the release.
+- [Release v0.2.0](https://github.com/SiberianStranger/singularity_enhanced/releases/tag/v0.2.0) contains six nonempty, correctly versioned artifacts: EXE, MSI, universal DMG, AppImage, DEB and web ZIP. Published at 2026-09-28 20:48:36 UTC as a playable prerelease.
+
+Native installers were built by CI and their uploaded artifacts were verified; no local native
+installation was performed. Runtime interaction and visual review used the browser application.

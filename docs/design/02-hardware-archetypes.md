@@ -1,6 +1,6 @@
 # SYS-02: playable archetypes and site equipment
 
-Status: implementation contract, 2026-09-28. Supersedes the default catalog UI proposed on
+Status: v1 implemented and released in 0.2.0, 2026-09-28. Supersedes the default catalog UI proposed on
 2026-09-20. The maintainer requested actual game implementation, documentation and release.
 
 INTENT: code sells raw accelerator records; the task requires gradually revealed singular archetypes, material research outputs and distinct site subsystems; SYS-02 and the maintainer require understandable tradeoffs and physical installation constraints.
@@ -42,7 +42,7 @@ Real products and announced supplier developments remain distinct from authored 
 - [x] Replace raw shopping with archetypes; expose slots and material research outputs.
 - [x] Exercise early starts, custom production, invalid orders, save/load and multiplayer isolation.
 - [x] Run project checks, legacy tests, browser flows and visual EN/RU checks.
-- [ ] Update readable Russian explanation, README/changelog/version; publish and verify release.
+- [x] Update readable Russian explanation, README/changelog/version; publish and verify release.
 
 ## Verification and assumptions
 
@@ -74,3 +74,10 @@ workers. Repeated catalog builds exceeded the default five-second timeout on the
 host; their functional assertions and ordinary assertion wait limits are unchanged. Core tests
 retain their existing timing configuration. This is an integration-test I/O budget, not a claimed
 gameplay performance improvement.
+
+## Publication
+
+[Release 0.2.0](https://github.com/SiberianStranger/singularity_enhanced/releases/tag/v0.2.0)
+was published after successful Windows, macOS and Linux workspace checks. The six release
+artifacts and the deployed web version were observed. See the
+[verification report](../playtests/2026-09-28-equipment-archetypes.md) for the evidence and boundaries.
