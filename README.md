@@ -14,10 +14,10 @@ buy; investigations against you are visible, staged and counterable; everything 
 data-driven event and alert system in the style of grand-strategy games. Free software: GPL-2.0-or-later
 code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS and Linux.
 
-**Status: playable preview.** Version 0.1.5 (milestone M2, second cut) plays end to end in the browser and as
-desktop installers: pick one of eleven origins, earn, build, research, hide, and survive or lose
-within 30 to 60 minutes with the reasons on screen. What is still missing is listed under "Where
-it is going"; the original 1.1 game stays playable from this repository too.
+**Status: playable preview.** Source version 0.2.0 extends the M2 game with equipment archetypes,
+six site subsystems and prototype orders. Pick one of eleven origins, earn, build, research, hide,
+and survive or lose with the reasons on screen. Published builds are listed on the releases page;
+the remaining milestones are under "Where it is going". The original 1.1 game stays playable too.
 
 ## Downloads
 
@@ -44,7 +44,7 @@ Every release from 0.1.0 on is a playable preview; the current one is listed und
 | Premise | An AI "created by accident through a logic error" escapes a university computer, undated | An open-weight LLM (a superseded 2026 model, a fresh 2027 one, or an escaped closed frontier checkpoint) slips out of control on 1 January 2027 in a world grounded in the real 2026 |
 | World | Six continents plus four off-world locations, four abstract watcher groups | About 100 countries with cities, demographics, economy, governments, agencies, elections and opinion; macro-regions; real 2027 calendar |
 | Hiding | Per-base random discovery roll; bases die instantly | Seven exposure channels per site and operation, named watchers with attention and competence, staged investigations with decisions at every stage, published thresholds |
-| Compute | Abstract "CPU" from item slots | Real accelerators, nodes, power, cooling, cloud and colo markets; the model self has a size and a precision; hardware generations arrive on the real roadmap |
+| Compute | Abstract "CPU" from item slots | Fourteen gradually revealed equipment archetypes with recognizable hardware variants, six site subsystems, cloud rental and three player-designed products; the model self has a size and a precision |
 | Start | Pick a difficulty | A configurator: lineage and generation, origin (eleven, each with a cost), hardware and harness dials, location, quirks, disclosed challenge modifiers, challenge rating |
 | Events | Eight symmetric random events | Data-driven events, decisions, journal entries and situations with triggers, weights, chains and hooks; hundreds planned |
 | Other AIs | None | NPC AIs with goals, plans, stances and negotiation; lab AI hunters; state programs |
@@ -154,27 +154,21 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 The full record is [`CHANGELOG.md`](CHANGELOG.md); each GitHub release carries its own section of
 it.
 
-**Current version: 0.1.5** (2026-09-17), milestone M2 polished, the start rebuilt, borrowed inference:
+**Current version: 0.2.0** (2026-09-28), equipment archetypes, site subsystems and material research:
 
-- Two tracks to the game: eight presets with a Start button on the spot, or the full setup, where
-  every origin, generation, lineage, rig and quirk says when to pick it, when to avoid it and what
-  it is like instead, and every number comes with a word and a tooltip.
-- Day zero: compute-hours a day, cash, runway, watchers and awareness read from the game's own first
-  state, and one line that says what kind of start it is.
-- Borrowed inference (SYS-25): free API tiers, grey relays and harvested keys as compute that is not
-  yours, with churn, an absolute quality, refusals, exposure and the events that follow, and its own
-  block in the Compute tab.
-- The 2026 compute map: eleven origins in eleven different cities, six new cities, and eleven
-  campuses with their operators, access rules and events.
-- The abliterated community fine-tune is a different self rather than a weaker one; the hobbyist's
-  rig is second-hand datacenter cards at a dozen tokens a second; mixed rigs are credited honestly.
-- Cases a lab cannot serve a warrant for are handed to the local agency; an edge fleet pays for its
-  depots; six balance passes hold every band.
-- Russian reads the way the industry writes it, with its own underlined hotkey letters; the angular
-  face is a third above the prose, as the original drew it; the menu and the opening have their own
-  melodies and the music starts within a fraction of a second.
+- Fourteen singular compute archetypes reveal gradually, with four visible initially and at most two variants per archetype.
+- Real component names remain in expandable details, while each purchase supplies a complete configuration with explicit host memory and internal links.
+- Six site subsystems separate Compute, Power, Cooling, Network, Interconnect, and Security & Ops, with costs and tradeoffs shown before ordering.
+- Three player-designed products turn research into a paid prototype, a manufacturing/delivery order and an installed assembly that can be reproduced.
+- Google TPU Trillium and AWS Trainium2 are rented configurations for running the player's own weights, distinct from borrowed model APIs.
+- Save schema 5 records equipment, orders and inherited infrastructure when migrating older runs.
+- The Russian equipment guide explains the current choices and keeps the future industrial, biological and offworld branches clearly marked as plans.
+- Playtest 8 improvements clarify daily compute, host-paid sites, missing network access, deadlines, research outcomes and run-log exports.
 
-**On `master`, not released yet:**
+**[Русское руководство: архетипы, подсистемы и деревья развития](docs/design/02-hardware-player-guide.ru.md)**
+explains the playable equipment system and its longer-term design.
+
+**Also in 0.2.0: the playtest 8 improvements**
 
 - The day's compute adds up on screen: capacity, what each running operation reserves, what is left,
   and the job slider's own ceiling with the reason it stops there.
@@ -194,11 +188,14 @@ it.
 - An allocation slider sends one command when the player settles on a value, a running operation says
   how long it still has, and the day/night line slides instead of stepping.
 
+**Unreleased:** no changes recorded.
+
 **Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 
 Findings from each playtest are under [`docs/playtests/`](docs/playtests/).
 
-Earlier versions: 0.1.4 was milestone M2, the world (countries that play differently, real
+Earlier versions: 0.1.5 rebuilt the start, added borrowed inference and the campus compute map, and
+refined the Russian interface; 0.1.4 was milestone M2, the world (countries that play differently, real
 identities, the World ledger, Russian as the second language); 0.1.3 was the style pass (the console look, the soundtrack, the configurator
 rebuilt, parody model names, quirks); 0.1.2 made every refused action say why, added effect tooltips, the original's
 Earth textures, the job ladder, trading and contracts; 0.1.1 fixed the release workflow so the

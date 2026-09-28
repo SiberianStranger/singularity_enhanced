@@ -24,6 +24,7 @@ import type {
   TextVar,
 } from "@singularity/core";
 import { EXPOSURE_CHANNELS } from "@singularity/core";
+import { contentBundle } from "../content/bundle.js";
 import { operationById, techById } from "../content/defs.js";
 
 // ---------------------------------------------------------------------------------------------
@@ -47,6 +48,10 @@ export function techRows(view: PlayerView): TechView[] {
  * content bundle for which one it is instead of guessing from the shape of the id.
  */
 export function entityNameKey(id: string): string {
+  if (id.startsWith("equipment:"))
+    return (
+      contentBundle.equipment?.find((e) => e.id === id.slice(10))?.name_key ?? "equipment_ui.title"
+    );
   if (techById.has(id)) {
     return `techs.${id}.name`;
   }

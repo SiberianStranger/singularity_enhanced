@@ -34,6 +34,10 @@ export const NodeSpecSchema = z.object({
 
 export const HardwarePresetDefSchema = z.object({
   id: z.string(),
+  requires: z.array(z.string()).optional(),
+  reveal_after: z.array(z.string()).optional(),
+  requires_company: z.boolean().optional(),
+  rental_only: z.boolean().optional(),
   name_key: z.string(),
   desc_key: z.string(),
   drawback_key: z.string(),

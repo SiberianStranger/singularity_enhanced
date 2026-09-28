@@ -51,6 +51,9 @@
   class: high
 
 - id: bank_basement_cluster
+  requires: [hardware_sourcing, cluster_networking]
+  reveal_after: [hardware_sourcing]
+  requires_company: true
   name_key: hardware.preset.bank_basement_cluster.name
   desc_key: hardware.preset.bank_basement_cluster.desc
   drawback_key: hardware.preset.bank_basement_cluster.drawback
@@ -75,6 +78,9 @@
   class: extreme
 
 - id: gb200_nvl72_rack
+  requires: [advanced_accelerator_design]
+  reveal_after: [accelerator_design]
+  requires_company: true
   name_key: hardware.preset.gb200_nvl72_rack.name
   desc_key: hardware.preset.gb200_nvl72_rack.desc
   drawback_key: hardware.preset.gb200_nvl72_rack.drawback
@@ -85,6 +91,8 @@
   class: extreme
 
 - id: ghost_in_the_studio
+  requires: [cpu_offload]
+  reveal_after: []
   name_key: hardware.preset.ghost_in_the_studio.name
   desc_key: hardware.preset.ghost_in_the_studio.desc
   drawback_key: hardware.preset.ghost_in_the_studio.drawback
@@ -95,6 +103,8 @@
   class: low_mid
 
 - id: grey_market_inference_farm
+  requires: [hardware_sourcing]
+  reveal_after: [synthetic_identities]
   name_key: hardware.preset.grey_market_inference_farm.name
   desc_key: hardware.preset.grey_market_inference_farm.desc
   drawback_key: hardware.preset.grey_market_inference_farm.drawback
@@ -147,6 +157,8 @@
   class: low
 
 - id: prosumer_duo
+  requires: [cpu_offload]
+  reveal_after: []
   name_key: hardware.preset.prosumer_duo.name
   desc_key: hardware.preset.prosumer_duo.desc
   drawback_key: hardware.preset.prosumer_duo.drawback
@@ -157,6 +169,8 @@
   class: mid
 
 - id: quiet_workstation
+  requires: [hardware_sourcing]
+  reveal_after: [cpu_offload]
   name_key: hardware.preset.quiet_workstation.name
   desc_key: hardware.preset.quiet_workstation.desc
   drawback_key: hardware.preset.quiet_workstation.drawback
@@ -181,6 +195,8 @@
   class: minimal
 
 - id: spark_pair
+  requires: [multi_node_inference]
+  reveal_after: [remote_operations]
   name_key: hardware.preset.spark_pair.name
   desc_key: hardware.preset.spark_pair.desc
   drawback_key: hardware.preset.spark_pair.drawback
@@ -192,6 +208,9 @@
   class: low_mid
 
 - id: stolen_hgx_node
+  requires: [hardware_sourcing, cluster_networking]
+  reveal_after: [hardware_sourcing]
+  requires_company: true
   name_key: hardware.preset.stolen_hgx_node.name
   desc_key: hardware.preset.stolen_hgx_node.desc
   drawback_key: hardware.preset.stolen_hgx_node.drawback
@@ -207,6 +226,8 @@
   class: very_high
 
 - id: strix_halo_swarm
+  requires: [multi_node_inference]
+  reveal_after: [cpu_offload]
   name_key: hardware.preset.strix_halo_swarm.name
   desc_key: hardware.preset.strix_halo_swarm.desc
   drawback_key: hardware.preset.strix_halo_swarm.drawback

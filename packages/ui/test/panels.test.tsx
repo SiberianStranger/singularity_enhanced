@@ -8,16 +8,18 @@
  * market will take (C6), and a refused command says why (C7).
  */
 
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { GameSetup } from "@singularity/core";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
-import { logVars } from "../src/lib/labels.js";
+import { catalog } from "../src/content/catalog.js";
+import { logVars, siteName } from "../src/lib/labels.js";
 import { refusalOf } from "../src/lib/viewContract.js";
 import { GameScreen } from "../src/screens/game/GameScreen.js";
 import { useGameStore } from "../src/store/gameStore.js";
 import { useUiStore } from "../src/store/uiStore.js";
-import { type LocalSession, startSession } from "./helpers.js";
+import { type LocalSession, startSession, testSetup } from "./helpers.js";
 
 // Toasts and alerts name their variables the way the log does (playtest 5, L10).
 const tr = i18next.t.bind(i18next);
@@ -31,8 +33,8 @@ afterEach(() => {
 });
 
 /** A started game with the opening events answered, which is where a player actually plays from. */
-async function play(): Promise<LocalSession> {
-  session = await startSession();
+async function play(setup?: GameSetup): Promise<LocalSession> {
+  session = await startSession(setup);
   render(<GameScreen />);
   for (const choice of session.view().pending.filter((entry) => entry.blocking)) {
     const option = choice.options.find((entry) => entry.enabled);
@@ -241,45 +243,63 @@ describe("research (U2, C5)", () => {
 });
 
 describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
-  it("lists accelerators as a table with their parameters and a purchase preview", async () => {
+  it("groups discovered configurations and explains the selected order", async () => {
     const live = await play();
     await openTab(/^Compute and sites$/);
     await userEvent.click(within(panel()).getByRole("button", { name: "Buy hardware" }));
-
     const dialog = await screen.findByRole("dialog");
-    for (const header of ["Vendor", "Memory", "Price", "Availability", "Holds you"]) {
-      expect(within(dialog).getByRole("columnheader", { name: header })).toBeInTheDocument();
-    }
-
-    const card = live.view().catalog.accelerators.find((entry) => entry.price_usd > 0);
-    expect(card).toBeDefined();
-    await userEvent.click(within(dialog).getByRole("cell", { name: card?.name ?? "" }));
-    const summary = within(dialog).getByTestId("buy-summary");
-    // The order's price, and the memory the site would have once it lands.
-    expect(summary).toHaveTextContent("$");
-    expect(summary).toHaveTextContent("GB");
+    expect(live.view().catalog.accelerators).toEqual([]);
+    const offers =
+      live.view().sites[0]?.equipment?.offers.filter((o) => o.slot === "compute") ?? [];
+    expect(within(dialog).getAllByRole("radio")).toHaveLength(
+      new Set(offers.map((o) => o.archetype)).size,
+    );
+    expect(within(dialog).getAllByRole("radio")).toHaveLength(4);
+    await userEvent.click(within(dialog).getAllByRole("radio")[0] as HTMLElement);
+    expect(within(dialog).getByTestId("equipment-preview")).toHaveTextContent("$");
+    expect(within(dialog).getByTestId("equipment-preview")).toHaveTextContent("GB");
   });
 
-  it("buys hardware and the engine records the order", async () => {
-    const live = await play();
-    const site = live.view().sites[0];
-    const before = live.view().sites[0]?.nodes.length ?? 0;
-    const card = live
-      .view()
-      .catalog.accelerators.find(
-        (entry) =>
-          entry.availability === "buy" && entry.price_usd <= live.view().resources.cash_usd,
-      );
-    expect(card, "something is affordable at the start").toBeDefined();
-
-    const result = await useGameStore.getState().send({
-      type: "buy_hardware",
-      siteId: site?.id ?? "",
-      accelerator: card?.id ?? "",
-      count: 1,
+  it("orders a complete configuration on owned hardware and records delivery", async () => {
+    const origin = catalog.origins.find((o) => o.id === "hobbyist_box");
+    if (origin === undefined) throw new Error("hobbyist missing");
+    const setup = testSetup();
+    const first = setup.players[0];
+    if (first === undefined) throw new Error("player missing");
+    const live = await play({
+      ...setup,
+      players: [
+        {
+          ...first,
+          origin: origin.id,
+          hardware_preset: origin.hardware_preset,
+          city: origin.locations[0] ?? "",
+        },
+      ],
     });
+    // This scenario starts after the player has earned enough for a complete assembly.
+    const saved = JSON.parse(await live.host.save());
+    saved.players.p1.cash = 100000;
+    await act(async () => live.host.load(JSON.stringify(saved)));
+    const site = live.view().sites[0];
+    const offer = site?.equipment?.offers.find(
+      (o) => o.slot === "compute" && o.blocked_reason === null,
+    );
+    expect(offer, "owned start has an affordable complete configuration").toBeDefined();
+    const before = site?.nodes.length ?? 0;
+    const result = await useGameStore
+      .getState()
+      .send({ type: "order_equipment", siteId: site?.id ?? "", equipmentId: offer?.id ?? "" });
     expect(result.ok, JSON.stringify(result.error)).toBe(true);
-    expect(live.view().sites[0]?.nodes.length).toBe(before + 1);
+    expect(live.view().sites[0]?.nodes.length).toBeGreaterThan(before);
+    expect(live.view().sites[0]?.equipment?.orders).toHaveLength(1);
+    expect(live.view().sites[0]?.memory_gb).toBe(site?.memory_gb);
+    if (site === undefined) throw new Error("owned site missing");
+    const placed = live.view().log.find((entry) => entry.key === "equipment.log.ordered");
+    expect(placed?.vars.site).toBe(site.id);
+    expect(logVars(tr, "equipment.log.ordered", placed?.vars ?? {}, live.view()).site).toBe(
+      siteName(tr, site),
+    );
   });
 
   it("asks where before it asks what, and says what to choose next (Z11, Z12)", async () => {
@@ -305,12 +325,16 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
   it("builds a site through the engine", async () => {
     const live = await play();
     const before = live.view().sites.length;
-    const kind = live.view().catalog.site_kinds.find((entry) => entry.blocked_reason === undefined);
+    const kind = live
+      .view()
+      .catalog.site_kinds.find(
+        (entry) => entry.id === "residential" && entry.blocked_reason === undefined,
+      );
     const result = await useGameStore.getState().send({
       type: "build_site",
       kind: kind?.id ?? "",
       city: "gb_london",
-      hardware_preset: "bank_basement_cluster",
+      hardware_preset: "avito_rig",
     });
     expect(result.ok, JSON.stringify(result.error)).toBe(true);
     expect(live.view().sites.length).toBe(before + 1);

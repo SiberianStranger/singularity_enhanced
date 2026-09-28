@@ -12,6 +12,7 @@ import {
 } from "./configurator.js";
 import { DecisionDefSchema } from "./decisions.js";
 import { ConditionSchema, EffectListSchema } from "./dsl.js";
+import { EquipmentDefSchema } from "./equipment.js";
 import { EventDefSchema, HookDefSchema } from "./events.js";
 import { AcceleratorDefSchema, HardwarePresetDefSchema, SiteKindDefSchema } from "./hardware.js";
 import { JournalDefSchema } from "./journal.js";
@@ -23,6 +24,7 @@ import { CityDefSchema, CountryDefSchema, MacroRegionDefSchema } from "./world.j
 export const LocaleMapSchema = z.record(z.string(), z.string());
 
 export const ContentBundleSchema = z.object({
+  equipment: z.array(EquipmentDefSchema).optional(),
   events: z.array(EventDefSchema),
   decisions: z.array(DecisionDefSchema),
   journal: z.array(JournalDefSchema),

@@ -12,7 +12,7 @@ import { Glyph, sceneGlyph } from "../../../components/glyphs.js";
 import { Bar } from "../../../components/Meter.js";
 import { Table } from "../../../components/Table.js";
 import { Tooltip } from "../../../components/Tooltip.js";
-import { cityById } from "../../../content/catalog.js";
+import { catalog, cityById } from "../../../content/catalog.js";
 import { accelerator } from "../../../lib/accelerators.js";
 import { dayOf } from "../../../lib/format.js";
 import { siteName } from "../../../lib/labels.js";
@@ -23,6 +23,7 @@ import { BuildSiteDialog } from "../dialogs/BuildSiteDialog.js";
 import { BuyHardwareDialog } from "../dialogs/BuyHardwareDialog.js";
 import { BorrowedBlock } from "./BorrowedBlock.js";
 import { ComputeBudget } from "./ComputeBudget.js";
+import { SiteEquipmentPanel } from "./SiteEquipmentPanel.js";
 
 /** A context window in the units the player reads: thousands of tokens, millions above 1,000k. */
 function contextText(t: ReturnType<typeof useTranslation>["t"], contextK: number): string {
@@ -448,6 +449,8 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
             </Button>
           </div>
 
+          <SiteEquipmentPanel view={view} site={site} />
+
           {site.id === view.self.active_site_id ? (
             <>
               <PrecisionTable view={view} site={site} />
@@ -455,21 +458,24 @@ export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
             </>
           ) : null}
 
-          <div>
-            <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
+          <details>
+            <summary className="mb-1 cursor-pointer text-xs uppercase tracking-wide text-muted">
               {t("compute.nodes")}
-            </h4>
+            </summary>
             <ul data-testid="site-nodes" className="flex flex-col gap-1 text-sm">
               {site.nodes.map((node) => (
                 <li key={node.id} className="flex justify-between gap-2 font-mono">
                   <span>
-                    {node.count} x {node.accelerator}
+                    {node.equipment_name_key === undefined ? "" : `${t(node.equipment_name_key)}: `}
+                    {node.count} ×{" "}
+                    {catalog.accelerators.find((part) => part.id === node.accelerator)?.name ??
+                      node.accelerator}
                   </span>
                   <span className="text-muted">{t(`compute.node.${node.status}`)}</span>
                 </li>
               ))}
             </ul>
-          </div>
+          </details>
 
           <div>
             <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">

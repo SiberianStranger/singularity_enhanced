@@ -1,0 +1,19 @@
+{
+  "equipment.archetype.cloud_tensor": "Облачный тензорный узел",
+  "equipment.cloud_google.desc": "Четырёхчиповая VM Trillium исполняет мои собственные веса. В договор включена подготовка окружения для стека TPU.",
+  "equipment.cloud_google.tradeoff": "Чипы остаются у Google. Аренда и зависимость от аккаунта продолжаются, пока работает VM.",
+  "equipment.cloud_google.variant": "Google · TPU Trillium",
+  "equipment.cloud_google.preset_name": "Облачный тензорный узел · Google TPU",
+  "equipment.cloud_google.not_for_sale": "Только аренда: одна VM с четырьмя TPU, договором и регулярной оплатой.",
+  "equipment.cloud_aws.desc": "Полная VM Trainium2 исполняет мои веса в подготовленном окружении Neuron. Начальный платёж покрывает оформление и адаптацию.",
+  "equipment.cloud_aws.tradeoff": "Локальной памяти один чип: крупной модели нужна выгрузка в RAM или другая конфигурация. Аренда и зависимость от провайдера сохраняются.",
+  "equipment.cloud_aws.variant": "AWS · Trainium2",
+  "equipment.cloud_aws.preset_name": "Облачный тензорный узел · AWS Trainium2",
+  "equipment.cloud_aws.not_for_sale": "Только аренда: одна одночиповая VM EC2, договор и регулярная оплата.",
+  "guidance.hardware.rental_tpu_trillium.pick_if": "Беру, если могу поддерживать личность для провайдера и хочу арендовать четырёхчиповую TPU-VM для своих весов.",
+  "guidance.hardware.rental_tpu_trillium.avoid_if": "Не беру, если модели нужно больше памяти ускорителей, чем даёт этот срез, или аккаунт не выдержит проверки.",
+  "guidance.hardware.rental_tpu_trillium.compare": "В сравнении с Trainium2 здесь четыре чипа и больше хостовой RAM. Обе сборки остаются арендованными, а инфраструктурой управляет провайдер.",
+  "guidance.hardware.rental_trainium2.pick_if": "Беру, если модели достаточно одночипового облачного тела с подготовленным окружением Neuron.",
+  "guidance.hardware.rental_trainium2.avoid_if": "Не беру, если нужен большой общий объём памяти ускорителей или независимость от аккаунта провайдера.",
+  "guidance.hardware.rental_trainium2.compare": "В сравнении с TPU-VM это меньшая одночиповая сборка. Хостовая RAM вмещает выгруженные веса, но не превращается в память ускорителя."
+}

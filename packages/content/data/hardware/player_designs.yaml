@@ -1,0 +1,53 @@
+# Authored player hardware: GAME FICTION, not announced real products or measured projections.
+# Every number is an initial balancing parameter. These finite specifications intentionally retain
+# external memory, host processors, packaging, interconnect, cooling and manufacturing dependencies.
+# "Mature" describes a conservative design route, not a claimed process node or fabrication yield.
+# Weights remain programmable: no mask-ROM self, zero-heat logic or guaranteed security immunity.
+# price_usd_new is an accounting replacement value, NOT an unlocked retail purchase offer.
+# Access is only through equipment orders, technology, a company and the paid prototype stage.
+# Prototype fees/time are game abstractions covering design, fabrication access and qualification;
+# they are NOT real tape-out quotations. Recurring assembly costs include hosts and commissioning.
+- id: "player_mature_tensor"
+  vendor: "Player design"
+  name: "Mature programmable tensor module"
+  arch: "Game fiction: conservative programmable matrix engine with external memory"
+  memory_gb: 64
+  memory_bandwidth_gbs: 256
+  tflops_fp16: 60
+  tdp_w: 180
+  form_factor: "Custom PCIe module; host, external memory and forced airflow required"
+  interconnect: {"type":"PCIe; host-mediated exchange","gbs":32}
+  price_usd_new: 2000
+  price_usd_used: null
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+
+- id: "player_inference_module"
+  vendor: "Player design"
+  name: "Programmable inference module"
+  arch: "Game fiction: memory-oriented programmable matrix engine"
+  memory_gb: 128
+  memory_bandwidth_gbs: 1200
+  tflops_fp16: 160
+  tdp_w: 300
+  form_factor: "Custom module with external memory; packaged and tested in a complete host"
+  interconnect: {"type":"PCIe; cluster adapters provided by the assembly","gbs":64}
+  price_usd_new: 6500
+  price_usd_used: null
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null
+
+- id: "player_integrated_module"
+  vendor: "Player design"
+  name: "Integrated compute module"
+  arch: "Game fiction: programmable chiplet system with external high-bandwidth memory"
+  memory_gb: 256
+  memory_bandwidth_gbs: 4000
+  tflops_fp16: 1000
+  tdp_w: 800
+  form_factor: "Custom baseboard module; memory packaging, qualified fabric and cooling required"
+  interconnect: {"type":"Qualified custom fabric","gbs":512}
+  price_usd_new: 20000
+  price_usd_used: null
+  availability: ["enterprise"]
+  cloud_usd_per_hour: null

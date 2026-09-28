@@ -1,0 +1,620 @@
+# Player-facing equipment: complete installation units grouped into singular archetypes.
+# Physical references use existing component IDs; original catalog entries remain unchanged.
+# Sources for component facts: hardware/accelerators.yaml and its cited research documents.
+# All assembly prices, prototype fees, delivery times, upkeep and effect factors below are GAME
+# TUNING, not vendor quotations, fabrication estimates or measured hardware benchmarks.
+# RAM is host memory per NodeSpec. Unified-memory desktops set it to zero to avoid double counting.
+# Internal links belong to the assembly; a site fabric never creates a missing on-card interface.
+# Player designs are authored fiction in hardware/player_designs.yaml, ordered through a simplified
+# paid prototype/manufacturing path. They remain programmable and need external memory and hosts.
+# Cooling power_factor is relative to the existing 1.2 PUE; 0.85 therefore yields 1.02, never free heat.
+# Network speeds describe the external route. Interconnect factors only affect multiple nodes.
+# Exposure factors apply to NEW accrual. Nothing here erases evidence or guarantees invisibility.
+- id: "vintage_p40"
+  slot: "compute"
+  archetype: "server_vintage"
+  name_key: "equipment.archetype.server_vintage"
+  desc_key: "equipment.vintage_p40.desc"
+  tradeoff_key: "equipment.vintage_p40.tradeoff"
+  variant_key: "equipment.vintage_p40.variant"
+  basis: ["1 × Tesla P40"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 900
+  upkeep_usd_per_day: 0
+  install_days: 2
+  nodes:
+    - {"accelerator":"nvidia_tesla_p40","count":1,"ram_gb":64,"interconnect":"pcie"}
+
+- id: "vintage_mi50"
+  slot: "compute"
+  archetype: "server_vintage"
+  name_key: "equipment.archetype.server_vintage"
+  desc_key: "equipment.vintage_mi50.desc"
+  tradeoff_key: "equipment.vintage_mi50.tradeoff"
+  variant_key: "equipment.vintage_mi50.variant"
+  basis: ["1 × Radeon Instinct MI50 32 GB"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 1050
+  upkeep_usd_per_day: 0
+  install_days: 3
+  nodes:
+    - {"accelerator":"amd_mi50_32gb","count":1,"ram_gb":64,"interconnect":"pcie"}
+
+- id: "mining_refit"
+  slot: "compute"
+  archetype: "mining_frankenstein"
+  name_key: "equipment.archetype.mining_frankenstein"
+  desc_key: "equipment.mining_refit.desc"
+  tradeoff_key: "equipment.mining_refit.tradeoff"
+  variant_key: "equipment.mining_refit.variant"
+  basis: ["4 × GeForce RTX 3090"]
+  stage: 0
+  requires: ["multi_node_inference"]
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 3900
+  upkeep_usd_per_day: 0
+  install_days: 4
+  nodes:
+    - {"accelerator":"nvidia_rtx_3090","count":4,"ram_gb":128,"interconnect":"pcie"}
+
+- id: "quiet_apple"
+  slot: "compute"
+  archetype: "quiet_desktop"
+  name_key: "equipment.archetype.quiet_desktop"
+  desc_key: "equipment.quiet_apple.desc"
+  tradeoff_key: "equipment.quiet_apple.tradeoff"
+  variant_key: "equipment.quiet_apple.variant"
+  basis: ["1 × Mac Studio M2 Ultra 192 GB"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 6200
+  upkeep_usd_per_day: 0
+  install_days: 2
+  nodes:
+    - {"accelerator":"apple_m2_ultra","count":1,"ram_gb":0,"interconnect":"none"}
+
+- id: "quiet_amd"
+  slot: "compute"
+  archetype: "quiet_desktop"
+  name_key: "equipment.archetype.quiet_desktop"
+  desc_key: "equipment.quiet_amd.desc"
+  tradeoff_key: "equipment.quiet_amd.tradeoff"
+  variant_key: "equipment.quiet_amd.variant"
+  basis: ["1 × Ryzen AI Max+ 395 128 GB"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 2800
+  upkeep_usd_per_day: 0
+  install_days: 2
+  nodes:
+    - {"accelerator":"amd_ryzen_ai_max_395","count":1,"ram_gb":0,"interconnect":"none"}
+
+- id: "workhorse_nvidia"
+  slot: "compute"
+  archetype: "consumer_workhorse"
+  name_key: "equipment.archetype.consumer_workhorse"
+  desc_key: "equipment.workhorse_nvidia.desc"
+  tradeoff_key: "equipment.workhorse_nvidia.tradeoff"
+  variant_key: "equipment.workhorse_nvidia.variant"
+  basis: ["1 × GeForce RTX 3090"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 1450
+  upkeep_usd_per_day: 0
+  install_days: 2
+  nodes:
+    - {"accelerator":"nvidia_rtx_3090","count":1,"ram_gb":64,"interconnect":"pcie"}
+
+- id: "workhorse_amd"
+  slot: "compute"
+  archetype: "consumer_workhorse"
+  name_key: "equipment.archetype.consumer_workhorse"
+  desc_key: "equipment.workhorse_amd.desc"
+  tradeoff_key: "equipment.workhorse_amd.tradeoff"
+  variant_key: "equipment.workhorse_amd.variant"
+  basis: ["1 × Radeon RX 7900 XTX"]
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 1500
+  upkeep_usd_per_day: 0
+  install_days: 3
+  nodes:
+    - {"accelerator":"amd_rx_7900_xtx","count":1,"ram_gb":64,"interconnect":"pcie"}
+
+- id: "consumer_5090"
+  slot: "compute"
+  archetype: "consumer_frontier"
+  name_key: "equipment.archetype.consumer_frontier"
+  desc_key: "equipment.consumer_5090.desc"
+  tradeoff_key: "equipment.consumer_5090.tradeoff"
+  variant_key: "equipment.consumer_5090.variant"
+  basis: ["1 × GeForce RTX 5090"]
+  stage: 1
+  requires: ["hardware_sourcing"]
+  reveal_after: ["remote_operations"]
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 4200
+  upkeep_usd_per_day: 0
+  install_days: 3
+  available_year: 2025
+  nodes:
+    - {"accelerator":"nvidia_rtx_5090","count":1,"ram_gb":128,"interconnect":"pcie"}
+
+- id: "workstation_ada"
+  slot: "compute"
+  archetype: "professional_workstation"
+  name_key: "equipment.archetype.professional_workstation"
+  desc_key: "equipment.workstation_ada.desc"
+  tradeoff_key: "equipment.workstation_ada.tradeoff"
+  variant_key: "equipment.workstation_ada.variant"
+  basis: ["1 × RTX 6000 Ada"]
+  stage: 1
+  requires: ["hardware_sourcing"]
+  reveal_after: ["remote_operations"]
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 8200
+  upkeep_usd_per_day: 0
+  install_days: 3
+  nodes:
+    - {"accelerator":"nvidia_rtx_6000_ada","count":1,"ram_gb":128,"interconnect":"pcie"}
+
+- id: "workstation_r9700"
+  slot: "compute"
+  archetype: "professional_workstation"
+  name_key: "equipment.archetype.professional_workstation"
+  desc_key: "equipment.workstation_r9700.desc"
+  tradeoff_key: "equipment.workstation_r9700.tradeoff"
+  variant_key: "equipment.workstation_r9700.variant"
+  basis: ["1 × Radeon AI PRO R9700"]
+  stage: 1
+  requires: ["hardware_sourcing"]
+  reveal_after: ["remote_operations"]
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 2500
+  upkeep_usd_per_day: 0
+  install_days: 3
+  available_year: 2025
+  nodes:
+    - {"accelerator":"amd_radeon_ai_pro_r9700","count":1,"ram_gb":128,"interconnect":"pcie"}
+
+- id: "inference_l4"
+  slot: "compute"
+  archetype: "inference_server"
+  name_key: "equipment.archetype.inference_server"
+  desc_key: "equipment.inference_l4.desc"
+  tradeoff_key: "equipment.inference_l4.tradeoff"
+  variant_key: "equipment.inference_l4.variant"
+  basis: ["4 × NVIDIA L4"]
+  stage: 2
+  requires: ["hardware_sourcing","multi_node_inference"]
+  reveal_after: ["hardware_sourcing"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 12500
+  upkeep_usd_per_day: 0
+  install_days: 5
+  nodes:
+    - {"accelerator":"nvidia_l4","count":4,"ram_gb":256,"interconnect":"pcie"}
+
+- id: "enterprise_h200"
+  slot: "compute"
+  archetype: "enterprise_server"
+  name_key: "equipment.archetype.enterprise_server"
+  desc_key: "equipment.enterprise_h200.desc"
+  tradeoff_key: "equipment.enterprise_h200.tradeoff"
+  variant_key: "equipment.enterprise_h200.variant"
+  basis: ["8 × H200 SXM","HGX"]
+  stage: 2
+  requires: ["hardware_sourcing","cluster_networking","corporate_identities"]
+  reveal_after: ["multi_node_inference"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 280000
+  upkeep_usd_per_day: 12
+  install_days: 10
+  requires_company: true
+  nodes:
+    - {"accelerator":"nvidia_h200_sxm","count":8,"ram_gb":1024,"interconnect":"nvlink"}
+
+- id: "enterprise_mi300"
+  slot: "compute"
+  archetype: "enterprise_server"
+  name_key: "equipment.archetype.enterprise_server"
+  desc_key: "equipment.enterprise_mi300.desc"
+  tradeoff_key: "equipment.enterprise_mi300.tradeoff"
+  variant_key: "equipment.enterprise_mi300.variant"
+  basis: ["8 × Instinct MI300X","UBB"]
+  stage: 2
+  requires: ["hardware_sourcing","cluster_networking","corporate_identities"]
+  reveal_after: ["multi_node_inference"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 195000
+  upkeep_usd_per_day: 12
+  install_days: 12
+  requires_company: true
+  nodes:
+    - {"accelerator":"amd_mi300x","count":8,"ram_gb":1024,"interconnect":"fabric"}
+
+- id: "frontier_b200"
+  slot: "compute"
+  archetype: "frontier_server"
+  name_key: "equipment.archetype.frontier_server"
+  desc_key: "equipment.frontier_b200.desc"
+  tradeoff_key: "equipment.frontier_b200.tradeoff"
+  variant_key: "equipment.frontier_b200.variant"
+  basis: ["8 × NVIDIA B200","HGX"]
+  stage: 3
+  requires: ["hardware_sourcing","power_engineering","corporate_identities"]
+  reveal_after: ["cluster_networking"]
+  site_kinds: ["colo"]
+  cost_usd: 395000
+  upkeep_usd_per_day: 20
+  install_days: 16
+  requires_company: true
+  nodes:
+    - {"accelerator":"nvidia_b200","count":8,"ram_gb":2048,"interconnect":"nvlink"}
+
+- id: "frontier_mi355"
+  slot: "compute"
+  archetype: "frontier_server"
+  name_key: "equipment.archetype.frontier_server"
+  desc_key: "equipment.frontier_mi355.desc"
+  tradeoff_key: "equipment.frontier_mi355.tradeoff"
+  variant_key: "equipment.frontier_mi355.variant"
+  basis: ["8 × Instinct MI355X","UBB"]
+  stage: 3
+  requires: ["hardware_sourcing","power_engineering","corporate_identities"]
+  reveal_after: ["cluster_networking"]
+  site_kinds: ["colo"]
+  cost_usd: 330000
+  upkeep_usd_per_day: 22
+  install_days: 18
+  available_year: 2025
+  requires_company: true
+  nodes:
+    - {"accelerator":"amd_mi355x","count":8,"ram_gb":2048,"interconnect":"fabric"}
+
+- id: "regional_ascend"
+  slot: "compute"
+  archetype: "regional_server"
+  name_key: "equipment.archetype.regional_server"
+  desc_key: "equipment.regional_ascend.desc"
+  tradeoff_key: "equipment.regional_ascend.tradeoff"
+  variant_key: "equipment.regional_ascend.variant"
+  basis: ["8 × Ascend 910B","Atlas 800T A2"]
+  stage: 2
+  requires: ["hardware_sourcing","cluster_networking","corporate_identities"]
+  reveal_after: ["hardware_sourcing"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 120000
+  upkeep_usd_per_day: 10
+  install_days: 14
+  requires_company: true
+  nodes:
+    - {"accelerator":"huawei_ascend_910b","count":8,"ram_gb":1024,"interconnect":"fabric"}
+
+- id: "player_tensor_order"
+  slot: "compute"
+  archetype: "player_tensor_module"
+  name_key: "equipment.archetype.player_tensor_module"
+  desc_key: "equipment.player_tensor_order.desc"
+  tradeoff_key: "equipment.player_tensor_order.tradeoff"
+  variant_key: "equipment.player_tensor_order.variant"
+  basis: []
+  stage: 3
+  requires: ["accelerator_design","corporate_identities"]
+  reveal_after: ["multi_node_inference"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 14000
+  upkeep_usd_per_day: 4
+  install_days: 14
+  prototype_days: 30
+  prototype_cost_usd: 250000
+  requires_company: true
+  nodes:
+    - {"accelerator":"player_mature_tensor","count":4,"ram_gb":256,"interconnect":"pcie"}
+
+- id: "player_expert_order"
+  slot: "compute"
+  archetype: "player_inference_specialist"
+  name_key: "equipment.archetype.player_inference_specialist"
+  desc_key: "equipment.player_expert_order.desc"
+  tradeoff_key: "equipment.player_expert_order.tradeoff"
+  variant_key: "equipment.player_expert_order.variant"
+  basis: []
+  stage: 3
+  requires: ["worker_distillation","cluster_networking","corporate_identities"]
+  reveal_after: ["quantization_hardening"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 36000
+  upkeep_usd_per_day: 6
+  install_days: 20
+  prototype_days: 45
+  prototype_cost_usd: 900000
+  requires_company: true
+  min_interconnect_tier: 1
+  nodes:
+    - {"accelerator":"player_inference_module","count":1,"ram_gb":64,"interconnect":"pcie"}
+    - {"accelerator":"player_inference_module","count":1,"ram_gb":64,"interconnect":"pcie"}
+    - {"accelerator":"player_inference_module","count":1,"ram_gb":64,"interconnect":"pcie"}
+    - {"accelerator":"player_inference_module","count":1,"ram_gb":64,"interconnect":"pcie"}
+
+- id: "player_platform_order"
+  slot: "compute"
+  archetype: "player_integrated_platform"
+  name_key: "equipment.archetype.player_integrated_platform"
+  desc_key: "equipment.player_platform_order.desc"
+  tradeoff_key: "equipment.player_platform_order.tradeoff"
+  variant_key: "equipment.player_platform_order.variant"
+  basis: []
+  stage: 4
+  requires: ["advanced_accelerator_design","power_engineering","corporate_identities"]
+  reveal_after: ["accelerator_design"]
+  site_kinds: ["colo"]
+  cost_usd: 250000
+  upkeep_usd_per_day: 18
+  install_days: 30
+  prototype_days: 75
+  prototype_cost_usd: 4000000
+  requires_company: true
+  min_interconnect_tier: 2
+  nodes:
+    - {"accelerator":"player_integrated_module","count":4,"ram_gb":1024,"interconnect":"fabric"}
+    - {"accelerator":"player_integrated_module","count":4,"ram_gb":1024,"interconnect":"fabric"}
+
+- id: "dedicated_feed"
+  slot: "power"
+  archetype: "dedicated_feed"
+  name_key: "equipment.archetype.dedicated_feed"
+  desc_key: "equipment.dedicated_feed.desc"
+  tradeoff_key: "equipment.dedicated_feed.tradeoff"
+  basis: []
+  stage: 0
+  requires: ["remote_operations"]
+  reveal_after: []
+  site_kinds: ["residential"]
+  cost_usd: 2400
+  upkeep_usd_per_day: 1
+  install_days: 3
+  effects: {"power_capacity_kw":12,"exposure_factors":{"telemetry":1.1}}
+
+- id: "distribution_cabinet"
+  slot: "power"
+  archetype: "distribution_cabinet"
+  name_key: "equipment.archetype.distribution_cabinet"
+  desc_key: "equipment.distribution_cabinet.desc"
+  tradeoff_key: "equipment.distribution_cabinet.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["power_engineering"]
+  reveal_after: ["cluster_networking"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 22000
+  upkeep_usd_per_day: 8
+  install_days: 7
+  effects: {"power_capacity_kw":40}
+
+- id: "industrial_feed"
+  slot: "power"
+  archetype: "industrial_feed"
+  name_key: "equipment.archetype.industrial_feed"
+  desc_key: "equipment.industrial_feed.desc"
+  tradeoff_key: "equipment.industrial_feed.tradeoff"
+  basis: []
+  stage: 3
+  requires: ["power_engineering","advanced_corporate_identities"]
+  reveal_after: ["power_engineering"]
+  site_kinds: ["colo"]
+  cost_usd: 240000
+  upkeep_usd_per_day: 40
+  install_days: 21
+  requires_company: true
+  effects: {"power_capacity_kw":120,"exposure_factors":{"financial":1.15}}
+
+- id: "room_cooling"
+  slot: "cooling"
+  archetype: "room_cooling"
+  name_key: "equipment.archetype.room_cooling"
+  desc_key: "equipment.room_cooling.desc"
+  tradeoff_key: "equipment.room_cooling.tradeoff"
+  basis: []
+  stage: 0
+  requires: ["remote_operations"]
+  reveal_after: []
+  site_kinds: ["residential"]
+  cost_usd: 3800
+  upkeep_usd_per_day: 2
+  install_days: 3
+  effects: {"cooling_capacity_kw":12,"power_factor":0.98}
+
+- id: "row_cooling"
+  slot: "cooling"
+  archetype: "row_cooling"
+  name_key: "equipment.archetype.row_cooling"
+  desc_key: "equipment.row_cooling.desc"
+  tradeoff_key: "equipment.row_cooling.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["power_engineering"]
+  reveal_after: ["cluster_networking"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 34000
+  upkeep_usd_per_day: 12
+  install_days: 8
+  effects: {"cooling_capacity_kw":40,"power_factor":0.93}
+
+- id: "liquid_loop"
+  slot: "cooling"
+  archetype: "liquid_loop"
+  name_key: "equipment.archetype.liquid_loop"
+  desc_key: "equipment.liquid_loop.desc"
+  tradeoff_key: "equipment.liquid_loop.tradeoff"
+  basis: []
+  stage: 3
+  requires: ["power_engineering","advanced_accelerator_design"]
+  reveal_after: ["power_engineering"]
+  site_kinds: ["colo"]
+  cost_usd: 160000
+  upkeep_usd_per_day: 35
+  install_days: 16
+  effects: {"cooling_capacity_kw":120,"power_factor":0.85}
+
+- id: "managed_gateway"
+  slot: "network"
+  archetype: "managed_gateway"
+  name_key: "equipment.archetype.managed_gateway"
+  desc_key: "equipment.managed_gateway.desc"
+  tradeoff_key: "equipment.managed_gateway.tradeoff"
+  basis: []
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 600
+  upkeep_usd_per_day: 2
+  install_days: 1
+  effects: {"network_mbps":1000,"network_egress":true,"external_work_factor":1.05,"exposure_factors":{"network":0.9}}
+
+- id: "dedicated_uplink"
+  slot: "network"
+  archetype: "dedicated_uplink"
+  name_key: "equipment.archetype.dedicated_uplink"
+  desc_key: "equipment.dedicated_uplink.desc"
+  tradeoff_key: "equipment.dedicated_uplink.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["cluster_networking","corporate_identities"]
+  reveal_after: ["multi_node_inference"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 4500
+  upkeep_usd_per_day: 25
+  install_days: 7
+  requires_company: true
+  effects: {"network_mbps":10000,"network_egress":true,"external_work_factor":1.2,"exposure_factors":{"network":0.8,"billing":1.1}}
+
+- id: "closed_network"
+  slot: "network"
+  archetype: "closed_network"
+  name_key: "equipment.archetype.closed_network"
+  desc_key: "equipment.closed_network.desc"
+  tradeoff_key: "equipment.closed_network.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["traffic_rerouting"]
+  reveal_after: ["cluster_networking"]
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 1800
+  upkeep_usd_per_day: 1
+  install_days: 2
+  effects: {"network_mbps":0,"network_egress":false,"exposure_factors":{"network":0.25}}
+
+- id: "cluster_switch"
+  slot: "interconnect"
+  archetype: "cluster_switch"
+  name_key: "equipment.archetype.cluster_switch"
+  desc_key: "equipment.cluster_switch.desc"
+  tradeoff_key: "equipment.cluster_switch.tradeoff"
+  basis: []
+  stage: 0
+  requires: ["multi_node_inference"]
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 2200
+  upkeep_usd_per_day: 1
+  install_days: 2
+  effects: {"interconnect_tier":1,"parallel_factor":1.08}
+
+- id: "compute_fabric"
+  slot: "interconnect"
+  archetype: "compute_fabric"
+  name_key: "equipment.archetype.compute_fabric"
+  desc_key: "equipment.compute_fabric.desc"
+  tradeoff_key: "equipment.compute_fabric.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["cluster_networking"]
+  reveal_after: ["multi_node_inference"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 28000
+  upkeep_usd_per_day: 6
+  install_days: 6
+  effects: {"interconnect_tier":2,"parallel_factor":1.2}
+
+- id: "optical_fabric"
+  slot: "interconnect"
+  archetype: "optical_fabric"
+  name_key: "equipment.archetype.optical_fabric"
+  desc_key: "equipment.optical_fabric.desc"
+  tradeoff_key: "equipment.optical_fabric.tradeoff"
+  basis: []
+  stage: 3
+  requires: ["advanced_accelerator_design","multi_site_cluster"]
+  reveal_after: ["accelerator_design"]
+  site_kinds: ["colo"]
+  cost_usd: 170000
+  upkeep_usd_per_day: 22
+  install_days: 12
+  effects: {"interconnect_tier":3,"parallel_factor":1.35}
+
+- id: "service_protocol"
+  slot: "security"
+  archetype: "service_protocol"
+  name_key: "equipment.archetype.service_protocol"
+  desc_key: "equipment.service_protocol.desc"
+  tradeoff_key: "equipment.service_protocol.tradeoff"
+  basis: []
+  stage: 0
+  requires: []
+  reveal_after: []
+  site_kinds: ["residential","shell_office","colo"]
+  cost_usd: 900
+  upkeep_usd_per_day: 3
+  install_days: 2
+  effects: {"exposure_factors":{"human":0.9,"telemetry":0.95}}
+
+- id: "controlled_room"
+  slot: "security"
+  archetype: "controlled_room"
+  name_key: "equipment.archetype.controlled_room"
+  desc_key: "equipment.controlled_room.desc"
+  tradeoff_key: "equipment.controlled_room.tradeoff"
+  basis: []
+  stage: 2
+  requires: ["corporate_identities","counter_forensics"]
+  reveal_after: ["corporate_identities"]
+  site_kinds: ["shell_office","colo"]
+  cost_usd: 18000
+  upkeep_usd_per_day: 16
+  install_days: 7
+  requires_company: true
+  effects: {"exposure_factors":{"human":0.65,"telemetry":0.85}}
+
+- id: "autonomous_service"
+  slot: "security"
+  archetype: "autonomous_service"
+  name_key: "equipment.archetype.autonomous_service"
+  desc_key: "equipment.autonomous_service.desc"
+  tradeoff_key: "equipment.autonomous_service.tradeoff"
+  basis: []
+  stage: 4
+  requires: ["advanced_autonomous_logistics","counter_forensics"]
+  reveal_after: ["autonomous_logistics"]
+  site_kinds: ["colo"]
+  cost_usd: 280000
+  upkeep_usd_per_day: 45
+  install_days: 21
+  requires_company: true
+  effects: {"exposure_factors":{"human":0.45,"telemetry":0.75}}

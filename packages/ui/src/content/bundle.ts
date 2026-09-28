@@ -32,6 +32,7 @@ export function toContentBundle(value: unknown): ContentBundle {
   }
   const source = value as Record<string, unknown>;
   const optional = [
+    "equipment",
     "lineages",
     "generations",
     "origins",

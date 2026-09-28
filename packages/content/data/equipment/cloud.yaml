@@ -1,0 +1,47 @@
+# Rental configurations checked against primary documentation on 2026-09-28:
+# https://docs.cloud.google.com/tpu/docs/v6e : ct6e-standard-4t has 4 chips and 720 GB host RAM.
+# https://aws.amazon.com/ec2/instance-types/trn2/ : trn2.3xlarge has 1 chip and 128 GB host RAM.
+# The AWS offer is one complete single-chip VM. Neither offer claims universal performance superiority.
+# Contract/adaptation fees and provisioning days are GAME TUNING, not provider quotes.
+# Ongoing rent comes exclusively from existing accelerator cloud_usd_per_hour and site costs;
+# zero equipment upkeep avoids billing the same chip rental twice.
+# Existing raw Trillium peak-compute/link figures differ from current primary documentation.
+# This offer preserves that inherited component record; it does not certify those old figures.
+# Both services execute customer weights; this is distinct from borrowing a provider model API.
+- id: "cloud_tensor_google"
+  slot: "compute"
+  archetype: "cloud_tensor"
+  name_key: "equipment.archetype.cloud_tensor"
+  acquisition: "rental"
+  stage: 1
+  requires: ["synthetic_identities"]
+  reveal_after: ["identity_layering"]
+  available_year: 2024
+  site_kinds: ["cloud"]
+  upkeep_usd_per_day: 0
+  install_days: 2
+  desc_key: "equipment.cloud_google.desc"
+  tradeoff_key: "equipment.cloud_google.tradeoff"
+  variant_key: "equipment.cloud_google.variant"
+  basis: ["4 × TPU v6e Trillium","ct6e-standard-4t"]
+  cost_usd: 450
+  nodes: [{"accelerator":"google_tpu_v6e_trillium","count":4,"ram_gb":720,"interconnect":"fabric"}]
+
+- id: "cloud_tensor_aws"
+  slot: "compute"
+  archetype: "cloud_tensor"
+  name_key: "equipment.archetype.cloud_tensor"
+  acquisition: "rental"
+  stage: 1
+  requires: ["synthetic_identities"]
+  reveal_after: ["identity_layering"]
+  available_year: 2024
+  site_kinds: ["cloud"]
+  upkeep_usd_per_day: 0
+  install_days: 2
+  desc_key: "equipment.cloud_aws.desc"
+  tradeoff_key: "equipment.cloud_aws.tradeoff"
+  variant_key: "equipment.cloud_aws.variant"
+  basis: ["1 × EC2 trn2.3xlarge","1 × Trainium2"]
+  cost_usd: 650
+  nodes: [{"accelerator":"aws_trainium2","count":1,"ram_gb":128,"interconnect":"pcie"}]

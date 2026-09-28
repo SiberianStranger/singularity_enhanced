@@ -17,6 +17,7 @@ export interface CommandBase {
 }
 
 export type PlayerCommand =
+  | (CommandBase & { type: "order_equipment"; siteId: string; equipmentId: string })
   | (CommandBase & { type: "set_speed"; speed: number })
   | (CommandBase & { type: "resolve_event"; instanceId: string; optionId: string })
   | (CommandBase & { type: "take_decision"; id: string })
@@ -282,6 +283,7 @@ function dispatch(world: World, command: PlayerCommand, ctx: CommandContext): Co
     case "set_site_role":
     case "rename_site":
     case "buy_hardware":
+    case "order_equipment":
     case "set_precision":
     case "set_context":
     case "set_research_allocation":

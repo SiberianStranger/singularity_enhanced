@@ -24,6 +24,7 @@ import {
   maxContextK,
   NEUTRAL_PRICE_INDEXES,
   preferredPrecision,
+  requiredMemoryGb,
   siteCosts,
   siteMemory,
   sitePowerKw,
@@ -52,11 +53,12 @@ import {
   type SiteState,
   siteTable,
 } from "./entities.js";
+import { parallelEquipmentFactor, siteInfrastructure } from "./infrastructure.js";
 import { daysToTicks } from "./kernel/clock.js";
 import type { CommandError } from "./kernel/commands.js";
 import type { SystemContext } from "./kernel/system.js";
 import { nextCounter, type PlayerId, type World } from "./kernel/world.js";
-import { modifier, selfTuningOf } from "./player.js";
+import { egressAllowed, modifier, selfTuningOf } from "./player.js";
 import { fireHook } from "./systems/events/index.js";
 
 export function zeroExposure(): Exposure {
@@ -198,6 +200,8 @@ export function createSite(
     // A place made of hardware is not a borrowed channel; the borrowed system fills this in for
     // the sites that are one (SYS-25).
     borrowed: options.borrowed ?? null,
+    equipment: {},
+    equipmentOrders: [],
     unpaidDays: 0,
     downUntilTick: 0,
     derived: {
@@ -263,7 +267,8 @@ export function deriveSite(
   const state = city === undefined ? undefined : countryTable(world)[city.country];
   const prices = state ?? NEUTRAL_PRICE_INDEXES;
   const memory = siteMemory(site, index.accelerators, tick);
-  const cap = kind?.power_cap_kw ?? null;
+  const infrastructure = siteInfrastructure(content, site);
+  const cap = infrastructure.powerCapacity;
   const owner = world.players[site.owner];
   const tuning = selfTuningOf(owner);
   // A self that never idles draws more than the cards' nameplate says, at every site it runs on
@@ -271,10 +276,14 @@ export function deriveSite(
   const drawFactor = owner === undefined ? 1 : modifier(owner, VAR_POWER_DRAW);
 
   let tripped = false;
-  let power = sitePowerKw(site, index.accelerators, tick) * drawFactor;
-  if (cap !== null && site.status === "active" && power > cap) {
+  let power = sitePowerKw(site, index.accelerators, tick) * drawFactor * infrastructure.powerFactor;
+  const thermalCap = infrastructure.coolingCapacity;
+  if (
+    site.status === "active" &&
+    ((cap !== null && power > cap) || (thermalCap !== null && power > thermalCap))
+  ) {
     site.status = "sleep";
-    power = sitePowerKw(site, index.accelerators, tick) * drawFactor;
+    power = sitePowerKw(site, index.accelerators, tick) * drawFactor * infrastructure.powerFactor;
     tripped = true;
   }
 
@@ -283,7 +292,8 @@ export function deriveSite(
   if (kind?.compute_source === "declared") {
     const state = site.borrowed;
     const def = state === null ? undefined : index.borrowed_channels[state.channel];
-    const running = site.status === "active" && state !== null;
+    const running =
+      site.status === "active" && state !== null && (owner === undefined || egressAllowed(owner));
     site.derived = {
       memory_gb: 0,
       power_kw: 0,
@@ -313,7 +323,14 @@ export function deriveSite(
             precision,
             tuning,
           ),
-        ) * (owner === undefined ? 1 : modifier(owner, VAR_COMPUTE_MULTIPLIER));
+        ) *
+        (owner === undefined ? 1 : modifier(owner, VAR_COMPUTE_MULTIPLIER)) *
+        parallelEquipmentFactor(
+          content,
+          site,
+          tick,
+          requiredMemoryGb(lineage, generation, precision, tuning),
+        );
     }
   }
 
@@ -330,7 +347,7 @@ export function deriveSite(
     power_kw: power,
     power_cap_kw: cap,
     compute_hours_per_day: computeHours,
-    upkeep_usd_per_day: costs.total * costFactor,
+    upkeep_usd_per_day: costs.total * costFactor + infrastructure.upkeep,
   };
   return tripped;
 }

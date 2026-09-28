@@ -390,6 +390,7 @@ export function siteHardwareValueUsd(
 ): number {
   let value = 0;
   for (const node of site.nodes) {
+    if (node.equipmentId !== undefined && node.status !== "active") continue;
     value += acceleratorPriceUsd(accelerators[node.accelerator]) * node.count;
   }
   return value;

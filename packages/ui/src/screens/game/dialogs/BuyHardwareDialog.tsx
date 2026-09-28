@@ -7,6 +7,7 @@ import { Table } from "../../../components/Table.js";
 import { refusalText, siteName } from "../../../lib/labels.js";
 import { purchasePreview } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { EquipmentDialog } from "./EquipmentDialog.js";
 
 const AVAILABILITY = ["buy", "rent", "gray", "unavailable"] as const;
 type Availability = (typeof AVAILABILITY)[number];
@@ -27,7 +28,15 @@ interface BuyHardwareDialogProps {
  * footer says what the order costs and what the site looks like afterwards: memory, power against
  * the cap, and the reason the button is greyed when it is.
  */
-export function BuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogProps): ReactNode {
+export function BuyHardwareDialog(props: BuyHardwareDialogProps): ReactNode {
+  return props.view.sites.find((site) => site.id === props.siteId)?.equipment === undefined ? (
+    <LegacyBuyHardwareDialog {...props} />
+  ) : (
+    <EquipmentDialog {...props} />
+  );
+}
+
+function LegacyBuyHardwareDialog({ view, siteId, onClose }: BuyHardwareDialogProps): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
   const cards = view.catalog?.accelerators ?? [];

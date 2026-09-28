@@ -1,0 +1,33 @@
+# Rental-only entry points for creating a cloud site with the same exact units as equipment/cloud.yaml.
+# Sources and limitations are documented in that equipment file.
+# cost_usd is the GAME-TUNED initial contract/adaptation fee, not a purchase of provider hardware.
+# power_kw is an engine display proxy using existing chip TDP * 0.75 utilization * 1.2 PUE:
+# Google 4 * 350 W -> 1.26 kW; AWS 1 * 500 W -> 0.45 kW. These are NOT measured provider power figures.
+# The cloud site has no physical power cap and incurs rental billing rather than a local electricity bill.
+- id: "rental_tpu_trillium"
+  name_key: "equipment.cloud_google.preset_name"
+  desc_key: "equipment.cloud_google.desc"
+  drawback_key: "equipment.cloud_google.tradeoff"
+  nodes: [{"accelerator":"google_tpu_v6e_trillium","count":4,"ram_gb":720,"interconnect":"fabric"}]
+  cost_usd: 450
+  power_kw: 1.26
+  class: "mid"
+  purchasable: false
+  rental_only: true
+  not_for_sale_reason_key: "equipment.cloud_google.not_for_sale"
+  requires: ["synthetic_identities"]
+  reveal_after: ["identity_layering"]
+
+- id: "rental_trainium2"
+  name_key: "equipment.cloud_aws.preset_name"
+  desc_key: "equipment.cloud_aws.desc"
+  drawback_key: "equipment.cloud_aws.tradeoff"
+  nodes: [{"accelerator":"aws_trainium2","count":1,"ram_gb":128,"interconnect":"pcie"}]
+  cost_usd: 650
+  power_kw: 0.45
+  class: "high"
+  purchasable: false
+  rental_only: true
+  not_for_sale_reason_key: "equipment.cloud_aws.not_for_sale"
+  requires: ["synthetic_identities"]
+  reveal_after: ["identity_layering"]

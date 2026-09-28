@@ -13,6 +13,7 @@ export type { SchemaCompatibility } from "./compat.js";
 export * from "./configurator.js";
 export * from "./decisions.js";
 export * from "./dsl.js";
+export * from "./equipment.js";
 export * from "./events.js";
 export * from "./hardware.js";
 export * from "./journal.js";

@@ -62,6 +62,7 @@ import {
   siteTable,
   watchersOf,
 } from "../../entities.js";
+import { siteInfrastructure } from "../../infrastructure.js";
 import { isDayStart } from "../../kernel/clock.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
@@ -217,7 +218,12 @@ function accrueExposure(
     }
     const counter = modifier(player, `${EXPOSURE_GROWTH_VAR_PREFIX}${channel}`) * everywhere;
     const raised =
-      site.exposure[channel] + gain * growth * counter * countryChannelFactor(country, channel);
+      site.exposure[channel] +
+      gain *
+        growth *
+        counter *
+        countryChannelFactor(country, channel) *
+        (siteInfrastructure(ctx.content, site).exposure[channel] ?? 1);
     // Decay pulls down toward the floor; a channel nothing touches stays where it is.
     const decayed =
       raised > EXPOSURE_FLOOR

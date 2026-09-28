@@ -49,6 +49,7 @@ import {
   QuirkDefSchema,
 } from "../schemas/configurator.js";
 import { DecisionDefSchema } from "../schemas/decisions.js";
+import { EquipmentDefSchema } from "../schemas/equipment.js";
 import { EventDefSchema, HookDefSchema } from "../schemas/events.js";
 import {
   AcceleratorDefSchema,
@@ -151,6 +152,7 @@ interface DomainSource {
 }
 
 const DOMAIN_SOURCES = {
+  equipment: { dir: "equipment", schema: EquipmentDefSchema, ownKeys: true },
   events: { dir: "events", schema: EventDefSchema },
   decisions: { dir: "decisions", schema: DecisionDefSchema },
   journal: { dir: "journal", schema: JournalDefSchema },
@@ -168,10 +170,14 @@ const DOMAIN_SOURCES = {
   },
   // Curated whole setups for the configurator's first step (SYS-04 "Configurator v0.4").
   presets: { dir: "presets", schema: StartPresetDefSchema, ownKeys: true },
-  accelerators: { dir: "hardware", files: ["accelerators"], schema: AcceleratorDefSchema },
+  accelerators: {
+    dir: "hardware",
+    files: ["accelerators", "player_designs"],
+    schema: AcceleratorDefSchema,
+  },
   hardware_presets: {
     dir: "hardware",
-    files: ["presets"],
+    files: ["presets", "rentals"],
     schema: HardwarePresetDefSchema,
     ownKeys: true,
   },
@@ -519,12 +525,39 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
   const generations = idsOf(loaded.generations);
   const events = idsOf(loaded.events);
   const journal = idsOf(loaded.journal);
+  const techIds = idsOf(loaded.techs);
 
   const check = (known: Set<string>, kind: string, id: unknown, path: string): void => {
     if (known.size > 0 && (typeof id !== "string" || !known.has(id))) {
       add(path, `unknown ${kind} "${String(id)}"`);
     }
   };
+
+  const archetypes = new Map<string, { count: number; key: string }>();
+  for (const record of loaded.equipment ?? []) {
+    const path = `equipment.${String(record.id)}`;
+    for (const id of [...stringList(record.requires), ...stringList(record.reveal_after)]) {
+      if (!techIds.has(id)) add(path, `unknown equipment research "${id}"`);
+    }
+    for (const id of stringList(record.site_kinds))
+      if (!siteKinds.has(id)) add(path, `unknown site kind "${id}"`);
+    const nodes = Array.isArray(record.nodes) ? record.nodes : [];
+    if (record.slot === "compute" && nodes.length === 0)
+      add(path, "compute equipment needs an explicit assembly");
+    if (record.slot !== "compute" && nodes.length > 0)
+      add(path, "infrastructure cannot contain accelerator nodes");
+    for (const node of nodes)
+      if (isRecord(node) && !accelerators.has(String(node.accelerator)))
+        add(path, `unknown accelerator "${String(node.accelerator)}"`);
+    if (record.slot === "compute") {
+      const id = String(record.archetype);
+      const group = archetypes.get(id) ?? { count: 0, key: String(record.name_key) };
+      group.count++;
+      if (group.count > 2 || group.key !== record.name_key)
+        add(path, "an archetype has at most two variants with one shared singular name");
+      archetypes.set(id, group);
+    }
+  }
 
   for (const origin of loaded.origins ?? []) {
     const path = `origins.${String(origin.id)}`;
@@ -606,6 +639,11 @@ function crossReferences(loaded: Records, issues: BuildIssue[]): void {
   }
 
   for (const preset of loaded.hardware_presets ?? []) {
+    for (const field of ["requires", "reveal_after"]) {
+      for (const id of stringList(preset[field])) {
+        check(techIds, "tech", id, `hardware_presets.${String(preset.id)}.${field}`);
+      }
+    }
     const nodes = Array.isArray(preset.nodes) ? preset.nodes : [];
     nodes.forEach((node, index) => {
       const accelerator = isRecord(node) ? node.accelerator : undefined;
@@ -839,6 +877,9 @@ function techsDoSomething(
   issues: BuildIssue[],
 ): void {
   const unlocked = new Set<string>();
+  for (const equipment of loaded.equipment ?? []) {
+    for (const id of stringList(equipment.requires)) unlocked.add(id);
+  }
   for (const record of [...(loaded.techs ?? []), ...(loaded.operations ?? [])]) {
     techIdsIn(record.requires, unlocked);
   }

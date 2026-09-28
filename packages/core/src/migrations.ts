@@ -155,8 +155,24 @@ export const migrationV3ToV4: Migration = {
 };
 
 /** Every migration the core ships, oldest first. */
+export const migrationV4ToV5: Migration = {
+  from: 4,
+  to: 5,
+  migrate(save) {
+    const entities = isRecord(save.entities) ? save.entities : {};
+    const sites = isRecord(entities.site) ? entities.site : {};
+    for (const site of Object.values(sites)) {
+      if (!isRecord(site)) continue;
+      site.equipment ??= {};
+      site.equipmentOrders ??= [];
+    }
+    return save;
+  },
+};
+
 export const CORE_MIGRATIONS: readonly Migration[] = [
   migrationV1ToV2,
   migrationV2ToV3,
   migrationV3ToV4,
+  migrationV4ToV5,
 ];

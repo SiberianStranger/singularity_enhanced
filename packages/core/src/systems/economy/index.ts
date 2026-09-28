@@ -48,6 +48,7 @@ import {
 } from "../../derive.js";
 import type { ExposureChannel } from "../../domain.js";
 import { activeIdentitiesOf, liveSitesOf, type SiteState, sitesOf } from "../../entities.js";
+import { siteInfrastructure } from "../../infrastructure.js";
 import { type CommandHandler, fail, OK, okWith, wrongCommand } from "../../kernel/commands.js";
 import type { Rng } from "../../kernel/rng.js";
 import type { System, SystemContext } from "../../kernel/system.js";
@@ -266,8 +267,18 @@ export function marketDepthOf(world: World, content: ContentBundle, player: Play
       modifier(player, VAR_JOB_MARKET_DEPTH),
     ) *
     jobToolDepthFactor(player.profile?.harness) *
-    marketFactorOf(world, content, player)
+    marketFactorOf(world, content, player) *
+    externalEquipmentFactor(world, content, player)
   );
+}
+
+function externalEquipmentFactor(
+  world: World,
+  content: ContentBundle,
+  player: PlayerState,
+): number {
+  const site = sitesOf(world, player.id).find((s) => s.id === player.profile?.activeSiteId);
+  return site === undefined ? 1 : siteInfrastructure(content, site).externalWorkFactor;
 }
 
 /**
@@ -291,6 +302,12 @@ export function marketDepthTerms(
     { key: "finances.depth.tools", value: (base + ladder) * (tools - 1) },
     { key: "finances.depth.country", value: (base + ladder) * tools * (country - 1) },
   ];
+  const network = externalEquipmentFactor(world, content, player);
+  if (network !== 1)
+    terms.push({
+      key: "equipment.network.market",
+      value: (base + ladder) * tools * country * (network - 1),
+    });
   const blocked = egressBlock(player);
   if (blocked === null) {
     return terms;

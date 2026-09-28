@@ -3,19 +3,34 @@
 Phases are milestones with a definition of done. Work inside a phase is parallelizable by system;
 phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
-## Current design focus (2026-09-20)
+## Current implementation focus (2026-09-28, version 0.2.0)
 
-The maintainer requested an accelerator redesign, with specification and tree reviewed before
-implementation. [SYS-02 accelerator progression](design/02-accelerator-progression.md) proposes
-catalog preservation, normalized product/assembly/offer units, workload-aware purchase plans,
-three industrial development routes, supplier evolution and the late-game material arc.
-[Its migration ledger](design/02-accelerator-catalog-migration.md) accounts for every existing ID.
-This is proposed work; it does not mark these systems as shipped or change milestone completion.
+The current equipment increment implements fourteen singular compute archetypes with at most two
+variants each; four archetypes are revealed initially. Twenty-one compute offers cover complete
+physical configurations, three player-designed products and two provider rental configurations.
+The original 94 accelerator records remain references, with three explicitly fictional player
+components added separately. [The Russian player guide](design/02-hardware-player-guide.ru.md)
+explains these choices, their unlocks and the longer-term branches in readable terms.
 
-The following site redesign will use six functional subsystems: Compute, Power, Cooling, Network,
-Interconnect, and Security & Ops. Network covers management/service LAN and external/inter-site
-connectivity; Interconnect covers tightly coupled compute links. The accelerator proposal defines
-the compatibility boundary, with implementation increments H1-H7 and acceptance gates.
+Six site subsystems now have content and engine rules: Compute, Power, Cooling, Network,
+Interconnect, and Security & Ops. Research reveals and unlocks equipment; authoritative quotes
+check rights, resources and capacity; orders progress through a prototype where needed and then
+manufacturing/delivery. Save schema 5 retains installed equipment and pending orders while older
+sites inherit their existing infrastructure. This describes the implementation scope, not a
+claim that release artifacts or deployment have already been verified.
+
+[The implementation contract](design/02-hardware-archetypes.md) defines the acceptance work.
+This increment does not complete M3: actors, diplomacy and NPC AI behavior remain the next planned
+milestone. Its production chain is a paid timed order; it does not yet simulate foundries,
+individual material shipments, yield, detailed repair or every workload's performance profile.
+
+The earlier [accelerator progression proposal](design/02-accelerator-progression.md) and
+[catalog migration ledger](design/02-accelerator-catalog-migration.md) remain design references.
+The guide's seven distant engineering stages and independent five-step research lines are plans: alternative
+logic, biology, manufacturing autonomy, ocean/submarine/polar sites, space and lunar bodies, and
+the optional apotheosis branch are not made playable by this release's equipment cards.
+Supplier evolution through 2027 and beyond likewise needs future content rather than an automatic
+new top-tier item for every vendor announcement.
 
 ## Decisions
 

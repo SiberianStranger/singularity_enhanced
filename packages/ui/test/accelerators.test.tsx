@@ -14,7 +14,7 @@
  * - the key reaches the control from a Cyrillic and from a Latin keyboard.
  */
 
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
@@ -36,8 +36,10 @@ const LOCALES: Record<string, Record<string, string>> = { en: uiEn, ru: uiRu };
 let session: LocalSession | null = null;
 
 afterEach(async () => {
+  cleanup();
   session?.stop();
   session = null;
+  useGameStore.getState().setOpeningPending(false);
   useUiStore.setState({ menuSection: null, overlay: null, notices: [] });
   await act(async () => {
     await i18next.changeLanguage(DEFAULT_LANGUAGE);
@@ -166,17 +168,21 @@ describe("the configurator, in both languages", () => {
 });
 
 describe("the game screen, in both languages", () => {
+  async function renderGame(language: string): Promise<void> {
+    await act(async () => {
+      await i18next.changeLanguage(language);
+    });
+    session = await startSession();
+    render(<GameScreen />);
+  }
+
   for (const language of ["en", "ru"]) {
-    it(`keeps every window's letters unique in ${language}`, async () => {
-      await act(async () => {
-        await i18next.changeLanguage(language);
-      });
-      session = await startSession();
-      render(<GameScreen />);
+    it(`keeps the map and consecutive overlay letters unique in ${language}`, async () => {
+      await renderGame(language);
       expect(duplicates(), `${language}, the map`).toEqual([]);
 
-      // The windows over the map, the menu overlay and the opening, each really rendered: the
-      // store is changed inside `act` so React draws the state the assertion is about.
+      // Keep the transitions between overlays: uniqueness must survive one window replacing
+      // another, as well as each window's initial render.
       for (const overlay of ["log", "knowledge", "world"] as const) {
         await act(async () => {
           useUiStore.getState().openOverlay(overlay);
@@ -188,7 +194,10 @@ describe("the game screen, in both languages", () => {
       await act(async () => {
         useUiStore.getState().closeOverlay();
       });
+    }, 30_000);
 
+    it(`keeps the menu and subsequent opening letters unique in ${language}`, async () => {
+      await renderGame(language);
       await act(async () => {
         useUiStore.getState().openMenu("root");
       });
@@ -207,7 +216,10 @@ describe("the game screen, in both languages", () => {
       await act(async () => {
         useGameStore.getState().setOpeningPending(false);
       });
+    }, 30_000);
 
+    it(`keeps the compute and subsequent journal letters unique in ${language}`, async () => {
+      await renderGame(language);
       // Every tab in turn, so the panel's own buttons are measured against the strip above them.
       for (const tab of ["compute", "journal"] as const) {
         await act(async () => {

@@ -472,7 +472,7 @@ describe("borrowed inference: the warning and the verb that answers it", () => {
 
 describe("borrowed inference: saves", () => {
   it("upgrades a schema-3 save by giving every site no channel", () => {
-    expect(SCHEMA_VERSION).toBe(4);
+    expect(SCHEMA_VERSION).toBe(5);
     const save = {
       meta: { schemaVersion: 3 },
       entities: { site: { s1: { id: "s1", kind: "residential" } } },

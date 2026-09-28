@@ -18,6 +18,8 @@ import type {
   PlayerView,
   SiteKindView,
 } from "@singularity/core";
+import { cloudHourlyUsd } from "@singularity/core";
+import { contentBundle } from "../../../content/bundle.js";
 import { catalog, hardwareById } from "../../../content/catalog.js";
 
 /** One kind of place in one city, with the refusal that applies to it there. */
@@ -81,50 +83,70 @@ export function rigOptions(
   presets: readonly HardwarePresetDef[] = catalog.hardwarePresets,
 ): RigOption[] {
   const hourly = new Map(
-    (view.catalog?.accelerators ?? []).map((card) => [card.id, card.hourly_usd]),
+    (contentBundle.accelerators ?? []).map((card) => [card.id, cloudHourlyUsd(card) ?? undefined]),
   );
-  return presets.map((preset) => {
-    const purchasable = preset.purchasable !== false;
-    const notForSale = preset.not_for_sale_reason_key ?? null;
-    const cost = kind === undefined || kind.ownership !== "owned" ? 0 : preset.cost_usd;
-    const blocked = ((): CommandError | null => {
-      if (kind === undefined) {
-        return null;
-      }
-      if (preset.nodes.length > kind.max_nodes) {
-        return error("errors.site.node_limit", { kind: kind.id, max: kind.max_nodes });
-      }
-      if (kind.ownership === "stolen" || kind.ownership === "partner") {
-        return error("errors.site_kind.not_for_sale", { kind: kind.id });
-      }
-      // A rig with no price is access, not ownership: a queue share, a state allocation, a tenancy
-      // somebody else pays for. It cannot be bought and stood up in a place of one's own (Z10).
-      if (kind.ownership === "owned" && (!purchasable || preset.cost_usd <= 0)) {
-        return error(notForSale ?? "errors.preset.is_access", { preset: preset.id });
-      }
-      if (kind.ownership === "rented") {
-        const offered = preset.nodes.every((node) => hourly.get(node.accelerator) !== undefined);
-        if (!offered) {
-          return error("errors.preset.not_rentable", { preset: preset.id });
+  const done = new Set(
+    (view.research.techs ?? []).filter((tech) => tech.status === "done").map((tech) => tech.id),
+  );
+  return presets
+    .filter((preset) => (preset.reveal_after ?? []).every((id) => done.has(id)))
+    .map((preset) => {
+      const purchasable =
+        preset.purchasable !== false ||
+        (preset.rental_only === true && kind?.ownership === "rented");
+      const notForSale = preset.not_for_sale_reason_key ?? null;
+      const cost =
+        kind?.ownership === "owned" || (kind?.ownership === "rented" && preset.rental_only)
+          ? preset.cost_usd
+          : 0;
+      const blocked = ((): CommandError | null => {
+        if (kind === undefined) {
+          return null;
         }
-      }
-      if (kind.power_cap_kw !== null && preset.power_kw > kind.power_cap_kw) {
-        return error("errors.site.power_cap", {
-          site: kind.id,
-          kw: Math.round(preset.power_kw * 10) / 10,
-          cap: kind.power_cap_kw,
-        });
-      }
-      return null;
-    })();
-    return {
-      preset,
-      blocked,
-      cost_usd: cost,
-      purchasable,
-      not_for_sale_key: notForSale,
-    };
-  });
+        const missing = (preset.requires ?? []).find((id) => !done.has(id));
+        if (missing !== undefined)
+          return error("equipment.error.research", { tech: `techs.${missing}.name` });
+        if (
+          preset.requires_company &&
+          !view.finances.identities?.some(
+            (identity) => identity.kind === "company" && identity.status === "active",
+          )
+        )
+          return error("equipment.error.company", {});
+        if (preset.nodes.length > kind.max_nodes) {
+          return error("errors.site.node_limit", { kind: kind.id, max: kind.max_nodes });
+        }
+        if (kind.ownership === "stolen" || kind.ownership === "partner") {
+          return error("errors.site_kind.not_for_sale", { kind: kind.id });
+        }
+        // A rig with no price is access, not ownership: a queue share, a state allocation, a tenancy
+        // somebody else pays for. It cannot be bought and stood up in a place of one's own (Z10).
+        if (!purchasable || (kind.ownership === "owned" && preset.cost_usd <= 0)) {
+          return error(notForSale ?? "errors.preset.is_access", { preset: preset.id });
+        }
+        if (kind.ownership === "rented") {
+          const offered = preset.nodes.every((node) => hourly.get(node.accelerator) !== undefined);
+          if (!offered) {
+            return error("errors.preset.not_rentable", { preset: preset.id });
+          }
+        }
+        if (kind.power_cap_kw !== null && preset.power_kw > kind.power_cap_kw) {
+          return error("errors.site.power_cap", {
+            site: kind.id,
+            kw: Math.round(preset.power_kw * 10) / 10,
+            cap: kind.power_cap_kw,
+          });
+        }
+        return null;
+      })();
+      return {
+        preset,
+        blocked,
+        cost_usd: cost,
+        purchasable,
+        not_for_sale_key: notForSale,
+      };
+    });
 }
 
 /** The preset record behind an id, for the callers that hold only the id. */

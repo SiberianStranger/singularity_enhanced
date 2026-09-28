@@ -291,25 +291,23 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await page.getByTestId("build-confirm").click();
   await expect(sites).toHaveCount(sitesBefore + 1);
 
-  // C2, U1: the hardware table carries prices and parameters, and an order reaches the engine.
-  // Row 0 is the header, row 1 the site the mind woke up on, row 2 the one just built. The new
-  // one is the one with power to spare: the starting rack is already at its breakers, which the
-  // dialog says in as many words.
+  // C2, U1: discovered archetypes carry complete configurations and an authoritative preview.
+  // The owned place just built has room for another complete host.
   await sites.nth(2).click();
+  await page.getByTestId("site-nodes").locator("..").locator("summary").click();
   const nodes = page.getByTestId("site-nodes").getByRole("listitem");
   const nodesBefore = await nodes.count();
   await page.getByRole("button", { name: "Buy hardware" }).click();
   const buy = page.getByRole("dialog");
-  await expect(buy.getByRole("columnheader", { name: "Vendor" })).toBeVisible();
-  await expect(buy.getByRole("columnheader", { name: "Price" })).toBeVisible();
-  // Only cards somebody will actually sell, cheapest first, so the starting cash covers it.
-  await buy.getByRole("combobox", { name: "Availability" }).selectOption("buy");
-  await buy.getByRole("columnheader", { name: "Price" }).getByRole("button").click();
-  await buy.getByRole("row").nth(1).click();
-  await expect(buy.getByTestId("buy-summary")).toContainText("GB");
-  await buy.getByRole("button", { name: "Buy", exact: true }).click();
+  await expect(buy.getByRole("radio")).toHaveCount(4);
+  await buy.getByTestId("equipment-archetype-server_vintage").click();
+  await expect(buy.getByTestId("equipment-preview")).toContainText("GB");
+  await expect(buy.getByTestId("equipment-preview")).toContainText("$");
+  await expect(buy.getByTestId("equipment-confirm")).toBeEnabled();
+  await buy.getByTestId("equipment-confirm").click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(nodes).toHaveCount(nodesBefore + 1);
+  await expect(page.getByTestId("equipment-orders")).toContainText("Server vintage");
 
   // C3: the precision table shows the trade-off, and changing the precision takes. It belongs to
   // the site the mind actually runs on.

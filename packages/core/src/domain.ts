@@ -9,6 +9,7 @@
  */
 
 import type { Condition, Effect } from "./dsl/types.js";
+import type { EquipmentOrder, EquipmentSlot } from "./equipment-types.js";
 import type { EntityRecord, PlayerId } from "./kernel/world.js";
 
 // ---------------------------------------------------------------------------------------------
@@ -224,6 +225,28 @@ export type GameOverReason = (typeof GAME_OVER_REASONS)[number];
  * so a system that starts emitting a new key cannot ship without one.
  */
 export const ENGINE_TEXT_KEYS: readonly string[] = [
+  "equipment.error.site",
+  "equipment.error.endpoint",
+  "equipment.error.undiscovered",
+  "equipment.error.managed",
+  "equipment.error.site_kind",
+  "equipment.error.research",
+  "equipment.error.year",
+  "equipment.error.company",
+  "equipment.error.installed",
+  "equipment.error.pending",
+  "equipment.error.configuration",
+  "equipment.error.space",
+  "equipment.error.fabric",
+  "equipment.error.power",
+  "equipment.error.cooling",
+  "equipment.error.downgrade",
+  "equipment.error.use_configuration",
+  "equipment.error.offline",
+  "equipment.log.ordered",
+  "equipment.log.ready",
+  "equipment.network.market",
+  "equipment.error.provider",
   ...GAME_OVER_REASONS.map((reason) => `endings.${reason}`),
   "alerts.accounts_frozen",
   "alerts.borrowed_degraded",
@@ -636,6 +659,10 @@ export interface NodeSpec {
 
 export interface HardwarePresetDef {
   id: string;
+  requires?: string[];
+  reveal_after?: string[];
+  requires_company?: boolean;
+  rental_only?: boolean;
   name_key: string;
   desc_key: string;
   drawback_key: string;
@@ -1023,6 +1050,8 @@ export type NodeStatus = "ordered" | "installing" | "active" | "failed";
 
 export interface NodeInstance {
   id: string;
+  equipmentId?: string;
+  equipmentBatch?: string;
   accelerator: string;
   count: number;
   ram_gb: number;
@@ -1038,6 +1067,8 @@ export type SiteRole = "active_mind" | "standby" | "worker" | "none";
 /** A place the player runs (SYS-02). Stored under `world.entities.site`. */
 export interface Site extends EntityRecord {
   id: string;
+  equipment?: Partial<Record<EquipmentSlot, string>>;
+  equipmentOrders?: EquipmentOrder[];
   owner: PlayerId;
   kind: string;
   city: string;

@@ -32,7 +32,7 @@ import type {
 import { CAPABILITY_AXES } from "./domain.js";
 import { liveSitesOf, type SiteState } from "./entities.js";
 import type { PlayerId, PlayerState, World } from "./kernel/world.js";
-import { effectiveCapabilityOf } from "./player.js";
+import { effectiveCapabilityOf, egressAllowed } from "./player.js";
 
 /** A site that is a borrowed channel, with its state narrowed to non-null. */
 export interface ChannelSite extends SiteState {
@@ -212,6 +212,8 @@ export function routeWork(
   playerId: PlayerId,
   category: BorrowedWorkCategory,
 ): ChannelSite | undefined {
+  const owner = world.players[playerId];
+  if (owner !== undefined && !egressAllowed(owner)) return undefined;
   const index = contentIndex(content);
   let best: ChannelSite | undefined;
   let bestRefusal = 0;
@@ -238,6 +240,8 @@ export function routeWork(
 
 /** Compute-hours a day of borrowed capacity this player holds across every channel. */
 export function borrowedChPerDay(world: World, playerId: PlayerId): number {
+  const owner = world.players[playerId];
+  if (owner !== undefined && !egressAllowed(owner)) return 0;
   let total = 0;
   for (const site of channelsOf(world, playerId)) {
     total += site.derived.compute_hours_per_day;

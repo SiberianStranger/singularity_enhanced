@@ -1,5 +1,5 @@
 import type { PlayerView, TechStatus, TechView } from "@singularity/core";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { EffectList } from "../../../components/EffectList.js";
@@ -14,6 +14,7 @@ import {
   techRows,
 } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
+import { useUiStore } from "../../../store/uiStore.js";
 import { ComputeBudget } from "./ComputeBudget.js";
 
 /** Filters, in strip order. "available" is on by default, which is the fix for playtest 1 U2. */
@@ -58,11 +59,32 @@ function comparator(sort: Sort, name: (tech: TechView) => string) {
 export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
+  const focusId = useUiStore((state) => state.focusId);
+  const focusedRow = useRef<HTMLLIElement>(null);
   const [shown, setShown] = useState<readonly TechStatus[]>(["available", "in_progress"]);
   const [sort, setSort] = useState<Sort>("cost");
 
   const techs = techRows(view);
   const ledger = computeLedger(view);
+  const focusedStatus = techs.find((tech) => tech.id === focusId)?.status;
+  const focusedVisible = focusedStatus !== undefined && shown.includes(focusedStatus);
+
+  // An equipment requirement or completion notice may point to a hidden status. Reveal that
+  // status once on navigation; subsequent manual filter changes remain the player's choice.
+  useEffect(() => {
+    if (focusId !== null && focusedStatus !== undefined) {
+      setShown((current) =>
+        current.includes(focusedStatus) ? current : [...current, focusedStatus],
+      );
+    }
+  }, [focusId, focusedStatus]);
+
+  useEffect(() => {
+    if (focusId !== null && focusedVisible) {
+      focusedRow.current?.scrollIntoView?.({ block: "nearest" });
+      focusedRow.current?.focus({ preventScroll: true });
+    }
+  }, [focusId, focusedVisible]);
 
   // Filtering and sorting seventy-odd rows is not worth memoizing, and the list is rebuilt from
   // the view on every render anyway.
@@ -120,7 +142,11 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
           <li
             key={tech.id}
             data-testid={`tech-${tech.id}`}
-            className="flex flex-col gap-1 border border-line bg-panel p-2"
+            ref={tech.id === focusId ? focusedRow : undefined}
+            tabIndex={-1}
+            className={`flex flex-col gap-1 border bg-panel p-2 ${
+              tech.id === focusId ? "border-linestrong" : "border-line"
+            }`}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <Tooltip content={t(tech.desc_key)}>
@@ -158,7 +184,7 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
                 {tech.unlocks.length === 0 ? null : (
                   <p className="text-xs text-muted">
                     {t("research.unlocks")}{" "}
-                    {tech.unlocks.map((id) => t(entityNameKey(id))).join(", ")}
+                    {[...new Set(tech.unlocks.map(entityNameKey))].map((key) => t(key)).join(", ")}
                   </p>
                 )}
                 <EffectList effects={tech.effects} title={t("research.effects")} />

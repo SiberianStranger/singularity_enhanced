@@ -1,0 +1,19 @@
+{
+  "equipment.archetype.cloud_tensor": "Cloud tensor node",
+  "equipment.cloud_google.desc": "A four-chip Trillium VM runs my own weights. The contract includes runtime preparation for the TPU stack.",
+  "equipment.cloud_google.tradeoff": "The chips stay with Google. Recurring rental and account dependence continue for as long as the instance runs.",
+  "equipment.cloud_google.variant": "Google · TPU Trillium",
+  "equipment.cloud_google.preset_name": "Cloud tensor node · Google TPU",
+  "equipment.cloud_google.not_for_sale": "Rental only: one four-chip TPU VM, with a contract and recurring charges.",
+  "equipment.cloud_aws.desc": "A complete Trainium2 VM runs my own weights with a prepared Neuron environment. The initial fee covers contract setup and adaptation.",
+  "equipment.cloud_aws.tradeoff": "One chip's local memory sets the fit; larger models need offloading or another configuration. Rental and provider dependence continue.",
+  "equipment.cloud_aws.variant": "AWS · Trainium2",
+  "equipment.cloud_aws.preset_name": "Cloud tensor node · AWS Trainium2",
+  "equipment.cloud_aws.not_for_sale": "Rental only: one single-chip EC2 VM, with a contract and recurring charges.",
+  "guidance.hardware.rental_tpu_trillium.pick_if": "Choose this when you can keep a provider identity and want a four-chip TPU VM for your own weights.",
+  "guidance.hardware.rental_tpu_trillium.avoid_if": "Avoid it when your model needs more accelerator memory than this slice supplies, or the account cannot survive scrutiny.",
+  "guidance.hardware.rental_tpu_trillium.compare": "Compared with the Trainium2 VM, this offer groups four chips and more host RAM; both remain rented bodies with provider-controlled infrastructure.",
+  "guidance.hardware.rental_trainium2.pick_if": "Choose this when a single-chip cloud body and a prepared Neuron environment fit the model you want to run.",
+  "guidance.hardware.rental_trainium2.avoid_if": "Avoid it when you need a large accelerator memory pool or independence from the provider account.",
+  "guidance.hardware.rental_trainium2.compare": "Compared with the TPU VM, this is a smaller single-chip assembly. Its host RAM can hold overflow, but does not become accelerator memory."
+}

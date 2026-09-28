@@ -16,6 +16,7 @@ import type {
   DecisionDef,
   DifficultyPresetDef,
   Effect,
+  EquipmentDef,
   EventDef,
   GenerationDef,
   HardwarePresetDef,
@@ -43,6 +44,7 @@ import type {
 } from "./configurator.js";
 import type { DecisionDefSchema } from "./decisions.js";
 import type { ConditionSchema, EffectSchema, WeightSchema } from "./dsl.js";
+import type { EquipmentDefSchema } from "./equipment.js";
 import type { EventDefSchema, HookDefSchema } from "./events.js";
 import type {
   AcceleratorDefSchema,
@@ -64,6 +66,8 @@ type AssertAssignable<A extends B, B> = A;
 
 /** Two directions per domain: the core type must be producible, and the schema must not exceed it. */
 export type SchemaCompatibility = [
+  AssertAssignable<EquipmentDef, z.infer<typeof EquipmentDefSchema>>,
+  AssertAssignable<z.infer<typeof EquipmentDefSchema>, DeepWiden<EquipmentDef>>,
   AssertAssignable<EventDef, z.infer<typeof EventDefSchema>>,
   AssertAssignable<z.infer<typeof EventDefSchema>, DeepWiden<EventDef>>,
   AssertAssignable<DecisionDef, z.infer<typeof DecisionDefSchema>>,

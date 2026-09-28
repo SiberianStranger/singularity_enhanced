@@ -36,6 +36,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
   },
   test: {
+    // Full-screen integration tests render the real map and simulation in jsdom.
+    // Bound parallel memory use; functional assertions retain their existing waits.
+    maxWorkers: 1,
+    testTimeout: 30_000,
     environment: "jsdom",
     env: { VITE_HOST: "mock" },
     globals: false,

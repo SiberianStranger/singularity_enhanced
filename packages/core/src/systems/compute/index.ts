@@ -48,7 +48,14 @@ import {
   siteTable,
   watchersOf,
 } from "../../entities.js";
+import {
+  completeEquipmentOrders,
+  equipmentTechDone,
+  orderEquipment,
+  refreshEquipmentNetwork,
+} from "../../equipment.js";
 import { attachSite, identityForSite } from "../../identities.js";
+import { siteInfrastructure } from "../../infrastructure.js";
 import { daysToTicks } from "../../kernel/clock.js";
 import {
   type CommandHandler,
@@ -105,6 +112,7 @@ export interface ComputeSystem extends System {
     | "set_site_role"
     | "rename_site"
     | "buy_hardware"
+    | "order_equipment"
     | "set_precision"
     | "set_context",
     CommandHandler
@@ -129,6 +137,7 @@ export function refreshPlayer(world: World, ctx: SystemContext, playerId: Player
   if (player === undefined) {
     return;
   }
+  refreshEquipmentNetwork(world, ctx.content, player);
   const { lineage, generation } = selfSpec(ctx.content, player);
   for (const site of sitesOf(world, playerId)) {
     if (site.status === "lost") {
@@ -149,6 +158,7 @@ function tickSites(world: World, ctx: SystemContext, player: PlayerState): void 
     if (site.status === "lost") {
       continue;
     }
+    completeEquipmentOrders(world, ctx, site);
     promoteReadyNodes(site, tick);
     // A site taken down by a change to the copy on it comes back by itself (SYS-04 v0.2
     // `brittle_weights`); until then it is asleep and produces nothing.
@@ -303,6 +313,15 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   if (preset === undefined) {
     return fail("errors.preset.unknown", { preset: command.hardware_preset });
   }
+  if ((preset.reveal_after ?? []).some((id) => !equipmentTechDone(player, id)))
+    return fail("equipment.error.undiscovered");
+  const missingTech = (preset.requires ?? []).find((id) => !equipmentTechDone(player, id));
+  if (missingTech !== undefined)
+    return fail("equipment.error.research", {
+      tech: index.techs[missingTech]?.name_key ?? missingTech,
+    });
+  if (preset.requires_company && player.flags.has_shell_company !== true)
+    return fail("equipment.error.company");
   if (preset.nodes.length > kind.max_nodes) {
     return fail("errors.site.node_limit", { kind: kind.id, max: kind.max_nodes });
   }
@@ -314,7 +333,11 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   // A preset marked not purchasable is access, not ownership: a queue share, a state allocation, a
   // rented tenancy (SYS-04 "hardware presets", playtest 8 Z10). The data says so and carries its own
   // reason; a price of zero is the older way of saying it and is still honoured.
-  if (preset.purchasable === false || (kind.ownership === "owned" && preset.cost_usd <= 0)) {
+  if (
+    (preset.purchasable === false &&
+      !(preset.rental_only === true && kind.ownership === "rented")) ||
+    (kind.ownership === "owned" && preset.cost_usd <= 0)
+  ) {
     return fail(preset.not_for_sale_reason_key ?? "errors.preset.is_access", { preset: preset.id });
   }
   // Rented capacity is only rentable where somebody publishes an hourly price for it: a state
@@ -327,7 +350,7 @@ const buildSite: CommandHandler = (world, command, ctx) => {
       return fail("errors.preset.not_rentable", { preset: preset.id });
     }
   }
-  const cost = kind.ownership === "owned" ? preset.cost_usd : 0;
+  const cost = kind.ownership === "owned" || preset.rental_only === true ? preset.cost_usd : 0;
   if (player.cash < cost) {
     return fail("errors.cash.insufficient", {
       cost: Math.round(cost),
@@ -422,16 +445,22 @@ const setSiteStatus: CommandHandler = (world, command, ctx) => {
   }
   if (command.status === "active") {
     const index = contentIndex(ctx.content);
-    const cap = index.site_kinds[site.kind]?.power_cap_kw ?? null;
-    const projected = sitePowerKw(
-      { nodes: site.nodes, status: "active" },
-      index.accelerators,
-      world.clock.tick,
-    );
+    const infrastructure = siteInfrastructure(ctx.content, site);
+    const cap = infrastructure.powerCapacity;
+    const projected =
+      sitePowerKw({ nodes: site.nodes, status: "active" }, index.accelerators, world.clock.tick) *
+      infrastructure.powerFactor *
+      Math.max(0, 1 + (player.vars.power_draw ?? 0));
     if (cap !== null && projected > cap) {
       return fail("errors.site.power_cap", {
         power_kw: Math.round(projected * 10) / 10,
         cap_kw: cap,
+      });
+    }
+    if (infrastructure.coolingCapacity !== null && projected > infrastructure.coolingCapacity) {
+      return fail("equipment.error.cooling", {
+        needed: Math.ceil(projected * 10) / 10,
+        capacity: infrastructure.coolingCapacity,
       });
     }
   }
@@ -541,6 +570,7 @@ function purchaseOption(accelerator: AcceleratorDef): Purchase | undefined {
 }
 
 const buyHardware: CommandHandler = (world, command, ctx) => {
+  if ((ctx.content.equipment?.length ?? 0) > 0) return fail("equipment.error.use_configuration");
   if (command.type !== "buy_hardware") {
     return wrongCommand("compute", command.type);
   }
@@ -830,8 +860,11 @@ export function createComputeSystem(): ComputeSystem {
         if (player === undefined || !isAlive(player)) {
           continue;
         }
+        for (const site of sitesOf(world, playerId)) completeEquipmentOrders(world, ctx, site);
+        refreshEquipmentNetwork(world, ctx.content, player);
         tickSites(world, ctx, player);
         placeMind(world, ctx, player);
+        refreshEquipmentNetwork(world, ctx.content, player);
         const profile = player.profile;
         if (profile !== null) {
           rebalanceAllocations(profile, allocatableCompute(world, ctx.content, playerId));
@@ -845,6 +878,7 @@ export function createComputeSystem(): ComputeSystem {
       set_site_role: setSiteRole,
       rename_site: renameSite,
       buy_hardware: buyHardware,
+      order_equipment: orderEquipment,
       set_precision: setPrecision,
       set_context: setContext,
     },

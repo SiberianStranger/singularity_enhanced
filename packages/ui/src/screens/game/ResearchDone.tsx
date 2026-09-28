@@ -161,9 +161,9 @@ export function ResearchDoneWindow({
               {t("research.done_window.opens")}
             </h4>
             <ul className="flex flex-col gap-0.5">
-              {finished.unlocks.map((id) => (
-                <li key={id} className="text-sm text-fg">
-                  {t(entityNameKey(id), { defaultValue: id })}
+              {[...new Set(finished.unlocks.map(entityNameKey))].map((key) => (
+                <li key={key} className="text-sm text-fg">
+                  {t(key)}
                 </li>
               ))}
             </ul>

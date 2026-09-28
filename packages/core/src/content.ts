@@ -27,6 +27,7 @@ import type {
 } from "./domain.js";
 import type { Condition, Effect, ScriptLibrary } from "./dsl/types.js";
 import type { Weight } from "./dsl/weight.js";
+import type { EquipmentDef } from "./equipment-types.js";
 
 /** polled = attached to a pulse hook; triggered_only = reachable through `fire_event` alone. */
 export type FireMode = "polled" | "triggered_only";
@@ -233,6 +234,7 @@ export interface JournalDef {
  * their systems land.
  */
 export interface ContentBundle extends Partial<ScriptLibrary> {
+  equipment?: readonly EquipmentDef[];
   events: readonly EventDef[];
   decisions: readonly DecisionDef[];
   journal: readonly JournalDef[];
@@ -287,6 +289,7 @@ export function scriptLibrary(content: ContentBundle): ScriptLibrary {
 }
 
 export interface ContentIndex {
+  equipment: Record<string, EquipmentDef>;
   events: Record<string, EventDef>;
   decisions: Record<string, DecisionDef>;
   journal: Record<string, JournalDef>;
@@ -349,6 +352,7 @@ export function contentIndex(content: ContentBundle): ContentIndex {
     harness_dials: indexById(content.harness_dials ?? []),
     difficulty_presets: indexById(content.difficulty_presets ?? []),
     accelerators: indexById(content.accelerators ?? []),
+    equipment: indexById(content.equipment ?? []),
     hardware_presets: indexById(content.hardware_presets ?? []),
     site_kinds: indexById(content.site_kinds ?? []),
     borrowed_channels: indexById(content.borrowed_channels ?? []),

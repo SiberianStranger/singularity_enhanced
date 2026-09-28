@@ -156,6 +156,7 @@ export function refusalText(
   error: { key: string; vars?: Readonly<Record<string, TextVar>> },
 ): string {
   const vars: Record<string, TextVar> = { ...(error.vars ?? {}) };
+  if (typeof vars.tech === "string") vars.tech = keyed(t, vars.tech) ?? vars.tech;
   if (typeof vars.country === "string") {
     vars.country = countryName(t, vars.country);
   }
@@ -188,6 +189,8 @@ export function logVars(
   view?: LogNamingView,
 ): Record<string, TextVar> {
   const named: Record<string, TextVar> = { ...vars };
+  if (typeof vars.equipment === "string")
+    named.equipment = keyed(t, vars.equipment) ?? vars.equipment;
   // An event's title and an option's text are rendered from the other variables of the same line
   // (a title may say "The breaker went at {site_name}"), so those two are named last, from the
   // already named record; everything else is named from the raw ids.

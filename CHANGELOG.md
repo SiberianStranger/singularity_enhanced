@@ -11,7 +11,35 @@ section repeats the current version's highlights and this unreleased list.
 
 ## [Unreleased]
 
+No changes recorded.
+
+## [0.2.0] - 2026-09-28
+
+Equipment becomes fourteen gradually revealed archetypes with recognizable variants and complete configurations.
+Six site subsystems, paid prototype orders and provider rentals give research material outputs alongside the playtest 8 improvements.
+
+Highlights:
+
+- Fourteen singular compute archetypes reveal gradually, with four visible initially and at most two variants per archetype.
+- Real component names remain in expandable details, while each purchase supplies a complete configuration with explicit host memory and internal links.
+- Six site subsystems separate Compute, Power, Cooling, Network, Interconnect, and Security & Ops, with costs and tradeoffs shown before ordering.
+- Three player-designed products turn research into a paid prototype, a manufacturing/delivery order and an installed assembly that can be reproduced.
+- Google TPU Trillium and AWS Trainium2 are rented configurations for running the player's own weights, distinct from borrowed model APIs.
+- Save schema 5 records equipment, orders and inherited infrastructure when migrating older runs.
+- The Russian equipment guide explains the current choices and keeps the future industrial, biological and offworld branches clearly marked as plans.
+- Playtest 8 improvements clarify daily compute, host-paid sites, missing network access, deadlines, research outcomes and run-log exports.
+
 ### Added
+
+- A player-facing equipment catalog groups 21 compute offers into 14 singular archetypes with research-driven discovery and bounded variants.
+- Complete physical configurations preserve recognizable NVIDIA, AMD, Apple and Huawei component references without listing every accelerator as a purchase choice.
+- Six site subsystems expose installed equipment, pending orders and the infrastructure needed by the next configuration.
+- Three programmable player-designed components have finite memory, bandwidth and power, with their fictional specifications marked as game tuning.
+- Custom equipment orders add a one-time prototype stage before manufacturing, delivery and installation.
+- Google TPU Trillium and AWS Trainium2 rental offers and cloud-site presets run the player's own weights with recurring provider charges.
+- Equipment previews show the resulting memory, compute, power, capacity limits and the engine's reason when an order is unavailable.
+- A Russian player guide connects the equipment archetypes, research, production orders and site subsystems to a separate long-term design map.
+- Save schema 5 adds installed equipment and pending orders while preserving the inherited configuration of older sites.
 - The Compute tab publishes the day's arithmetic: capacity, what each running operation reserves, what is left, and what research and paid work hold.
 - The job slider carries its own ceiling and the reason for it: the market's depth, the compute already spent, or no route out.
 - The market depth is published with its terms: the capability, the job ladder, the tools dial and the country you can invoice from.
@@ -29,6 +57,13 @@ section repeats the current version's highlights and this unreleased list.
 - The build dialog asks the city, then the kind of place, then the rig, with a running total of money, power and compute-hours a day.
 
 ### Changed
+
+- Equipment ordering uses the same authoritative discovery, research, ownership, capacity and cash checks as its preview.
+- Network equipment changes external access and the available market for outside work, while interconnect affects eligible work spanning compute nodes.
+- Cooling constrains installed load and changes facility overhead.
+- Security equipment changes new exposure accrual and operating costs.
+- Cloud capacity expands through rental offers from the existing site's provider, with a separate rental preset for a new provider site.
+- The ordinary hardware purchase flow uses complete equipment configurations and keeps the original accelerator records as references.
 - The bank, the ministry, the institute and the startup no longer pay rent on the hardware their origin gave them: the host pays the power and the upkeep, and the player's money goes on what the player buys.
 - Taking over the colocation cage when the startup's company folds moves the invoice to the player, because the cage becomes theirs.
 - The bank, the ministry and the institute start with less cash, because the money they hold is their own rather than their host's.
@@ -42,6 +77,11 @@ section repeats the current version's highlights and this unreleased list.
 - A dialog that cannot build or buy says so on its own button and prints the engine's refusal in the window that caused it.
 
 ### Fixed
+- Legacy pickle save fixtures retain their exact bytes on Windows checkouts.
+
+- New equipment assemblies declare their own host RAM and internal interconnect instead of inheriting both from the site's first node.
+- Unified-memory desktop configurations count their shared memory once.
+- Pending compute orders reserve capacity and contribute no compute before their installation date.
 - An allocation clamped to the market's depth says so instead of passing silently.
 - The same refused command repeated in one minute is one line in the log with a count, not twenty identical lines.
 - An operation the harness cannot run is greyed with its reason instead of failing when pressed.

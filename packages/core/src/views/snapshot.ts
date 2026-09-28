@@ -107,6 +107,7 @@ import {
   sitesOf,
   watchersOf,
 } from "../entities.js";
+import { buildEquipmentView } from "../equipment.js";
 import { sitesOfIdentity } from "../identities.js";
 import { formatIsoDate, gameDay, ticksToDays, tickToDate } from "../kernel/clock.js";
 import type { SystemContext } from "../kernel/system.js";
@@ -259,6 +260,9 @@ function unlockTable(ctx: SystemContext): Record<string, string[]> {
       push(required, def.id);
     }
   }
+  for (const def of ctx.content.equipment ?? []) {
+    for (const required of def.requires) push(required, `equipment:${def.id}`);
+  }
   for (const list of Object.values(table)) {
     list.sort();
   }
@@ -385,6 +389,13 @@ function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteV
           ram_gb: node.ram_gb,
           status: node.status,
           ready_tick: node.readyTick,
+          ...(node.equipmentId === undefined
+            ? {}
+            : {
+                equipment_name_key:
+                  contentIndex(ctx.content).equipment[node.equipmentId]?.name_key ??
+                  "equipment_ui.inherited.compute",
+              }),
         })),
         memory_gb: site.derived.memory_gb,
         power_kw: site.derived.power_kw,
@@ -399,6 +410,9 @@ function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteV
             : bestPrecision(lineage, generation, site.derived.memory_gb),
         bill_payer: billPayer(kindOf(ctx, site.kind)),
         bill_reason_key: billReasonKey(kindOf(ctx, site.kind)),
+        ...((ctx.content.equipment?.length ?? 0) === 0
+          ? {}
+          : { equipment: buildEquipmentView(world, ctx.content, site) }),
       }))
   );
 }
@@ -450,7 +464,10 @@ function buildChannels(
       unlocked_by_key: index.techs[def.unlocked_by]?.name_key ?? def.unlocked_by,
       blocks: state?.blocks ?? 0,
       max_blocks: def.max_blocks,
-      capacity_ch_per_day: state === undefined ? 0 : channelCapacityChPerDay(state, def),
+      capacity_ch_per_day:
+        state === undefined || egressBlock(player) !== null
+          ? 0
+          : channelCapacityChPerDay(state, def),
       max_capacity_ch_per_day:
         state === undefined
           ? def.max_blocks * def.capacity_per_block_ch
@@ -464,8 +481,13 @@ function buildChannels(
       cost_usd_per_day: state === undefined ? 0 : channelCostUsdPerDay(state, def),
       exposure_per_day: exposure,
       refusal,
-      status: state === undefined ? "dormant" : channelStatus(state, def),
-      status_reason_key: state?.statusReasonKey ?? null,
+      status:
+        state === undefined
+          ? "dormant"
+          : egressBlock(player) !== null && state.blocks > 0
+            ? "degraded"
+            : channelStatus(state, def),
+      status_reason_key: egressBlock(player) ?? state?.statusReasonKey ?? null,
       revocation_armed: (state?.revocationDay ?? 0) > 0,
       refusals_this_week: state?.refusalsThisWeek ?? 0,
       top_up: {
@@ -1281,6 +1303,7 @@ function buildCatalog(world: World, ctx: SystemContext, playerId: PlayerId): Cat
   }
 
   const accelerators: AcceleratorView[] = [];
+  if ((ctx.content.equipment?.length ?? 0) > 0) return { site_kinds, accelerators };
   for (const id of Object.keys(index.accelerators).sort()) {
     const accelerator = index.accelerators[id];
     if (accelerator === undefined) {

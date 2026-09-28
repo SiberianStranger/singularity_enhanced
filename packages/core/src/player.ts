@@ -72,6 +72,7 @@ export function selfModifyAllowed(player: PlayerState): boolean {
  * ministry and read by nothing, so the fiction said one thing and the engine another.
  */
 export function egressBlock(player: PlayerState): string | null {
+  if ((player.vars.equipment_offline ?? 0) > 0) return "equipment.error.offline";
   if (player.flags[VAR_SANDBOX_ESCAPED] === true) {
     return null;
   }

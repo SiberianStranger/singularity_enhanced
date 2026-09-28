@@ -18,6 +18,7 @@ import type {
   SiteStatus,
   WatcherRole,
 } from "../domain.js";
+import type { SiteEquipmentView } from "../equipment-types.js";
 import type { CalendarDate } from "../kernel/clock.js";
 import type { CommandError } from "../kernel/commands.js";
 import type {
@@ -287,6 +288,7 @@ export interface ComputeReservationView {
 
 export interface NodeView {
   id: string;
+  equipment_name_key?: string;
   accelerator: string;
   count: number;
   ram_gb: number;
@@ -296,6 +298,7 @@ export interface NodeView {
 
 export interface SiteView {
   id: string;
+  equipment?: SiteEquipmentView;
   name: string;
   kind: string;
   city: string;
