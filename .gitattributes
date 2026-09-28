@@ -26,3 +26,7 @@ singularity/data/music-src/** export-ignore
 *.toml text eol=lf
 *.svg text eol=lf
 *.lock text eol=lf
+
+# Legacy pickle save fixtures must retain their bytes on Windows.
+*.sav -text
+*.s2 -text
