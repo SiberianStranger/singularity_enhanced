@@ -1235,6 +1235,84 @@ function validateLineageTexts(
   }
 }
 
+/** Every flag a record sets, clears or tests, however deep in its effects and conditions it sits. */
+function collectFlags(value: unknown, out: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectFlags(item, out);
+    }
+    return;
+  }
+  if (!isRecord(value)) {
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    if (name === "set_flag" || name === "clear_flag") {
+      const flag = typeof child === "string" ? child : isRecord(child) ? child.flag : undefined;
+      if (typeof flag === "string") {
+        out.add(flag);
+      }
+      continue;
+    }
+    if (name === "flag" && typeof child === "string") {
+      out.add(child);
+      continue;
+    }
+    collectFlags(child, out);
+  }
+}
+
+/**
+ * Flag names (0.3.1, a playtest finding: "Gains: has_shell_company" on a decision card).
+ *
+ * A flag reaches the player as the subject of an effect line ("Gains: a shell company"), and the
+ * client prints the name content gives it under `flags.<id>`. Two rules, both errors, for the same
+ * reasons as the agency names above:
+ *
+ * - every flag content sets, clears or tests has an English name; a flag only an origin or a
+ *   lineage starts with and nothing reads never reaches a line, so it is not held to this;
+ * - a name English writes exists in every language the build bundles, because an English noun in
+ *   the middle of a Russian sentence is not a smaller version of the string, it is another language.
+ */
+function validateFlagNames(
+  loaded: Records,
+  byLanguage: Record<string, Record<string, string>>,
+  issues: BuildIssue[],
+): void {
+  const used = new Set<string>();
+  for (const domain of DOMAINS) {
+    for (const record of loaded[domain] ?? []) {
+      collectFlags(record, used);
+    }
+  }
+  const source = byLanguage[SOURCE_LANGUAGE] ?? {};
+  for (const flag of [...used].sort()) {
+    if (source[`flags.${flag}`] === undefined) {
+      issues.push({
+        file: `locales/${SOURCE_LANGUAGE}`,
+        path: `flags.${flag}`,
+        message: "content sets, clears or tests this flag, and it has no name to show the player",
+      });
+    }
+  }
+  const named = Object.keys(source)
+    .filter((key) => key.startsWith("flags."))
+    .sort();
+  for (const language of Object.keys(byLanguage).sort()) {
+    if (language === SOURCE_LANGUAGE) {
+      continue;
+    }
+    const map = byLanguage[language] ?? {};
+    for (const key of named.filter((entry) => map[entry] === undefined)) {
+      issues.push({
+        file: `locales/${language}`,
+        path: key,
+        message: "every language names the flags; English is not a fallback here",
+      });
+    }
+  }
+}
+
 /** Locale keys of the domains the core validator does not walk. */
 function validateDomainLocaleKeys(
   loaded: Records,
@@ -1360,6 +1438,7 @@ export async function buildContent(options: BuildOptions = {}): Promise<BuildRes
   validateDomainLocaleKeys(loaded, new Set(Object.keys(locales)), issues);
   validateAgencyNames(loaded, byLanguage, issues);
   validateLineageTexts(loaded, byLanguage, issues);
+  validateFlagNames(loaded, byLanguage, issues);
   coverage(loaded, locales, issues);
 
   const serialized = stableStringify(bundle);

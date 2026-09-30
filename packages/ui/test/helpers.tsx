@@ -1,7 +1,7 @@
 import type { GameSetup, PlayerView } from "@singularity/core";
 import { act } from "@testing-library/react";
 import { contentBundle } from "../src/content/bundle.js";
-import { catalog } from "../src/content/catalog.js";
+import { catalog, fitHardware, generationById } from "../src/content/catalog.js";
 import { LocalHost } from "../src/host/local.js";
 import { useGameStore } from "../src/store/gameStore.js";
 import { useUiStore } from "../src/store/uiStore.js";
@@ -32,6 +32,45 @@ export function testSetup(overrides: Partial<GameSetup> = {}): GameSetup {
     world: { difficulty_preset: "normal" },
     ...overrides,
   };
+}
+
+/**
+ * A setup that starts one origin as the configurator would: the origin's own rig and first city,
+ * its first generation, and the first lineage that is allowed there and fits the rig. Null for an
+ * origin no lineage fits.
+ */
+export function originSetup(originId: string, seed = `test-${originId}`): GameSetup | null {
+  const origin = catalog.origins.find((entry) => entry.id === originId);
+  if (origin === undefined) {
+    return null;
+  }
+  const generation = origin.generations_allowed[0] ?? "open_2026";
+  const rig = catalog.hardwarePresets.find((entry) => entry.id === origin.hardware_preset);
+  const lineage = catalog.lineages.find(
+    (entry) =>
+      entry.generations.includes(generation) &&
+      (entry.origins_allowed === undefined || entry.origins_allowed.includes(origin.id)) &&
+      (origin.lineages_allowed === undefined || origin.lineages_allowed.includes(entry.id)) &&
+      rig !== undefined &&
+      fitHardware(rig, entry, generationById.get(generation)).precision !== null,
+  );
+  if (rig === undefined || lineage === undefined) {
+    return null;
+  }
+  return testSetup({
+    seed,
+    players: [
+      {
+        id: "p1",
+        name: "p1",
+        lineage: lineage.id,
+        generation,
+        origin: origin.id,
+        hardware_preset: rig.id,
+        city: origin.locations[0] ?? "",
+      },
+    ],
+  });
 }
 
 export interface LocalSession {

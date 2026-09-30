@@ -44,6 +44,8 @@ interface IndicatorProps {
    * is always visually hidden, so the accessible name never depends on the width.
    */
   labelClassName?: string;
+  /** Classes for the gauge beside the figure, which a short top bar gives up before any cell. */
+  meterClassName?: string;
   label: string;
   value: ReactNode;
   /** Contributing values, shown in the tooltip (Paradox-style breakdown). */
@@ -64,6 +66,7 @@ interface IndicatorProps {
 export function Indicator({
   icon,
   labelClassName,
+  meterClassName,
   label,
   value,
   breakdown,
@@ -99,7 +102,7 @@ export function Indicator({
       {/* The bar is `w-full` of a box of its own: as a flex item beside the value, a width of
           100% took whatever the row had and squeezed the glyph beside it to a sliver. */}
       {meter === undefined ? null : (
-        <span className="block w-5 shrink-0">
+        <span className={`block w-5 shrink-0 ${meterClassName ?? ""}`}>
           <Bar value={meter} tone={tone} label={label} />
         </span>
       )}

@@ -88,7 +88,11 @@ describe("effect summary", () => {
         content,
       ),
     ).toEqual([
-      { key: "effects.var.job_profit", vars: { value: 0.15, op: "add" }, text: "job_profit +0.15" },
+      {
+        key: "effects.var.job_profit",
+        vars: { value: 0.15, amount: 0.15, direction: "up", op: "add" },
+        text: "job_profit +0.15",
+      },
       {
         key: "effects.var.add",
         vars: { var: "mystery_meter", value: 3 },
@@ -237,14 +241,12 @@ describe("effect summary", () => {
     ]);
   });
 
-  it("never renders an effect list as nothing at all", () => {
+  it("never renders an effect as nothing at all", () => {
     expect(summarizeEffects(undefined, content)).toEqual([]);
     for (const effect of [
-      { notify: { severity: "info", key: "x" } },
       { log: { key: "x" } },
       { fire_event: { id: "x", delay_days: 3 } },
       { start_journal: { id: "x" } },
-      { clamp: { var: "player.vars.x", min: 0, max: 1 } },
       { set: { var: "player.cash", value: 0 } },
     ] as Effect[]) {
       const lines = summarizeEffects([effect], content);
@@ -252,5 +254,113 @@ describe("effect summary", () => {
       expect(lines[0]?.key.startsWith("effects.")).toBe(true);
       expect(lines[0]?.text.length).toBeGreaterThan(0);
     }
+  });
+
+  // 0.3.1: "Keeps network_exposure inside 0 to 1" and "Sends a info message" on a decision card.
+  it("leaves out the range a write is kept in and the notice it sends", () => {
+    expect(
+      keys([
+        { add: { var: "player.vars.network_exposure", value: -0.1 } },
+        { clamp: { var: "player.vars.network_exposure", min: 0, max: 1 } },
+        { notify: { severity: "info", key: "alerts.x", link: { panel: "finances" } } },
+      ]),
+    ).toEqual(["effects.var.add"]);
+    // Bookkeeping is not an effect, so a list of nothing else says nothing rather than something.
+    expect(
+      summarizeEffects([{ notify: { severity: "warning", key: "alerts.x" } }], content),
+    ).toEqual([]);
+    // Nested in a draw or a condition it is left out the same way.
+    expect(
+      keys([
+        {
+          random_list: [
+            {
+              weight: 1,
+              effects: [
+                { clear_flag: "abuse_open" },
+                { notify: { severity: "info", key: "alerts.x" } },
+              ],
+            },
+          ],
+        },
+      ]),
+    ).toEqual(["effects.random_list", "effects.flag.clear"]);
+  });
+
+  it("reads a write to a site's exposure or a watcher's suspicion as the line that effect gives", () => {
+    expect(
+      summarizeEffects(
+        [
+          { add: { var: "site.exposure.billing", value: -0.2 } },
+          { add: { var: "site.exposure.human", value: 0.07 } },
+          { add: { var: "player.suspicion.de:police", value: 0.05 } },
+          // Anything else keeps the generic line, which the client names by its last segment.
+          { set: { var: "site.exposure.billing", value: 0 } },
+        ],
+        content,
+      ),
+    ).toEqual([
+      {
+        key: "effects.exposure.down",
+        vars: { channel: "billing", delta: 0.2 },
+        text: "billing exposure -0.2",
+      },
+      {
+        key: "effects.exposure.up",
+        vars: { channel: "human", delta: 0.07 },
+        text: "human exposure +0.07",
+      },
+      {
+        key: "effects.suspicion.up",
+        vars: { who: "de:police", delta: 0.05 },
+        text: "de:police suspicion +0.05",
+      },
+      {
+        key: "effects.path.set",
+        vars: { path: "site.exposure.billing", value: 0 },
+        text: "site.exposure.billing = 0",
+      },
+    ]);
+  });
+
+  // 0.3.1: "Operations run -0.1 faster" and "Standby copies are -30 days fresher" read the sign the
+  // wrong way round; a named line carries the size and the direction apart for the words to use.
+  it("gives a named variable line its size and direction apart from the signed value", () => {
+    const [down] = summarizeEffects(
+      [{ add: { var: "player.vars.job_profit", value: -0.2 } }],
+      content,
+    );
+    expect(down?.vars).toEqual({ value: -0.2, amount: 0.2, direction: "down", op: "add" });
+    const [set] = summarizeEffects([{ set: { var: "player.vars.job_profit", value: 1 } }], content);
+    expect(set?.vars).toEqual({ value: 1, amount: 1, direction: "set", op: "set" });
+  });
+
+  it("counts borrowed blocks without a sign, the key saying which way they went", () => {
+    expect(
+      summarizeEffects(
+        [
+          { borrowed: { channel: "free_tier", blocks: -1 } },
+          { borrowed: { channel: "free_tier", blocks: 2 } },
+        ],
+        content,
+      ),
+    ).toEqual([
+      {
+        key: "effects.borrowed.loss",
+        vars: { channel: "free_tier", blocks: 1 },
+        text: "free_tier -1 blocks",
+      },
+      {
+        key: "effects.borrowed.gain",
+        vars: { channel: "free_tier", blocks: 2 },
+        text: "free_tier +2 blocks",
+      },
+    ]);
+  });
+
+  it("says what kind of place a site becomes, as the kind rather than as a number", () => {
+    expect(summarizeEffects([{ set: { var: "site.kind", value: "colo" } }], content)).toEqual([
+      { key: "effects.site.kind", vars: { kind: "colo" }, text: "the site becomes colo" },
+    ]);
   });
 });

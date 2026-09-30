@@ -1,4 +1,4 @@
 {
-  "log.compute_allocations": "I assign {research} CH/day to research and {jobs} to paid work; {free} remain free.",
+  "log.compute_allocations": "I assign {research, number, ::.#} CH/day to research and {jobs, number, ::.#} to paid work; {free, number, ::.#} remain free.",
   "log.site_liquidated": "I liquidated {site}. Resale returned {cash} USD; notice and outstanding invoices took {notice} USD."
 }

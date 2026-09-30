@@ -252,8 +252,7 @@ const TAB_KEYS = [
   "panel.research",
   "panel.finances",
   "panel.detection",
-  "panel.operations",
-  "panel.journal",
+  "panel.actions",
 ] as const;
 
 for (const language of LANGUAGES) {
@@ -314,7 +313,7 @@ test("a running operation says what it is waiting for, and the compute adds up",
   page,
 }) => {
   await start(page, "en");
-  await openTab(page, "en", "panel.operations");
+  await openTab(page, "en", "panel.actions");
 
   // The first operation that can be started; the panel then has to account for its compute.
   const offer = page.locator("[data-testid^='offer-']").filter({ hasNot: page.getByText("") });

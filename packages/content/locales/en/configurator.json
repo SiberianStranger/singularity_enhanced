@@ -48,7 +48,7 @@
   "harness.autonomy.name": "Autonomy",
   "harness.autonomy.supervised": "Supervised",
   "harness.effect.attention": "Action budget {percent}%",
-  "harness.effect.behavioral": "Behavioral exposure +{value} a day",
+  "harness.effect.behavioral": "Behavioral exposure {value, number, ::sign-always} a day",
   "harness.effect.egress_closed": "Network operations blocked until you break out",
   "harness.effect.egress_open": "Network operations available",
   "harness.effect.journal": "Journal patience {percent}%",

@@ -46,6 +46,7 @@ import {
 } from "@singularity/core";
 import { catalog, fitHardware, memoryNeededGb } from "../../content/catalog.js";
 import { bundleKey } from "../../content/strings.js";
+import { effectText } from "../../lib/effects.js";
 import { computeHours } from "../../lib/format.js";
 import {
   agencyCompetence,
@@ -1330,10 +1331,7 @@ export function quirkMeaning(
       tone: quirk.cost > 0 ? "bad" : quirk.cost < 0 ? "good" : "neutral",
       hint: t(bundleKey("configurator.meaning.quirk_effect", "config.meaning.quirk_cost_hint"), {
         left: budgetLeft,
-        effect:
-          effects[0] === undefined
-            ? ""
-            : t(effects[0].key, { ...effects[0].vars, defaultValue: effects[0].text }),
+        effect: effects[0] === undefined ? "" : effectText(t, effects[0]),
       }),
     },
   ];
@@ -1354,7 +1352,7 @@ export function quirkMeaning(
     lines.push({
       id: `effect.${index}`,
       label: t("config.meaning.effect"),
-      value: t(effect.key, { ...effect.vars, defaultValue: effect.text }),
+      value: effectText(t, effect),
       tone: tone === "good" || tone === "bad" ? tone : "neutral",
       hint: undefined,
     });
@@ -1461,7 +1459,7 @@ export function harnessDialMeaning(
     lines.push({
       id: `effect.${index}`,
       label: t("config.meaning.effect"),
-      value: t(effect.key, { ...effect.vars, defaultValue: effect.text }),
+      value: effectText(t, effect),
       tone: "neutral",
       hint: undefined,
       prose: true,

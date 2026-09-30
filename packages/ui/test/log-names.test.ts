@@ -10,6 +10,7 @@
 
 import i18next from "i18next";
 import { describe, expect, it } from "vitest";
+import { contentBundle } from "../src/content/bundle.js";
 import { catalog } from "../src/content/catalog.js";
 import { type LogNamingView, logLine } from "../src/lib/labels.js";
 
@@ -158,5 +159,84 @@ describe("a log line names things rather than printing ids", () => {
     // player's, and it keeps its id.
     const line = logLine(t, { key: "log.hook_too_deep", vars: { hook: "on_site_built" } });
     expect(line).toContain("on_site_built");
+  });
+});
+
+describe("the lines that printed an id (0.3.1)", () => {
+  const en = i18next.getFixedT("en");
+  const ru = i18next.getFixedT("ru");
+  const country = catalog.countries[0]?.id ?? "de";
+
+  it.each([
+    ["log.identity_created", "A company is registered in", "зарегистрирована фирма"],
+    ["log.identity_frozen", "The company in", "заморожена фирма"],
+    ["log.identity_burned", "The company in", "сожжена фирма"],
+    ["alerts.identity_frozen", "The company in", "Фирма в стране"],
+    ["alerts.identity_burned", "The company in", "Фирма в стране"],
+    ["alerts.identity_check_failed", "The company failed a check", "Фирма не проходит проверку"],
+  ])("words an identity's kind in %s rather than printing it", (key, english, russian) => {
+    // The engine sends the kind as the id it is (`company`, `person`) and the line words it with
+    // an ICU `select`; the name's own id is not printed at all.
+    const vars = { identity: "id-3", kind: "company", country, sites: 2 };
+    const inEnglish = logLine(en, { key, vars }, view);
+    const inRussian = logLine(ru, { key, vars }, view);
+    expect(inEnglish).toContain(english);
+    expect(inRussian).toContain(russian);
+    for (const line of [inEnglish, inRussian]) {
+      expect(line).not.toMatch(/\bcompany\b(?! )|id-3|\{/);
+    }
+    const person = logLine(ru, { key, vars: { ...vars, kind: "person" } }, view);
+    expect(person).toMatch(/[Лл]ичность/);
+    expect(person).not.toMatch(/person/);
+  });
+
+  it("says whether an identity check passed, in words", () => {
+    const vars = { identity: "id-3", kind: "person", country, failed: false };
+    expect(logLine(en, { key: "log.identity_check", vars })).toMatch(/personal identity passed/);
+    expect(logLine(ru, { key: "log.identity_check", vars: { ...vars, failed: true } })).toMatch(
+      /личность не прошла/,
+    );
+  });
+
+  it("says what a refused command tried and why, in the refusal's own words", () => {
+    const vars = {
+      command: "start_operation",
+      reason: "errors.cash.insufficient",
+      cost: 8000,
+      cash: 500,
+    };
+    expect(logLine(en, { key: "log.command_refused", vars })).toBe(
+      "Could not start an operation. That costs 8000 USD and there is 500 USD.",
+    );
+    expect(logLine(ru, { key: "log.command_refused_repeated", vars: { ...vars, count: 3 } })).toBe(
+      "Не удалось запустить операцию (3 попытки). Это стоит 8000 $, а есть 500 $.",
+    );
+    // A reason whose operation is an id is named like any other line's.
+    const operation = contentBundle.operations?.find(
+      (entry) => (entry.needs_tools ?? []).length > 0,
+    );
+    expect(operation).toBeDefined();
+    const tool = logLine(en, {
+      key: "log.command_refused",
+      vars: {
+        command: "start_operation",
+        reason: "errors.operation.needs_tool",
+        operation: operation?.id ?? "",
+        tool: operation?.needs_tools?.[0] ?? "",
+      },
+    });
+    expect(tool).toContain(t(operation?.name_key ?? ""));
+    expect(tool).not.toMatch(RAW_ID);
+    expect(tool).not.toMatch(/errors\.|\{/);
+  });
+
+  it("names why a watcher closed a file it handed on", () => {
+    const line = logLine(
+      ru,
+      { key: "log.investigation_closed", vars: { watcher: "us:cyber_agency", reason: "handover" } },
+      view,
+    );
+    expect(line).not.toMatch(/handover|us:cyber_agency/);
+    expect(line).toContain("другому ведомству");
   });
 });

@@ -101,7 +101,8 @@ test("the relay's bill is its own line and the work-share decision is reachable"
   await expect(page.getByText(english("finances.cost.borrowed"))).toBeVisible();
 
   // The standing allocation is a decision card; the block links to it rather than owning a second
-  // control of its own (SYS-10, SYS-25). Following the link closes the window over the journal.
+  // control of its own (SYS-10, SYS-25). Following the link closes the window over the Actions
+  // tab, where the decisions are since playtest 10.
   await openBorrowedWindow(page);
   await page
     .getByTestId("borrowed-block")

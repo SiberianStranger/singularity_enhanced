@@ -31,13 +31,14 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   const open = useUiStore((state) => state.outlinerOpen);
   const setOpen = useUiStore((state) => state.setOutliner);
   const openTab = useUiStore((state) => state.openTab);
+  const openOverlay = useUiStore((state) => state.openOverlay);
   const select = useUiStore((state) => state.select);
 
   if (!open) {
     // The map-mode strip used to carry this control; the strip is gone (playtest 3, R10), so the
     // one way back is a button where the outliner itself was.
     return (
-      <div className="pointer-events-auto col-start-3 row-start-1 self-start justify-self-end">
+      <div className="pointer-events-auto relative z-10 col-start-3 row-start-2 me-2 mt-2 self-start justify-self-end">
         <Button onClick={() => setOpen(true)}>{t("outliner.expand")}</Button>
       </div>
     );
@@ -48,12 +49,13 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
   return (
     <Frame
       title={t("outliner.title")}
-      // The right-hand column of the screen grid (L8). Below 66rem of map region the body is
-      // hidden and only the title is left, so the outliner is a strip the player can read past
-      // rather than a column the map cannot spare; that is the first step of the reflow order
-      // (L11). The collapse button goes with the body: a strip that offered to collapse itself
-      // was wider than the open outliner, and took the width the primary panel needed.
-      className="pointer-events-auto col-start-3 row-start-1 max-h-[calc(100%-3rem)] w-60 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
+      // The right-hand column of the screen grid (L8), in the row under the top bar. Below 66rem
+      // of screen the body is hidden and only the title is left, so the outliner is a strip the
+      // player can read past rather than a column the map cannot spare; that is the first step of
+      // the reflow order (L11). The collapse button goes with the body: a strip that offered to
+      // collapse itself was wider than the open outliner, and took the width the primary panel
+      // needed. Its height leaves the row's foot to the World button.
+      className="pointer-events-auto relative z-10 col-start-3 row-start-2 me-2 mt-2 max-h-[calc(100%-3.5rem)] w-60 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
       bodyClassName="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2 @max-[66rem]/screen:hidden"
       actions={
         <Button
@@ -101,7 +103,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 key={operation.instance_id}
                 type="button"
                 className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
-                onClick={() => openTab("operations", operation.instance_id)}
+                onClick={() => openTab("actions", operation.instance_id)}
               >
                 <span className="min-w-0 text-fg">
                   {t(`operations.${operation.operation_id}.name`)}
@@ -141,7 +143,7 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 key={entry.key}
                 type="button"
                 className="flex flex-col gap-0.5 px-1 py-0.5 text-start text-xs hover:bg-panel2"
-                onClick={() => openTab("journal", entry.id)}
+                onClick={() => openOverlay("journal", entry.id)}
               >
                 <span className="min-w-0 text-fg">{t(`journal.${entry.id}.title`)}</span>
                 <Bar value={entry.progress} label={t("outliner.journal")} />

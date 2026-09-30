@@ -255,7 +255,7 @@ describe("the borrowed block", () => {
     assertNoRawKeys("the block in English");
   });
 
-  it("links the standing work-share decision to its card in the journal", async () => {
+  it("links the standing work-share decision to its card in Actions", async () => {
     const view = await fixtureView(FIXTURE_CHANNELS);
     const withDecision: PlayerView = {
       ...view,
@@ -279,7 +279,7 @@ describe("the borrowed block", () => {
     render(<BorrowedBlock view={withDecision} />);
     const title = STRINGS.en?.["decisions.bi_send_the_work_out.title"] ?? "";
     await userEvent.click(screen.getByRole("button", { name: title }));
-    expect(useUiStore.getState().primaryTab).toBe("journal");
+    expect(useUiStore.getState().primaryTab).toBe("actions");
     expect(useUiStore.getState().focusId).toBe("bi_send_the_work_out");
   });
 

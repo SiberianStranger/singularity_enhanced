@@ -1,0 +1,10 @@
+{
+  "decisions.set_by_a_decision.desc": "Sets a flag nobody named.",
+  "decisions.set_by_a_decision.title": "Set a flag",
+  "events.flag_names.desc": "Flags, named and not.",
+  "events.flag_names.opt.clear": "Clear one",
+  "events.flag_names.opt.set": "Set two",
+  "events.flag_names.title": "Flag names",
+  "flags.english_only": "a flag only English names",
+  "flags.named_flag": "a named flag"
+}

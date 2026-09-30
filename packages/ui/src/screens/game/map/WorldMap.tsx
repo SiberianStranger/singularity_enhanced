@@ -5,6 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -17,13 +18,17 @@ import { Button } from "../../../components/Button.js";
 import { countryName } from "../../../lib/labels.js";
 import type { MapMode, MapStyle } from "../../../store/uiStore.js";
 import { MAP_HEIGHT, MAP_WIDTH, project } from "./projection.js";
-import { nightPath } from "./terminator.js";
-import { countryShapes } from "./topology.js";
 import {
-  UkraineControlOverlay,
-  UkraineMapDefinitions,
-  UkraineNightLights,
-} from "./UkraineMapLayers.js";
+  TerritoryDefinitions,
+  TerritoryNightLights,
+  TerritoryOverlay,
+  territoryHolesMask,
+  territoryOwners,
+} from "./TerritoryLayers.js";
+import { nightPath } from "./terminator.js";
+import { type TerritoryDef, territoryPaint, territorySentence } from "./territories.js";
+import { type DrawnTerritory, drawnTerritories, resolveTerritories } from "./territory-geometry.js";
+import { countryShapes } from "./topology.js";
 import {
   fixView,
   INITIAL_VIEW,
@@ -69,6 +74,11 @@ export interface MapMarker {
 export interface MapTarget {
   kind: "country" | "city";
   id: string;
+  /**
+   * The territory (SYS-26) the click landed on, when it did: the target is still the de jure
+   * country, and the selection panel names the territory as well.
+   */
+  territory?: string;
 }
 
 interface WorldMapProps {
@@ -101,6 +111,11 @@ interface WorldMapProps {
    */
   view?: ViewBox;
   onViewChange?(view: ViewBox): void;
+  /**
+   * The territories to draw (SYS-26); the map's own list when absent. A test passes a list of its
+   * own to hold a territory the game does not ship to the same rules.
+   */
+  territories?: readonly TerritoryDef[];
 }
 
 /**
@@ -239,6 +254,37 @@ function fillFor(
   return value <= 0.01 ? base : `rgb(${MODE_HUE[mode]} / ${Math.round(value * 80)}%)`;
 }
 
+/**
+ * The stroke of a country's outline. The selected outline is a width on screen, like the focus
+ * stroke; the borders keep map units, so they thicken as the map zooms in. The territories draw the
+ * de jure owner's border again with the same stroke, over their hatch.
+ */
+function countryStroke(
+  selected: boolean,
+  textured: boolean,
+): {
+  stroke: string;
+  strokeWidth: number;
+  strokeOpacity: number;
+  vectorEffect?: "non-scaling-stroke";
+} {
+  return {
+    stroke: textured ? "var(--c-map-border)" : "var(--c-map-line)",
+    strokeWidth: selected ? 2 : textured ? 0.3 : 0.4,
+    strokeOpacity: selected ? 1 : textured ? 0.45 : 1,
+    ...(selected ? { vectorEffect: "non-scaling-stroke" as const } : {}),
+  };
+}
+
+/**
+ * The colour a territory's hatch falls back to when no hue can carry it, and its dashed edge: the
+ * textured map's border colour, which is light on the rasters; on the flat map the borders are a
+ * dark line on dark land, so the secondary text colour, which reads on land and on every fill.
+ */
+function territoryLine(textured: boolean): string {
+  return textured ? "var(--c-map-border)" : "var(--c-muted)";
+}
+
 /** Share of the visible width or height one arrow-key press moves the map (playtest 3, R14). */
 const KEY_PAN_FRACTION = 0.15;
 
@@ -281,6 +327,7 @@ export function WorldMap({
   controls,
   view: controlledView,
   onViewChange,
+  territories: territoryDefs,
 }: WorldMapProps): ReactNode {
   const { t } = useTranslation();
   const svg = useRef<SVGSVGElement>(null);
@@ -307,6 +354,26 @@ export function WorldMap({
   // Which country the pointer is over, so its cities light up while the rest of the map stays dim
   // (playtest 3, R7). It is view state, not game state: nothing outside this component reads it.
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
+  // The drawn size of the map, so a territory's hatch is so many pixels apart on screen at every
+  // zoom and every window size. A test renderer has no layout; the default is a typical window.
+  const [box, setBox] = useState({ width: 1500, height: 750 });
+  useEffect(() => {
+    const element = svg.current;
+    if (element === null || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      const width = Math.round(element.clientWidth);
+      const height = Math.round(element.clientHeight);
+      if (width > 0 && height > 0) {
+        setBox((current) =>
+          current.width === width && current.height === height ? current : { width, height },
+        );
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const byId = useMemo(() => {
     const map = new Map<string, CountryView>();
@@ -338,6 +405,58 @@ export function WorldMap({
   // A full tint in this mode; 1 for every share, the dearest published price for the power price.
   const scale = useMemo(() => modeScale(mode, countries ?? []), [mode, countries]);
 
+  // The territories (SYS-26): the map's own, resolved once per session, or a list a test passed.
+  const territories = useMemo<readonly DrawnTerritory[]>(
+    () => (territoryDefs === undefined ? drawnTerritories() : resolveTerritories(territoryDefs)),
+    [territoryDefs],
+  );
+  const owners = useMemo(() => territoryOwners(territories), [territories]);
+  // The holder's fill, the owner's hatch and the edge, in the colours this mode gives the two.
+  const territoryPaints = useMemo(() => {
+    void fingerprint;
+    const line = territoryLine(textured);
+    return new Map(
+      territories.map((territory) => [
+        territory.def.id,
+        territoryPaint(
+          fillFor(mode, byIdRef.current.get(territory.def.de_jure), textured, scale),
+          fillFor(mode, byIdRef.current.get(territory.def.de_facto), textured, scale),
+          line,
+        ),
+      ]),
+    );
+  }, [territories, mode, textured, scale, fingerprint]);
+  const territorySentences = useMemo(
+    () =>
+      new Map(
+        territories.map((territory) => [
+          territory.def.id,
+          territorySentence(t, territory.def, (id) => countryName(t, id)),
+        ]),
+      ),
+    [territories, t],
+  );
+  const ownerStroke = useCallback(
+    (owner: string) => countryStroke(selectedCountry === owner, textured),
+    [selectedCountry, textured],
+  );
+  const onTerritorySelect = useMemo(
+    () =>
+      onSelect === undefined
+        ? undefined
+        : (territory: DrawnTerritory) =>
+            onSelect({ kind: "country", id: territory.def.de_jure, territory: territory.def.id }),
+    [onSelect],
+  );
+  const onTerritoryContext = useMemo(
+    () =>
+      onContext === undefined
+        ? undefined
+        : (territory: DrawnTerritory, position: { x: number; y: number }) =>
+            onContext({ kind: "country", id: territory.def.de_jure }, position),
+    [onContext],
+  );
+
   const paths = useMemo(() => {
     // Referenced only so this memo depends on `fingerprint` (see the comment above it); `byId`'s
     // current contents are read through `byIdRef` instead of listed directly, above.
@@ -353,12 +472,10 @@ export function WorldMap({
           className={`map-country ${id === null ? "" : "cursor-pointer"}`}
           d={shape.path}
           fill={fillFor(mode, country, textured, scale)}
-          stroke={textured ? "var(--c-map-border)" : "var(--c-map-line)"}
-          strokeWidth={selected ? 2 : textured ? 0.3 : 0.4}
-          // The selected outline is a width on screen, like the focus stroke; the borders keep
-          // map units, so they thicken as the map zooms in.
-          vectorEffect={selected ? "non-scaling-stroke" : undefined}
-          strokeOpacity={selected ? 1 : textured ? 0.45 : 1}
+          {...countryStroke(selected, textured)}
+          // A de jure owner's fill and border are cut out of its territories, which paint the
+          // holder's colour there and draw the owner's border again over their hatch (SYS-26).
+          mask={id !== null && owners.has(id) ? territoryHolesMask(ids, id) : undefined}
           role={id === null || onSelect === undefined ? undefined : "button"}
           tabIndex={id === null || onSelect === undefined ? undefined : 0}
           // Hovering a country lights its own cities (playtest 3, R7). Focus does the same, so a
@@ -396,7 +513,7 @@ export function WorldMap({
         </path>
       );
     });
-  }, [mode, scale, textured, selectedCountry, onSelect, onContext, fingerprint, t]);
+  }, [mode, scale, textured, selectedCountry, onSelect, onContext, fingerprint, t, owners, ids]);
 
   const onWheel = (event: ReactWheelEvent<SVGSVGElement>): void => {
     if (compact === true) {
@@ -665,7 +782,13 @@ export function WorldMap({
         onPointerCancel={onPointerUp}
       >
         <defs>
-          <UkraineMapDefinitions id={ids} />
+          <TerritoryDefinitions
+            id={ids}
+            territories={territories}
+            unit={1 / (view.k * Math.min(box.width / MAP_WIDTH, box.height / MAP_HEIGHT))}
+            paints={territoryPaints}
+            lights={textured && showNight}
+          />
           <filter id={blurId} x="-5%" y="-5%" width="110%" height="110%">
             {/* A few degrees of blur is the dusk band; it also hides the polyline's corners. */}
             <feGaussianBlur stdDeviation="3" />
@@ -719,9 +842,20 @@ export function WorldMap({
         <g data-testid="map-overlay" data-map-transform={transform}>
           {offsets.map((offset) => (
             <g key={offset} transform={offset === 0 ? undefined : `translate(${offset} 0)`}>
-              {textured && showNight ? <UkraineNightLights id={ids} nightMaskId={maskId} /> : null}
+              {textured && showNight ? (
+                <TerritoryNightLights id={ids} nightMaskId={maskId} territories={territories} />
+              ) : null}
               <g data-testid={offset === 0 ? "country-paths" : undefined}>{paths}</g>
-              <UkraineControlOverlay id={ids} />
+              <TerritoryOverlay
+                id={ids}
+                territories={territories}
+                paints={territoryPaints}
+                sentences={territorySentences}
+                ownerStroke={ownerStroke}
+                onSelect={onTerritorySelect}
+                onContext={onTerritoryContext}
+                onHover={setHoveredCountry}
+              />
               {showNight && !textured ? (
                 <path d={night} fill="rgb(6 12 24 / 38%)" pointerEvents="none">
                   <title>{t("map.night")}</title>

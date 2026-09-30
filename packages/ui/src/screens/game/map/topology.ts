@@ -5,12 +5,12 @@
  * alpha-2 ids the core uses for `CountryView`.
  */
 
-import { geoContains } from "d3-geo";
+import { geoArea, geoContains } from "d3-geo";
 import { feature } from "topojson-client";
 import atlas from "world-atlas/countries-110m.json";
 import { alpha2FromFeatureId } from "./iso.js";
 import { type GeoGeometry, geometryToPath } from "./projection.js";
-import { CRIMEA_SEED } from "./ukraine-control.js";
+import { type LonLat, TERRITORIES, type TerritoryDef } from "./territories.js";
 
 export interface CountryShape {
   /** Feature id from the atlas (ISO numeric), unique within the map. */
@@ -28,11 +28,95 @@ interface AtlasFeature {
   geometry?: GeoGeometry;
 }
 
+/** The rings of one polygon, as the atlas stores them. */
+export type PolygonRings = number[][][];
+
 let cache: CountryShape[] | null = null;
 let geometryCache: AtlasFeature[] | null = null;
-let crimea: GeoGeometry | undefined;
-let ukrainianMainland: GeoGeometry | undefined;
 let nameCache: ReadonlyMap<string, string> | null = null;
+
+/** The polygons of a Polygon or MultiPolygon geometry; empty for anything else. */
+export function polygonsOf(geometry: GeoGeometry | undefined): PolygonRings[] {
+  if (geometry?.type === "Polygon") {
+    return [geometry.coordinates as PolygonRings];
+  }
+  if (geometry?.type === "MultiPolygon") {
+    return [...(geometry.coordinates as PolygonRings[])];
+  }
+  return [];
+}
+
+function polygon(rings: PolygonRings): { type: "Polygon"; coordinates: PolygonRings } {
+  return { type: "Polygon", coordinates: rings };
+}
+
+export function containsPoint(rings: PolygonRings, point: LonLat): boolean {
+  return geoContains(polygon(rings) as Parameters<typeof geoContains>[0], point);
+}
+
+function areaOf(rings: PolygonRings): number {
+  return geoArea(polygon(rings) as Parameters<typeof geoArea>[0]);
+}
+
+/**
+ * Gives a territory's atlas part to its de jure owner (SYS-26: "Countries keep their de jure
+ * geometry"). Natural Earth files Crimea under Russia; the correction moves the polygon before
+ * any path is drawn, so hovering and selecting the peninsula name Ukraine, and so does any other
+ * atlas part a territory names by a point inside it.
+ *
+ * It refuses to move a country's largest polygon, which is what a later atlas that merged the part
+ * into its holder's mainland would ask for: the map is then drawn as the atlas has it and that one
+ * territory stays off, with a warning, rather than stopping the map from loading (map review,
+ * 2026-09-30).
+ */
+function giveAtlasPartsToOwners(decoded: AtlasFeature[], territories: readonly TerritoryDef[]) {
+  for (const territory of territories) {
+    const geometry = territory.geometry;
+    if (geometry.kind !== "atlas_part") {
+      continue;
+    }
+    const owner = decoded.find((entry) => alpha2FromFeatureId(entry.id) === territory.de_jure);
+    if (owner?.geometry === undefined) {
+      console.warn(`The atlas has no country ${territory.de_jure}; ${territory.id} is not drawn.`);
+      continue;
+    }
+    if (polygonsOf(owner.geometry).some((rings) => containsPoint(rings, geometry.seed))) {
+      continue;
+    }
+    let moved = false;
+    for (const entry of decoded) {
+      if (entry === owner) {
+        continue;
+      }
+      const parts = polygonsOf(entry.geometry);
+      const index = parts.findIndex((rings) => containsPoint(rings, geometry.seed));
+      const part = parts[index];
+      if (part === undefined) {
+        continue;
+      }
+      const largest = parts.every(
+        (rings, other) => other === index || areaOf(rings) < areaOf(part),
+      );
+      if (!largest) {
+        entry.geometry = {
+          type: "MultiPolygon",
+          coordinates: parts.filter((_, other) => other !== index),
+        };
+        owner.geometry = {
+          type: "MultiPolygon",
+          coordinates: [...polygonsOf(owner.geometry), part],
+        };
+        moved = true;
+      }
+      break;
+    }
+    if (!moved) {
+      console.warn(
+        `The atlas no longer exposes ${territory.id} as a separable polygon; it is not drawn.`,
+      );
+    }
+  }
+}
 
 /** All country shapes, decoded and projected once per session. */
 export function countryShapes(): CountryShape[] {
@@ -43,48 +127,7 @@ export function countryShapes(): CountryShape[] {
     features?: AtlasFeature[];
   };
   const decoded = collection.features ?? [];
-  const russia = decoded.find((entry) => alpha2FromFeatureId(entry.id) === "ru");
-  const ukraine = decoded.find((entry) => alpha2FromFeatureId(entry.id) === "ua");
-  if (russia?.geometry?.type === "MultiPolygon" && ukraine?.geometry !== undefined) {
-    const parts = russia.geometry.coordinates as number[][][][];
-    const index = parts.findIndex(
-      (coordinates) =>
-        coordinates
-          .flat()
-          .every(
-            ([lon, lat]) =>
-              lon !== undefined &&
-              lat !== undefined &&
-              lon > 32 &&
-              lon < 37 &&
-              lat > 44 &&
-              lat < 47,
-          ) &&
-        geoContains(
-          { type: "Polygon", coordinates } as Parameters<typeof geoContains>[0],
-          CRIMEA_SEED,
-        ),
-    );
-    if (index < 0) {
-      // A future atlas that draws Crimea differently must not stop the client from loading: the
-      // map is drawn as the atlas has it and the Ukraine layers stay off (map review, 2026-09-30).
-      console.warn(
-        "The atlas no longer exposes Crimea as a separable polygon; the Ukraine layers are off.",
-      );
-    } else {
-      crimea = { type: "Polygon", coordinates: parts[index] };
-      ukrainianMainland = ukraine.geometry;
-      russia.geometry = {
-        type: "MultiPolygon",
-        coordinates: parts.filter((_, part) => part !== index),
-      };
-      const uaParts =
-        ukraine.geometry.type === "Polygon"
-          ? [ukraine.geometry.coordinates]
-          : (ukraine.geometry.coordinates as unknown[]);
-      ukraine.geometry = { type: "MultiPolygon", coordinates: [...uaParts, crimea.coordinates] };
-    }
-  }
+  giveAtlasPartsToOwners(decoded, TERRITORIES);
   geometryCache = decoded;
   cache = decoded
     .map((entry, index) => ({
@@ -119,15 +162,8 @@ export function atlasNames(): ReadonlyMap<string, string> {
   return map;
 }
 
-/** Sovereign geometry and separate visual regions share the exact same atlas coordinates. */
+/** A country's de jure geometry: the atlas's, with the territories' parts given to their owners. */
 export function countryGeometry(id: string): GeoGeometry | undefined {
   countryShapes();
   return geometryCache?.find((entry) => alpha2FromFeatureId(entry.id) === id)?.geometry;
-}
-export function ukraineMapParts(): {
-  mainland: GeoGeometry | undefined;
-  crimea: GeoGeometry | undefined;
-} {
-  countryShapes();
-  return { mainland: ukrainianMainland, crimea };
 }

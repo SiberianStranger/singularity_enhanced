@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CloseIcon, CogIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js";
 import { logVars } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
-import { KEYED_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
+import { useUiStore } from "../../store/uiStore.js";
 import type { Toast, ToastApi } from "./useToasts.js";
 
 /**
@@ -31,7 +31,7 @@ function resultTextOf(
 /** Toast stack, bottom-right: 5 seconds, hover pauses, a cog opens the message settings. */
 export function Toasts({ api }: { api: ToastApi }): ReactNode {
   const { t } = useTranslation();
-  const openTab = useUiStore((state) => state.openTab);
+  const followLink = useUiStore((state) => state.followLink);
   const openMenu = useUiStore((state) => state.openMenu);
   const notices = useUiStore((state) => state.notices);
   const dismissNotice = useUiStore((state) => state.dismissNotice);
@@ -93,10 +93,7 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
               type="button"
               className="flex-1 text-start text-sm text-fg"
               onClick={() => {
-                const panel = toast.link?.panel;
-                if (panel !== undefined && KEYED_TABS.includes(panel as PrimaryTab)) {
-                  openTab(panel as PrimaryTab, toast.link?.id);
-                }
+                followLink(toast.link?.panel, toast.link?.id);
                 api.dismiss(toast.id);
               }}
             >

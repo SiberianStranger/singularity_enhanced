@@ -1,7 +1,8 @@
 # SYS-26: Territorial control and recognition
 
-Status: v0 design, 2026-09-30. The map rendering is implemented in 0.3.1 from a data module in the
-client; the data moves into content and the world state in a later engine pass (backlog P7).
+Status: v0 design, 2026-09-30; the map rendering is v1 implemented (0.3.1, client, see the
+implementation notes), from a data module in the client. The data moves into content and the world
+state in a later engine pass (backlog P7).
 Source of the requirement: [playtest 10](../playtests/2026-09-30-playtest-10-control-room-on-screen.md)
 V1 and V2.
 
@@ -72,4 +73,116 @@ The convention of political atlases, in the game's palette:
 
 ## Implementation notes (0.3.1, client)
 
-To be written by the pass that implements the rendering.
+The map draws every territory by the rules above from a data module in the client, 2026-09-30.
+Nothing in the renderer knows Ukraine: a test-only island in the Taiwan Strait, held by one state
+and claimed by another, is drawn by the same code as Crimea.
+
+### Where it is
+
+- `packages/ui/src/screens/game/map/territories.ts`: the model (`RecognitionStatus`,
+  `TerritoryDef` field for field, `TerritoryGeometry`, `TerritoryLightProfile`), the list the map
+  draws, and the rules as functions a test can hold: `hatchFor`, `dashedEdge`, `territoryPaint`,
+  `territorySentence`.
+- `ukraine-control.ts` (same folder): the two Ukrainian territories with their geometry, dates,
+  recognition figures, light profiles and sources. It keeps its name, so the research note's links
+  still reach it.
+- `territory-geometry.ts`: each territory resolved against the decoded atlas. `topology.ts` gives
+  a territory's atlas part to its de jure owner before any country path is drawn, which is the
+  0.3.0 Crimea correction made general.
+- `TerritoryLayers.tsx`: the clips, masks and patterns, the dimmed night lights and the overlay.
+
+### How the model was filled in
+
+- `TerritoryGeometry` is one of three shapes. `atlas_part` is a polygon the atlas already draws on
+  its own, found by a point inside it (Crimea); `envelope` is an authored outline clipped to the
+  owner's land less the parts other territories take, with `as_of` dating the line (the occupied
+  mainland, 2026-09-28); `polygon` is an authored shape drawn as it is, for land the atlas is too
+  coarse to carry (the test island).
+- `since` is the date the holder has held the territory from, which the sentence prints as a year:
+  Crimea 2014-03-18; the occupied mainland 2022-02-24, a generalization, since the Donetsk and
+  Luhansk cores have been held by Russia and its proxies since 2014. A scenario that needs the
+  difference splits the envelope into two territories. The date of the drawn line is the
+  envelope's `as_of`, which the About window prints.
+- `recognition` is an upper bound, the share of the 193 UN members that voted against the General
+  Assembly resolution upholding Ukraine's territorial integrity: Crimea 0.06 (A/RES/68/262, 27 March
+  2014, 100 to 11 with 58 abstentions), the occupied mainland 0.03 (A/RES/ES-11/4, 12 October 2022,
+  143 to 5 with 35 abstentions). Both sources are in the territories' `sources`, and the research
+  note (`docs/research/ukraine-map-2026-09.md`, "Recognition figures") says why the figure is a
+  bound.
+- `light_profile` is the territory's own factor (Crimea 1, the occupied mainland 0.25). The finer
+  footprints of 0.3.0 (the Donetsk-Luhansk cluster, the city cores, the destroyed ones) are a
+  separate list keyed by territory id, evaluated in order, the last match replacing, so
+  `TerritoryDef` keeps its shape.
+
+### The drawing, as built
+
+1. Fill: the holder's fill in the current map mode, the same colour its own country path gets. The
+   owner's path is masked out under its territories, so a translucent owner colour does not tint
+   the holder's, and the owner's border is drawn again over the territory, so the de jure border
+   stays solid on top of the hatch.
+2. Hatch: lines at 45 degrees, spaced in screen pixels at every zoom and window size (the pattern
+   is recomputed from the map's drawn size and zoom). The status picks the tier and the figure
+   tightens it: `disputed` 11 px at 0.50, `annexed_unrecognized` 8 px at 0.62, `occupied` 4.5 px at
+   0.78, `contested` a cross-hatch at 5.5 px and 0.85, `recognized` none; inside a tier the spacing
+   grows by up to half and the opacity falls by up to a quarter as recognition rises from none to
+   all. Crimea (0.06) is drawn at 8.2 px, the occupied mainland (0.03) at 4.6 px.
+3. The hatch's colour is the owner's hue drawn solid. Where the owner has no hue in the mode (an
+   unfilled country on the textured map) or shares the holder's (the same category, or any scale
+   mode, where only the intensity differs), it is the map's line colour instead: the border colour
+   on the textured map, the secondary text colour on the flat one. A territory the world does not
+   accept therefore never looks accepted because two colours happened to agree.
+4. The edge of control: the territory's outline, dashed, drawn only over the owner's land that is
+   not held by the same holder. The front line of the occupied mainland is dashed; the line between
+   Crimea and the mainland, both held by Russia, is not an edge of control and gets no dash.
+5. Night lights: as 0.3.0, a black layer under the country paths whose opacity is one minus the
+   factor, inside the territory's drawn shape, with the finer profiles replacing the territory's
+   own factor where they apply. Crimea keeps the original lights.
+6. Words: the territory's filled outline is the hit target. Its tooltip (the `<title>` the country
+   paths use too) is the sentence, a click or Enter selects the de jure owner with the territory
+   named (`Selection.territory`), and the selection panel prints the sentence under the country's
+   name. The sentence is one template per status with the recognition in three bands (almost no
+   state below 0.1, a minority below 0.5, most). The Russian templates put every name after a
+   colon, in the nominative (SYS-14 ru, R4): "Крым. Территория: Украина. Под контролем: Россия,
+   с 2014 года. Аннексию признают лишь единичные государства."
+
+### How it reads
+
+- The default textured map with neither country filled: Crimea and the occupied mainland carry a
+  light and a denser hatch in the border colour with the front dashed, the mainland's lights
+  dimmed; the rest of Ukraine is the plain raster.
+- With Russia filled, as in the maintainer's run where presence paints it blue: both territories
+  are Russia's blue, Crimea lightly striped and the mainland densely, the rest of Ukraine unfilled.
+- Filled categorical modes (stance, government): Russia's category colour with Ukraine's category
+  colour as the hatch; where the two share a category the hatch is the line colour.
+- Scale modes: the holder's intensity with the line-colour hatch.
+- The flat vector map: the same rules on the flat land colour, with the lighter line colour.
+
+### Fail-soft
+
+A territory whose geometry cannot be resolved (an atlas that does not separate the part, or would
+have to give away its holder's largest polygon; an owner the atlas does not draw) is left off with
+one console warning, and the map and every other territory are drawn as before. In 0.3.0 a missing
+Crimea turned all the layers off.
+
+### A correction to the geometry
+
+The envelope's southern closing edge ran at 46 N. It left the atlas's strip of mainland beside
+Crimea, the Perekop and Arabat approaches down to 45.74 N, outside the envelope, which the brown
+wash hid and the new fill showed as a sliver in Ukraine's colour. The edge runs at 45.6 N now,
+over sea and over Crimea, which the clip excludes, so it still carries no control meaning; the two
+approaches are anchors in the tests.
+
+### Tests
+
+`packages/ui/test/territories.test.tsx`: the rules per status, the density by recognition, the
+paint, the sentences in English and Russian, Crimea drawn and selecting Ukraine with the territory
+named, the owner's fill cut under its territories, and the Taiwan Strait island drawn by the same
+code path. `packages/ui/test/ukraine-control.test.ts`: the city anchors (Bakhmut and Soledar among
+them, and the two approaches above), the light profiles, and Crimea drawn from its atlas polygon
+with the mainland's envelope kept off it. In the browser, `packages/ui/e2e/control-room.spec.ts`
+finds Crimea under the pointer, reads its tooltip and checks the selection panel names it.
+
+### Left for later
+
+- The list moves into content and the world state with the engine pass (backlog P7); the client
+  would then read `TerritoryDef` from the bundle unchanged.

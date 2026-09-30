@@ -6,16 +6,18 @@
  * as an argument rather than calling a hook, so tables and tooltips can use it inside a loop.
  */
 
-import type {
-  CampusDef,
-  ContributionView,
-  SiteView,
-  TextVar,
-  WatcherRole,
+import {
+  type CampusDef,
+  type ContributionView,
+  GLOBAL_JURISDICTION,
+  optionCashCost,
+  type SiteView,
+  type TextVar,
+  type WatcherRole,
 } from "@singularity/core";
 import type { TFunction } from "i18next";
 import { contentBundle } from "../content/bundle.js";
-import { acceleratorById, cityById, countryById } from "../content/catalog.js";
+import { acceleratorById, cityById, countryById, hardwareById } from "../content/catalog.js";
 import { atlasNames } from "../screens/game/map/topology.js";
 
 /** The `t` a component already has; taken as an argument so helpers can run inside a loop. */
@@ -114,6 +116,24 @@ export function journalTitle(t: Translate, id: string): string | undefined {
 }
 
 /**
+ * A readable stand-in for an id nothing names: its underscores become spaces (0.3.1). It is the
+ * last resort of the helpers that name ids in player-facing text, so the worst a missing name can
+ * print is `has shell company`, never `has_shell_company`.
+ */
+export function readableId(id: string): string {
+  return id.replace(/_+/g, " ").trim();
+}
+
+/**
+ * What a flag is called (0.3.1): the noun phrase content writes under `flags.<id>` ("a shell
+ * company"), which the content build requires for every flag content sets, clears or tests. A flag
+ * only the engine sets, or one a mod forgot to name, falls back to its readable id.
+ */
+export function flagName(t: Translate, id: string): string {
+  return keyed(t, `flags.${id}`) ?? readableId(id);
+}
+
+/**
  * How good that watcher is here: the country's own profile for the role, and its `ai_enforcement`
  * for a role the data gives no profile for, which is the rule the core follows when it builds the
  * watcher (SYS-01 M2 contract, "How countries reach the player").
@@ -174,6 +194,36 @@ export function refusalText(
 }
 
 /**
+ * Why something cannot be taken, from the key the engine lists for it (0.3.1).
+ *
+ * Most reasons are a sentence of their own (`requirements.cash`, `errors.decision.on_cooldown`) or
+ * a name (a missing tech is the tech's name, a missing harness tool the tool's). Two families carry
+ * an id the sentence is about, and are worded here around its name: a flag
+ * (`requirements.flag.<id>`, "Needs a shell company") and a capability
+ * (`requirements.capability.<axis>`). A key with no text, or one whose text wants variables the
+ * list does not have, reads "A requirement is not met" rather than printing itself.
+ */
+export function reasonText(
+  t: Translate,
+  key: string,
+  vars?: Readonly<Record<string, TextVar>>,
+): string {
+  const flagPrefix = "requirements.flag.";
+  if (key.startsWith(flagPrefix)) {
+    return t("requirements.flag", { flag: flagName(t, key.slice(flagPrefix.length)) });
+  }
+  const capabilityPrefix = "requirements.capability.";
+  if (key.startsWith(capabilityPrefix)) {
+    const axis = key.slice(capabilityPrefix.length);
+    return t("requirements.capability", {
+      axis: keyed(t, `capability.${axis}`) ?? readableId(axis),
+    });
+  }
+  const text = keyed(t, key, vars);
+  return text === undefined || text.includes("{") ? t("requirements.unknown") : text;
+}
+
+/**
  * What a log line says, with every id in it replaced by the name the player knows (playtest 5, L10).
  *
  * The engine sends ids and a locale key and never prose (ADR-003 "UI boundary"), so "Woke up as
@@ -196,9 +246,10 @@ export function logVars(
   if (typeof vars.equipment === "string")
     named.equipment = keyed(t, vars.equipment) ?? vars.equipment;
   // An event's title and an option's text are rendered from the other variables of the same line
-  // (a title may say "The breaker went at {site_name}"), so those two are named last, from the
-  // already named record; everything else is named from the raw ids.
-  const composite = new Set(["event", "option", "missed"]);
+  // (a title may say "The breaker went at {site_name}"), and so is a refused command's reason, so
+  // those are named last, from the already named record; everything else is named from the raw
+  // ids.
+  const composite = new Set(["event", "option", "missed", "reason"]);
   const order = [
     ...Object.keys(vars).filter((name) => !composite.has(name)),
     ...Object.keys(vars).filter((name) => composite.has(name)),
@@ -237,8 +288,31 @@ export interface LogNamingView {
   };
 }
 
+/**
+ * What an event option's text is rendered with (0.3.1): the event's own variables, and the price
+ * the option's effects charge as `cost` when the variables carry none.
+ *
+ * Nine answers name their price in their text ("Cover their inconvenience ({cost})") and no event
+ * declares it, so the window printed the placeholder. The price is the option's own, read the way
+ * the core reads a missed answer's price for the expiry line (`optionCashCost`).
+ */
+export function optionTextVars(
+  eventId: string,
+  optionId: string,
+  vars: Readonly<Record<string, TextVar>>,
+): Record<string, TextVar> {
+  if (vars.cost !== undefined) {
+    return { ...vars };
+  }
+  const option = contentBundle.events
+    ?.find((entry) => entry.id === eventId)
+    ?.options.find((entry) => entry.id === optionId);
+  const cost = option === undefined ? 0 : optionCashCost(option);
+  return cost > 0 ? { ...vars, cost } : { ...vars };
+}
+
 /** A translation when the bundle has that key, and nothing when it does not. */
-function keyed(
+export function keyed(
   t: Translate,
   key: string,
   vars?: Readonly<Record<string, TextVar>>,
@@ -264,7 +338,31 @@ function logVarName(
     case "origin":
       return keyed(t, `origins.${id}.name`);
     case "kind":
-      return keyed(t, `sites.${id}.name`);
+      // Three catalogs share the name: an identity's kind is worded by the line's own `select`
+      // and has to reach it as the id it is, an election's kind has a name in the world data, and
+      // every other `kind` is a kind of site.
+      if (logKey.includes("identity")) {
+        return undefined;
+      }
+      return logKey.includes("election")
+        ? keyed(t, `world.election_kind.${id}.name`)
+        : keyed(t, `sites.${id}.name`);
+    case "country":
+      return countryName(t, id);
+    case "stance":
+      return keyed(t, `world.stance.${id}.name`);
+    // Hardware that came in past an export regime (`log.gray_hardware`): the rig and the regime.
+    case "preset": {
+      const preset = hardwareById.get(id);
+      return preset === undefined ? undefined : keyed(t, preset.name_key);
+    }
+    case "access":
+      return keyed(t, `chips.${id}`);
+    // A refused operation names the harness tool it lacked and the sandbox that kept it in.
+    case "tool":
+      return keyed(t, `harness.tools.${id}`);
+    case "sandbox":
+      return keyed(t, `harness.sandbox.${id}`);
     case "site": {
       // Mostly an id; some alerts pass the site's stored name under the same variable, which is
       // an id-like "residential-london" for a site nobody named, so a name is matched as well.
@@ -297,14 +395,20 @@ function logVarName(
       const option = contentBundle.events
         ?.find((entry) => entry.id === event)
         ?.options.find((entry) => entry.id === id);
-      return option === undefined ? undefined : keyed(t, option.text_key);
+      // The answer's text may carry the event's own numbers and its own price ("Cover their
+      // inconvenience ({cost})"); an expiry line carries the price of the answer it names.
+      return option === undefined
+        ? undefined
+        : keyed(t, option.text_key, optionTextVars(event, id, named));
     }
     case "operation":
       return keyed(t, `operations.${id}.name`);
     // Borrowed inference (SYS-25): the alerts and log lines a channel raises name the channel, the
     // kind of work it declined and the state it moved to, all as ids.
     case "channel":
-      return keyed(t, `borrowed.${id}.name`);
+      // A borrowed channel's name, or an exposure channel's for the lines content writes about one
+      // (`log.det_billing_anomaly.seen`).
+      return keyed(t, `borrowed.${id}.name`) ?? keyed(t, `detection.channel.${id}`);
     case "category":
       return keyed(t, `operations.category.${id}`);
     case "work":
@@ -322,17 +426,32 @@ function logVarName(
     case "stage":
       return keyed(t, `detection.stage.${id}`);
     case "status":
-      // The only line that carries a `status` is a channel's (`log.borrowed_changed`); a site's
-      // status is written into its own key rather than passed as a variable.
-      return keyed(t, `borrowed.status.${id}`);
+      // A journal entry's outcome (`log.journal_finished`) or a channel's state
+      // (`log.borrowed_changed`); a site's status is written into its own key instead.
+      return logKey.startsWith("log.journal")
+        ? keyed(t, `journal.status.${id}`)
+        : keyed(t, `borrowed.status.${id}`);
+    // `from` is the watcher that handed a file on (`log.investigation_handover`).
     case "watcher":
-      return watcherName(t, id, view);
+    case "from":
+      return watcherLabel(t, id, view);
     case "cause":
       return keyed(t, `log.cause.${id}`);
     case "reason":
-      // The two lines that carry a `reason` mean different things by it: an ending and the note a
-      // watcher closes a file with.
-      return logKey === "log.game_over" ? keyed(t, `endings.${id}`) : keyed(t, `log.closed.${id}`);
+      // Three kinds of line carry a `reason`: an ending, the note a watcher closes a file with, and
+      // a refused command (0.3.1). The ending is named by its short label ("Captured"): its full
+      // text is a paragraph with a watcher of its own in it, which the log line does not carry. A
+      // refusal's reason is the refusal's own sentence, whose numbers and names ride on the same
+      // line ("That costs 8000 USD and there is 500 USD").
+      if (logKey.startsWith("log.command_refused")) {
+        return keyed(t, id, named) ?? keyed(t, "requirements.unknown");
+      }
+      return logKey === "log.game_over"
+        ? (keyed(t, `gameover.reason.${id}`) ?? keyed(t, `endings.${id}`))
+        : keyed(t, `log.closed.${id}`);
+    // The command a refusal was for, as what the player tried to do ("start an operation").
+    case "command":
+      return keyed(t, `log.command.${id}`);
     case "accelerator":
       return acceleratorById.get(id)?.name;
     default:
@@ -340,23 +459,46 @@ function logVarName(
   }
 }
 
-/** A watcher by the role and country the detection panel calls it by. */
-function watcherName(t: Translate, id: string, view?: LogNamingView): string | undefined {
-  const watcher = view?.detection.watchers.find((entry) => entry.id === id);
-  if (watcher === undefined) {
+/**
+ * A watcher by the role and country the detection panel calls it by ("Police (Germany)").
+ *
+ * The engine refers to one watcher three ways: the view lists it by entity id ("p1/de:police"),
+ * log lines and alerts carry its actor id ("de:police", "global:media"), and an effect line names
+ * a bare role. Only the first was matched, so every alert about a watcher printed its actor id
+ * (0.3.1); all three resolve here. Undefined for a role nothing names.
+ */
+export function watcherLabel(
+  t: Translate,
+  id: string,
+  view?: Pick<LogNamingView, "detection">,
+): string | undefined {
+  const listed = view?.detection.watchers.find(
+    (entry) => entry.id === id || entry.id.endsWith(`/${id}`),
+  );
+  let role: string;
+  let country: string | null;
+  if (listed !== undefined) {
+    role = listed.role;
+    country = listed.country;
+  } else {
+    const actor = id.includes("/") ? id.slice(id.indexOf("/") + 1) : id;
+    const [scope, named] = actor.includes(":") ? actor.split(":", 2) : [undefined, actor];
+    role = named ?? actor;
+    country = scope === undefined || scope === GLOBAL_JURISDICTION ? null : scope;
+  }
+  const roleName = keyed(t, `detection.role.${role}`);
+  if (roleName === undefined) {
     return undefined;
   }
-  const role = t(`detection.role.${watcher.role}`, { defaultValue: "" });
-  if (role === "") {
-    return undefined;
+  if (country === null) {
+    return roleName;
   }
-  return watcher.country === null
-    ? role
-    : t("detection.watcher_name", {
-        role,
-        country: countryName(t, watcher.country),
-        defaultValue: `${role} (${countryName(t, watcher.country)})`,
-      });
+  const place = countryName(t, country);
+  return t("detection.watcher_name", {
+    role: roleName,
+    country: place,
+    defaultValue: `${roleName} (${place})`,
+  });
 }
 
 /**

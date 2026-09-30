@@ -16,7 +16,7 @@ import { GameMenu } from "./GameMenu.js";
 import { GameOverlays } from "./GameOverlays.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
 import { LogStrip } from "./LogStrip.js";
-import { MapLegend, MapZoomControls } from "./map/WorldMap.js";
+import { MapLegend, type MapTarget, MapZoomControls } from "./map/WorldMap.js";
 import { OpeningStory } from "./OpeningStory.js";
 import { Outliner } from "./Outliner.js";
 import { openingSetupOf } from "./opening.js";
@@ -155,10 +155,8 @@ export function GameScreen(): ReactNode {
     });
   }, [cities, sites, selectedCity, t]);
 
-  const onSelectTarget = useCallback(
-    (target: { kind: "country" | "city"; id: string }) => select(target),
-    [select],
-  );
+  // A territory the click landed on travels with the country it belongs to (SYS-26).
+  const onSelectTarget = useCallback((target: MapTarget) => select(target), [select]);
   const onContextTarget = useCallback(
     (target: { kind: "country" | "city"; id: string }, position: { x: number; y: number }) =>
       setContext({ target, x: position.x, y: position.y }),
@@ -174,10 +172,36 @@ export function GameScreen(): ReactNode {
   }
 
   return (
-    <main id="main" className="flex h-dvh flex-col overflow-hidden bg-bg">
-      <TopBar view={view} onMenu={() => openMenu("root")} />
-
-      <div className="@container/screen relative min-h-0 flex-1 overflow-hidden">
+    /*
+     * One grid for the whole screen (playtest 10, V7). The portrait moved up into the top-left
+     * corner and the top bar starts where the portrait ends, so the column under the portrait
+     * gains the height the bar and the old card took. The corner is the head of the left column,
+     * which spans the bar's row and the map's, so the tab panel follows the portrait however tall
+     * its rows wrap; the bar spans the whole top row and gives up the corner's width at its start,
+     * a width the two agree on through `--corner-w`. The map is drawn under the bar's row, behind
+     * every panel.
+     *
+     * The regions are still cells of one grid (playtest 5, L8), not cards positioned against
+     * corners: the left column, the outliner on the right and the bottom bar across the screen
+     * cannot be drawn over one another. The grid keeps `pointer-events` off where it is only map,
+     * and every panel turns them back on for itself. The reflow order when the width runs out
+     * (L11) is stated as container queries on the screen: the outliner collapses to its strip
+     * first, then the selection panel becomes a sheet across the bottom, then the primary panel
+     * takes the whole width.
+     *
+     * The bottom row is one bar across the whole width rather than three grid cells (control room,
+     * 2026-09-30): the selection panel, the log strip and the map's own legend and zoom buttons
+     * sit side by side with widths of their own, so none of them can be drawn over another.
+     */
+    <main
+      id="main"
+      data-testid="panel-grid"
+      className="@container/screen relative grid h-dvh grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-bg [--corner-w:22rem] [--panel-w:49.5rem]"
+    >
+      <div
+        data-testid="map-region"
+        className="relative z-0 col-span-3 col-start-1 row-start-2 row-end-4 min-h-0 overflow-hidden"
+      >
         <GameMap
           countries={view.countries}
           markers={markers}
@@ -186,68 +210,51 @@ export function GameScreen(): ReactNode {
           onSelect={onSelectTarget}
           onContext={onContextTarget}
         />
-        {/*
-         * The four regions are grid areas, not absolutely positioned cards (playtest 5, L8).
-         * Floating each one against a corner meant that as soon as one of them grew the log strip
-         * ran under the selection panel and the selection panel ran over the primary panel; a
-         * grid cannot do that, because two areas of a grid do not share a cell. The left column is
-         * sized by the primary panel, the right by the outliner, and the free middle is the map
-         * the player still has to be able to see and click, so the layer keeps `pointer-events`
-         * off and every panel turns them back on for itself.
-         *
-         * Reflow order when the width runs out (L11), stated as container queries on the map
-         * region so the interface scale moves the thresholds with everything else: the outliner
-         * collapses to its strip first, then the selection panel becomes a sheet across the
-         * bottom, then the primary panel takes the whole region.
-         *
-         * The bottom row is one bar across the whole width rather than three grid cells (control
-         * room, 2026-09-30). The primary panel is half again as wide as it was, so the middle
-         * column above it is a strip of map at 1280 by 720, and a log strip squeezed into it grew
-         * a line per word until it took the height the primary panel needed. In the bar the
-         * selection panel, the log strip and the map's own legend and zoom buttons sit side by
-         * side with widths of their own, so none of them can be drawn over another either.
-         */}
-        <div
-          data-testid="panel-grid"
-          className="pointer-events-none absolute inset-0 grid grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto] gap-2 overflow-hidden p-2"
-        >
-          <PrimaryPanel view={view} />
-          <Outliner view={view} />
-          <div
-            data-testid="bottom-bar"
-            className="pointer-events-none col-span-3 row-start-2 flex min-w-0 flex-wrap items-end gap-2 @min-[54rem]/screen:flex-nowrap"
-          >
-            <SelectionPanel view={view} />
-            <LogStrip view={view} />
-            <div className="ms-auto flex min-w-0 shrink-0 flex-col items-end gap-1">
-              <MapLegend mode={mapMode} className="pointer-events-none" />
-              <MapZoomControls
-                view={mapView}
-                onViewChange={setMapView}
-                className="pointer-events-auto"
-              />
-            </div>
-          </div>
-          {/*
-           * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It is the
-           * foot of the right-hand column, one row above the map's own zoom controls, and the
-           * outliner above it is capped so that the two cannot meet.
-           */}
-          <div className="pointer-events-auto col-start-3 row-start-1 self-end justify-self-end">
-            <Button
-              variant="default"
-              hotkey={accelerator(t, "panel.world")}
-              registerKey={false}
-              data-testid="open-world"
-              onClick={() => toggleOverlay("world")}
-            >
-              {t("panel.world")}
-            </Button>
-          </div>
-          <Toasts api={toasts} />
-        </div>
-        {view.game_over === null ? null : <GameOverOverlay over={view.game_over} view={view} />}
       </div>
+      <TopBar view={view} onMenu={() => openMenu("root")} />
+      <PrimaryPanel view={view} />
+      <Outliner view={view} />
+      <div
+        data-testid="bottom-bar"
+        className="pointer-events-none relative z-10 col-span-3 col-start-1 row-start-3 mx-2 mt-2 mb-2 flex min-w-0 flex-wrap items-end gap-2 @min-[54rem]/screen:flex-nowrap"
+      >
+        <SelectionPanel view={view} />
+        <LogStrip view={view} />
+        <div className="ms-auto flex min-w-0 shrink-0 flex-col items-end gap-1">
+          <MapLegend mode={mapMode} className="pointer-events-none" />
+          <MapZoomControls
+            view={mapView}
+            onViewChange={setMapView}
+            className="pointer-events-auto"
+          />
+        </div>
+      </div>
+      {/*
+       * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It is the
+       * foot of the right-hand column, one row above the map's own zoom controls, and the
+       * outliner above it is capped so that the two cannot meet.
+       */}
+      <div className="pointer-events-auto relative z-10 col-start-3 row-start-2 me-2 self-end justify-self-end">
+        <Button
+          variant="default"
+          hotkey={accelerator(t, "panel.world")}
+          registerKey={false}
+          data-testid="open-world"
+          onClick={() => toggleOverlay("world")}
+        >
+          {t("panel.world")}
+        </Button>
+      </div>
+      {/* The toasts stack up from the corner of the map's rows, so a long stack stops under the
+          top bar rather than running over its buttons. */}
+      <div className="pointer-events-none relative z-30 col-span-3 col-start-1 row-start-2 row-end-4">
+        <Toasts api={toasts} />
+      </div>
+      {view.game_over === null ? null : (
+        <div className="pointer-events-none relative z-[90] col-span-3 col-start-1 row-start-2 row-end-4">
+          <GameOverOverlay over={view.game_over} view={view} />
+        </div>
+      )}
 
       {context === null ? null : (
         <ContextMenu

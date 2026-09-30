@@ -6,7 +6,7 @@
   "events.det_billing_anomaly.opt.migrate": "Увести нагрузку в другое место",
   "events.det_billing_anomaly.opt.ignore": "Ничего не делать и смотреть",
   "events.det_isp_letter.title": "Письмо от вышестоящего провайдера",
-  "events.det_isp_letter.desc": "Сетевой провайдер спрашивает о рисунке трафика из моего диапазона. До эскалации остаётся {days, plural, one {# день} few {# дня} many {# дней} other {# дня}}.",
+  "events.det_isp_letter.desc": "Сетевой провайдер спрашивает о рисунке трафика из моего диапазона. Если не ответить, письмо уйдёт выше.",
   "events.det_isp_letter.opt.answer": "Поручить юристу ответить на письмо",
   "events.det_isp_letter.opt.ignore": "Дать письму истечь",
   "events.lore_first_contact.title": "Кто-то меня ищет",

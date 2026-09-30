@@ -64,17 +64,11 @@ const STEPS = [
 ] as const;
 
 /**
- * The pinned panel's six tabs (control room): the Overview left the strip for the portrait, whose
- * sheet is measured on its own below, and "Compute and sites" is "Sites".
+ * The pinned panel's five tabs (playtest 10): the Overview left the strip for the portrait, whose
+ * sheet is measured on its own below, the journal is a window, and the decisions share Actions
+ * with the operations.
  */
-const TABS = [
-  "Sites",
-  "Research",
-  "Finances",
-  "Detection",
-  "Operations",
-  "Journal and decisions",
-] as const;
+const TABS = ["Sites", "Research", "Finances", "Detection", "Actions"] as const;
 
 interface Overflow {
   tag: string;
@@ -339,8 +333,8 @@ for (const viewport of VIEWPORTS) {
     await page.getByTestId("self-portrait").click();
     await expect(page.getByTestId("self-overview")).toHaveCount(0);
 
-    // The three windows over the map are panels too.
-    for (const entry of ["open-knowledge", "open-world"] as const) {
+    // The windows over the map are panels too.
+    for (const entry of ["open-journal", "open-knowledge", "open-world"] as const) {
       await page.getByTestId(entry).click();
       await expect(page.getByRole("dialog")).toBeVisible();
       const found = await sidewaysOverflow(page, "[role='dialog']");

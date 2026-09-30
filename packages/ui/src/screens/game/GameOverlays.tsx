@@ -6,6 +6,7 @@ import { Modal } from "../../components/Modal.js";
 import { accelerator } from "../../lib/accelerators.js";
 import { type Overlay, useUiStore } from "../../store/uiStore.js";
 import { BorrowedWindowContent } from "./BorrowedWindowContent.js";
+import { JournalWindowContent } from "./JournalWindow.js";
 import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
 import { LogTab } from "./tabs/LogTab.js";
 import { WorldLedger } from "./tabs/WorldTab.js";
@@ -15,11 +16,13 @@ const TITLE_KEY: Readonly<Record<Overlay, string>> = {
   knowledge: "panel.knowledge",
   world: "panel.world",
   borrowed: "site_ui.borrowed",
+  journal: "panel.journal",
 };
 
 /**
- * The three windows that are drawn over the map instead of living in the primary panel's tab strip
- * (playtest 3, R8-R10): the full log, the knowledge base and the world ledger.
+ * The windows that are drawn over the map instead of living in the primary panel's tab strip
+ * (playtest 3, R8-R10; playtest 10, V6): the full log, the knowledge base, the world ledger, the
+ * borrowed-compute details and the journal.
  *
  * They share `Modal`, so they trap focus, close on Escape and return focus where it was. Only one
  * is open at a time, which the store enforces by holding a single value rather than three flags.
@@ -50,6 +53,7 @@ export function GameOverlays({ view }: { view: PlayerView }): ReactNode {
       {overlay === "knowledge" ? <KnowledgeTab /> : null}
       {overlay === "world" ? <WorldLedger view={view} /> : null}
       {overlay === "borrowed" ? <BorrowedWindowContent view={view} /> : null}
+      {overlay === "journal" ? <JournalWindowContent view={view} /> : null}
     </Modal>
   );
 }

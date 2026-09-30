@@ -6,7 +6,7 @@ import { EffectList } from "../../components/EffectList.js";
 import { CogIcon } from "../../components/Icon.js";
 import { Modal } from "../../components/Modal.js";
 import { RevealText } from "../../components/RevealText.js";
-import { logVars, type Translate } from "../../lib/labels.js";
+import { logVars, optionTextVars, reasonText, type Translate } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
 
@@ -14,7 +14,7 @@ import { useUiStore } from "../../store/uiStore.js";
  * A reason's label: the locale string when the key has one, the core's raw description when it does
  * not, so an unnamed content condition still reads as something exact rather than as a bare key.
  */
-function reasonText(t: Translate, reason: ChoiceReason): string {
+function whyText(t: Translate, reason: ChoiceReason): string {
   return t(reason.key, { ...reason.vars, defaultValue: reason.text });
 }
 
@@ -125,7 +125,7 @@ export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNo
                   key={`${reason.key}-${index}`}
                   className="flex justify-between gap-2"
                 >
-                  <span className="text-muted">{reasonText(t, reason)}</span>
+                  <span className="text-muted">{whyText(t, reason)}</span>
                   <span className="font-mono text-fg">{reasonWeight(t, reason)}</span>
                 </li>
               ))
@@ -153,7 +153,12 @@ export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNo
                   tooltip={
                     <span className="flex flex-col gap-1">
                       {option.tooltipKey === undefined ? null : (
-                        <span>{t(option.tooltipKey, choice.vars)}</span>
+                        <span>
+                          {t(
+                            option.tooltipKey,
+                            optionTextVars(choice.eventId, option.id, choice.vars),
+                          )}
+                        </span>
                       )}
                       <EffectList
                         effects={detailed?.effects ?? []}
@@ -164,7 +169,7 @@ export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNo
                         <span className="text-warn">
                           {blockedReason === undefined
                             ? t("game.event.option_blocked")
-                            : t(blockedReason, choice.vars)}
+                            : reasonText(t, blockedReason, choice.vars)}
                         </span>
                       )}
                     </span>
@@ -176,7 +181,7 @@ export function EventWindow({ view, choice, queued }: EventWindowProps): ReactNo
                   }}
                   onClick={() => resolve(option.id)}
                 >
-                  {t(option.textKey, choice.vars)}
+                  {t(option.textKey, optionTextVars(choice.eventId, option.id, choice.vars))}
                 </Button>
               </li>
             );

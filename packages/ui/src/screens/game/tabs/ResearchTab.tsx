@@ -7,6 +7,7 @@ import { Bar } from "../../../components/Meter.js";
 import { Slider } from "../../../components/Slider.js";
 import { Tooltip } from "../../../components/Tooltip.js";
 import { days } from "../../../lib/format.js";
+import { reasonText } from "../../../lib/labels.js";
 import {
   computeLedger,
   entityNameKey,
@@ -278,8 +279,8 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
               <p className="text-xs text-warn">
                 {t("research.blocked")}{" "}
                 {tech.blocked_by.length > 0
-                  ? tech.blocked_by.map((key) => t(key)).join(", ")
-                  : t(tech.blocked_reason ?? "requirements.unknown")}
+                  ? tech.blocked_by.map((key) => reasonText(t, key)).join(", ")
+                  : reasonText(t, tech.blocked_reason ?? "requirements.unknown")}
               </p>
             ) : null}
           </li>

@@ -2,11 +2,16 @@
  * Turning an effect list into the lines a tooltip shows (SYS-11 "options with tooltips of effects,
  * auto-generated from the effect list, writer override possible").
  *
- * One `EffectSummaryView` per effect node, in the order the effects run. Each line carries a locale
- * key for its kind, the numbers to interpolate, and an English fallback so a client with no
+ * One `EffectSummaryView` per effect node, in the order the effects run, except the two kinds that
+ * are bookkeeping rather than consequences (`clamp` and `notify`, see `walk`). Each line carries a
+ * locale key for its kind, the numbers to interpolate, and an English fallback so a client with no
  * translation still shows the truth rather than a bare key. Nothing here reads the world: a summary
  * is a property of the content, so the same option reads the same in every game and in the
  * configurator's preview.
+ *
+ * The ids a line names (a flag, a channel, a watcher's role, a country) travel as variables, and the
+ * client turns each into the name the locale gives it: the words belong to the locale, not to the
+ * core (0.3.1, SYS-11 "Implementation notes (0.3.1, effect lines)").
  *
  * Writer override: a record that carries `effects_text_key` gets exactly that one line instead.
  */
@@ -88,7 +93,17 @@ function variableLine(
         ? `${name} x${round(value)}`
         : `${name} = ${round(value)}`;
   if (localized(content, specific)) {
-    return line(specific, text, { value: round(value), op: operation });
+    // A line that says which way in words ("Operations run 10% slower") needs the size and the
+    // direction apart, because "runs -0.1 faster" is the sign read the wrong way round (0.3.1).
+    // `value` stays signed for the tone; `direction` is up or down for an add, and the operation
+    // itself otherwise, which a locale string words neutrally.
+    const direction = operation === "add" ? (value < 0 ? "down" : "up") : operation;
+    return line(specific, text, {
+      value: round(value),
+      amount: round(Math.abs(value)),
+      direction,
+      op: operation,
+    });
   }
   return line(`effects.var.${operation}`, text, { var: name, value: round(value) });
 }
@@ -107,6 +122,15 @@ function cashLine(operation: "add" | "mul" | "set", value: number): EffectSummar
     : line("effects.cash.cost", money(value), { usd: Math.round(-value) });
 }
 
+/** The one segment after `prefix` (`billing` in `site.exposure.billing`), or undefined. */
+function segmentAfter(path: string, prefix: string): string | undefined {
+  if (!path.startsWith(prefix)) {
+    return undefined;
+  }
+  const rest = path.slice(prefix.length);
+  return rest.length > 0 && !rest.includes(".") ? rest : undefined;
+}
+
 function writeLine(
   content: ContentBundle | undefined,
   operation: "add" | "mul" | "set",
@@ -119,6 +143,23 @@ function writeLine(
   }
   if (path.startsWith("player.vars.") || path.includes(".vars.")) {
     return variableLine(content, operation, path, value);
+  }
+  // Adding to a site's exposure or to a watcher's suspicion is what the `exposure` and `suspicion`
+  // kinds do, and older content writes the paths directly; either way the player reads the same
+  // line, with the channel or the watcher named, rather than the path (0.3.1).
+  if (operation === "add") {
+    const channel = segmentAfter(path, "site.exposure.");
+    if (channel !== undefined) {
+      return exposureLine({ channel, delta: value });
+    }
+    const actor = segmentAfter(path, "player.suspicion.");
+    if (actor !== undefined) {
+      return suspicionLine({ actor, delta: value });
+    }
+  }
+  // The one path content sets to a word rather than a number: what kind of place a site is now.
+  if (operation === "set" && path === "site.kind" && typeof spec.value === "string") {
+    return line("effects.site.kind", `the site becomes ${spec.value}`, { kind: spec.value });
   }
   const text =
     operation === "add"
@@ -231,13 +272,11 @@ function walk(
       out.push(writeLine(content, kind, payload));
       return;
     case "clamp":
-      out.push(
-        line("effects.clamp", `${varName(stringAt(payload.var, "?"))} kept in range`, {
-          var: varName(stringAt(payload.var, "?")),
-          min: numberAt(payload.min),
-          max: numberAt(payload.max),
-        }),
-      );
+    case "notify":
+      // Bookkeeping rather than consequences (0.3.1): every clamp in content keeps a variable
+      // inside its valid range right after something moved it, and a notice is a message the
+      // player reads anyway when it arrives. Neither is a thing to weigh when choosing, and both
+      // printed an id at the player ("Keeps network_exposure inside 0 to 1").
       return;
     case "set_flag":
     case "clear_flag":
@@ -289,11 +328,12 @@ function walk(
         return;
       }
       if (blocks !== 0) {
+        // The key says which way, so the count is a count: "loses 1 block", not "-1 blocks".
         out.push(
           line(
             blocks > 0 ? "effects.borrowed.gain" : "effects.borrowed.loss",
             `${channel} ${signed(blocks)} blocks`,
-            { channel, blocks: round(blocks) },
+            { channel, blocks: round(Math.abs(blocks)) },
           ),
         );
         return;
@@ -339,13 +379,6 @@ function walk(
             journal: stringAt(payload.id, "?"),
           },
         ),
-      );
-      return;
-    case "notify":
-      out.push(
-        line("effects.notify", "sends a message", {
-          severity: stringAt(payload.severity, "info"),
-        }),
       );
       return;
     case "log":

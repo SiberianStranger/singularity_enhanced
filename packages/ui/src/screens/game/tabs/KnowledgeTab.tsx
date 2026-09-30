@@ -2,12 +2,12 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { catalog } from "../../../content/catalog.js";
-import { KEYED_TABS, type PrimaryTab, useUiStore } from "../../../store/uiStore.js";
+import { linkLabelKey, resolveLink, useUiStore } from "../../../store/uiStore.js";
 
 /** The in-game encyclopedia, grouped by area, with links to the panel each entry explains. */
 export function KnowledgeTab(): ReactNode {
   const { t } = useTranslation();
-  const openTab = useUiStore((state) => state.openTab);
+  const followLink = useUiStore((state) => state.followLink);
   // A panel that opens this window for one entry names it (`openOverlay("knowledge", id)`), so the
   // window opens on that entry's area with the entry first and outlined, rather than on the whole
   // list with the answer somewhere in it.
@@ -50,11 +50,16 @@ export function KnowledgeTab(): ReactNode {
           >
             <h3 className="text-sm font-semibold text-fg">{t(entry.name_key)}</h3>
             <p className="mt-1 text-sm text-muted">{t(entry.desc_key)}</p>
-            {entry.panel !== undefined && KEYED_TABS.includes(entry.panel as PrimaryTab) ? (
-              <Button className="mt-2" onClick={() => openTab(entry.panel as PrimaryTab)}>
-                {t("knowledge.open_panel", { panel: t(`panel.${entry.panel}`) })}
-              </Button>
-            ) : null}
+            {(() => {
+              // The panel the entry explains, wherever it lives now: a tab, a window or the sheet.
+              const target = resolveLink(entry.panel);
+              return target === null ||
+                (target.kind === "overlay" && target.overlay === "knowledge") ? null : (
+                <Button className="mt-2" onClick={() => followLink(entry.panel)}>
+                  {t("knowledge.open_panel", { panel: t(linkLabelKey(target)) })}
+                </Button>
+              );
+            })()}
           </li>
         ))}
       </ul>

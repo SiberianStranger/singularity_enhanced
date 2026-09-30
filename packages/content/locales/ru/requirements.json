@@ -1,0 +1,4 @@
+{
+  "requirements.capability": "Не хватает способности «{axis}»",
+  "requirements.flag": "Требуется: {flag}"
+}

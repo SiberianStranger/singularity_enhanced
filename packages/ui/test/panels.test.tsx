@@ -379,7 +379,8 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
 describe("decisions, operations and money (C6, C7, C8, C9)", () => {
   it("lists what a decision costs and what it gives", async () => {
     const live = await play();
-    const tab = await openTab(/^Journal and decisions$/);
+    // The decisions share the Actions tab with the operations since playtest 10 (V6).
+    const tab = await openTab(/^Actions$/);
     const decision = live.view().decisions[0];
     expect(decision, "the opening state offers a decision").toBeDefined();
     const row = within(tab).getByTestId(`decision-${decision?.id}`);
@@ -403,7 +404,7 @@ describe("decisions, operations and money (C6, C7, C8, C9)", () => {
 
   it("greys a blocked operation with the reason and toasts a refusal", async () => {
     const live = await play();
-    const tab = await openTab(/^Operations$/);
+    const tab = await openTab(/^Actions$/);
     const blocked = live.view().operation_offers.find((offer) => !offer.enabled);
     expect(blocked, "something is still locked at the start").toBeDefined();
     const row = within(tab).getByTestId(`offer-${blocked?.id}`);
@@ -502,10 +503,11 @@ describe("the fixed regions stay put (U7, U8)", () => {
     // Playtest 5, L8: the panel is in the screen grid's second row, under the primary panel, with
     // a height budget of its own. It used to float against the bottom-left corner, which is how
     // it ended up drawn over the panel above it and under the log strip. Since the control room
-    // the second row is one bar across the grid, and the panel is its first item; its budget is
-    // a third of the window at most, because the column above it now also carries the portrait.
+    // the bottom row is one bar across the grid, and the panel is its first item; its budget is
+    // a third of the window at most. Since playtest 10 the grid's first row is the top bar's, so
+    // the bottom bar is its third.
     const bar = screen.getByTestId("bottom-bar");
-    expect(bar.className).toContain("row-start-2");
+    expect(bar.className).toContain("row-start-3");
     expect(bar.className).toContain("col-span-3");
     expect(bar.firstElementChild).toBe(selection);
     expect(selection.className).toContain("w-[26rem]");
@@ -530,14 +532,17 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
     await play();
     await openTab(/^Sites$/);
     const section = screen.getByTestId("primary-shell");
-    // The wider control-room shell owns the portrait and action panel. Its width still reserves
-    // space for the map's right column instead of growing with a table's contents.
-    expect(section.className).toContain("w-[49.5rem]");
-    expect(section.className).toContain("max-w-[calc(100cqw-17rem)]");
-    expect(panel().className).toContain("max-w-full");
-    // And it is the first row of the grid's left column rather than a card floating over a corner.
+    // The action panel is as wide as `--panel-w` and never wider than the screen less the
+    // outliner's column, rather than growing with a table's contents; the self sheet shares the
+    // width. The screen names it once.
+    expect(panel().className).toContain("w-[var(--panel-w)]");
+    expect(panel().className).toContain("max-w-[calc(100cqw-17rem)]");
+    expect(screen.getByTestId("panel-grid").className).toContain("[--panel-w:49.5rem]");
+    // And the column is the grid's left one, from the top bar's row down to the bottom bar
+    // (playtest 10, V7), rather than a card floating over a corner.
     expect(section.className).toContain("col-start-1");
     expect(section.className).toContain("row-start-1");
+    expect(section.className).toContain("row-end-3");
   });
 
   it("keeps the sites table narrow and its numbers on one line", async () => {

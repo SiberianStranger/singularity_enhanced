@@ -1,10 +1,16 @@
 # Ukraine map: dated control generalization and night-light profiles
 
-Date of this implementation note: 2026-09-29.
+Date of this implementation note: 2026-09-29; updated 2026-09-30 for release 0.3.1.
 Frozen control baseline: **2026-09-28**.
 Geometry kind: **authored-generalization**, intended for the game's 1:110m world map.
-Implementation: [ukraine-control.ts](../../packages/ui/src/screens/game/map/ukraine-control.ts).
-Contract: [SYS-11 "Control room (0.3.0)"](../design/11-notifications-and-ui.md#control-room-030).
+Data: [ukraine-control.ts](../../packages/ui/src/screens/game/map/ukraine-control.ts), the two
+territories of SYS-26 (Crimea and the occupied mainland) with their dates, recognition figures,
+light profiles and sources. Drawing: `territories.ts`, `territory-geometry.ts` and
+`TerritoryLayers.tsx` in the same folder.
+Contracts: [SYS-26 "Territorial control and recognition"](../design/26-territorial-control.md)
+for how control and recognition are drawn since 0.3.1, and
+[SYS-11 "Control room (0.3.0)"](../design/11-notifications-and-ui.md#control-room-030) for the
+first version of the layer.
 
 ## What the overlay means
 
@@ -21,15 +27,17 @@ This is not an exact live frontline, a claim of complete coverage of every occup
 or a forecast of the war in January 2027. Small northern border pockets, river islands,
 contested areas and local advances are unresolved. No entire oblast is used as a proxy for
 control. The southeastern closing edges extend into sea and foreign land only to close the
-mask: the renderer must intersect it with Ukraine's mainland and exclude the separate Crimea
-geometry. Those closing edges are not geographic claims.
+mask: the renderer intersects it with Ukraine's land and excludes the separate Crimea
+geometry. Those closing edges are not geographic claims. Since 0.3.1 the southern closing edge
+runs at 45.6 N rather than 46 N (see "Known generalization errors" below).
 
-The visual layer has no political explanatory text on the map, as requested: the overlay draws
-no text, title or label and takes no pointer events, so hovering or selecting still names Ukraine.
-This document and the source comments hold the date and source limitations. The About screen
-credits the base geometry (Natural Earth through world-atlas) but does not yet name the control
-layer's baseline date or its sources; that line is a client follow-up, not something the map
-itself should carry.
+The map itself carries no political explanatory text, as requested: no label, title or legend is
+drawn on the land. Since 0.3.1 each territory's filled outline is a pointer target. Its tooltip
+and the selection panel print one sentence built from the data (the territory's name, whose
+territory it is, who holds it and since which year, and how few states accept that, in three
+bands), and a click still selects Ukraine, with the territory named. The About window credits the
+control layer with its baseline date and its sources, and says the night lights there are dimmed
+by hand. This document and the source comments hold the remaining source limitations.
 
 ## Public facts used as anchors
 
@@ -78,13 +86,40 @@ and outside Ukraine's, whose 110m geometry is a single polygon.
 The client corrects this in `countryShapes()` (`packages/ui/src/screens/game/map/topology.ts`):
 it finds the component with a Crimean seed point and a bounds check, removes it from Russia and
 adds it to Ukraine before any country path is built, so hovering and selecting Crimea name
-Ukraine. The component's array index is an observation, not an API contract; if a later atlas
-stops exposing Crimea as a separable polygon, the function throws rather than drawing the old
-border. The same geometry draws the separately styled control overlay.
+Ukraine. The component's array index is an observation, not an API contract. Since 0.3.1 the
+correction is general (SYS-26): `topology.ts` gives any territory's atlas part to its de jure
+owner, and the same polygon draws the territory `ua_crimea`, held by Russia. If a later atlas
+stops exposing Crimea as a separable polygon, that territory is left off with one console warning
+and the rest of the map is drawn as before; the old border is never drawn.
 
 Natural Earth is [public-domain data](https://www.naturalearthdata.com/about/terms-of-use/).
 The original day and night JPEG files stay byte-for-byte unchanged. The source atlas files
 are also retained; the correction is applied to decoded runtime geometry.
+
+## Recognition figures
+
+SYS-26 gives each territory a `recognition` value from 0 to 1 that sets how dense its hatch is.
+There is no count of states that formally recognize either change, so the figure is an upper
+bound on acceptance: the share of the 193 UN members that voted against the General Assembly
+resolution upholding Ukraine's territorial integrity.
+
+| Territory | Resolution | Vote (for, against, abstaining) | Figure |
+|---|---|---|---:|
+| Crimea | A/RES/68/262, 27 March 2014 | 100, 11, 58 | 11 / 193 = 0.057, stored as 0.06 |
+| Occupied mainland | A/RES/ES-11/4, 12 October 2022 | 143, 5, 35 | 5 / 193 = 0.026, stored as 0.03 |
+
+Sources: [UN News, 27 March 2014](https://news.un.org/en/story/2014/03/464812) and
+[UN News, 12 October 2022](https://news.un.org/en/story/2022/10/1129492), both reopened on
+2026-09-30 and stating these votes. The UN Digital Library record of the 2014 resolution
+(https://digitallibrary.un.org/record/767565) and the UN press pages answered a direct request
+that day with HTTP 403 or a browser challenge, so they are listed as references, not as pages
+reread. An abstention is not counted as acceptance and a vote against is not a recognition, which
+is why the figure is a bound and why the game prints it only as a band ("almost no state").
+
+The `since` dates: Crimea 2014-03-18, the day Russia declared the annexation. The occupied
+mainland 2022-02-24, the start of the full-scale invasion; this generalizes two histories, since
+the Donetsk and Luhansk cores have been held by Russia and its proxies since 2014. A scenario that
+needs the difference splits the envelope into two territories.
 
 ## Sources deliberately not imported as control polygons
 
@@ -188,15 +223,28 @@ have not been performed for this implementation.
 ## Rendering and acceptance checks
 
 The source rasters and vectors share the same equirectangular 1000 by 500 map coordinates.
-The client darkens between the night raster and the country and marker overlay, inside the
-current night mask and a luminance mask of bright night-texture pixels
-(`UkraineMapLayers.tsx`), and draws the same layers on the horizontally wrapped copy. Reducing
-the opacity of the whole night image would expose the day texture; a uniform dark region would
-dim terrain too.
+
+Control (since 0.3.1, SYS-26; `TerritoryLayers.tsx`). 0.3.0 drew a brown wash over the occupied
+land, which the maintainer read as dirt rather than as control (playtest 10, V1). Now each
+territory is filled with its holder's colour in the current map mode, the same fill Russia's own
+path gets, and hatched at 45 degrees in the de jure owner's colour, or in the map's line colour
+where the owner has no colour of its own in that mode or shares the holder's. The hatch spacing is
+kept in screen pixels at every zoom: Crimea, annexed and not recognized, 8.2 px and light; the
+occupied mainland 4.6 px and dense. The territory's outline is dashed only where it cuts
+Ukraine's land that the same holder does not hold, so the front is dashed and the line between
+Crimea and the mainland is not; Ukraine's border is drawn again on top and stays solid. When the
+current mode leaves both countries unfilled (the default textured map), the fill is the raster
+itself and only the hatch and the dashed front show.
+
+Night lights. The dimming is a black layer between the night raster and the country paths whose
+opacity is one minus the profile's factor, inside the current night mask, so every pixel of the
+night texture keeps that share of its light and the day side is untouched. Reducing the opacity of
+the whole night image would expose the day texture; a uniform dark region would dim terrain too.
+The same layers are drawn on the horizontally wrapped copy of the map.
 
 In the vector theme there is no raster night-light signal to attenuate. Political contours,
-selection strokes and gameplay markers must remain readable. The same masks must be used for
-the horizontally wrapped copy of the map.
+selection strokes and gameplay markers must remain readable; the hatch uses the flat map's
+lighter line colour there.
 
 The geometry file uses clockwise exterior rings for d3-geo's small-polygon convention.
 If exported as RFC 7946 GeoJSON elsewhere, winding must be handled for the target consumer.
@@ -207,12 +255,18 @@ to release 0.2.0 by git. Selecting Crimea selects Ukraine, checked by "selecting
 layer" in `packages/ui/e2e/control-room.spec.ts`; day and night and wrapped and zoomed views are
 browser acceptance items. Passing data tests does not certify a current military map.
 
-### Known generalization error (2026-09-30, corrected the same day)
+### Known generalization errors (2026-09-30, both corrected the same day)
 
-The envelope's edge from 37.85 E, 48.50 N to 38.15 E, 48.72 N runs through Bakhmut and just
+Bakhmut. The envelope's edge from 37.85 E, 48.50 N to 38.15 E, 48.72 N runs through Bakhmut and just
 south of Soledar, both under Russian control since 2023, so the northern half of the Bakhmut
 light profile falls outside the clip and stays at full brightness. At the map's largest zoom the
 error is a few pixels. Corrected: the edge now runs from 37.8 E, 48.53 N to 38.1 E, 48.77 N in
 `packages/ui/src/screens/game/map/ukraine-control.ts`, and Bakhmut (38.0 E, 48.5947 N) and
 Soledar (38.0903 E, 48.6817 N) are positive anchors in `packages/ui/test/ukraine-control.test.ts`.
 
+Southern closing edge. The envelope's southern closing edge ran at 46 N. It left the atlas's strip
+of mainland beside Crimea, the Perekop and Arabat approaches, held since 2022 and reaching down to
+45.74 N in the 1:110m geometry, outside the envelope. The 0.3.0 wash hid the sliver; the 0.3.1 fill
+showed it in Ukraine's colour. The edge now runs at 45.6 N, over sea and over Crimea, which the
+clip excludes, so it still carries no control meaning; the two approaches are positive anchors in
+`packages/ui/test/ukraine-control.test.ts`.

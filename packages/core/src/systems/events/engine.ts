@@ -504,8 +504,11 @@ function missedOption(def: EventDef, expiredOptionId: string): EventOption | und
   return def.options.find((option) => option.id !== expiredOptionId);
 }
 
-/** Cash an option would have taken, read from its own effects; 0 when it costs nothing. */
-function optionCashCost(option: EventOption): number {
+/**
+ * Cash an option would have taken, read from its own effects; 0 when it costs nothing. The client
+ * reads the same figure for the `{cost}` an option's text names (0.3.1).
+ */
+export function optionCashCost(option: EventOption): number {
   let total = 0;
   for (const effect of option.effects ?? []) {
     if (!isRecord(effect)) {

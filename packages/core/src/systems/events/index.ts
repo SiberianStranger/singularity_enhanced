@@ -252,6 +252,7 @@ export {
   fireSelected,
   isAvailable,
   legalOptions,
+  optionCashCost,
 } from "./engine.js";
 export {
   allPresenceCountries,

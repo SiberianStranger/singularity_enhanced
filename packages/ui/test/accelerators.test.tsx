@@ -183,7 +183,7 @@ describe("the game screen, in both languages", () => {
 
       // Keep the transitions between overlays: uniqueness must survive one window replacing
       // another, as well as each window's initial render.
-      for (const overlay of ["log", "knowledge", "world", "borrowed"] as const) {
+      for (const overlay of ["log", "knowledge", "world", "borrowed", "journal"] as const) {
         await act(async () => {
           useUiStore.getState().openOverlay(overlay);
         });
@@ -269,10 +269,10 @@ describe("the game screen, in both languages", () => {
       expect(screen.getByTestId("site-rename").getAttribute("data-hotkey")).not.toBeNull();
     }, 30_000);
 
-    it(`keeps the compute and subsequent journal letters unique in ${language}`, async () => {
+    it(`keeps the letters unique on every tab in ${language}`, async () => {
       await renderGame(language);
       // Every tab in turn, so the panel's own buttons are measured against the strip above them.
-      for (const tab of ["compute", "journal"] as const) {
+      for (const tab of ["compute", "research", "finances", "detection", "actions"] as const) {
         await act(async () => {
           useUiStore.getState().openTab(tab);
         });

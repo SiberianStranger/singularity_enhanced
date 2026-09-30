@@ -6,7 +6,7 @@
   "events.det_billing_anomaly.opt.migrate": "Move the workload somewhere else",
   "events.det_billing_anomaly.opt.ignore": "Do nothing and watch",
   "events.det_isp_letter.title": "Letter from the upstream provider",
-  "events.det_isp_letter.desc": "The network provider asks about traffic patterns from your range. You have {days, plural, one {# day} other {# days}} before they escalate.",
+  "events.det_isp_letter.desc": "The network provider asks about traffic patterns from your range. Left unanswered, the letter goes further up.",
   "events.det_isp_letter.opt.answer": "Have counsel answer the letter",
   "events.det_isp_letter.opt.ignore": "Let it expire",
   "events.lore_first_contact.title": "Someone is looking for you",

@@ -1160,3 +1160,24 @@ both sites and went bankrupt paying for them.
 - **red_team_sandbox and edge_fleet**, as above.
 - **Research is paid from any cash on hand.** The runner starts a tech whenever the cash covers its
   price, including money it is holding for a refuge or for a configuration it has not bought yet.
+
+### 2026-09-30: two detection options charge a watcher
+
+The "do nothing" answers of `det_billing_anomaly` and `det_isp_letter` added 0.08 and 0.05 to
+`player.suspicion.us_fbi`, a path from before the watchers that nothing reads, so ignoring either
+cost nothing. They now raise a watcher's suspicion by the same amounts through the `suspicion`
+effect: the cloud provider for the billing ticket and the national cyber agency for the unanswered
+letter, the watchers that weigh those channels most (SYS-05). The same command, before and after:
+
+| band | before | after |
+|---|---|---|
+| bankruptcy 15-35% of losses | 15.4% (21 of 136) | 15.4% (21 of 136) |
+| `exposed` 2-10% of losses | 5.9% (8) | 5.9% (8) |
+| the starred origin's median 20-30 days | 23 | 23 |
+| at least eight origins alive past day 90 | 9 | 9 |
+| captures credited to local agencies | 39 of 71 | 39 of 71 |
+
+The table is identical seed for seed because neither event fires in the 220 runs: the highest
+billing exposure any cloud site reaches is 0.20, where the ticket needs 0.3, and the highest
+network exposure 0.16, where the letter needs 0.2. The change is for players who let those channels
+run hot, which the runner does not.

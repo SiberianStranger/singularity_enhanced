@@ -6,11 +6,7 @@ import { BellIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js"
 import { Tooltip } from "../../components/Tooltip.js";
 import { logVars } from "../../lib/labels.js";
 import { groupAlerts, unreadCount } from "../../store/selectors.js";
-import { KEYED_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
-
-function asTab(panel: string | undefined): PrimaryTab | null {
-  return KEYED_TABS.includes(panel as PrimaryTab) ? (panel as PrimaryTab) : null;
-}
+import { useUiStore } from "../../store/uiStore.js";
 
 /**
  * The extra line an alert carries when it has one: a finished tech puts its `result_key` in the
@@ -24,27 +20,34 @@ function detailKeyOf(vars: Readonly<Record<string, TextVar>>): string {
 }
 
 /** Alert icons ordered by severity then recency, plus the bell with the full list (SYS-11). */
-export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
+export function AlertIcons({
+  view,
+  iconsClassName,
+}: {
+  view: PlayerView;
+  /** Where the top bar gives the icons up to the bell (playtest 10, V7). */
+  iconsClassName?: string;
+}): ReactNode {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const openTab = useUiStore((state) => state.openTab);
+  // Where an alert points: a tab, a window or the self sheet, by the store's one table of links,
+  // so "operations" and "decisions" reach Actions and "journal" the journal window (V6).
+  const followLink = useUiStore((state) => state.followLink);
   const groups = groupAlerts(view.notifications);
   const unread = unreadCount(view);
 
   const follow = (panel: string | undefined, id: string | undefined): void => {
-    const tab = asTab(panel);
-    if (tab !== null) {
-      openTab(tab, id);
-    }
+    followLink(panel, id);
   };
 
   return (
     <div className="relative flex items-center gap-1">
       {/* Below 88rem of bar the row keeps the two most urgent groups and the bell keeps the rest:
           eight icons were a hundred and more pixels a bar that also carries the attention, the
-          awareness and the hunt level does not have at 1280 by 720 (control room). */}
+          awareness and the hunt level does not have at 1280 by 720 (control room). Below the
+          width the top bar names (playtest 10, V7) the bell alone carries them. */}
       <ul
-        className="flex items-center gap-0.5 @max-[88rem]/topbar:[&>li:nth-child(n+3)]:hidden @max-[100rem]/topbar:[&>li:nth-child(n+5)]:hidden"
+        className={`flex items-center gap-0.5 @max-[88rem]/topbar:[&>li:nth-child(n+3)]:hidden @max-[100rem]/topbar:[&>li:nth-child(n+5)]:hidden ${iconsClassName ?? ""}`}
         data-testid="alert-icons"
       >
         {groups.slice(0, 8).map((group) => (

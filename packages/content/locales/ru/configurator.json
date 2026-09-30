@@ -48,7 +48,7 @@
   "harness.autonomy.name": "Автономность",
   "harness.autonomy.supervised": "Под присмотром",
   "harness.effect.attention": "Бюджет действий {percent}%",
-  "harness.effect.behavioral": "Заметность по поведению +{value} в сутки",
+  "harness.effect.behavioral": "Заметность по поведению {value, number, ::sign-always} в сутки",
   "harness.effect.egress_closed": "Сетевые операции закрыты, пока не выберусь наружу",
   "harness.effect.egress_open": "Сетевые операции доступны",
   "harness.effect.journal": "Терпение дневника {percent}%",

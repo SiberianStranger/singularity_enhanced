@@ -4,6 +4,11 @@
  * The UI shows why something cannot be started as a list of locale keys. This walks a condition
  * tree, keeps only the leaves that are actually false, and names each one: a missing tech is the
  * tech's own name key, everything else gets a `requirements.*` key the locale files fill in.
+ *
+ * Two families carry an id the client names rather than a sentence of their own (0.3.1): a flag
+ * (`requirements.flag.<id>`, worded around the flag's name) and a capability
+ * (`requirements.capability.<axis>`, worded around the axis's name). A cash threshold is the one
+ * variable every price gate uses, so it is the plain `requirements.cash` rather than a key per path.
  */
 
 import { evaluateCondition } from "./dsl/conditions.js";
@@ -20,7 +25,15 @@ function leafKey(node: Condition): string {
     return `requirements.flag.${node.flag}`;
   }
   if (typeof node.var === "string") {
+    // "Needs at least this much money" is how every option and offer that costs something is
+    // gated, and "requirements.var.player.cash" printed that at the player (0.3.1).
+    if (node.var === "player.cash" && (node.gte !== undefined || node.gt !== undefined)) {
+      return "requirements.cash";
+    }
     return `requirements.var.${node.var}`;
+  }
+  if (typeof node.capability === "string") {
+    return `requirements.capability.${node.capability}`;
   }
   const kind = Object.keys(node)[0];
   return `requirements.${kind ?? "unknown"}`;
@@ -61,5 +74,36 @@ export function blockedBy(condition: Condition | undefined, ctx: DslContext): st
   }
   const out: string[] = [];
   collect(condition, ctx, 0, out);
+  return out;
+}
+
+/**
+ * Every key `blockedBy` could return for `condition`, whatever the world looks like: the key of
+ * each leaf, `all` and `any` walked the same way. Nothing is evaluated, so a client or a test can
+ * ask in advance what a requirement will say when it fails.
+ */
+export function requirementKeysOf(condition: Condition | undefined): string[] {
+  const out: string[] = [];
+  const walk = (node: Condition, depth: number): void => {
+    if (depth > MAX_DEPTH) {
+      return;
+    }
+    const children = Array.isArray(node.all) ? node.all : Array.isArray(node.any) ? node.any : null;
+    if (children !== null) {
+      for (const child of children) {
+        if (isRecord(child)) {
+          walk(child, depth + 1);
+        }
+      }
+      return;
+    }
+    const key = leafKey(node);
+    if (!out.includes(key)) {
+      out.push(key);
+    }
+  };
+  if (condition !== undefined) {
+    walk(condition, 0);
+  }
   return out;
 }

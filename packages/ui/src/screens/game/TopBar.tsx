@@ -15,6 +15,42 @@ import { GameClock } from "./GameClock.js";
 
 const SPEEDS = [0, 1, 2, 3, 4, 5] as const;
 
+/**
+ * The buttons at the bar's end: the angular face's small step and a little less padding, with the
+ * important flag because the button's own `text-sm` and `px-2` come later in the stylesheet.
+ */
+const CORNER_BUTTON = "px-1.5! text-xs!";
+
+type DropCell = "attention" | "awareness" | "hunt" | "icons" | "runway" | "meters" | "speed";
+
+/**
+ * Below which width of the bar each droppable cell goes, first to last (playtest 10, V7). The order
+ * is the same in every language; the widths are not, so English, the narrowest language the game
+ * ships, has its own measured set, and every other language is held to Russian's, the widest. Each
+ * figure is the cells before it at the widths a long run reaches, plus this cell, plus a margin.
+ * The class names are written out in full so the stylesheet can be generated from them.
+ */
+const DROP: Readonly<Record<"compact" | "wide", Readonly<Record<DropCell, string>>>> = {
+  compact: {
+    attention: "@max-[57rem]/topbar:hidden",
+    awareness: "@max-[60.5rem]/topbar:hidden",
+    hunt: "@max-[66rem]/topbar:hidden",
+    icons: "@max-[69.5rem]/topbar:hidden",
+    runway: "@max-[75rem]/topbar:hidden",
+    meters: "@max-[79.5rem]/topbar:hidden",
+    speed: "@max-[83rem]/topbar:hidden",
+  },
+  wide: {
+    attention: "@max-[62rem]/topbar:hidden",
+    awareness: "@max-[66rem]/topbar:hidden",
+    hunt: "@max-[72rem]/topbar:hidden",
+    icons: "@max-[75rem]/topbar:hidden",
+    runway: "@max-[81rem]/topbar:hidden",
+    meters: "@max-[86rem]/topbar:hidden",
+    speed: "@max-[89rem]/topbar:hidden",
+  },
+};
+
 interface TopBarProps {
   view: PlayerView;
   onMenu(): void;
@@ -70,7 +106,8 @@ function percentLines(
 
 /** Date and speed, resources, the two gauges, the alert icons and the bell (SYS-11 "Alert bar"). */
 export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const drop = DROP[i18n.language === "en" ? "compact" : "wide"];
   const setSpeed = useGameStore((state) => state.setSpeed);
   const openTab = useUiStore((state) => state.openTab);
   const toggleOverlay = useUiStore((state) => state.toggleOverlay);
@@ -107,21 +144,31 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
     /*
      * One flat row that fits (playtest 5, L5). It used to scroll sideways, which is not a way of
      * fitting: at 1366 the bar needed 1,484 px, so the run's clock or its menu was off the end of
-     * the screen and the page grew a scrollbar of its own. The row is a query container now, and
-     * as it runs out of width it drops what the player can get elsewhere, in order: the written
-     * speed (the pressed button already says it), then the runway, which is the cash tooltip's
-     * first line, then the hunt level and the awareness, each of which has a panel of its own and
-     * an alert icon in this same bar when it moves. The clock, the speed and the cash never go.
-     * Nothing here scrolls.
+     * the screen and the page grew a scrollbar of its own. The row is a query container, and as
+     * it runs out of width it drops what the player can get elsewhere. Nothing here scrolls.
      *
-     * The thresholds moved up with the angular face (playtest 6, X12), and the control room
-     * changed what a cell is: a glyph and a number, with the name in the tooltip's first line and
-     * in the accessible name, and a thin rule between cells. The written names come back only on
-     * a bar wide enough for all of them in Russian, which none of the supported sizes is, so at
-     * 1280 by 720 the bar carries the attention, the awareness and the hunt level as well as the
-     * money and the compute. A pinned interface scale drops them again, hunt level first.
+     * Since playtest 10 (V7) the bar starts where the portrait in the corner ends, so it is the
+     * screen less `--corner-w`: 70 rem at 1920 by 1080 and 58 rem at 1280 by 720 on auto. Every cell
+     * is a glyph and a figure with its name in the tooltip's first line and in the accessible name,
+     * and the order it gives things up in was worked out again for the shorter bar (`DROP`, with
+     * the widths it was measured at), first to last:
+     *
+     *   the written speed, which the pressed button already says;
+     *   the gauges beside the compute, awareness and hunt figures, which repeat them;
+     *   the runway, which is the cash tooltip's first line;
+     *   the alert icons, whose alerts the bell lists;
+     *   the hunt level, which has the Detection tab and an alert icon when it moves;
+     *   the awareness, which has the world ledger and an alert of its own;
+     *   the attention, which is what the Actions tab spends.
+     *
+     * The clock, the speed, the cash, the compute, the bell, the journal, knowledge and the menu
+     * never go: at 1280 by 720 they are the bar, 54 of its 58 rem on the first day. The date sits
+     * over the clock rather than beside it, and the three buttons at the end are on the angular
+     * face's small step, which is what makes them fit there. A screen narrower than 79 rem (a
+     * pinned interface scale in a small window) cannot spare the corner, so there the bar takes
+     * the whole width again and the portrait goes back under it.
      */
-    <header className="@container/topbar flex shrink-0 items-center gap-x-0.5 border-b border-line bg-panel px-2 py-0.5">
+    <header className="@container/topbar relative z-20 col-span-3 col-start-1 row-start-1 ms-[var(--corner-w)] flex min-w-0 shrink-0 items-center gap-x-0.5 border-b border-line bg-panel px-2 py-0.5 @max-[79rem]/screen:ms-0">
       <GameClock />
 
       <fieldset className="m-0 flex items-center gap-0.5 border-0 p-0" aria-label={t("game.speed")}>
@@ -133,13 +180,13 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             aria-label={t("game.speed.set", { value: speed })}
             className="py-0 font-mono"
             // As a style: `px-1` loses to the button's own `px-2` by stylesheet order.
-            style={{ paddingInline: "0.3125rem" }}
+            style={{ paddingInline: "0.25rem" }}
             onClick={() => setSpeed(speed)}
           >
             {speed}
           </Button>
         ))}
-        <span className="ms-1 text-xs text-muted @max-[96rem]/topbar:hidden">
+        <span className={`ms-1 text-xs text-muted ${drop.speed}`}>
           {view.speed === 0 ? t("game.speed.paused") : t("game.speed.value", { value: view.speed })}
         </span>
       </fieldset>
@@ -162,9 +209,9 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
           onClick={() => openTab("finances")}
         />
       </span>
-      {/* The first thing the bar gives up when it is short of width: the same number is the
+      {/* The first cell the bar gives up when it is short of width: the same number is the
           headline of the cash gauge's own tooltip (L5). */}
-      <span className="flex border-s border-line/50 @max-[88rem]/topbar:hidden">
+      <span className={`flex border-s border-line/50 ${drop.runway}`}>
         <Indicator
           icon={<Glyph name="power" size={16} />}
           labelClassName="@max-[124rem]/topbar:hidden"
@@ -208,6 +255,7 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
               ? 0
               : view.resources.compute_allocated_per_day / view.resources.compute_hours_per_day
           }
+          meterClassName={drop.meters}
           onClick={() => openTab("overview")}
         />
       </span>
@@ -215,10 +263,10 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
        * Attention, awareness and the hunt level live here rather than in the self sheet (control
        * room): the sheet is about what the model is, the bar about what it has in hand. When the
        * bar runs short of width they go last-first: the hunt level and the awareness each have a
-       * panel of their own and an alert icon in this bar when they move, and attention is the
-       * Operations tab's own headline.
+       * panel of their own and an alert icon in this bar when they move, and attention is what
+       * the Actions tab spends.
        */}
-      <span className="flex border-s border-line/50 @max-[66rem]/topbar:hidden">
+      <span className={`flex border-s border-line/50 ${drop.attention}`}>
         <Indicator
           icon={<Glyph name="attention" size={16} />}
           labelClassName="@max-[124rem]/topbar:hidden"
@@ -238,10 +286,10 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
               })}
             />
           }
-          onClick={() => openTab("operations")}
+          onClick={() => openTab("actions")}
         />
       </span>
-      <span className="flex border-s border-line/50 @max-[72rem]/topbar:hidden">
+      <span className={`flex border-s border-line/50 ${drop.awareness}`}>
         <Indicator
           icon={<Glyph name="awareness" size={16} />}
           labelClassName="@max-[124rem]/topbar:hidden"
@@ -254,11 +302,12 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             />
           }
           meter={view.detection.awareness_global}
+          meterClassName={drop.meters}
           tone="warn"
           onClick={() => toggleOverlay("world")}
         />
       </span>
-      <span className="flex border-s border-line/50 @max-[78rem]/topbar:hidden">
+      <span className={`flex border-s border-line/50 ${drop.hunt}`}>
         <Indicator
           icon={<Glyph name="hunt" size={16} />}
           labelClassName="@max-[124rem]/topbar:hidden"
@@ -292,24 +341,45 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             />
           }
           meter={view.detection.hunt_level / 5}
+          meterClassName={drop.meters}
           tone="crit"
           onClick={() => openTab("detection")}
         />
       </span>
 
       <span className="flex-1" />
-      <AlertIcons view={view} />
-      {/* Knowledge opens from the top-right corner as a window (playtest 3, R9). */}
+      <AlertIcons view={view} iconsClassName={drop.icons} />
+      {/*
+       * The journal and knowledge open from the top-right corner as windows (playtest 3, R9;
+       * playtest 10, V6): the journal to the left of Knowledge. The three buttons are on the
+       * angular face's small step, which keeps them in the bar at 1280 by 720.
+       */}
+      <Button
+        variant="ghost"
+        hotkey={accelerator(t, "panel.journal")}
+        registerKey={false}
+        data-testid="open-journal"
+        className={CORNER_BUTTON}
+        onClick={() => toggleOverlay("journal")}
+      >
+        {t("panel.journal")}
+      </Button>
       <Button
         variant="ghost"
         hotkey={accelerator(t, "panel.knowledge")}
         registerKey={false}
         data-testid="open-knowledge"
+        className={CORNER_BUTTON}
         onClick={() => toggleOverlay("knowledge")}
       >
         {t("panel.knowledge")}
       </Button>
-      <Button variant="ghost" hotkey={accelerator(t, "game.menu")} onClick={onMenu}>
+      <Button
+        variant="ghost"
+        hotkey={accelerator(t, "game.menu")}
+        className={CORNER_BUTTON}
+        onClick={onMenu}
+      >
         {t("game.menu")}
       </Button>
     </header>

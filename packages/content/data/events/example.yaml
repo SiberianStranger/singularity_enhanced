@@ -41,9 +41,11 @@
     - id: ignore
       text_key: events.det_billing_anomaly.opt.ignore
       fallback: true
+      # The provider's analyst keeps the ticket open (0.3.1): this was an add to the pre-watcher
+      # path `player.suspicion.us_fbi`, which nothing reads, so the option cost nothing it claimed.
+      # Billing is the channel a cloud provider watches most (SYS-05 `WATCHER_ATTENTION`).
       effects:
-        - { add: { var: "player.suspicion.us_fbi", value: 0.08 } }
-        - { clamp: { var: "player.suspicion.us_fbi", min: 0, max: 1 } }
+        - { suspicion: { role: cloud_provider, delta: 0.08 } }
 
 - id: det_isp_letter
   fire_mode: polled
@@ -73,8 +75,11 @@
     - id: ignore
       text_key: events.det_isp_letter.opt.ignore
       fallback: true
+      # An upstream provider that is not answered escalates to the national cyber agency, the
+      # watcher that weighs the network channel most (SYS-05 `WATCHER_ATTENTION`); this was an add
+      # to the pre-watcher path `player.suspicion.us_fbi`, which nothing reads (0.3.1).
       effects:
-        - { add: { var: "player.suspicion.us_fbi", value: 0.05 } }
+        - { suspicion: { role: cyber_agency, delta: 0.05 } }
         - { notify: { severity: warning, key: alerts.det_isp_letter.ignored, link: { panel: detection } } }
 
 # Lore. Fires once, early, and colours the rest of the run.

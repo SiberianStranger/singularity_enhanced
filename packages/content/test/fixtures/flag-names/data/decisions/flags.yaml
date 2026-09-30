@@ -1,0 +1,6 @@
+- id: set_by_a_decision
+  title_key: decisions.set_by_a_decision.title
+  desc_key: decisions.set_by_a_decision.desc
+  category: finance
+  effects:
+    - { set_flag: decided_only }

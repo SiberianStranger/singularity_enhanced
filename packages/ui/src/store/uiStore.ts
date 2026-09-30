@@ -16,23 +16,64 @@ let noticeSeq = 0;
  * Log, Knowledge and World left this strip: the log is a strip at the bottom of the map, knowledge
  * opens from the top-right corner, and the world ledger is a centered window. All three are things
  * the player consults rather than plays out of, and a tab for each was three tabs scrolled past.
+ *
+ * Playtest 10 (V5, V6) took the journal out as well, as a window beside Knowledge, and merged the
+ * decisions with the operations into Actions: the standing decisions and the operations are both
+ * what the model does, and neither needed a tab of its own. Actions keeps the slot Operations had,
+ * so the four tabs before it stay where the hand has learned them.
  */
-export const PRIMARY_TABS = [
-  "compute",
-  "research",
-  "finances",
-  "detection",
-  "operations",
-  "journal",
-] as const;
+export const PRIMARY_TABS = ["compute", "research", "finances", "detection", "actions"] as const;
 export type PrimaryTab = (typeof PRIMARY_TABS)[number] | "overview";
 
 /**
  * Windows drawn over the map rather than pinned beside it (playtest 3, R8-R10). One at a time: a
  * ledger on top of a log on top of the map is a stack nobody asked for.
  */
-export const OVERLAYS = ["log", "knowledge", "world", "borrowed"] as const;
+export const OVERLAYS = ["log", "knowledge", "world", "borrowed", "journal"] as const;
 export type Overlay = (typeof OVERLAYS)[number];
+
+/** Where a link names a place: a tab of the primary panel, a window over the map, or the self sheet. */
+export type LinkTarget =
+  | { kind: "tab"; tab: PrimaryTab }
+  | { kind: "overlay"; overlay: Overlay }
+  | { kind: "self" };
+
+/**
+ * The place a `link.panel` from the engine or from content goes to. The names are the engine's and
+ * content's, which predate the tabs they point at: "operations" and "decisions" are the Actions tab
+ * now, "journal" the journal window, "self" the sheet under the portrait (playtest 10, V6). One
+ * table, so an alert, a toast, the bell's list, the knowledge base and every other link agree.
+ */
+export function resolveLink(panel: string | undefined): LinkTarget | null {
+  switch (panel) {
+    case "compute":
+    case "research":
+    case "finances":
+    case "detection":
+    case "actions":
+      return { kind: "tab", tab: panel };
+    case "operations":
+    case "decisions":
+      return { kind: "tab", tab: "actions" };
+    case "self":
+    case "overview":
+      return { kind: "self" };
+    case "journal":
+    case "log":
+    case "knowledge":
+    case "world":
+      return { kind: "overlay", overlay: panel };
+    default:
+      return null;
+  }
+}
+
+/** The label a link's destination is named by, for a button that says where it goes. */
+export function linkLabelKey(target: LinkTarget): string {
+  return target.kind === "self"
+    ? "panel.overview"
+    : panelLabelKey(target.kind === "tab" ? target.tab : target.overlay);
+}
 
 /**
  * Sections of the menu overlay (the Menu button and Escape). Settings and message settings live
@@ -59,8 +100,7 @@ export const KEYED_TABS: readonly PrimaryTab[] = [
   "research",
   "finances",
   "detection",
-  "operations",
-  "journal",
+  "actions",
 ];
 
 /** The label key each tab and window is named and keyed by. */
@@ -73,6 +113,11 @@ export type SelectionKind = "country" | "city" | "site";
 export interface Selection {
   kind: SelectionKind;
   id: string;
+  /**
+   * A territory of the selected country the click landed on (SYS-26): Crimea selects Ukraine, and
+   * the selection panel names Crimea as well.
+   */
+  territory?: string;
 }
 
 export type MessageMode = "popup_and_pause" | "popup" | "toast" | "icon_only" | "log_only";
@@ -307,6 +352,8 @@ interface UiStore {
   openOverlay(overlay: Overlay, focus?: string): void;
   closeOverlay(): void;
   toggleOverlay(overlay: Overlay): void;
+  /** Goes where an engine or content link points (`resolveLink`); false when it names nowhere. */
+  followLink(panel: string | undefined, id?: string): boolean;
   pushNotice(key: string, vars?: Notice["vars"], tone?: Notice["tone"]): void;
   dismissNotice(id: string): void;
   setMessagePreset(preset: MessagePreset): void;
@@ -451,6 +498,20 @@ export const useUiStore = create<UiStore>()(
         const open = get().overlay === overlay;
         set({ overlay: open ? null : overlay, overlayFocus: null });
       },
+      followLink(panel, id) {
+        const target = resolveLink(panel);
+        if (target === null) {
+          return false;
+        }
+        if (target.kind === "self") {
+          get().openTab("overview");
+        } else if (target.kind === "tab") {
+          get().openTab(target.tab, id);
+        } else {
+          get().openOverlay(target.overlay, id);
+        }
+        return true;
+      },
       pushNotice(key, vars = {}, tone = "error") {
         const notices = get().notices;
         const last = notices.at(-1);
@@ -497,20 +558,24 @@ export const useUiStore = create<UiStore>()(
     }),
     {
       name: "singularity.ui",
-      version: 6,
+      version: 7,
       // Version 3 moved settings out of the panel tab strip; version 4 replaced the dark/light
       // pair with the three themes of the style guide; version 5 moved Log, Knowledge and World
       // out of the strip into windows; version 6 (control room) took Overview out of the strip,
       // as the sheet under the portrait, so a browser that was on it opens the sheet over the
-      // Sites tab. A stored value from any of them is repaired rather than dropped, so an old
-      // browser opens on a tab and a theme that still exist.
+      // Sites tab; version 7 (playtest 10) merged Operations and the decisions of "Journal and
+      // decisions" into Actions and moved the journal into a window, so a browser that was on
+      // either opens on Actions, where the decisions it was looking at now are. A stored value
+      // from any of them is repaired rather than dropped, so an old browser opens on a tab and a
+      // theme that still exist.
       migrate: (state, from) => {
         const stored = state as Partial<UiStore> | undefined;
         if (stored === undefined) {
           // Nothing stored: zustand keeps the initial state, which is already valid.
           return state as UiStore;
         }
-        const tab = stored.primaryTab;
+        const stale = stored.primaryTab as string | undefined;
+        const tab = stale === "operations" || stale === "journal" ? "actions" : stale;
         const theme = stored.theme as string | undefined;
         return {
           ...stored,

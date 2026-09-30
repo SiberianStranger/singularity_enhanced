@@ -1,7 +1,7 @@
 /**
- * The control room (SYS-11, `docs/design/11-notifications-and-ui.md`, "Control room (0.3.0)"),
- * walked in a browser in both languages: the flows the maintainer's request names, and the sweep
- * that says none of the new windows scrolls sideways.
+ * The control room (SYS-11, `docs/design/11-notifications-and-ui.md`, "Control room (0.3.0)" and
+ * the 0.3.1 notes after playtest 10), walked in a browser in both languages: the flows the
+ * maintainer's requests name, and the sweep that says none of the new windows scrolls sideways.
  *
  * - The portrait and the sheet it opens, with a tooltip on the lineage, the generation, the
  *   origin, the precision and each of the six capabilities.
@@ -11,7 +11,11 @@
  * - The last copy refused before any click, with the reason in the tooltip: Liquidate in the
  *   list, and Shut down cleanly and Switch off in the map's selection panel.
  * - The site window: its arrows, its six rows and its summary.
- * - The borrowed window, and the map's control layer over Ukraine.
+ * - The borrowed window, and the territories over Ukraine (SYS-26): Crimea and the occupied
+ *   mainland in Russia's colour of the map mode, hatched in Ukraine's, with the edge of control
+ *   dashed, and a click on either selecting Ukraine with the territory named.
+ * - The portrait in the screen's corner with the top bar starting where it ends, five tabs, the
+ *   decisions with the operations in Actions, and the journal in a window of its own.
  * - No sideways scroll in any panel, window or dialog at the five sizes the maintainer plays at,
  *   with the interface scale on auto and pinned at its ceiling.
  *
@@ -98,7 +102,7 @@ async function start(
         "singularity.ui",
         JSON.stringify({
           state: { language: lang, ...(pin ? { uiScale: 1.3, uiScaleAuto: false } : {}) },
-          version: 6,
+          version: 7,
         }),
       );
     },
@@ -228,45 +232,58 @@ async function acquire(
   return given;
 }
 
-/** Wheel-zooms toward Ukraine until its country path is `width` px wide, then centres it. */
+/** Ukraine's country path, as a box on screen. */
+async function ukraineBox(page: Page) {
+  return page.evaluate(() => {
+    const paths = [...document.querySelectorAll("[data-testid='country-paths'] path")];
+    const ukraine = paths.find((path) =>
+      ["Ukraine", "Украина"].includes(path.querySelector("title")?.textContent ?? ""),
+    );
+    const rect = ukraine?.getBoundingClientRect();
+    return rect === undefined ? null : { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+  });
+}
+
+/**
+ * Zooms the map until Ukraine's path is `width` px wide with its centre at `centre`: the wheel
+ * toward the country to a third of that, a drag from the country's own centre to `centre` (on the
+ * map rather than from open sea, which a panel can cover once the map is zoomed in), then the
+ * wheel at `centre`, which keeps the point under the pointer where it is.
+ */
 async function zoomToUkraine(page: Page, width: number, centre: { x: number; y: number }) {
-  const box = async () =>
-    page.evaluate(() => {
-      const paths = [...document.querySelectorAll("[data-testid='country-paths'] path")];
-      const ukraine = paths.find((path) =>
-        ["Ukraine", "Украина"].includes(path.querySelector("title")?.textContent ?? ""),
-      );
-      const rect = ukraine?.getBoundingClientRect();
-      return rect === undefined ? null : { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
-    });
-  for (let guard = 0; guard < 30; guard += 1) {
-    const current = await box();
-    if (current === null || current.w > width) {
+  for (let guard = 0; guard < 40; guard += 1) {
+    const current = await ukraineBox(page);
+    if (current === null || current.w > width / 3) {
       break;
     }
     await page.mouse.move(current.x + current.w / 2, current.y + current.h / 2);
     await page.mouse.wheel(0, -150);
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(60);
   }
-  const current = await box();
+  const current = await ukraineBox(page);
   if (current === null) {
     return;
   }
-  // A drag that starts on the sea south of the country, so no country takes the focus.
-  const from = { x: current.x + current.w * 0.3, y: current.y + current.h * 1.05 };
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(
-    from.x + (centre.x - (current.x + current.w / 2)) / 2,
-    from.y + (centre.y - (current.y + current.h / 2)) / 2,
-    { steps: 4 },
-  );
-  await page.mouse.move(
-    from.x + centre.x - (current.x + current.w / 2),
-    from.y + centre.y - (current.y + current.h / 2),
-    { steps: 4 },
-  );
-  await page.mouse.up();
+  const from = { x: current.x + current.w / 2, y: current.y + current.h / 2 };
+  const dx = centre.x - from.x;
+  const dy = centre.y - from.y;
+  // A move of more than a few pixels is a pan, never a click on what is under the pointer.
+  if (Math.abs(dx) + Math.abs(dy) > 12) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + dx / 2, from.y + dy / 2, { steps: 4 });
+    await page.mouse.move(from.x + dx, from.y + dy, { steps: 4 });
+    await page.mouse.up();
+  }
+  for (let guard = 0; guard < 40; guard += 1) {
+    const next = await ukraineBox(page);
+    if (next === null || next.w > width) {
+      break;
+    }
+    await page.mouse.move(centre.x, centre.y);
+    await page.mouse.wheel(0, -100);
+    await page.waitForTimeout(60);
+  }
   await page.mouse.move(2, 360);
   await page.waitForTimeout(300);
 }
@@ -330,10 +347,23 @@ for (const language of LANGUAGES) {
       expect(text, `the sheet does not repeat ${key}`).not.toContain(say(language, key));
     }
     // The top bar is a <header> inside <main>, which the browser does not expose as a banner.
+    // It starts where the portrait in the corner ends (playtest 10, V7), and at 1280 by 720 it is
+    // the cells it never gives up; at 1920 by 1080 the attention and the awareness are back.
     const bar = page.locator("main > header");
-    for (const glyph of ["cash", "compute", "attention", "awareness", "hunt"]) {
+    const cardBox = await card.boundingBox();
+    const barBox = await bar.boundingBox();
+    expect(Math.abs((barBox?.x ?? 0) - ((cardBox?.x ?? 0) + (cardBox?.width ?? 0)))).toBeLessThan(
+      2,
+    );
+    expect(cardBox?.y ?? 99, "the portrait is in the corner").toBeLessThan(1);
+    for (const glyph of ["cash", "compute"]) {
       await expect(bar.locator(`svg[data-glyph='${glyph}']`), `the bar's ${glyph}`).toBeVisible();
     }
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    for (const glyph of ["cash", "compute", "attention", "awareness"]) {
+      await expect(bar.locator(`svg[data-glyph='${glyph}']`), `the bar's ${glyph}`).toBeVisible();
+    }
+    await page.setViewportSize(SMALL);
 
     await page.keyboard.press("Escape");
     await expect(sheet).toHaveCount(0);
@@ -629,46 +659,109 @@ for (const language of LANGUAGES) {
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
-    // The map: Crimea and the occupied mainland are one tint of their own, with no text, over
-    // the unchanged rasters, and Ukraine is what a click there selects.
-    const layer = page.getByTestId("ukraine-control-layer").first();
-    await expect(layer).toHaveAttribute("data-baseline", /^2026-/);
-    const crimea = page.getByTestId("map-control-crimea").first();
-    await expect(crimea).toHaveAttribute("data-country", "ua");
-    await expect(page.getByTestId("map-control-ua-occupied-mainland").first()).toHaveAttribute(
-      "data-country",
-      "ua",
-    );
+    // The map (SYS-26): Crimea and the occupied mainland are territories drawn by one rule, with
+    // no text on the map, over the unchanged rasters, and Ukraine is what a click there selects.
+    const layer = page.getByTestId("territory-layer").first();
+    await expect(layer).toBeVisible();
+    const crimea = page.getByTestId("map-territory-ua_crimea").first();
+    const mainland = page.getByTestId("map-territory-ua_occupied_mainland").first();
+    for (const territory of [crimea, mainland]) {
+      await expect(territory).toHaveAttribute("data-de-jure", "ua");
+      await expect(territory).toHaveAttribute("data-de-facto", "ru");
+    }
+    await expect(crimea).toHaveAttribute("data-status", "annexed_unrecognized");
+    await expect(mainland).toHaveAttribute("data-status", "occupied");
+    await expect(mainland).toHaveAttribute("data-baseline", /^2026-/);
     expect(await layer.locator("text").count(), "no words on the map layer").toBe(0);
-    // Seven light profiles: the occupied default, the Donetsk-Luhansk cluster, two city cores
-    // and three damaged ones; Crimea keeps the original's lights and has none.
+    // The hatch is denser over the occupied mainland than over Crimea.
+    const spacing = async (id: string) =>
+      Number(
+        await page
+          .locator(`[data-testid='territory-hatch-${id}']`)
+          .first()
+          .getAttribute("data-spacing"),
+      );
+    expect(await spacing("ua_occupied_mainland")).toBeLessThan(await spacing("ua_crimea"));
+    // Seven light profiles: the occupied mainland's own, the Donetsk-Luhansk cluster, two city
+    // cores and three damaged ones; Crimea keeps the original's lights and has none.
     await expect(page.locator("[data-light-profile]")).toHaveCount(7);
     const factor = async (id: string) =>
       Number(await page.locator(`[data-light-profile='${id}']`).getAttribute("data-factor"));
     expect(await factor("donetsk-luhansk-cluster")).toBeGreaterThan(
-      await factor("mainland-default"),
+      await factor("ua_occupied_mainland"),
     );
     await expect(crimea).toHaveAttribute("data-light-factor", "1");
 
     await page.getByRole("button", { name: say(language, "panel.close") }).click();
     await zoomToUkraine(page, 300, { x: 640, y: 380 });
-    const box = await crimea.boundingBox();
+    const fill = page.getByTestId("map-territory-fill-ua_crimea").first();
+    const box = await fill.boundingBox();
     expect(box, "Crimea is drawn").not.toBeNull();
     const point = {
       x: (box?.x ?? 0) + (box?.width ?? 0) * 0.45,
       y: (box?.y ?? 0) + (box?.height ?? 0) * 0.6,
     };
+    // The territory is what the pointer is over, and its tooltip says in words what the map shows.
     const under = await page.evaluate(
-      ([x, y]) => document.elementFromPoint(x ?? 0, y ?? 0)?.querySelector("title")?.textContent,
+      ([x, y]) => {
+        const element = document.elementFromPoint(x ?? 0, y ?? 0);
+        return {
+          territory: element?.closest("[data-territory]")?.getAttribute("data-territory"),
+          title: element?.querySelector("title")?.textContent ?? "",
+        };
+      },
       [point.x, point.y],
     );
-    expect(under, "the country under Crimea is Ukraine").toBe(
-      say(language, "world.country.ua.name"),
-    );
+    expect(under.territory, "the territory under the pointer is Crimea").toBe("ua_crimea");
+    expect(under.title).toContain(say(language, "territory.ua_crimea.name"));
+    expect(under.title).toContain(say(language, "world.country.ua.name"));
+    expect(under.title).toContain(say(language, "world.country.ru.name"));
+    expect(under.title).toContain("2014");
     await page.mouse.click(point.x, point.y);
-    await expect(
-      page.getByRole("region", { name: say(language, "selection.title") }),
-    ).toContainText(say(language, "world.country.ua.name"));
+    const selection = page.getByRole("region", { name: say(language, "selection.title") });
+    await expect(selection).toContainText(say(language, "world.country.ua.name"));
+    await expect(selection.getByTestId("selection-territory")).toHaveText(under.title);
+  });
+
+  test(`the journal is a window beside Knowledge and the decisions are in Actions in ${language}`, async ({
+    page,
+  }) => {
+    await start(page, language);
+    // Five tabs in one row, none of them clipped, with the decisions and the operations together.
+    const tabs = page.locator("[data-testid='primary-panel'] [role='tab']");
+    await expect(tabs).toHaveCount(5);
+    for (const [index, key] of [
+      "panel.compute",
+      "panel.research",
+      "panel.finances",
+      "panel.detection",
+      "panel.actions",
+    ].entries()) {
+      await expect(tabs.nth(index)).toHaveAttribute("aria-label", say(language, key));
+      const clipped = await tabs
+        .nth(index)
+        .evaluate((element) => element.scrollWidth > element.clientWidth + 1);
+      expect(clipped, `${key} fits its tab`).toBe(false);
+    }
+    await page.getByRole("tab", { name: say(language, "panel.actions"), exact: true }).click();
+    await expect(page.getByTestId("actions-running")).toBeVisible();
+    await expect(page.getByTestId("actions-decisions")).toBeVisible();
+    await expect(page.getByTestId("actions-offers")).toBeVisible();
+    await expect(page.locator("[data-testid^='decision-']").first()).toBeVisible();
+
+    // The journal: a button left of Knowledge, a window like Knowledge's, the steps inside it.
+    const journal = page.getByTestId("open-journal");
+    const knowledge = page.getByTestId("open-knowledge");
+    expect(
+      ((await journal.boundingBox())?.x ?? 0) < ((await knowledge.boundingBox())?.x ?? 0),
+    ).toBe(true);
+    await journal.click();
+    const window = page.getByTestId("journal-window");
+    await expect(window).toBeVisible();
+    await expect(window.locator("[data-testid^='journal-entry-']").first()).toBeVisible();
+    await expectFits(page, "[role='dialog']", `the journal window in ${language}`);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   for (const pinned of [false, true]) {
@@ -689,13 +782,18 @@ for (const language of LANGUAGES) {
           "panel.research",
           "panel.finances",
           "panel.detection",
-          "panel.operations",
-          "panel.journal",
+          "panel.actions",
           "panel.compute",
         ]) {
           await page.getByRole("tab", { name: say(language, key), exact: true }).click();
           await expectFits(page, "main", `${key} at ${size}`);
         }
+        // The journal's window, which left the tab row (playtest 10, V6).
+        await page.getByTestId("open-journal").click();
+        await expect(page.getByTestId("journal-window")).toBeVisible();
+        await expectFits(page, "[role='dialog']", `the journal window at ${size}`);
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("dialog")).toHaveCount(0);
         await page.getByTestId("self-portrait").click();
         await expect(page.getByTestId("self-overview")).toBeVisible();
         await expectFits(page, "main", `the self sheet at ${size}`);
@@ -780,12 +878,38 @@ for (const language of LANGUAGES) {
       await shot("06-borrowed-window");
       await page.keyboard.press("Escape");
 
+      // The merged tab and the journal's window (playtest 10, V6).
+      await page.getByRole("tab", { name: say(language, "panel.actions"), exact: true }).click();
+      await expect(page.getByTestId("actions-decisions")).toBeVisible();
+      await page.mouse.move(2, viewport.height / 2);
+      await shot("08-actions-tab");
+      await page.getByTestId("open-journal").click();
+      await expect(page.getByTestId("journal-window")).toBeVisible();
+      // The entries' texts stream in; the shot waits for them to finish, as a reader would.
+      await expect(page.locator("[data-testid='journal-window'] [data-revealing]")).toHaveCount(0, {
+        timeout: 15_000,
+      });
+      await page.mouse.move(2, 2);
+      await shot("09-journal-window");
+      await page.keyboard.press("Escape");
+
+      // The territories over Ukraine (SYS-26) in the default mode and in a mode that fills the
+      // countries, where Crimea takes Russia's colour and keeps Ukraine's hatch.
       await page.getByRole("button", { name: say(language, "panel.close") }).click();
       await zoomToUkraine(page, viewport.width * 0.5, {
         x: viewport.width * 0.5,
         y: viewport.height * 0.5,
       });
       await shot("07-map-ukraine");
+      await page.getByTestId("open-world").click();
+      await page.getByTestId("ledger-tab-map_modes").click();
+      await page
+        .getByRole("button", { name: say(language, "world.map_mode.stance"), exact: true })
+        .click();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await page.mouse.move(2, viewport.height / 2);
+      await shot("10-map-ukraine-stance");
     });
   }
 }

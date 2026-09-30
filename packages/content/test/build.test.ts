@@ -83,6 +83,35 @@ describe("content build", () => {
     );
   });
 
+  it("makes every flag content sets, clears or tests carry a name, in every language", async () => {
+    const messages = await messagesFor("flag-names");
+    const unnamed =
+      "content sets, clears or tests this flag, and it has no name to show the player";
+    // Set by an event option, set by a decision, cleared, and only ever tested: all four reach the
+    // player's text sooner or later, so none of them may reach it as an id.
+    expect(messages).toContain(`flags.decided_only: ${unnamed}`);
+    expect(messages).toContain(`flags.cleared_only: ${unnamed}`);
+    expect(messages).toContain(`flags.tested_only: ${unnamed}`);
+    // A name English writes is not allowed to fall back to English in a Russian sentence.
+    expect(messages).toContain(
+      "flags.english_only: every language names the flags; English is not a fallback here",
+    );
+    // And a flag named in both languages is not reported at all.
+    expect(messages.filter((message) => message.includes("named_flag"))).toEqual([]);
+  });
+
+  it("names every flag the shipped content uses", async () => {
+    const result = await buildContent();
+    const names = Object.keys(result.bundle.locales.en).filter((key) => key.startsWith("flags."));
+    expect(names).toContain("flags.has_shell_company");
+    expect(result.bundle.locales.en["flags.has_shell_company"]).toBe("a shell company");
+    for (const key of names) {
+      expect(result.bundle.locales.ru?.[key], key).toBeDefined();
+      // A name is words, never the id it names.
+      expect(result.bundle.locales.en[key], key).not.toMatch(/_/);
+    }
+  });
+
   it("rejects a write to a path no system owns", async () => {
     expect(await messagesFor("unwritable-path")).toContain(
       'events.unwritable.options[0].effects[0].set.var: path "world.meta.debug" is not writable',

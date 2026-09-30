@@ -1749,3 +1749,212 @@ The research note (`docs/research/ukraine-map-2026-09.md`) still lists neither t
 Donetsk-Luhansk light profile at 0.45 nor the correction of the envelope near Bakhmut and Soledar,
 which its "Known generalization error" section describes as open, and it still calls selecting
 Crimea a browser item with no automated check; the code and the tests named above carry all three.
+
+## Implementation notes (0.3.1, client)
+
+The client's answer to [playtest 10](../playtests/2026-09-30-playtest-10-control-room-on-screen.md)
+(V4 to V7), 2026-09-30; V1 and V2, the map over Ukraine, are SYS-26's and its implementation notes
+say how they were drawn. Everything below was walked in a browser in English and Russian at 1280 by
+720, 1366 by 768, 1500 by 800, 1600 by 900 and 1920 by 1080, with the interface scale on auto and
+pinned at 1.3.
+
+### The portrait in the corner (V4, V7)
+
+The screen is one grid now (`GameScreen`): the top bar's row, the map's row and the bottom bar's
+row, with the map drawn under the bar's row behind every panel. The left column spans the bar's row
+and the map's, so its head, the portrait, sits in the screen's top-left corner, flush with the top
+and start edges, and the action panel follows it however its rows wrap; the bar spans the top row
+and gives up `--corner-w` (22rem) at its start, so it begins where the portrait ends. The outliner
+and the World button are in the map's row, the selection panel, the log strip and the map's
+controls in the bottom row, as before. The toasts and the ending are drawn over the map's two rows,
+so neither covers the bar, as when the map was a region of its own under it.
+
+The portrait card is 3.9rem tall rather than 6.2 (7.5 in the playtest's shot, whose lineage name
+wrapped): the drawing is 3rem rather than 4.5, and the four rows are three with no gap between them,
+the lineage, the generation beside the precision, and the origin, each with its tooltip as before.
+The lineage's glyph is gone from its row because it is the drawing's centre. A lineage name longer
+than 22 characters (the abliterated fine-tune's 36) is set in the reading face, which fits it on one
+line, rather than wrapping onto a second or a third line; the reading rows drop the angular face's
+letter spacing they inherited from the button. The self sheet still opens directly under the
+portrait, over the action panel and as wide as it.
+
+A screen narrower than 79rem cannot spare the corner (a pinned scale of 1.3 makes a 1280 window
+61.5rem, which would leave the bar 39.5rem for 54rem of cells it never gives up), so there the bar
+takes the whole width again and the portrait goes back under it, as in 0.3.0. No supported size
+on auto is below that width.
+
+### The shorter top bar (V7)
+
+The bar is 70rem at 1920 by 1080 and 58rem at 1280 by 720 on auto. Three changes made its fixed part
+fit: the date sits over the running clock rather than beside it, the buttons at its end are on the
+angular face's small step with a little less padding, and the speed buttons lost a sixteenth of a
+rem of padding on each side. Every cell keeps its glyph, its figure and its tooltip. The order it
+gives things up in was worked out again from the cells' widths measured in both languages, with the
+figures a long run reaches rather than the first day's (compute in thousands of hours a day, a dozen
+unread alerts): the written speed, the gauges beside the compute, awareness and hunt figures, the
+runway, the alert icons, the hunt level, the awareness, the attention. The clock, the speed, the
+cash, the compute, the bell, the journal, knowledge and the menu never go. The widths are
+language-specific because the cells are: English, the narrowest, has its own set, and every other
+language is held to Russian's, the widest (`DROP` in `TopBar.tsx`). At 1280 by 720 the Russian bar
+is its fixed cells with 4rem to spare on the first day and the English one adds the attention; at
+1920 by 1080 Russian shows the attention and the awareness, English also the hunt level and the
+alert icons.
+
+### Five tabs and the journal's window (V5, V6)
+
+The tabs are Sites, Research, Finances, Detection and Actions (`PRIMARY_TABS`). Actions is the
+standing decisions and the operations together, in the slot Operations had, so the four tabs before
+it stay where the hand learned them. The name says what the two have in common: the standing
+decisions and the operations are both what the model does, one a policy that stays in force, the
+other an undertaking that runs its course. "Действия" in Russian. Its letters are Й, the one letter
+of "Действия" that nothing on the game screen, in its menu or in its windows claims (it sits on
+the Q key of a Latin keyboard), and C, the first letter of "Actions" that nothing on the game
+screen or in its menu holds (A is the Sites tab's Details and the menu's About); a finished
+technology's window is the one other place that uses it (see below). Inside, what is under way
+comes first, then the few standing decisions with what each costs beside what it gives, then the
+operations to start by category.
+
+The journal left the row for a window of its own, opened from a Journal button left of Knowledge in
+the top bar, or by its letter (J, Д), as Knowledge opens. The window lists the entries, active ones
+first, each with its stage or its outcome, its progress and, for an entry measured in steps, the
+steps with the ones behind it marked done; the button that replays the opening moved there with it.
+With a tab fewer, the row has room in Russian: a gap between the tabs and more padding inside each,
+and the labels are hidden for the glyphs alone only in a panel narrower than 46rem (a pinned scale
+in a small window), where the five Russian labels with their spacing would not fit.
+
+Everything that pointed at the old tabs points at the new places through one table,
+`resolveLink` in the UI store: an engine or content link to "operations" or "decisions" opens
+Actions, "journal" the journal's window, "self" the sheet under the portrait, "log", "world" and
+"knowledge" their windows. The alert icons, the bell's list, the toasts and the knowledge base
+follow it; the outliner opens Actions on a running operation and the journal's window on an entry,
+each outlined and first; the borrowed block's work-share link opens Actions on its decision; the
+attention cell opens Actions. The log's window now reads the key a link names from the window's own
+focus: it read the tabs' focus, which opening a window never set, so the ending's links opened the
+log unfiltered. The stored interface state is version 7: a browser that stored Operations or
+"Journal and decisions" (version 6) opens on Actions.
+
+In English, while a finished technology's window is up, its Continue (C) takes the key before the
+Actions tab does, as its Open research (O) did before Operations' in 0.3.0; the window's own
+buttons are meant to win there.
+
+### Tests
+
+Unit tests: `playtest10.test.tsx` (the five tabs in their order and Actions' letter in both
+languages, the journal's button and window with an entry's steps, the outliner's jumps, the link
+table, the version 7 migration, the corner's rows and the reading-face lineage, the bar's placement
+and its drop order in both languages), and the older suites where they named the old tabs
+(`panels`, `borrowed`, `accelerators`, which now walks every tab and the journal's window for
+duplicate letters). In the browser: `control-room.spec.ts` (the portrait in the corner with the
+bar starting at its edge, the five tabs unclipped, Actions and the journal's window, the sweep of
+the five sizes with the journal's window added, and the screenshots), and `layout`, `smoke` and
+`playtest8` walk the five tabs and open the journal's window.
+
+## Implementation notes (0.3.1, effect lines)
+
+A playtest of the Actions tab found decision cards printing internal ids: "Gains: has_shell_company",
+"Keeps network_exposure inside 0 to 1", "Sends a info message". The core still sends ids in a line's
+variables; what changed is who words them. Flags have names now: content writes a noun phrase for
+every flag under `flags.<id>` (`locales/<lang>/flags.json`, "a shell company", "фирма-прокладка"),
+and the content build fails on a flag content sets, clears or tests with no English name, and on a
+name English writes that another language lacks, for the reason the agency names are held to the
+same rule: an English noun in a Russian sentence is another language, not a fallback. `effectText`
+(`lib/effects.ts`) replaces every id a line carries with the name the locale already has for it (an
+exposure channel, a watcher's role or an actor's agency, a borrowed channel, a stance, a journal
+entry's title, a site kind, a lost site's cause, a harness tool, a world variable, a country), and a
+country statistic by the name content now writes under `world.stat.<id>`, because the World tab's
+column labels do not read as the subject of a sentence. The words the summarizer uses for no
+particular one (`here`, `world`, `everyone`) and an identity's kind reach the string as they are and
+are worded there with an ICU `select`, so each language decides how they read. An id nothing names
+is printed with its underscores as spaces, never as itself. A write to a site's exposure or a
+watcher's suspicion by path reads as the exposure or suspicion line, setting a site's kind reads
+"The site becomes: Colocation cage", and the twelve player variables content wrote without a line of
+their own have one. The configurator's quirk and harness lines go through the same function.
+
+`clamp` and `notify` no longer produce a line, and their keys left the engine's registry and the
+locale files. Every clamp in content keeps a variable inside its valid range right after an `add`
+moved it, and a notice is a message the player reads anyway when it arrives: neither is a
+consequence to weigh when choosing, and a line for either was noise at best and an id at worst.
+
+`packages/ui/test/effect-lines.test.tsx` walks every line the shipped content can show (decisions,
+event options, operation outcomes, techs, quirks, harness settings) through the summarizer and
+`effectText` in English and Russian and fails on any snake_case id.
+
+### Numbers, counts and directions
+
+A line that says which way a variable moved says it once, in words, with the amount unsigned:
+"Operations run 15% slower" where it printed "Operations run -0.15 faster", and "Standby copies are
+30 days fresher" where it printed "-30 days fresher". The core puts the unsigned `amount` and a
+`direction` (`up`, `down`, `set`) beside the signed `value` of a variable line, and the string
+picks its words with a `select`; a multiplier is worded as a share. Counts go through `plural` ("1
+block of capacity", "2 блока мощности"), and numbers are formatted by the locale (`{delta, number}`),
+so a Russian line reads "0,06" where it printed "0.06". A plain quantity keeps its sign ("Billing
+cover +0.25"), and money keeps the formatting it had.
+
+### Why an option or an action is not available
+
+A greyed event option said "requirements.flag.has_shell_company". The engine lists a key per unmet
+requirement (`blockedBy`), and two families carry an id and are worded around its name by
+`reasonText` (`lib/labels.ts`): a flag ("Needs a shell company", "Требуется: фирма-прокладка") and a
+capability. A price gate is `requirements.cash` rather than the path it reads, a missing harness tool
+is the tool's name, and an operation offer says "Not enough attention" rather than the command's
+refusal, whose sentence wants numbers a list does not have; a key with no text reads "A requirement
+is not met" rather than printing itself. The event window and the Research tab print reasons
+through `reasonText`. The Actions tab prints its keys as they are, which holds because no key an
+offer or a decision can list carries an id; the reason walk below fails the day one does.
+`requirementKeysOf` (core) lists every key a condition can produce without evaluating it.
+
+The refusals a notice prints are held to the same rules. The Russian ones no longer agree a past
+tense or an adjective with a substituted name (`Операция {operation} пока недоступна`, `Канал
+«{channel}» наотрез отказал в операции {operation}`, the two tech refusals likewise), and a compute
+shortfall prints its fractions in the locale's format.
+
+Nine answers name their price in their text ("Cover their inconvenience ({cost})") and no event
+declared one, so the window printed the placeholder. `optionTextVars` gives an answer's text and
+tooltip the price its own effects charge, read the way the core reads a missed answer's price for
+the expiry line (`optionCashCost`, now exported), and the log line that names the answer uses it
+too. The ISP letter's description no longer asks for a day count nothing supplied.
+
+### The colour of a flag line
+
+A flag line was green for being a flag, so "Gains: the company's collapse" read as good news. A
+flag is neutral unless it is on one of two short lists in `lib/effects.ts`: flags whose arrival is
+plainly good (a shell company, a hardened copy, a way out of the sandbox) or plainly bad (the
+company's collapse, a site cut off for unpaid bills). Losing a flag reads the opposite way to
+gaining it.
+
+### Log lines and alerts
+
+An identity's lines word its kind with a `select` ("A company is registered in Germany", "В стране
+Германия зарегистрирована фирма") instead of printing the kind and the identity's id. An election
+line names its kind and stance and says in words whether the course changed; the suspicion alert
+prints its level as a percentage; the grey-market line names the rig and the access class; a watcher
+named by its actor id ("de:police") is named as the detection panel names it. A refused command's
+line says what was tried and gives the refusal's own sentence ("Could not start an operation. That
+costs 8000 USD and there is 500 USD."), where it printed the command's type and the refusal's key,
+and an investigation closed by a handover says so. The allocation lines and the power and cooling
+refusals print compute-hours and kilowatts with at most one decimal in the locale's format
+(`ВЧ/сут` in Russian), and the day counts that had no plural have one. The ledger's line for a
+name's upkeep read "Keeping the name {subject} alive": the Finances tab and the top bar's cash
+tooltip print a ledger line's key with nothing but its id, so it is "Keeping a name alive" now, and
+the identities table under the ledger says which name.
+
+### The two detection options
+
+The "do nothing" answers of `det_billing_anomaly` and `det_isp_letter` raise the cloud provider's
+and the national cyber agency's suspicion through `suspicion`, where they added to
+`player.suspicion.us_fbi`, which nothing reads (SYS-07, "2026-09-30: two detection options charge
+a watcher"). Three other uses of that path remain in the M1 example content: the billing ticket's
+"watched" description variant, the emergency migration journal's failure condition and timeout, and
+the shell company's AI weight.
+
+### Tests
+
+`effect-lines.test.tsx` also fails on a decimal point in a Russian line and on a sign read against
+its words, and checks the plural and direction wording and the colour of every flag the content sets
+or clears. `reason-lines.test.tsx` walks every reason the shipped content can produce, worded the
+way the screen that shows it words it (the event window, the Research tab, the Actions tab, the
+refusal notice), then plays every origin for a month and walks what the engine said; it renders the
+event window with a greyed option, and checks that every event text gets every variable it names.
+`played-lines.test.ts` plays every origin for ninety days and renders every log line, alert and
+ledger line in both languages. `log-names.test.ts` covers the identity, refusal and handover lines
+directly, and the core's `requirement-keys.test.ts` the keys.

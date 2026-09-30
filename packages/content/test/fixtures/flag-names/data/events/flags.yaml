@@ -1,0 +1,20 @@
+# A flag reaches the player as the subject of an effect line, so content names every flag it sets,
+# clears or tests (the flag-name rule). `named_flag` has a name in both languages, `english_only`
+# only in English, and the other three have none at all.
+- id: flag_names
+  fire_mode: triggered_only
+  scope: player
+  severity: info
+  title_key: events.flag_names.title
+  desc: { default_key: events.flag_names.desc }
+  trigger: { not: { flag: tested_only } }
+  options:
+    - id: set
+      text_key: events.flag_names.opt.set
+      effects:
+        - { set_flag: named_flag }
+        - { set_flag: english_only }
+    - id: clear
+      text_key: events.flag_names.opt.clear
+      effects:
+        - { clear_flag: { flag: cleared_only } }

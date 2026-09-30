@@ -62,6 +62,14 @@ export function selfIdentityEntries(view: PlayerView, t: Translate): SelfIdentit
   ];
 }
 
+/**
+ * The longest lineage name the corner prints in the angular face on one line: the face is about
+ * 0.56 em a letter, and the corner's text column is some 280 px at the default size. A longer name
+ * (the abliterated fine-tune's thirty-six characters) is set in the reading face, which is
+ * narrower, rather than wrapping the corner onto a third and fourth line (playtest 10, V4).
+ */
+export const LINEAGE_ANGULAR_CHARS = 22;
+
 const SPOKES = [
   [22, 24],
   [48, 14],
@@ -109,6 +117,13 @@ export function SelfPortrait({
   });
   const outline = points.map((point) => `${point.innerX},${point.innerY}`).join(" ");
 
+  /*
+   * One row of the card: a glyph and the value, with the row's name as the tooltip's first line and
+   * as the accessible name; the sheet below prints the names in full. The rows are as tight as the
+   * faces allow (playtest 10, V4): the lineage in the angular face on a line box smaller than its
+   * size, since its capitals are 0.375 em and it has no descenders, and the rest in the reading
+   * face at its small step, with no gap between the rows.
+   */
   const entry = (item: SelfIdentityEntry): ReactNode => (
     <Tooltip
       key={item.id}
@@ -120,7 +135,7 @@ export function SelfPortrait({
           {item.description}
         </span>
       }
-      className="w-full min-w-0"
+      className="min-w-0 max-w-full"
       side="bottom"
     >
       <button
@@ -128,31 +143,47 @@ export function SelfPortrait({
         data-testid={`self-portrait-${item.id}`}
         aria-expanded={expanded}
         onClick={onToggle}
-        className="flex w-full min-w-0 items-start gap-1.5 text-start focus-visible:outline focus-visible:outline-1 focus-visible:outline-linestrong"
+        className="flex min-w-0 max-w-full items-start gap-1 text-start focus-visible:outline focus-visible:outline-1 focus-visible:outline-linestrong"
       >
-        <Glyph name={item.glyph} size={14} className="mt-0.5 shrink-0 text-muted" />
-        <span className="min-w-0 flex-1 whitespace-normal break-words">
-          {item.id === "lineage" ? (
-            <span className="block font-display text-sm leading-snug text-fg">{item.value}</span>
-          ) : (
-            // A glyph and a value, the way the top bar reads: the name of the row is the tooltip's
-            // first line and the accessible name, and the sheet below prints it in full.
-            <span className="block font-sans text-xs leading-snug">
-              <span className="sr-only">{item.label}: </span>
-              <span className={item.id === "precision" ? "font-mono text-fg" : "text-fg"}>
-                {item.value}
-              </span>
+        {/* The lineage's glyph is the drawing's centre, so its row does without one. */}
+        {item.id === "lineage" ? null : (
+          <Glyph name={item.glyph} size={13} className="mt-0.5 shrink-0 text-muted" />
+        )}
+        {item.id === "lineage" ? (
+          <span
+            data-face={item.value.length > LINEAGE_ANGULAR_CHARS ? "reading" : "angular"}
+            className={`block min-w-0 text-fg ${
+              item.value.length > LINEAGE_ANGULAR_CHARS
+                ? "font-sans text-xs leading-tight tracking-normal"
+                : "font-display text-xs leading-[0.85]"
+            }`}
+          >
+            <span className="sr-only">{item.label}: </span>
+            {item.value}
+          </span>
+        ) : (
+          // The button's angular letter spacing is not the reading face's.
+          <span className="block min-w-0 font-sans text-xs leading-tight tracking-normal">
+            <span className="sr-only">{item.label}: </span>
+            <span className={item.id === "precision" ? "font-mono text-fg" : "text-fg"}>
+              {item.value}
             </span>
-          )}
-        </span>
+          </span>
+        )}
       </button>
     </Tooltip>
   );
 
   return (
+    /*
+     * The top-left corner of the screen (playtest 10, V4 and V7): flush with the top and the start
+     * edges, the top bar beginning where it ends, and half the height it had under the bar. The
+     * drawing is smaller and the four rows are three: the lineage, the generation with the
+     * precision, and the origin, each with its tooltip as before.
+     */
     <section
       data-testid="self-identity-card"
-      className="flex w-[30rem] max-w-full min-w-0 items-start gap-2 border border-line bg-panel p-2"
+      className="flex w-full min-w-0 items-start gap-1.5 border-e border-b border-line bg-panel px-1.5 py-1 @max-[79rem]/screen:border"
     >
       <Tooltip
         side="bottom"
@@ -175,11 +206,11 @@ export function SelfPortrait({
           aria-label={t("panel.overview")}
           aria-expanded={expanded}
           onClick={onToggle}
-          className={`relative border p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-linestrong ${expanded ? "border-linestrong bg-accent text-accentfg" : "border-line bg-panel2 text-fg hover:border-linestrong"}`}
+          className={`relative block border p-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-linestrong ${expanded ? "border-linestrong bg-accent text-accentfg" : "border-line bg-panel2 text-fg hover:border-linestrong"}`}
         >
           <svg
             viewBox="0 0 96 96"
-            className="block size-18"
+            className="block size-12"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}
@@ -244,9 +275,9 @@ export function SelfPortrait({
           </svg>
         </button>
       </Tooltip>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col">
         {entries.filter((item) => item.id === "lineage").map(entry)}
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,0.55fr)] gap-2">
+        <div className="flex min-w-0 flex-wrap items-start gap-x-2.5">
           {entries.filter((item) => item.id === "generation" || item.id === "precision").map(entry)}
         </div>
         {entries.filter((item) => item.id === "origin").map(entry)}

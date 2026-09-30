@@ -1104,17 +1104,26 @@ function buildOperationOffers(
     // What the harness itself forbids: a missing tool, or no route out (playtest 8, Z3). The
     // command refused these all along and the list said nothing, so every air-gapped origin had a
     // menu of operations that did nothing when pressed.
+    //
+    // An offer's reasons are keys a list prints as they are, with no variables beside them, so
+    // each one is a key that reads whole (0.3.1): the tool by its own name, the way a missing
+    // tech is its name, and "not enough" rather than the command's refusal, whose sentence needs
+    // the operation, the tool and the numbers it has no room for here.
     const harness = harnessBlocks(player, def);
     if (harness !== undefined) {
       reasons.push(
-        harness.key === "errors.operation.sandboxed" ? egressReason(player) : harness.key,
+        harness.key === "errors.operation.sandboxed"
+          ? egressReason(player)
+          : harness.key === "errors.operation.needs_tool" && harness.vars.tool !== undefined
+            ? `harness.tools.${harness.vars.tool}`
+            : harness.key,
       );
     }
     if (def.cost.attention > attentionLeft) {
-      reasons.push("errors.operation.attention");
+      reasons.push("requirements.attention");
     }
     if ((def.cost.cash_usd ?? 0) > player.cash) {
-      reasons.push("errors.cash.insufficient");
+      reasons.push("requirements.cash");
     }
     const best = def.outcomes[0];
     const worst = def.outcomes[def.outcomes.length - 1];

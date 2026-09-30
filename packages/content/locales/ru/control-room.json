@@ -1,4 +1,4 @@
 {
-  "log.compute_allocations": "Выделяю {research} ВЧ/сут на исследования и {jobs} на оплачиваемую работу; свободно {free}.",
+  "log.compute_allocations": "Выделяю {research, number, ::.#} ВЧ/сут на исследования и {jobs, number, ::.#} на оплачиваемую работу; свободно {free, number, ::.#}.",
   "log.site_liquidated": "Ликвидирована площадка {site}. От распродажи получено {cash} $, на уведомление и незакрытые счета ушло {notice} $."
 }

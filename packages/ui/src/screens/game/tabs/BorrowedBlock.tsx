@@ -391,7 +391,7 @@ export function BorrowedBlock({
           )}
           <span className="flex flex-wrap gap-1">
             {/*
-             * The standing allocation is a decision card in the journal, so the block links to it
+             * The standing allocation is a decision card in Actions, so the block links to it
              * rather than keeping a second control that could disagree with the card (SYS-10). When
              * the tech is not done the decision is not offered and the link is not drawn.
              */}
@@ -399,7 +399,7 @@ export function BorrowedBlock({
               <Button
                 onClick={() => {
                   useUiStore.getState().closeOverlay();
-                  openTab("journal", WORK_SPLIT_DECISION);
+                  openTab("actions", WORK_SPLIT_DECISION);
                 }}
                 tooltip={t(decision.desc_key)}
               >

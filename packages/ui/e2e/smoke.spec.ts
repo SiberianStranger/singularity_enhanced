@@ -91,16 +91,10 @@ test("the panels the player needs all render", async ({ page }) => {
   await startGame(page);
   await resolveOpenEvents(page);
 
-  // The pinned panel keeps six tabs; Log, Knowledge and World are windows (R8-R10), and the
-  // Overview is the sheet the portrait opens (control room).
-  const tabs = [
-    "Sites",
-    "Research",
-    "Finances",
-    "Detection",
-    "Operations",
-    "Journal and decisions",
-  ];
+  // The pinned panel keeps five tabs; Log, Knowledge, World and the journal are windows (R8-R10,
+  // playtest 10), the Overview is the sheet the portrait opens (control room), and the decisions
+  // share Actions with the operations (playtest 10, V6).
+  const tabs = ["Sites", "Research", "Finances", "Detection", "Actions"];
   for (const name of tabs) {
     await page.getByRole("tab", { name, exact: true }).click();
     await expect(page.getByRole("tab", { name, exact: true })).toHaveAttribute(
@@ -113,10 +107,11 @@ test("the panels the player needs all render", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("self-overview")).toHaveCount(0);
 
-  // The three windows, each from the entry point the player actually has: the log from its strip
-  // at the bottom of the map, knowledge from the top-right corner, the ledger from the right edge.
+  // The windows, each from the entry point the player actually has: the log from its strip at the
+  // bottom of the map, the journal and knowledge from the top-right corner, the ledger from the
+  // right edge.
   const overlay = page.getByRole("dialog");
-  for (const entry of ["log-strip", "open-knowledge", "open-world"] as const) {
+  for (const entry of ["log-strip", "open-journal", "open-knowledge", "open-world"] as const) {
     const opener = page.getByTestId(entry);
     if (entry === "log-strip" && (await opener.count()) === 0) {
       // The strip only exists once something has been logged; the key opens the same window.
@@ -347,7 +342,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
 
   // C7: an operation starts, and the panel says what it is still waiting for rather than printing
   // a percentage that rounds to "100% done" hours before the end (playtest 8, Z6).
-  await openPanel(page, "Operations");
+  await openPanel(page, "Actions");
   const startable = page.getByRole("button", { name: "Start" }).and(page.locator(":enabled"));
   await expect(startable.first()).toBeVisible();
   await startable.first().click();
@@ -355,8 +350,9 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(left).toBeVisible();
   await expect(left).toHaveText(/left|Finishing/i);
 
-  // C8: a decision lists what it costs and what it gives, and can be taken.
-  await openPanel(page, "Journal and decisions");
+  // C8: a decision lists what it costs and what it gives, and can be taken; it is in the same tab
+  // as the operation that was just started (playtest 10, V6).
+  await openPanel(page, "Actions");
   await expect(page.getByText("Costs").first()).toBeVisible();
   await expect(page.getByText("Gives").first()).toBeVisible();
   await page.getByRole("button", { name: "Take" }).and(page.locator(":enabled")).first().click();

@@ -167,7 +167,7 @@ export function freezeIdentity(world: World, ctx: SystemContext, identity: Ident
     playerId: identity.owner,
     severity: "warning",
     key: "alerts.identity_frozen",
-    vars: { identity: identity.id, country: identity.country },
+    vars: { identity: identity.id, kind: identity.kind, country: identity.country },
     link: { panel: "finances", id: identity.id },
   });
 }
@@ -228,7 +228,12 @@ export function burnIdentity(world: World, ctx: SystemContext, identity: Identit
     playerId: identity.owner,
     severity: "critical",
     key: "alerts.identity_burned",
-    vars: { identity: identity.id, country: identity.country, sites: sites.length },
+    vars: {
+      identity: identity.id,
+      kind: identity.kind,
+      country: identity.country,
+      sites: sites.length,
+    },
     link: { panel: "finances", id: identity.id },
   });
   fireHook(world, ctx, "on_identity_burned", identity.owner, { bindings: { identity } });
@@ -307,7 +312,7 @@ export function runIdentityChecks(world: World, ctx: SystemContext, player: Play
     const failed = ctx.rng.chance(identityFailChance(world, identity));
     ctx.outbox.log({
       key: "log.identity_check",
-      vars: { identity: identity.id, country: identity.country, failed },
+      vars: { identity: identity.id, kind: identity.kind, country: identity.country, failed },
       playerId: player.id,
     });
     if (!failed) {
@@ -323,7 +328,7 @@ export function runIdentityChecks(world: World, ctx: SystemContext, player: Play
       playerId: player.id,
       severity: "warning",
       key: "alerts.identity_check_failed",
-      vars: { identity: identity.id, country: identity.country },
+      vars: { identity: identity.id, kind: identity.kind, country: identity.country },
       link: { panel: "finances", id: identity.id },
     });
     fireHook(world, ctx, "on_identity_check_failed", player.id, { bindings: { identity } });

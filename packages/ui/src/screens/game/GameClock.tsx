@@ -26,12 +26,18 @@ export function GameClock(): ReactNode {
   const clock = { hour: face.hour, minute: face.minute, second: face.second };
 
   return (
-    <span className="flex items-baseline gap-1.5">
+    // The date over the running clock rather than beside it (playtest 10, V7): the top bar gave the
+    // corner the portrait's width, and one line of date and clock was the widest cell it had.
+    <span className="flex flex-col items-start leading-tight">
       {/* `data-iso` is the unformatted date: locale-independent, and what the smoke test reads. */}
-      <span className="font-mono text-sm text-fg" data-testid="game-date" data-iso={date.iso}>
+      <span
+        className="font-mono text-xs leading-tight text-fg"
+        data-testid="game-date"
+        data-iso={date.iso}
+      >
         {t("game.date_full", { date: toJsDate(date) })}
       </span>
-      <span className="font-mono text-xs text-muted" data-testid="game-clock">
+      <span className="font-mono text-xs leading-tight text-muted" data-testid="game-clock">
         {t("game.clock", clock)}
       </span>
     </span>

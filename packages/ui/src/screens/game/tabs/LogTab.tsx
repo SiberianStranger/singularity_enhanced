@@ -8,9 +8,11 @@ import { useUiStore } from "../../../store/uiStore.js";
 /** The permanent log, filtered by a substring of the key (SYS-11). */
 export function LogTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
-  // An alert link or the ending screen opens this tab with a key to look at; it seeds the filter,
-  // and the player can widen it from there.
-  const focusId = useUiStore((state) => state.focusId);
+  // An alert link or the ending screen opens this window with a key to look at; it seeds the
+  // filter, and the player can widen it from there. The key travels as the window's focus: it was
+  // read from the tabs' focus, which `openOverlay` never sets, so the ending's links opened the
+  // log unfiltered.
+  const focusId = useUiStore((state) => state.overlayFocus);
   const [filter, setFilter] = useState<string | null>(null);
   const active = filter ?? focusId ?? "";
   const entries = [...view.log]

@@ -56,7 +56,9 @@ export function GameOverOverlay({
   }
 
   return (
-    <div className="absolute inset-0 z-90 flex items-center justify-center bg-black/80 p-4">
+    // Its own pointer events: the grid cell it is drawn in lets the map's clicks through when the
+    // ending is minimized, and `pointer-events` is inherited.
+    <div className="pointer-events-auto absolute inset-0 z-90 flex items-center justify-center bg-black/80 p-4">
       <div className="flex max-h-full w-full max-w-lg flex-col gap-3 overflow-auto border border-line bg-panel p-6 text-center">
         <h2 className="text-2xl font-semibold text-fg">{t("gameover.title")}</h2>
         <p className="text-lg text-crit">{t(`gameover.reason.${over.reason}`)}</p>

@@ -9,6 +9,7 @@ import { cityById, countryById } from "../../content/catalog.js";
 import { countryName, refusalText, siteName } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
+import { territoryById, territorySentence } from "./map/territories.js";
 import { CITY_TABS, CityPanel } from "./selection/CityPanel.js";
 import { COUNTRY_TABS, CountryPanel } from "./selection/CountryPanel.js";
 import { sitePowerRefusal } from "./tabs/siteStatus.js";
@@ -87,6 +88,12 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   let title = selection.id;
   let tabs: readonly Tab[] = ["overview"];
   let body: ReactNode = null;
+  // A click on a territory selects its de jure owner, and the panel says in words what the map
+  // shows there (SYS-26): whose land it is, who holds it since when, and how few accept that.
+  const territory =
+    selection.kind === "country" && selection.territory !== undefined
+      ? territoryById(selection.territory)
+      : undefined;
 
   if (selection.kind === "site" && site !== undefined) {
     const powerRefusal = sitePowerRefusal(site);
@@ -233,6 +240,11 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
       <h3 className="min-w-0 text-sm font-semibold text-fg">{title}</h3>
       {collapsed ? null : (
         <>
+          {territory === undefined ? null : (
+            <p data-testid="selection-territory" className="text-xs text-fg">
+              {territorySentence(t, territory, (id) => countryName(t, id))}
+            </p>
+          )}
           <TabStrip tabs={tabs} active={tab} onSelect={setTab} />
           <div className="min-h-0 flex-1 overflow-auto">{body}</div>
         </>
