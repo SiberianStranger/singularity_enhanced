@@ -3,7 +3,32 @@
 Phases are milestones with a definition of done. Work inside a phase is parallelizable by system;
 phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
-## Current implementation focus (2026-09-30, version 0.3.0)
+## Current implementation focus (2026-09-30, version 0.3.1)
+
+Version 0.3.1 is the control room on screen and a balance pass. From
+[playtest 10](playtests/2026-09-30-playtest-10-control-room-on-screen.md): the map draws Crimea and
+the occupied mainland by the rules of [SYS-26](design/26-territorial-control.md), filled with the
+holder's colour and hatched in the owner's, denser as recognition falls, with a dashed edge of
+control; the same code draws any disputed territory from a list shaped as `TerritoryDef`. The
+portrait sits flatter in the top-left corner with the top bar starting where it ends, the decisions
+and the operations share one tab, Actions, and the journal is a window opened from the top bar. The
+client's notes are in SYS-26 and SYS-11 "Implementation notes (0.3.1, client)".
+
+The balance pass found that the game had not grown harder in 0.2.0; the balance runner had stopped
+being able to buy. It planned rigs that 0.2.0 put behind research or only rents and bought loose
+cards through a command 0.2.0 retired, so four origins never built a fallback and the frontier lab's
+security team was credited with twice its captures. The runner now plans and buys by the player's
+rules; with no game rule or number changed, bankruptcy is back inside its band at 15.4% of losses
+and the countries' own agencies again land more captures than the lab. The cause change by change,
+the tables and the two bands still missed (red_team_sandbox and edge_fleet at 0% alive at day 180)
+are in [SYS-07 "Balance notes (0.3.1)"](design/07-economy.md).
+
+SYS-26's engine side (territories in content and the world state, events that move control and
+recognition) follows the first slice of M3 (backlog P7).
+
+Next is M3, the actors: agencies with budgets, labs, media and NPC AIs.
+
+## Implementation focus of 0.3.0 (2026-09-30)
 
 Version 0.3.0 is the control room of SYS-11, from [playtest 9](playtests/2026-09-29-playtest-9-control-room.md):
 an always-visible portrait of the self with its sheet, three linked compute sliders behind one
@@ -12,12 +37,6 @@ renamed, switched off and liquidated, a last copy that no click can give up, a d
 layer over Ukraine on the map, and the Cyrillic of the angular face redrawn on the Latin's grid.
 The decisions, the review and the implementation notes are in
 [SYS-11 "Control room (0.3.0)"](design/11-notifications-and-ui.md).
-
-Next is 0.3.1, a balance pass. The sweep that verified 0.3.0 found the game much harder since
-0.2.0, with no balance note saying why: bankruptcy at 5.6% of losses against a band of 15-35%,
-bank_rack alive at day 180 down from 80% to 5%, hobbyist_box from 90% to 30%, captures by the
-frontier lab's security team from 31 to 59 (20 seeds by 180 days; the tables are in SYS-07).
-M3, the actors, follows it.
 
 ## Implementation focus of 0.2.0 (2026-09-28)
 

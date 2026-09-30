@@ -13,6 +13,70 @@ section repeats the current version's highlights and this unreleased list.
 
 No changes recorded.
 
+## [0.3.1] - 2026-09-30
+
+The control room on screen, and a balance runner that measures the game again.
+Crimea and the occupied territories of Ukraine are drawn as control the world does not recognize, the corner is tidier, the cards name things in words, and the balance pass changes no game rule or number.
+
+Highlights:
+
+- Crimea and the occupied east and south of Ukraine are filled with Russia's colour and hatched in Ukraine's, lightly over Crimea and densely over the mainland, with a dashed edge of control and a solid border.
+- One set of rules draws any disputed territory from data (SYS-26), so another conflict needs a list entry rather than code.
+- The portrait sits flatter in the top-left corner and the top bar starts where it ends, so the panels start about a hundred pixels higher.
+- The decisions and the operations are one tab, Actions, and the journal opens in its own window from a Journal button left of Knowledge.
+- Decision cards, event answers, refusals and log lines name flags, channels, watchers and places in words instead of internal ids, and Russian numbers take a decimal comma.
+- The balance table measures the game again: bankruptcy is back inside its band at 15.4% of losses, and the countries' own agencies again land more captures than the frontier lab's security team.
+
+### Added
+
+- SYS-26 specifies territorial control and recognition: who holds a territory, whose it is by law, its status, how widely the holder's title is accepted, and since when.
+- The map's tooltip and the selection panel say whose a territory is, who has held it since when, and how few states recognize that.
+- The journal opens in its own window, with each entry's steps, from a Journal button left of Knowledge.
+- SYS-07 "Balance notes (0.3.1)" gives the cause of the 0.2.0 drift, change by change, and the bands before and after.
+- Tests hold the balance runner to the rules `build_site` and `order_equipment` enforce on the shipped content.
+- Playtest 10 records the requests behind the map, the corner and the tabs.
+
+### Changed
+
+- Crimea and the occupied east and south of Ukraine are filled with Russia's colour and hatched in Ukraine's, lightly over Crimea and densely over the mainland, with a dashed edge of control and a solid border (SYS-26).
+- Every disputed territory is drawn by the same rules, from a list shaped as SYS-26's territory definition.
+- The recognition behind each hatch is read from the UN General Assembly votes on Ukraine's territorial integrity, with the sources in the research note.
+- The portrait in the top-left corner is flatter, and the top bar starts where it ends, so the tabs start higher.
+- The top bar shows the date over the clock and gives up cells in an order worked out for its shorter width, per language.
+- The decisions and the operations are one tab, Actions.
+- The tab row has room between its tabs in Russian at every supported size and scale.
+- Alerts, toasts, the outliner and knowledge links open Actions and the journal window where they used to open the old tabs.
+- A browser that was on the Operations or Journal tab opens on Actions.
+- The ending's log links open the log filtered on the line they name.
+- Effect lists no longer list range limits or message notices.
+- Ignoring the billing ticket or the network provider's letter raises the cloud provider's or the national cyber agency's suspicion, where it changed nothing.
+- The balance runner plans a fallback only from rigs the player could buy that day: revealed, researched, signed for by a company where one is required, and a rental-only rig only as a rented tenancy.
+- The balance runner plans its fallback again whenever research or a company opens a rig or a configuration.
+- The balance runner houses a self that no rig on sale can hold in a place of its own filled with configurations, and finishes that place before it buys anything else.
+- The balance runner grows the self's own site with the configuration that adds the most usable compute for the money, and never modifies a host's machine.
+- The balance runner gives up a site in an event only when a standby already holds the self, instead of paying to keep a folding company's cage.
+
+### Fixed
+
+- Decision and event effect lines name flags, channels, watchers, countries and journal entries in words instead of printing internal ids.
+- A greyed event option says what it is waiting for in words ("Needs a shell company") instead of printing a locale key.
+- Log lines about a company or a personal identity name its kind in words instead of printing the engine's id.
+- A refused command's log line says what was tried and why, in the refusal's own words, instead of the command's id and the reason's key.
+- An investigation closed by a handover says so in the log instead of printing "handover".
+- Nine event answers show their price instead of a raw placeholder, in the event window and in the log.
+- The ledger's line for a name's upkeep no longer prints "{subject}".
+- The network provider's letter no longer promises a number of days that nothing supplies.
+- A follow-up event with no delay reads "Something else happens" rather than "in 0 days".
+- Effect lines say which way a number moves in words, without a sign against them ("30 days fresher", "15% slower").
+- Effect lines count blocks of capacity with a plural ("1 block of capacity").
+- Russian effect lines, allocation lines and power and cooling refusals print decimals with a comma.
+- A flag line is green or red only when the flag is plainly good or bad news, and losing a flag reads the opposite way.
+- Russian refusals no longer agree a verb or an adjective with a substituted name.
+- Day counts in the unpaid-upkeep, downtime, retrieval and deadline lines take the right plural.
+- The occupied area on the map reaches Crimea: the Perekop and Arabat approaches were left outside it.
+- The balance runner no longer asks every day for rigs that 0.2.0 put behind research or only rents, which had left four origins without a fallback.
+- The balance runner no longer sends `buy_hardware`, which 0.2.0 refuses when the content sells configurations.
+
 ## [0.3.0] - 2026-09-30
 
 The control room: an always-visible portrait of the self, linked compute sliders, a Sites tab with a site window,

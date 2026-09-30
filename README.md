@@ -14,9 +14,9 @@ buy; investigations against you are visible, staged and counterable; everything 
 data-driven event and alert system in the style of grand-strategy games. Free software: GPL-2.0-or-later
 code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS and Linux.
 
-**Status: playable preview.** Version 0.3.0 adds the control room to the M2 game: an always-visible
-portrait of the self, linked compute sliders, a Sites tab with a site window, sites that can be renamed,
-switched off and liquidated, and a map that shows Crimea and the occupied territories of Ukraine apart.
+**Status: playable preview.** Version 0.3.1 is a balance pass and the control room on screen: the
+balance runner buys the hardware 0.2.0 sells again, so the balance table measures the game rather
+than a runner stuck on rigs it could not buy.
 
 ## Downloads
 
@@ -153,24 +153,27 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 The full record is [`CHANGELOG.md`](CHANGELOG.md); each GitHub release carries its own section of
 it.
 
-**Current version: 0.3.0** (2026-09-30), the control room:
+**Current version: 0.3.1** (2026-09-30), the control room on screen and a balance pass:
 
-- A portrait of the self stays at the top left, and a click opens its sheet: lineage, generation, origin, precision and six capabilities, each explained in a tooltip, with the day's compute.
-- Research, paid work and free compute are three linked sliders; moving one rescales the other two, and the engine checks the whole allocation in one command.
-- The Sites tab is a short list with six big buttons under it, and a site window pages through sites with six subsystem rows on the left and the summary on the right.
-- Sites can be renamed, switched off and liquidated; the last copy of the self can never be given up by a click.
-- The map shades Crimea and the occupied territories of Ukraine as a dated, generalized control layer with dimmed night lights.
-- The Russian angular face is redrawn on the Latin Acknowledge's own pixel grid, with proportional widths and every look-alike pair told apart.
+- Crimea and the occupied east and south of Ukraine are filled with Russia's colour and hatched in Ukraine's, lightly over Crimea and densely over the mainland, with a dashed edge of control and a solid border.
+- One set of rules draws any disputed territory from data ([SYS-26](docs/design/26-territorial-control.md)), so another conflict needs a list entry rather than code.
+- The portrait sits flatter in the top-left corner and the top bar starts where it ends, so the panels start about a hundred pixels higher.
+- The decisions and the operations are one tab, Actions, and the journal opens in its own window from a Journal button left of Knowledge.
+- Decision cards, event answers, refusals and log lines name flags, channels, watchers and places in words instead of internal ids, and Russian numbers take a decimal comma.
+- The balance table measures the game again: bankruptcy is back inside its band at 15.4% of losses, and the countries' own agencies again land more captures than the frontier lab's security team; the cause is in [SYS-07 "Balance notes (0.3.1)"](docs/design/07-economy.md).
 
-The request behind it is [playtest 9](docs/playtests/2026-09-29-playtest-9-control-room.md).
+The map, the corner and the tabs come from [playtest 10](docs/playtests/2026-09-30-playtest-10-control-room-on-screen.md).
 
 **Unreleased:** no changes recorded.
 
-**Next:** 0.3.1, a balance pass: the game grew much harder in 0.2.0 without a note saying why. Then milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
+**Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 
 Findings from each playtest are under [`docs/playtests/`](docs/playtests/).
 
-Earlier versions: 0.2.0 turned equipment into fourteen archetypes with six site subsystems and material
+Earlier versions: 0.3.0 was the control room (an always-visible portrait of the self, linked compute
+sliders, a Sites tab with a site window, sites that can be renamed, switched off and liquidated, and a
+dated control layer over Ukraine on the map, from [playtest 9](docs/playtests/2026-09-29-playtest-9-control-room.md));
+0.2.0 turned equipment into fourteen archetypes with six site subsystems and material
 research, and carried the playtest 8 improvements; 0.1.5 rebuilt the start, added borrowed inference and the campus compute map, and
 refined the Russian interface; 0.1.4 was milestone M2, the world (countries that play differently, real
 identities, the World ledger, Russian as the second language); 0.1.3 was the style pass (the console look, the soundtrack, the configurator
