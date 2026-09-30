@@ -69,6 +69,12 @@ The shipped increment contains 13 physical compute archetypes and one provider r
 21 compute offers and 15 supporting subsystem configurations. Four compute archetypes are initially
 known. The detailed Russian guide is [here](02-hardware-player-guide.ru.md).
 
+The balance runner orders configurations since 0.3.1: it fills a place it owns until the self
+fits there, grows the self's own site with the configuration that adds most compute for the money,
+and plans only rigs and configurations whose gates the player has opened. Before that it read none
+of this increment's rules, which is why release 0.2.0 moved the balance table without a note (SYS-02
+"Implementation notes (0.3.1)", SYS-07 "Balance notes (0.3.1)").
+
 Content-build and jsdom screen integration suites have a 30-second test budget and at most two
 workers. Repeated catalog builds exceeded the default five-second timeout on the local Windows
 host; their functional assertions and ordinary assertion wait limits are unchanged. Core tests

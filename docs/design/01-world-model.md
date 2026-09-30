@@ -895,3 +895,17 @@ enforcement doing what SYS-01 says they should.
 The two cities that changed most are the ones the four moved origins sit in: a ministry in Ankara
 survives 88% of its runs and one in Toronto 13%, because what reaches an enclave is people and a
 country's own agencies rather than a colocation invoice.
+
+## Locations after 0.3.1 (2026-09-30)
+
+The balance pass of 0.3.1 ran the location sweep again, twenty seeds per city (SYS-07 "Balance
+notes (0.3.1)" has the table, city by city, against 0.3.0). The paragraph above describes a game in
+which the balance runner could still buy the rigs of 0.1.5; since 0.2.0 it could not, and since
+0.3.1 it buys what the player could. No city became the answer. The best city still differs by
+origin and the shared cities still rank differently on each list: Bangalore is 90% at day 180 for a
+hobbyist, 75% for a university and 25% for a startup; Shenzhen 65% for an institute and 0% for a
+fleet. The bank now lives or dies on its own bills after it moves and is 55-95% in every city,
+Dubai at the top; the ministry is 35-60%, Ankara still the best of its six and Moscow the worst.
+The startup is 0-30% in every city, and the reason is its refuge rather than its cities: the runner
+puts every fallback in the first city on an origin's list other than its own, so a startup's refuge
+is in Tallinn wherever it starts, or in Shenzhen when it starts in Tallinn.

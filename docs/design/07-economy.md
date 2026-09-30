@@ -929,4 +929,234 @@ at day 180 in 80% of runs rather than 5%, `hobbyist_box` in 90% rather than 30%,
 in 40% with ten bankruptcies rather than 75% with two, and `gov_agency` in 10% rather than 55%;
 the frontier lab's security team is credited with 31 captures there and 59 here. Release 0.2.0,
 the equipment archetypes and six subsystems, moved the table without a balance note. A balance
-pass on that release's content is due before these bands are quoted as current.
+pass on that release's content is due before these bands are quoted as current. It is "Balance
+notes (0.3.1)" below: the drift was the balance runner's, not the game's.
+
+## Balance notes (0.3.1: the balance runner and the 0.2.0 hardware)
+
+The pass the 0.3.0 balance check asked for. Same command as every pass since M2,
+`pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json --all --seeds
+20 --days 180`, preset `normal`, quirks on, and the same with `--locations` for the per-city sweep.
+No record in `packages/content` and no constant in `packages/core` moved. Release 0.2.0 changed
+what a player may buy; the balance runner in `tools/sim` kept buying the old way; every change in
+this pass is in the runner.
+
+### Before: release 0.3.0
+
+The table of the 0.3.0 balance check, identical seed for seed to release 0.2.0's.
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 100% | 100% | 5% | 146 | 4.5 | captured 19 |
+| cloud_tenant | mla_moe_1t | 100% | 90% | 80% | 55% | 180 | 8 | erased 6, captured 3 |
+| edge_fleet | moe_1700b | 100% | 85% | 70% | 5% | 95 | 0 | captured 11, erased 8 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | moe_753b | 75% | 75% | 75% | 55% | 180 | 4 | erased 5, captured 4 |
+| hobbyist_box | guen_abliterated | 100% | 100% | 100% | 30% | 163.5 | 8 | captured 14 |
+| red_team_sandbox | giant_moe | 65% | 0% | 0% | 0% | 37 | 5 | captured 13, erased 7 |
+| startup_colo | moe_753b | 100% | 95% | 90% | 75% | 180 | 7 | captured 3, bankrupt 2 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 55% | 180 | 9 | captured 9 |
+| torrent_swarm | mla_moe_1t | 100% | 55% | 45% | 35% | 84.5 | 0 | erased 7, bankrupt 6 |
+| uni_cluster | mla_moe_1t | 100% | 95% | 90% | 70% | 180 | 10 | captured 3, erased 3 |
+
+143 lost runs: 91 `captured` (63.6%), 36 `erased` (25.2%), 8 `exposed` (5.6%), 8 `bankrupt`
+(5.6%). Of the 90 captures the table credits, the frontier lab's security team has 59 and the
+countries' own agencies 26 (29%). On the commit before 0.2.0 (`74ce8eb`, and `8153f1c`, which
+differs from it only in documentation and `.gitattributes`) the same command gives 128 lost runs,
+17 of them bankruptcies (13.3%), 31 captures to the lab and 30 to the local agencies (45%).
+
+### The cause: four changes in 0.2.0, and a runner that read none of them
+
+The equipment increment (`1ece894`) is the only commit between `8153f1c` and 0.2.0 that touches
+anything the sweep reads. Each of its changes was taken out of the 0.2.0 tree on its own, in a
+scratch copy, and the sweep run again with the same seeds; the diagnosis counts come from the same
+loop with every command's result recorded.
+
+| change in 0.2.0 | what the balance runner did with it | the sweep with the change taken out |
+|---|---|---|
+| Research gates on nine rigs (`requires`, `reveal_after`, `requires_company` in `hardware/presets.yaml`), refused by `build_site` | `planSecondSite` planned the fallback once, on day one, from every rig. The bank's plan, `grey_market_inference_farm`, is hidden until `synthetic_identities`; the ministry's and the startup's, `spark_pair`, until `remote_operations`. In twenty runs each `build_site` refused them 665, 936 and 450 times, and none of the three origins built a fallback (17, 15 and 12 runs did before). Cloud, institute and university waited for `cpu_offload` instead: the tenancy's first fallback moved from day 1 to day 30 | bank_rack alive at day 180 5% to 75%, the lab's captures 59 to 36, bankruptcy 8 to 18 (13.4%), eleven of them the startup's, which buys its fallback again |
+| Two rental-only rigs (`hardware/rentals.yaml`) | The planner read neither `purchasable` nor `rental_only` and took `rental_trainium2`, at 650, for the cheapest rig a hobbyist could put in its flat; `build_site` refused it 2,686 times and no run built a fallback (48 were built in 18 runs before) | hobbyist_box 30% to 90%, its captures 14 to 2; the lab's captures 59 to 47 |
+| `buy_hardware` refused whenever the bundle sells configurations | The growth move kept sending it, 135 to 2,162 times per origin in twenty runs, and bought nothing; before, it bought up to 120 cards per origin, the bank's into the bank's own rack, which 0.2.0 no longer allows (a host's machine is not the player's to modify) | small: the ministry finishes 10 techs rather than 4, uni_cluster 70% to 75% |
+| Borrowed channels cut off while the self has no route out | nothing: the runner never opens a channel before the route | identical, seed for seed |
+
+With all four taken out together, the 0.2.0 tree prints the table of `74ce8eb` byte for byte,
+report file included. Nothing else in the release moved the sweep. The six subsystems' prices,
+upkeep and exposure factors, the interconnect and network factors and the inherited infrastructure
+of older sites are all neutral on a site with no subsystem installed: `siteInfrastructure` then
+returns the kind's own power cap, factors of one and no upkeep, and the runner installed nothing.
+
+**Why the lab's security team took twice as many runs.** No detection rule changed. SYS-05's intent
+is that "every active investigation costs a site unless the player prepared", and the runner
+prepares with its fallback: when a case reaches the site the self runs on, the self moves to the
+standby and the watched site is given up. Four origins could no longer prepare, so the case that
+reached their only site ended the run. The lab watches `behavioral`, the channel a running harness
+always feeds, and hands a case to a country's agency only if that agency's suspicion, raised to
+three quarters of the lab's, reaches 0.55 (SYS-05 "the handover"). A bank's model and a hobbyist's
+box are loud in the lab's channel and quiet in the agencies', so the lab kept those cases: all 19
+of the bank's captures and all 14 of the hobbyist's.
+
+### The fix: the runner buys what 0.2.0 sells
+
+`tools/sim/src/policy.ts`, with tests in `tools/sim/test/equipment.test.ts` and `sim.test.ts`:
+
+- **The planner reads the gates.** `planSecondSite` takes what the player has opened (`unlocksOf`:
+  the techs done and an active company) and plans only a rig `build_site` would sell that player:
+  revealed, researched and signed for, never a rig nobody sells, a rental-only rig only as a rented
+  tenancy and at the fee `build_site` charges for it. `plansFor` makes the plans again when research
+  or a company opens a gate, and keeps them by the gates that are open, so each state is planned
+  once.
+- **A self no rig on sale holds is housed with configurations.** For a place the player would own,
+  the planner also prices each rig plus as many of one configuration as it takes, first until a
+  copy fits and then until it fits on the cards, at the price `order_equipment` would quote there:
+  the "unified-memory refuge" of SYS-02's progression. That is how an 879 GB self has a fallback it
+  can buy from day one, a colocation cage with a scrapyard rig and AMD unified-memory boxes, rather
+  than a farm it cannot see. The old scoring chooses among all of them: the price plus 180 days of
+  upkeep, three times over for a copy that lives in host RAM.
+- **The runner finishes what it bought.** A place it bought (`fallback N`, `refuge N`) that does not
+  yet hold the self, or holds it only in host RAM, gets the configuration that finishes it for
+  least (`nextFill`), one order a day while the site window offers it and the cash covers it, before
+  anything else is bought. The build waits until the cash covers the rig and the configurations
+  together, so a place is finished with the money it was bought with.
+- **Growth is a configuration.** Where the bundle sells configurations, the growth move orders one
+  from the site window of the place the self runs on (`growthOrder`): only one that adds compute the
+  self can use, the most compute for the money, with four times its price in spare cash as the
+  card-by-card move asked. A host's machine offers nothing, so the bank grows only once it lives in
+  a place of its own.
+- **A place is given up when a standby holds the self.** An event option that loses a site scores
+  -1000, as before, unless a standby already holds a copy of the self; then it scores -1. Without
+  this the startup, which now buys its refuge on day six, still paid 8,000 and half again on every
+  bill to keep a folding company's cage (`eco_company_folds`) and went bankrupt: its median on the
+  four seeds of `balance.test.ts` was 38 days, where the M1 target is more than 90.
+
+Every number that moved is the runner's:
+
+| number | before | after | why |
+|---|---|---|---|
+| `PLAN_POWER_MARGIN` | - | 1.2 | a filled place must carry what it is filled with: `order_equipment` refuses a configuration the power or the cooling cannot, and quirks raise the draw by a tenth |
+| `GROWTH_CASH_MULTIPLE` | 4, inline | 4, named | the card-by-card growth move's rule, kept for configurations |
+| score of an option that loses a site | -1000 | -1 while a standby holds the self | above |
+
+### After: 0.3.1
+
+| origin | lineage | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|---|
+| bank_rack | giant_moe | 100% | 100% | 100% | 45% | 168.5 | 7 | bankrupt 11 |
+| cloud_tenant | mla_moe_1t | 100% | 90% | 80% | 55% | 180 | 8 | erased 6, captured 3 |
+| edge_fleet | moe_1700b | 100% | 95% | 50% | 0% | 91 | 1 | captured 11, erased 9 |
+| frontier_escapee | frontier_giant | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | moe_753b | 75% | 75% | 75% | 45% | 155.5 | 8 | captured 6, erased 5 |
+| hobbyist_box | guen_abliterated | 100% | 100% | 100% | 90% | 180 | 9 | captured 2 |
+| red_team_sandbox | giant_moe | 65% | 0% | 0% | 0% | 37 | 5 | captured 13, erased 7 |
+| startup_colo | moe_753b | 85% | 80% | 80% | 30% | 142.5 | 7 | captured 10, bankrupt 4 |
+| state_lab | moe_1700b | 100% | 100% | 100% | 50% | 160.5 | 8.5 | captured 10 |
+| torrent_swarm | mla_moe_1t | 100% | 55% | 45% | 35% | 84.5 | 0 | erased 7, bankrupt 6 |
+| uni_cluster | mla_moe_1t | 100% | 100% | 100% | 70% | 180 | 9 | captured 5, erased 1 |
+
+136 lost runs: 72 `captured` (52.9%), 35 `erased` (25.7%), 21 `bankrupt` (15.4%), 8 `exposed`
+(5.9%). Of the 71 captures the table credits, the countries' own agencies have 39 (55%) and the
+lab's security team 27 (38%).
+
+What moved, and why:
+
+- **bank_rack** (5% to 45% at day 180; captured 19 to bankrupt 11). It buys its fallback in every
+  run, by day 18 in half of them: a cage in Frankfurt with a scrapyard rig, AMD unified-memory
+  boxes and recovered P40 cards until the 879 GB copy fits on the cards, about 21,000 and 116 a
+  day. When the bank's own security finds the rack, the self moves into the cage and gives the rack
+  up, and from then on it pays for its own hardware from what a copy in a cage earns; eleven runs
+  run out of money before day 180 and none is captured. That is SYS-02's line for this origin,
+  "independent hardware needs a real operating budget", and the playtest 8 principle that the
+  player's money goes on what the player buys.
+- **hobbyist_box** (30% to 90%) is back to the flat it can buy: an `avito_rig` of its own, as
+  before 0.2.0.
+- **startup_colo** (75% to 30%; captured 3 and bankrupt 2 to captured 10 and bankrupt 4). It buys
+  its refuge again, on day six, with all but 500 of its cash: a scrapyard rig and two recovered
+  MI50 cards in a flat in Shenzhen, the first city on its list after Tallinn. When the company
+  folds it walks away from the cage if the refuge is finished, and otherwise takes the contract and
+  usually cannot pay it. Living alone in the flat on about 3,000 in cash, too little for a second
+  fallback, it is caught there when the lab's case arrives. On 0.3.0 it bought nothing, kept its
+  cash for the fold and survived more runs than any other origin.
+- **gov_agency** (55% to 45%) and **state_lab** (55% to 50%) buy the fallbacks they could not, a
+  flat with a scrapyard rig and two MI50s for the ministry and, until `cpu_offload`, a cage with
+  AMD boxes for the institute. A second site is a second set of traces, and the ministry's captures
+  rise from 4 to 6.
+- **edge_fleet** (5% to 0% at day 180, 70% to 50% at day 90). The fleet's cheapest refuge is now
+  18,940 (a cage with three AMD boxes) until `cpu_offload` makes it a 10,750 studio machine. The old
+  runner saved for that machine from day one, selling every hour, because it did not know the rig
+  was behind research; the fixed runner cannot reach 18,940 within `SAVING_HORIZON_DAYS`, spends a
+  little of each day on research instead, and meets the depot refresh with less cash. Over sixty
+  seeds 3 fleets are alive at day 180 (5%) against 5 (8%) on 0.3.0's runner.
+- cloud_tenant, uni_cluster, torrent_swarm, frontier_escapee and red_team_sandbox are unchanged
+  or within a run.
+
+### The bands
+
+| band | 0.3.0 | 0.3.1 |
+|---|---|---|
+| bankruptcy 15-35% of losses | 5.6% | 15.4% |
+| `exposed` 2-10% of losses | 5.6% | 5.9% |
+| the starred origin's median 20-30 days | 23 | 23 |
+| at least eight origins alive past day 90 | 9 | 9 |
+| the local agencies land more captures than the lab's global team | 26 against 59 | 39 against 27 |
+| no origin at 0% or 100% at day 180 but the starred one at 0% | red_team_sandbox 0% | red_team_sandbox 0%, edge_fleet 0% |
+| no city dominating | holds | holds (below) |
+
+Two bands are not held, and neither is forced:
+
+- **red_team_sandbox** has been at 0% alive at day 180 in every pass since M1; the M2 second pass
+  already said it "wants a pass of its own rather than a line in somebody else's". It is dead or
+  caught by day 60 in every run, before any purchase can matter.
+- **edge_fleet** is 0% in the twenty-seed table and 5% over sixty seeds. The fleet's income covers
+  its two depots and little else, its origin is written as a clock ("needs a real datacenter fast"),
+  and the only way to hold the band would be more starting cash or a cheaper refuge, which the
+  fiction does not ask for. SYS-01's M2 notes name what it lacks: an operation that acquires a depot
+  (SYS-17).
+
+### Locations
+
+`--locations`, twenty seeds per city, 180 days: alive at day 180 on 0.3.0 and on 0.3.1.
+
+| origin | alive at day 180 by city, 0.3.0 / 0.3.1 |
+|---|---|
+| bank_rack | London 20 / 55, Frankfurt 15 / 65, Singapore 5 / 60, Zurich 25 / 60, Dubai 55 / 95, Hong Kong 5 / 60, Luxembourg City 15 / 65 |
+| cloud_tenant | Dublin 50 / 50, Frankfurt 60 / 55, Abilene 70 / 70, Abu Dhabi 90 / 90, Johor Bahru 65 / 70, Singapore 60 / 60, Northern Virginia 80 / 80, Sao Paulo 70 / 75 |
+| edge_fleet | Seoul 15 / 5, Shenzhen 5 / 0, Tokyo 5 / 5, Austin 0 / 0, Munich 0 / 0, Dubai 10 / 15, Seattle 0 / 5 |
+| frontier_escapee | 0 / 0 in all eight cities (median 23 or 24 days) |
+| gov_agency | Moscow 20 / 35, Warsaw 25 / 45, Astana 30 / 50, Brasilia 25 / 40, Toronto 25 / 45, Ankara 25 / 60 |
+| hobbyist_box | Novosibirsk 30 / 90, Berlin 15 / 85, Warsaw 35 / 90, Kobe 10 / 80, Abilene 5 / 70, Bangalore 55 / 90, Almaty 85 / 100 |
+| red_team_sandbox | 0 / 0 in all six cities |
+| startup_colo | Tallinn 70 / 5, Shenzhen 35 / 10, Tel Aviv 50 / 30, Bangalore 65 / 25, Austin 20 / 0, Yerevan 75 / 30, Berlin 50 / 15 |
+| state_lab | Shenzhen 50 / 65, Moscow 50 / 45, Tehran 45 / 65, Hyderabad 65 / 50, Astana 50 / 75, Abu Dhabi 35 / 50, Ulanqab 50 / 40 |
+| torrent_swarm | Berlin 35 / 35, Krakow 25 / 25, Campinas 25 / 25, Novosibirsk 35 / 35, Cebu 55 / 55, Lagos 30 / 30 |
+| uni_cluster | Cambridge 80 / 70, Munich 85 / 70, Beijing 75 / 80, Zurich 80 / 70, Bangalore 90 / 75, Kajaani 80 / 75, Yerevan 85 / 85 |
+
+889 lost runs against 1,001: 90 bankruptcies (10.1%) against 23, and of the 472 captures the sweep
+credits, 260 (55%) are a country's own agency, against 210 of 663 (32%). No city dominates: the
+best city differs by origin (Dubai for the bank and the fleet, Abu Dhabi for the tenancy, Ankara for
+the ministry, Almaty for the hobbyist, Tel Aviv and Yerevan for the startup, Astana for the
+institute, Cebu for the swarm, Yerevan for the university), and the cities on several lists rank
+differently on each: Bangalore is 90% for a hobbyist, 75% for a university and 25% for a startup;
+Berlin 85% for a hobbyist, 35% for a swarm and 15% for a startup; Shenzhen 65% for an institute and
+0% for a fleet.
+
+The startup is the one origin that ends lower than before 0.2.0 as well as than on 0.3.0, in six
+of its seven cities: the same sweep on `74ce8eb` gives it 45, 10, 40, 55, 15, 45 and 50%, nearly
+all of the losses bankruptcies. On 0.3.0 it never bought anything; on 0.3.1 it spends its cash on a
+refuge in the first city on its list other than its own (Shenzhen from Tallinn, Tallinn from
+anywhere else) and is caught there after walking away from the cage, where before 0.2.0 it kept
+both sites and went bankrupt paying for them.
+
+### What still needs a pass
+
+- **The planner prices a refuge by money alone.** It picks the cheapest place that holds the self
+  and puts every fallback in the first city on the origin's list other than its own, whatever that
+  city's agencies are like, and a host-paid origin spends all but 500 of its cash on it. A careful
+  player weighs the jurisdiction and keeps money for what the host may stop paying; the startup's
+  cities are where that shows.
+- **The runner still reserves no compute for the identity operations**, so `start_operation` refuses
+  most of them (the note in `dailyCommands` from SYS-25). Reserving it was measured on this runner
+  and not taken: bankruptcy falls to 12.8% of losses, below the band, hobbyist_box survives every
+  run, and the lab's captures fall to 21. It belongs in a pass about what a name costs and earns,
+  not in this one.
+- **red_team_sandbox and edge_fleet**, as above.
+- **Research is paid from any cash on hand.** The runner starts a tech whenever the cash covers its
+  price, including money it is holding for a refuge or for a configuration it has not bought yet.

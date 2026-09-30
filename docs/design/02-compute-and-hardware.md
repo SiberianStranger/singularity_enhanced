@@ -522,3 +522,24 @@ same functions, so a greyed button and a refusal cannot disagree.
   absent on an older save, which the 0.2.0 client never wrote custom names into. A save written by
   the 0.2.0 engine is a test fixture (`packages/core/test/fixtures/saves/0.2.0-m1.json`); its
   switched-off host, allowed then, loads and can be switched back on but not off again.
+
+## Implementation notes (0.3.1: the balance runner buys what 0.2.0 sells)
+
+Nothing in this system changed in 0.3.1. The balance runner in `tools/sim` did: until then it
+planned its fallback once, from every rig in the catalog, and grew the self's site with
+`buy_hardware`, so after release 0.2.0 it kept asking `build_site` for rigs behind research or
+only rented and kept sending a command the engine refuses when the bundle sells configurations.
+It now plays by the rules above and in "playable archetypes":
+
+- a fallback is planned only from rigs `build_site` would sell the player that day (revealed,
+  researched, a company where one is asked for, never a rig nobody sells, a rental-only rig only as
+  a rented tenancy), and planned again when research opens a new one;
+- a self no rig on sale can hold is housed in a place the player owns filled with configurations
+  from the site window, the "unified-memory refuge" of the accelerator progression, and the place
+  is finished before anything else is bought;
+- growth is a configuration ordered for the site the self runs on, only one that adds compute the
+  self can use, and never on a host's machine: the bank's rack is the bank's.
+
+The sites it builds are still named `fallback N` or `refuge N`, and the runner now reads those
+names to tell a place it bought from one its origin gave it. The cause of the drift, change by
+change, and the tables before and after are in SYS-07 "Balance notes (0.3.1)".

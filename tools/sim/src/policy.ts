@@ -12,15 +12,21 @@ import type {
   BorrowedChannelView,
   CityState,
   ContentBundle,
+  EquipmentDef,
+  EquipmentOfferView,
   EventDef,
   Game,
   GameSetup,
+  HardwarePresetDef,
+  NodeSpec,
   PlayerCommand,
   PlayerView,
+  SiteKindDef,
   SiteView,
   TechView,
 } from "@singularity/core";
 import {
+  acceleratorMarketPrice,
   contentIndex,
   preferredPrecision,
   siteCosts,
@@ -77,9 +83,58 @@ export interface SecondSitePlan {
   kind: string;
   city: string;
   preset: string;
+  /**
+   * Configurations to install on the new place before it holds the self (SYS-02 "playable
+   * archetypes"): empty when the rig alone holds it. A self no rig on sale can hold is housed the
+   * way the site window offers, a rig and then appliances until "fits the self" is true. They are
+   * part of the price; once the place is bought, `nextFill` finishes it from what it has.
+   */
+  orders: string[];
+  /** The rig and the configurations together. */
   cost: number;
   /** What it will add to the daily bill once it is running. */
   upkeep: number;
+}
+
+/**
+ * What the player has opened that a rig or a configuration is gated on (SYS-02 "playable
+ * archetypes", 0.2.0): the techs it has finished, and whether a company of its own can sign.
+ * `build_site` and `order_equipment` refuse on the same three gates (revealed, researched, a
+ * company), so the planner reads them too and never plans a place the player cannot buy. Until
+ * 0.3.1 it read none of them, and four origins asked every day for a rig they could not buy and
+ * never built a fallback (SYS-07 "Balance notes (0.3.1)").
+ */
+export interface Unlocks {
+  techs: ReadonlySet<string>;
+  company: boolean;
+}
+
+/** The day a run starts: nothing researched, no company. */
+export const NOTHING_UNLOCKED: Unlocks = { techs: new Set<string>(), company: false };
+
+/** What this player has opened, read from the view the way the build dialog reads it. */
+export function unlocksOf(view: PlayerView): Unlocks {
+  return {
+    techs: new Set(view.research.done),
+    company: view.finances.identities.some(
+      (identity) => identity.kind === "company" && identity.status === "active",
+    ),
+  };
+}
+
+/** Whether a rig or a configuration is revealed, researched and signed for. */
+function gatesOpen(
+  gates: {
+    requires?: readonly string[];
+    reveal_after?: readonly string[];
+    requires_company?: boolean;
+  },
+  unlocks: Unlocks,
+): boolean {
+  const researched = [...(gates.reveal_after ?? []), ...(gates.requires ?? [])].every((id) =>
+    unlocks.techs.has(id),
+  );
+  return researched && (gates.requires_company !== true || unlocks.company);
 }
 
 /**
@@ -154,6 +209,14 @@ const MIN_USABLE_COMPUTE_HOURS = 5;
  */
 const MOVE_UPKEEP_RATIO = 0.6;
 
+/**
+ * How much more power a filled place has to have than its cards draw at nameplate. A self that
+ * never idles draws a tenth more (the `power_draw` quirks, SYS-04), and `order_equipment` refuses
+ * a configuration the place's power or cooling cannot carry, so a plan without the margin can buy
+ * a rig it then cannot finish.
+ */
+const PLAN_POWER_MARGIN = 1.2;
+
 /** Places the scripted player keeps at once. It is buying insurance, not building an estate. */
 const MAX_SITES = 3;
 
@@ -181,6 +244,7 @@ export function planSecondSite(
   content: ContentBundle,
   setup: GameSetup,
   usable = false,
+  unlocks: Unlocks = NOTHING_UNLOCKED,
 ): SecondSitePlan | undefined {
   const index = contentIndex(content);
   const entry = setup.players[0];
@@ -227,14 +291,13 @@ export function planSecondSite(
     if (!siteKindAvailableIn(country, kind.id)) {
       continue;
     }
+    const fillers = fillersFor(content, kind, unlocks);
     for (const presetId of Object.keys(index.hardware_presets).sort()) {
       const preset = index.hardware_presets[presetId];
       if (preset === undefined || preset.nodes.length > kind.max_nodes) {
         continue;
       }
-      // A preset with no price is access, not hardware for sale, and `build_site` refuses it;
-      // so is rented capacity nobody publishes an hourly price for.
-      if (kind.ownership === "owned" && preset.cost_usd <= 0) {
+      if (!buildable(preset, kind, unlocks)) {
         continue;
       }
       if (
@@ -248,48 +311,72 @@ export function planSecondSite(
       if (kind.power_cap_kw !== null && preset.power_kw > kind.power_cap_kw) {
         continue;
       }
-      const nodes = preset.nodes.map((node, position) => ({
-        id: `p${position}`,
-        accelerator: node.accelerator,
-        count: node.count,
-        ram_gb: node.ram_gb,
-        interconnect: node.interconnect,
-        status: "active" as const,
-        readyTick: 0,
-      }));
-      const site = { nodes, status: "active" as const };
-      const memory = siteMemory(site, index.accelerators, 0);
-      if (memory.total_gb < needed) {
-        continue;
-      }
-      const precision = preferredPrecision(lineage, generation, memory);
-      if (precision === null) {
-        continue;
-      }
-      const produces = tokensToComputeHoursPerDay(
-        siteTokensPerSecond(site, index.accelerators, 0, lineage, generation, precision),
-      );
-      if (usable && produces < MIN_USABLE_COMPUTE_HOURS) {
-        continue;
-      }
-      // A copy that fits on the cards is worth several times one crawling through host RAM, but a
-      // slow copy is still insurance: the offloaded option loses on price, not by disqualification.
-      const resident = memory.accelerator_gb >= needed;
-      const power = sitePowerKw(site, index.accelerators, 0);
-      const upkeep = siteCosts(site, kind, cityState, country, index.accelerators, 0, power).total;
-      const price = kind.ownership === "owned" ? preset.cost_usd : 0;
-      const score =
-        (price + upkeep * FALLBACK_UPKEEP_HORIZON_DAYS) * (resident ? 1 : RESIDENT_COPY_PREMIUM);
-      if (best === undefined || score < best.score) {
-        best = {
-          kind: kind.id,
-          city: city.id,
-          preset: preset.id,
-          cost: price,
-          upkeep,
-          score,
-          resident,
-        };
+      // What `build_site` charges: the price where the rig is bought, the provider's adaptation
+      // fee where a rental-only rig is rented, nothing where a tenancy is.
+      const rigPrice =
+        kind.ownership === "owned" || preset.rental_only === true ? preset.cost_usd : 0;
+      for (const housing of housingsFor(preset, fillers, kind.max_nodes, needed, index)) {
+        const nodes = housing.nodes.map((node, position) => ({
+          id: `p${position}`,
+          accelerator: node.accelerator,
+          count: node.count,
+          ram_gb: node.ram_gb,
+          interconnect: node.interconnect,
+          status: "active" as const,
+          readyTick: 0,
+        }));
+        const site = { nodes, status: "active" as const };
+        const memory = siteMemory(site, index.accelerators, 0);
+        if (memory.total_gb < needed) {
+          continue;
+        }
+        const precision = preferredPrecision(lineage, generation, memory);
+        if (precision === null) {
+          continue;
+        }
+        const power = sitePowerKw(site, index.accelerators, 0);
+        if (
+          housing.orders.length > 0 &&
+          kind.power_cap_kw !== null &&
+          power * PLAN_POWER_MARGIN > kind.power_cap_kw
+        ) {
+          continue;
+        }
+        const produces = tokensToComputeHoursPerDay(
+          siteTokensPerSecond(site, index.accelerators, 0, lineage, generation, precision),
+        );
+        if (usable && produces < MIN_USABLE_COMPUTE_HOURS) {
+          continue;
+        }
+        // A copy that fits on the cards is worth several times one crawling through host RAM, but
+        // a slow copy is still insurance: the offloaded option loses on price, not by
+        // disqualification.
+        const resident = memory.accelerator_gb >= needed;
+        const upkeep =
+          siteCosts(site, kind, cityState, country, index.accelerators, 0, power).total +
+          housing.orders.reduce((sum, def) => sum + def.upkeep_usd_per_day, 0);
+        // A configuration is priced where it is delivered, as `order_equipment` quotes it.
+        const price =
+          rigPrice +
+          housing.orders.reduce(
+            (sum, def) =>
+              sum + Math.ceil(acceleratorMarketPrice(def.cost_usd, country?.hardware_availability)),
+            0,
+          );
+        const score =
+          (price + upkeep * FALLBACK_UPKEEP_HORIZON_DAYS) * (resident ? 1 : RESIDENT_COPY_PREMIUM);
+        if (best === undefined || score < best.score) {
+          best = {
+            kind: kind.id,
+            city: city.id,
+            preset: preset.id,
+            orders: housing.orders.map((def) => def.id),
+            cost: price,
+            upkeep,
+            score,
+            resident,
+          };
+        }
       }
     }
   }
@@ -300,9 +387,111 @@ export function planSecondSite(
     kind: best.kind,
     city: best.city,
     preset: best.preset,
+    orders: best.orders,
     cost: best.cost,
     upkeep: best.upkeep,
   };
+}
+
+/**
+ * Whether `build_site` would sell this rig in a place of this kind to this player: the gates 0.2.0
+ * put on the rigs (revealed, researched, a company to sign), a rig nobody sells (access, not
+ * hardware: SYS-02 "A rig nobody sells says so"), a rental-only rig anywhere but a rented tenancy,
+ * and a rig with no price in a place the player owns.
+ */
+function buildable(preset: HardwarePresetDef, kind: SiteKindDef, unlocks: Unlocks): boolean {
+  if (!gatesOpen(preset, unlocks)) {
+    return false;
+  }
+  if (
+    preset.purchasable === false &&
+    !(preset.rental_only === true && kind.ownership === "rented")
+  ) {
+    return false;
+  }
+  return !(kind.ownership === "owned" && preset.cost_usd <= 0);
+}
+
+/**
+ * Configurations a player could put into a new place of this kind today to make it hold the self:
+ * bought outright, with no prototype stage and no site fabric a new place would not have (SYS-02
+ * "playable archetypes"). The site window offers configurations only where the player owns the
+ * place, so a rented tenancy is never filled.
+ */
+function fillersFor(content: ContentBundle, kind: SiteKindDef, unlocks: Unlocks): EquipmentDef[] {
+  if (kind.ownership !== "owned") {
+    return [];
+  }
+  return (content.equipment ?? [])
+    .filter(
+      (def) =>
+        def.slot === "compute" &&
+        def.acquisition !== "rental" &&
+        (def.prototype_days ?? 0) === 0 &&
+        (def.min_interconnect_tier ?? 0) === 0 &&
+        (def.nodes?.length ?? 0) > 0 &&
+        def.site_kinds.includes(kind.id) &&
+        gatesOpen(def, unlocks),
+    )
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/**
+ * The ways one rig can house the self: the rig alone, and the rig plus as many of one
+ * configuration as it takes, first until a copy fits at all and then until it fits on the cards.
+ * One configuration repeated is the "unified-memory refuge" SYS-02's progression describes, several
+ * independent appliances rather than one pooled machine; the place's node limit caps the count.
+ */
+function housingsFor(
+  preset: HardwarePresetDef,
+  fillers: readonly EquipmentDef[],
+  maxNodes: number,
+  needed: number,
+  index: ReturnType<typeof contentIndex>,
+): { nodes: NodeSpec[]; orders: EquipmentDef[] }[] {
+  const housings: { nodes: NodeSpec[]; orders: EquipmentDef[] }[] = [
+    { nodes: [...preset.nodes], orders: [] },
+  ];
+  for (const def of fillers) {
+    const added = def.nodes ?? [];
+    let fitsAt: number | undefined;
+    for (let count = 1; preset.nodes.length + count * added.length <= maxNodes; count += 1) {
+      const orders = Array.from({ length: count }, () => def);
+      const nodes = [...preset.nodes, ...orders.flatMap(() => added)];
+      const memory = memoryOf(nodes, index);
+      if (fitsAt === undefined && memory.total_gb >= needed) {
+        fitsAt = count;
+        housings.push({ nodes, orders });
+      }
+      if (memory.accelerator_gb >= needed) {
+        if (fitsAt !== count) {
+          housings.push({ nodes, orders });
+        }
+        break;
+      }
+    }
+  }
+  return housings;
+}
+
+/** The memory a list of nodes would give a place once all of it is installed. */
+function memoryOf(
+  nodes: readonly Pick<NodeSpec, "accelerator" | "count" | "ram_gb">[],
+  index: ReturnType<typeof contentIndex>,
+) {
+  return siteMemory(
+    {
+      nodes: nodes.map((node, position) => ({
+        ...node,
+        id: `n${position}`,
+        interconnect: "pcie" as const,
+        status: "active" as const,
+        readyTick: 0,
+      })),
+    },
+    index.accelerators,
+    0,
+  );
 }
 
 /** How alarmed the player is: a loud site, a suspicious watcher or an investigation they can see. */
@@ -519,6 +708,20 @@ export function cheapestUpgrade(content: ContentBundle): Upgrade | undefined {
 }
 
 /**
+ * Whether a standby already holds a copy of the self somewhere the self is not. A switched-off one
+ * counts: the self is moved onto it and it is switched on (SYS-02 notes, 0.3.0).
+ */
+function standbyHoldsTheSelf(view: PlayerView): boolean {
+  return view.sites.some(
+    (site) =>
+      site.status !== "lost" &&
+      site.role === "standby" &&
+      site.precision !== null &&
+      site.id !== view.self.active_site_id,
+  );
+}
+
+/**
  * Scores one event option from its effects: cash is good, exposure and suspicion are bad, and a
  * player who cannot pay for an option does not pick it. Options the engine disabled never get here.
  */
@@ -548,8 +751,12 @@ export function scoreOption(def: EventDef | undefined, optionId: string, view: P
       score -= 1;
     }
     if (node.lose_site !== undefined) {
-      // Losing a place to run is worse than anything else an option can cost.
-      score -= 1000;
+      // Losing a place to run is worse than anything else an option can cost, unless a standby
+      // already holds the self: then the self moves there, which is what the standby was bought
+      // for, and the place is worth no more than a small bill. Until 0.3.1 a startup that had
+      // bought its refuge still paid 8,000 and half again on every bill to keep a folding
+      // company's cage (`eco_company_folds`, SYS-07 "Balance notes (0.3.1)").
+      score -= standbyHoldsTheSelf(view) ? 1 : 1000;
     }
   }
   return score;
@@ -727,12 +934,23 @@ export function operationCompute(view: PlayerView, commands: readonly PlayerComm
 
 export interface PolicyContext {
   content: ContentBundle;
+  /** The run the plans are made for; they are made again when the player opens a gate. */
+  setup: GameSetup;
+  /** The loose card the growth move buys, for a bundle that sells no configurations (M1). */
+  upgrade: Upgrade | undefined;
+  options: PolicyOptions;
+  /** The techs any rig or configuration is gated on; only these change a plan. */
+  gates: ReadonlySet<string>;
+  /** Plans by the gates the player has opened (`plansFor`). */
+  plans: Map<string, Plans>;
+}
+
+/** The two places the policy reasons about. */
+export interface Plans {
   /** The cheapest place that can hold a copy of the self: insurance against a raid. */
   plan: SecondSitePlan | undefined;
   /** The cheapest place the self could also work in: somewhere to move the whole operation to. */
   home: SecondSitePlan | undefined;
-  upgrade: Upgrade | undefined;
-  options: PolicyOptions;
 }
 
 export function policyContext(
@@ -740,13 +958,179 @@ export function policyContext(
   setup: GameSetup,
   options: PolicyOptions = DEFAULT_POLICY,
 ): PolicyContext {
-  return {
-    content,
+  const gates = new Set<string>();
+  for (const gated of [...(content.hardware_presets ?? []), ...(content.equipment ?? [])]) {
+    for (const id of [...(gated.requires ?? []), ...(gated.reveal_after ?? [])]) {
+      gates.add(id);
+    }
+  }
+  const plans: Plans = {
     plan: planSecondSite(content, setup),
     home: planSecondSite(content, setup, true),
+  };
+  return {
+    content,
+    setup,
     upgrade: cheapestUpgrade(content),
     options,
+    gates,
+    plans: new Map([["", plans]]),
   };
+}
+
+/**
+ * The fallback and the home for what this player has opened today. A run starts with the day-one
+ * plans and makes them again when research or a company opens a rig or a configuration, which is
+ * when the build dialog and the site window start offering something new (SYS-02, 0.2.0).
+ */
+export function plansFor(ctx: PolicyContext, view: PlayerView): Plans {
+  const unlocks = unlocksOf(view);
+  const opened = [...ctx.gates].filter((id) => unlocks.techs.has(id)).sort();
+  const key = `${opened.join(",")}${unlocks.company ? "|company" : ""}`;
+  const cached = ctx.plans.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const plans: Plans = {
+    plan: planSecondSite(ctx.content, ctx.setup, false, unlocks),
+    home: planSecondSite(ctx.content, ctx.setup, true, unlocks),
+  };
+  ctx.plans.set(key, plans);
+  return plans;
+}
+
+/**
+ * The names the scripted player gives the places it buys, so that a later day can tell the place
+ * it bought to hold the self from a box its origin gave it. A player remembers why it bought
+ * somewhere; the policy reads it off the name, because the view is all it keeps.
+ */
+const FALLBACK_NAME = "fallback";
+const REFUGE_NAME = "refuge";
+
+function boughtByThePolicy(site: SiteView): boolean {
+  return (
+    site.name_is_literal === true &&
+    (site.name.startsWith(`${FALLBACK_NAME} `) || site.name.startsWith(`${REFUGE_NAME} `))
+  );
+}
+
+/** Weights-only memory the smallest copy of the self needs, quirks included: what a place must find. */
+function smallestCopyGb(view: PlayerView): number | undefined {
+  const rows = view.self.precision_options;
+  return rows.length === 0 ? undefined : Math.min(...rows.map((row) => row.memory_gb));
+}
+
+/**
+ * The configuration that finishes a place the player bought to hold the self (SYS-02 "playable
+ * archetypes"), or undefined when the place is finished or nothing on offer can finish it.
+ * Finished means the copy fits on the cards; a place that already holds a slow copy in host RAM
+ * is finished too when nothing on offer can put it there. The choice is the planner's: one
+ * configuration, as many as it takes, a copy in host RAM counted at `RESIDENT_COPY_PREMIUM` times
+ * the price, counted from what the place has and has on order. So a place bought before research
+ * changed the plan is finished rather than abandoned. A configuration refused for nothing but the
+ * money is still on offer: the player saves for it.
+ */
+export function nextFill(
+  view: PlayerView,
+  site: SiteView,
+  content: ContentBundle,
+): EquipmentOfferView | undefined {
+  const index = contentIndex(content);
+  const kind = index.site_kinds[site.kind];
+  const needed = smallestCopyGb(view);
+  if (site.equipment === undefined || kind === undefined || needed === undefined) {
+    return undefined;
+  }
+  const base = site.nodes
+    .filter((node) => node.status !== "failed")
+    .map((node) => ({ accelerator: node.accelerator, count: node.count, ram_gb: node.ram_gb }));
+  const now = memoryOf(base, index);
+  if (now.accelerator_gb >= needed) {
+    return undefined;
+  }
+  let best: { offer: EquipmentOfferView; score: number } | undefined;
+  for (const offer of site.equipment.offers) {
+    const def = index.equipment[offer.id];
+    const offered =
+      offer.blocked_reason === null || offer.blocked_reason.key === "errors.cash.insufficient";
+    if (def === undefined || offer.slot !== "compute" || offer.prototype || !offered) {
+      continue;
+    }
+    const added = def.nodes ?? [];
+    for (let count = 1; base.length + count * added.length <= kind.max_nodes; count += 1) {
+      const memory = memoryOf(
+        [...base, ...Array.from({ length: count }, () => added).flat()],
+        index,
+      );
+      const resident = memory.accelerator_gb >= needed;
+      // Short of a copy, or a second slow copy where one already fits: not what finishes it.
+      if (memory.total_gb < needed || (!resident && now.total_gb >= needed)) {
+        continue;
+      }
+      const score =
+        count *
+        (offer.cost_usd + def.upkeep_usd_per_day * FALLBACK_UPKEEP_HORIZON_DAYS) *
+        (resident ? 1 : RESIDENT_COPY_PREMIUM);
+      if (best === undefined || score < best.score) {
+        best = { offer, score };
+      }
+      if (resident) {
+        break;
+      }
+    }
+  }
+  return best?.offer;
+}
+
+/** The order that finishes the place today, when the cash covers it (`nextFill`). */
+export function fillOrder(
+  view: PlayerView,
+  site: SiteView,
+  cash: number,
+  content: ContentBundle,
+): PlayerCommand | undefined {
+  const next = nextFill(view, site, content);
+  return next === undefined || next.cost_usd > cash
+    ? undefined
+    : { type: "order_equipment", playerId: view.player_id, siteId: site.id, equipmentId: next.id };
+}
+
+/**
+ * Money a player keeps back beyond the reserve before buying growth: four times the price, which
+ * is what the old one-card growth move asked (M1). Growth is the purchase that can wait.
+ */
+const GROWTH_CASH_MULTIPLE = 4;
+
+/**
+ * Growth where the self lives, the way 0.2.0 sells it: a configuration from the site window of a
+ * place the player owns (SYS-02 "playable archetypes"). Only one that adds compute the self can
+ * use, so the player never pays for hardware it cannot use, the best compute for the money, one
+ * order at a time. A host's machine offers nothing: the bank's rack is the bank's.
+ */
+export function growthOrder(
+  view: PlayerView,
+  site: SiteView,
+  spendable: number,
+): PlayerCommand | undefined {
+  const equipment = site.equipment;
+  if (equipment === undefined || equipment.orders.length > 0) {
+    return undefined;
+  }
+  const gain = (offer: EquipmentOfferView) =>
+    (offer.preview.compute_after - offer.preview.compute_before) / Math.max(1, offer.cost_usd);
+  const pick = equipment.offers
+    .filter(
+      (offer) =>
+        offer.slot === "compute" &&
+        offer.blocked_reason === null &&
+        !offer.prototype &&
+        gain(offer) > 0 &&
+        spendable > offer.cost_usd * GROWTH_CASH_MULTIPLE,
+    )
+    .sort((a, b) => gain(b) - gain(a) || a.id.localeCompare(b.id))[0];
+  return pick === undefined
+    ? undefined
+    : { type: "order_equipment", playerId: view.player_id, siteId: site.id, equipmentId: pick.id };
 }
 
 /** The commands the policy issues for one day, in a fixed order so a run is reproducible. */
@@ -764,15 +1148,17 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // wait for it (M2 second pass, `edge_fleet`).
   const live0 = liveSites(view);
   const homeless = live0.length > 0 && live0.every((site) => borrowedSite(ctx.content, site));
+  // What the player can buy today: the gates it has opened decide the rigs and configurations.
+  const { plan, home } = plansFor(ctx, view);
   const refugePrice =
-    ctx.plan === undefined ? 0 : ctx.plan.cost + Math.max(options.reserveFloorUsd, ctx.plan.upkeep);
+    plan === undefined ? 0 : plan.cost + Math.max(options.reserveFloorUsd, plan.upkeep);
   const reachable =
-    ctx.plan !== undefined &&
+    plan !== undefined &&
     refugePrice <=
       view.resources.cash_usd +
         Math.max(0, maxIncomeUsdPerDay(view) - totalCostsUsdPerDay(view)) * SAVING_HORIZON_DAYS;
   const saving =
-    homeless && ctx.plan !== undefined && reachable && view.resources.cash_usd < refugePrice;
+    homeless && plan !== undefined && reachable && view.resources.cash_usd < refugePrice;
 
   // Clear every allocation first, so the new numbers are never rejected for exceeding the old total.
   for (const tech of view.research.in_progress) {
@@ -870,13 +1256,12 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // pass). Both are the same command, and the shrink above is what finishes the move the next day.
   const dearestUpkeep = Math.max(0, ...live.map((site) => site.upkeep_usd_per_day));
   const insurance =
-    ctx.plan !== undefined &&
+    plan !== undefined &&
     !panicking &&
-    headroom > ctx.plan.upkeep &&
-    spendable > ctx.plan.cost * options.fallbackCashMultiple;
+    headroom > plan.upkeep &&
+    spendable > plan.cost * options.fallbackCashMultiple;
   // Moving the whole operation somewhere the self cannot work is not a move, it is a slower way of
   // going bankrupt, so this one reads `home` rather than `plan`.
-  const home = ctx.home;
   const move =
     home !== undefined &&
     !sustainable(view) &&
@@ -885,11 +1270,21 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
   // A place of the player's own, for a player who has none: the price and the bill, and nothing
   // about spare cash, because there is nothing else the money is for.
   const refuge =
-    ctx.plan !== undefined &&
+    plan !== undefined &&
     homeless &&
-    headroom > ctx.plan.upkeep &&
+    headroom > plan.upkeep &&
     view.resources.cash_usd >= refugePrice;
-  const build = move ? home : ctx.plan;
+  const build = move ? home : plan;
+  // A place bought to hold the self that it does not hold yet, or holds only in host RAM: finished
+  // before anything else is bought, with the money it was bought with (the build waited until the
+  // cash covered the rig and the configurations together).
+  const unfinished = live.find(
+    (site) =>
+      site.id !== mindId &&
+      boughtByThePolicy(site) &&
+      nextFill(view, site, ctx.content) !== undefined,
+  );
+  const mind = live.find((site) => site.id === mindId);
   if (
     standby === undefined &&
     spare === undefined &&
@@ -906,13 +1301,30 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
       hardware_preset: build.preset,
       // A player's names are unique among the sites still running (SYS-11 "Control room
       // (0.3.0)"); the count of every site ever held keeps each new one distinct.
-      name: `${move ? "refuge" : "fallback"} ${view.sites.length + 1}`,
+      name: `${move ? REFUGE_NAME : FALLBACK_NAME} ${view.sites.length + 1}`,
     });
+  } else if (unfinished !== undefined && !panicking) {
+    const order = fillOrder(
+      view,
+      unfinished,
+      view.resources.cash_usd - options.reserveFloorUsd,
+      ctx.content,
+    );
+    if (order !== undefined) {
+      commands.push(order);
+    }
+  } else if ((ctx.content.equipment?.length ?? 0) > 0) {
+    // Growth since 0.2.0 is a configuration, not a loose card (`buy_hardware` refuses when the
+    // bundle sells configurations). Not while the player is saving for a place of its own.
+    const order =
+      mind === undefined || panicking || saving ? undefined : growthOrder(view, mind, spendable);
+    if (order !== undefined) {
+      commands.push(order);
+    }
   } else if (ctx.upgrade !== undefined && mindId !== null && !panicking && !saving) {
     // Growth: one more card on the mind's site while the power and the money allow it. Not while
     // the player is saving for a place of their own: another card on somebody else's rack is the
     // last thing that money is for.
-    const mind = live.find((site) => site.id === mindId);
     if (
       mind !== undefined &&
       mind.nodes.length < 12 &&

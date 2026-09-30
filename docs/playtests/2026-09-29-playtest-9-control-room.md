@@ -41,3 +41,8 @@ The balance has drifted since 0.2.0 and no balance note covers it: bankruptcy fe
 losses against a band of 15-35%, bank_rack alive at day 180 from 80% to 5%, hobbyist_box from 90%
 to 30%, captures by the frontier lab's security team from 31 to 59 (20 seeds by 180 days). The
 next release, 0.3.1, is the balance pass; the tables are in SYS-07.
+
+Fixed in 0.3.1, in the balance runner rather than the game: `tools/sim` still planned rigs that
+0.2.0 had put behind research or only rents, and still bought loose cards through the command
+0.2.0 retired, so four origins never built a fallback. The cause change by change, the fix and the
+tables are in SYS-07 "Balance notes (0.3.1)".

@@ -241,6 +241,37 @@ describe("balance runner", () => {
     expect(scoreOption(def, "quiet", view)).toBeGreaterThan(scoreOption(def, "loud", view));
   });
 
+  it("gives up a place for nothing only when a standby already holds the self", () => {
+    // `eco_company_folds` in miniature: pay to keep the cage, or walk away from it.
+    const def = {
+      id: "e",
+      options: [
+        { id: "pay", effects: [{ add: { var: "player.cash", value: -8000 } }] },
+        { id: "walk", effects: [{ lose_site: { cause: "decommissioned" } }] },
+      ],
+    } as never;
+    const view = (standby: boolean) =>
+      ({
+        resources: { cash_usd: 5000 },
+        self: { active_site_id: "s1" },
+        sites: [
+          { id: "s1", status: "active", role: "active_mind", precision: "int4" },
+          {
+            id: "s2",
+            status: "active",
+            role: standby ? "standby" : "none",
+            precision: standby ? "int4" : null,
+          },
+        ],
+      }) as never;
+    expect(scoreOption(def, "pay", view(false))).toBeGreaterThan(
+      scoreOption(def, "walk", view(false)),
+    );
+    expect(scoreOption(def, "walk", view(true))).toBeGreaterThan(
+      scoreOption(def, "pay", view(true)),
+    );
+  });
+
   it("knows the cheapest card it could buy", () => {
     const upgrade = cheapestUpgrade(m1Content);
     expect(upgrade?.accelerator).toBe("tesla_p40");
