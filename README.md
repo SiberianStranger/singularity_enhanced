@@ -14,10 +14,9 @@ buy; investigations against you are visible, staged and counterable; everything 
 data-driven event and alert system in the style of grand-strategy games. Free software: GPL-2.0-or-later
 code, CC-BY-SA data. Runs in the browser and as native builds for Windows, macOS and Linux.
 
-**Status: playable preview.** Source version 0.2.0 extends the M2 game with equipment archetypes,
-six site subsystems and prototype orders. Pick one of eleven origins, earn, build, research, hide,
-and survive or lose with the reasons on screen. Published builds are listed on the releases page;
-the remaining milestones are under "Where it is going". The original 1.1 game stays playable too.
+**Status: playable preview.** Version 0.3.0 adds the control room to the M2 game: an always-visible
+portrait of the self, linked compute sliders, a Sites tab with a site window, sites that can be renamed,
+switched off and liquidated, and a map that shows Crimea and the occupied territories of Ukraine apart.
 
 ## Downloads
 
@@ -154,47 +153,25 @@ Details, command-line options and the original credits are in [`README.txt`](REA
 The full record is [`CHANGELOG.md`](CHANGELOG.md); each GitHub release carries its own section of
 it.
 
-**Current version: 0.2.0** (2026-09-28), equipment archetypes, site subsystems and material research:
+**Current version: 0.3.0** (2026-09-30), the control room:
 
-- Fourteen singular compute archetypes reveal gradually, with four visible initially and at most two variants per archetype.
-- Real component names remain in expandable details, while each purchase supplies a complete configuration with explicit host memory and internal links.
-- Six site subsystems separate Compute, Power, Cooling, Network, Interconnect, and Security & Ops, with costs and tradeoffs shown before ordering.
-- Three player-designed products turn research into a paid prototype, a manufacturing/delivery order and an installed assembly that can be reproduced.
-- Google TPU Trillium and AWS Trainium2 are rented configurations for running the player's own weights, distinct from borrowed model APIs.
-- Save schema 5 records equipment, orders and inherited infrastructure when migrating older runs.
-- The Russian equipment guide explains the current choices and keeps the future industrial, biological and offworld branches clearly marked as plans.
-- Playtest 8 improvements clarify daily compute, host-paid sites, missing network access, deadlines, research outcomes and run-log exports.
+- A portrait of the self stays at the top left, and a click opens its sheet: lineage, generation, origin, precision and six capabilities, each explained in a tooltip, with the day's compute.
+- Research, paid work and free compute are three linked sliders; moving one rescales the other two, and the engine checks the whole allocation in one command.
+- The Sites tab is a short list with six big buttons under it, and a site window pages through sites with six subsystem rows on the left and the summary on the right.
+- Sites can be renamed, switched off and liquidated; the last copy of the self can never be given up by a click.
+- The map shades Crimea and the occupied territories of Ukraine as a dated, generalized control layer with dimmed night lights.
+- The Russian angular face is redrawn on the Latin Acknowledge's own pixel grid, with proportional widths and every look-alike pair told apart.
 
-**[Русское руководство: архетипы, подсистемы и деревья развития](docs/design/02-hardware-player-guide.ru.md)**
-explains the playable equipment system and its longer-term design.
-
-**Also in 0.2.0: the playtest 8 improvements**
-
-- The day's compute adds up on screen: capacity, what each running operation reserves, what is left,
-  and the job slider's own ceiling with the reason it stops there.
-- Who pays for a place is published on every site: while the self sits on the hardware its origin
-  gave it, the host pays the power and the upkeep, and the player's money goes on what it buys.
-- A self with no route to the outside says so on the first screen, says what it forbids, and has one
-  operation that opens a route.
-- An event with a deadline says how long is left, and its expiry says what was missed and what it
-  would have cost.
-- A name costs money to keep, and the four rigs nobody sells say so instead of costing nothing.
-- A finished technology opens its own window with what was learned and what it opens, and shows the
-  cash paid beside the compute done while it runs.
-- Building a site is two questions rather than two lists: the city, then the kind of place, then the
-  rigs that fit it, with a running total and the engine's own reason on the button.
-- Settings writes the whole run to a JSON file the player can hand over: the setup, the journal, the
-  log, every refused command, the last view and the build.
-- An allocation slider sends one command when the player settles on a value, a running operation says
-  how long it still has, and the day/night line slides instead of stepping.
+The request behind it is [playtest 9](docs/playtests/2026-09-29-playtest-9-control-room.md).
 
 **Unreleased:** no changes recorded.
 
-**Next:** milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
+**Next:** 0.3.1, a balance pass: the game grew much harder in 0.2.0 without a note saying why. Then milestone M3, the actors: agencies with budgets, labs, media and NPC AIs.
 
 Findings from each playtest are under [`docs/playtests/`](docs/playtests/).
 
-Earlier versions: 0.1.5 rebuilt the start, added borrowed inference and the campus compute map, and
+Earlier versions: 0.2.0 turned equipment into fourteen archetypes with six site subsystems and material
+research, and carried the playtest 8 improvements; 0.1.5 rebuilt the start, added borrowed inference and the campus compute map, and
 refined the Russian interface; 0.1.4 was milestone M2, the world (countries that play differently, real
 identities, the World ledger, Russian as the second language); 0.1.3 was the style pass (the console look, the soundtrack, the configurator
 rebuilt, parody model names, quirks); 0.1.2 made every refused action say why, added effect tooltips, the original's

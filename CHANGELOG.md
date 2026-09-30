@@ -13,6 +13,56 @@ section repeats the current version's highlights and this unreleased list.
 
 No changes recorded.
 
+## [0.3.0] - 2026-09-30
+
+The control room: an always-visible portrait of the self, linked compute sliders, a Sites tab with a site window,
+and a map that shows Crimea and the occupied territories of Ukraine apart, in a Cyrillic face redrawn on the original's grid.
+
+Highlights:
+
+- A portrait of the self stays at the top left, and a click opens its sheet: lineage, generation, origin, precision and six capabilities, each explained in a tooltip, with the day's compute.
+- Research, paid work and free compute are three linked sliders; moving one rescales the other two, and the engine checks the whole allocation in one command.
+- The Sites tab is a short list with six big buttons under it, and a site window pages through sites with six subsystem rows on the left and the summary on the right.
+- Sites can be renamed, switched off and liquidated; the last copy of the self can never be given up by a click.
+- The map shades Crimea and the occupied territories of Ukraine as a dated, generalized control layer with dimmed night lights.
+- The Russian angular face is redrawn on the Latin Acknowledge's own pixel grid, with proportional widths and every look-alike pair told apart.
+
+### Added
+
+- A portrait of the self stays at the top left; a click opens a sheet with its lineage, generation, origin, precision and six capabilities, each explained in a tooltip.
+- Research, paid work and free compute are three linked sliders in the self sheet; moving one rescales the other two.
+- Research and paid work are set together in one validated command, and the engine offers the sliders only research lines it will accept.
+- A new site gets an editable generated name when it is built or rented, and any site can be renamed.
+- Site names are checked before any money is spent, printed exactly as typed, and must differ from the player's other running sites.
+- The site window pages through sites with arrows or the arrow keys, with six subsystem rows on the left and a summary on the right.
+- A site can be switched off: it shows and emits a twentieth of its signatures while keeping its traces, its investigation evidence and its standing costs.
+- Sites can be liquidated: delivered hardware the player owns sells for 15% of its purchase price, and the same notice as a clean decommission is owed.
+- Liquidating a site first shows the resale, the notice owed, the change in cash and the orders cancelled.
+- The map shades Crimea and the occupied part of Ukraine as a dated, generalized control layer with dimmed night lights; the About window gives its date and sources.
+- The Cyrillic of the angular face is redrawn on the Latin Acknowledge's own pixel grid, with proportional widths and distinct shapes for Ы, И/Н, Ш/Щ/М, Д/А, Ф/О, Ж/Х, Ц, З/Э and Е/Б.
+- The Cyrillic font is rebuilt byte for byte and checked by pixel tests in the Python CI jobs.
+- Playtest 9 records the request behind the control room.
+
+### Changed
+
+- Overview is no longer a tab; the six tabs show a glyph and a short label, with the full name in the tooltip.
+- The top bar shows each resource as a glyph and a number between thin rules, now including attention; the names are in the tooltips.
+- The Sites tab is a short list with six big buttons under it: Manage, Rename, Switch off or on, Build, Rent and Liquidate.
+- Every button in the Sites tab has its own underlined keyboard letter in both languages.
+- Borrowed compute is one line in the Sites tab; Details opens the whole block in its own window.
+- The map's selection panel, the log strip, the legend and the zoom buttons share one bar along the bottom edge.
+- Buttons the engine would refuse, such as switching off the self's host or giving up the last copy, are greyed with the reason in their tooltip.
+- The self can no longer switch off the site it runs on or move onto a switched-off site; a switched-off standby it must move onto is switched on.
+- Liquidating, decommissioning or abandoning the last site that can hold the self is refused, so one misclick cannot end a run; with a standby that can hold it, the self moves there first.
+- The angular face is set half again above the text beside it.
+- Crimea belongs to Ukraine in the map's country geometry.
+
+### Fixed
+
+- Wheel zoom stays under the pointer, and the closed panel no longer blocks the map beside its button.
+- A site rebuilding its copy after re-quantization can no longer be switched on before the copy is ready.
+- The engine refuses site statuses and roles that no client should send.
+
 ## [0.2.0] - 2026-09-28
 
 Equipment becomes fourteen gradually revealed archetypes with recognizable variants and complete configurations.

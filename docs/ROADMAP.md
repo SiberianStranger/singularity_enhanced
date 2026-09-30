@@ -3,7 +3,23 @@
 Phases are milestones with a definition of done. Work inside a phase is parallelizable by system;
 phases mostly are not. Estimates are in agent-sessions, not calendar time.
 
-## Current implementation focus (2026-09-28, version 0.2.0)
+## Current implementation focus (2026-09-30, version 0.3.0)
+
+Version 0.3.0 is the control room of SYS-11, from [playtest 9](playtests/2026-09-29-playtest-9-control-room.md):
+an always-visible portrait of the self with its sheet, three linked compute sliders behind one
+validated command, a Sites tab with a site window of six subsystem rows, sites that can be
+renamed, switched off and liquidated, a last copy that no click can give up, a dated control
+layer over Ukraine on the map, and the Cyrillic of the angular face redrawn on the Latin's grid.
+The decisions, the review and the implementation notes are in
+[SYS-11 "Control room (0.3.0)"](design/11-notifications-and-ui.md).
+
+Next is 0.3.1, a balance pass. The sweep that verified 0.3.0 found the game much harder since
+0.2.0, with no balance note saying why: bankruptcy at 5.6% of losses against a band of 15-35%,
+bank_rack alive at day 180 down from 80% to 5%, hobbyist_box from 90% to 30%, captures by the
+frontier lab's security team from 31 to 59 (20 seeds by 180 days; the tables are in SYS-07).
+M3, the actors, follows it.
+
+## Implementation focus of 0.2.0 (2026-09-28)
 
 The current equipment increment implements fourteen singular compute archetypes with at most two
 variants each; four archetypes are revealed initially. Twenty-one compute offers cover complete
