@@ -14,6 +14,11 @@ export interface Column<T> {
    * inside a button is not valid HTML and is unreachable with a keyboard.
    */
   action?: ReactNode;
+  /**
+   * The column's share of a `table-fixed` table, as a CSS width. Without it a fixed table gives
+   * every column the same width, and a site's name got the same sixth as its upkeep figure.
+   */
+  width?: string;
 }
 
 interface TableProps<T> {
@@ -21,6 +26,8 @@ interface TableProps<T> {
   columns: readonly Column<T>[];
   rowKey(row: T): string;
   onRowClick?(row: T): void;
+  onRowDoubleClick?(row: T): void;
+  className?: string;
   selectedKey?: string | null;
   empty: ReactNode;
   caption?: string;
@@ -41,6 +48,8 @@ export function Table<T>({
   columns,
   rowKey,
   onRowClick,
+  onRowDoubleClick,
+  className,
   selectedKey,
   empty,
   caption,
@@ -84,8 +93,18 @@ export function Table<T>({
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
+    <table className={`w-full border-collapse text-sm ${className ?? ""}`}>
       {caption === undefined ? null : <caption className="sr-only">{caption}</caption>}
+      {columns.some((column) => column.width !== undefined) ? (
+        <colgroup>
+          {columns.map((column) => (
+            <col
+              key={column.id}
+              style={column.width === undefined ? undefined : { width: column.width }}
+            />
+          ))}
+        </colgroup>
+      ) : null}
       <thead>
         <tr className="border-b border-line text-start text-xs uppercase tracking-wide text-muted">
           {columns.map((column) => (
@@ -132,6 +151,17 @@ export function Table<T>({
             <tr
               key={key}
               onClick={onRowClick === undefined ? undefined : () => onRowClick(row)}
+              onDoubleClick={
+                onRowDoubleClick === undefined ? undefined : () => onRowDoubleClick(row)
+              }
+              tabIndex={onRowClick === undefined ? undefined : 0}
+              aria-selected={onRowClick === undefined ? undefined : selectedKey === key}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && onRowClick !== undefined) {
+                  event.preventDefault();
+                  (onRowDoubleClick ?? onRowClick)(row);
+                }
+              }}
               className={`border-b border-line/60 ${onRowClick === undefined ? "" : "cursor-pointer hover:bg-panel2"} ${selectedKey === key ? "bg-panel2" : ""}`}
             >
               {columns.map((column) => (

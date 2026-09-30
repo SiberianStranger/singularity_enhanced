@@ -50,6 +50,8 @@ export function GameMap({
       selectedCountry={selectedCountry}
       view={mapView}
       onViewChange={setMapView}
+      // The legend and the zoom buttons are drawn in the game screen's bottom bar instead.
+      controls={false}
       onSelect={onSelect}
       onContext={onContext}
     />

@@ -31,6 +31,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    */
   hotkey?: string | undefined;
   registerKey?: boolean;
+  /**
+   * Classes for the tooltip's anchor when the button has a tooltip. A button that fills a grid
+   * cell passes `w-full` here as well as on itself, or the anchor keeps the button at the width of
+   * its label while its neighbours without a tooltip stretch.
+   */
+  tooltipClassName?: string;
 }
 
 /** A button that explains itself: a disabled one keeps its tooltip so the reason stays readable. */
@@ -42,6 +48,7 @@ export function Button({
   disabled,
   hotkey,
   registerKey = true,
+  tooltipClassName,
   onClick,
   ...rest
 }: ButtonProps): ReactNode {
@@ -79,5 +86,12 @@ export function Button({
   if (tooltip === undefined) {
     return button;
   }
-  return <Tooltip content={tooltip}>{button}</Tooltip>;
+  return (
+    <Tooltip
+      content={tooltip}
+      {...(tooltipClassName === undefined ? {} : { className: tooltipClassName })}
+    >
+      {button}
+    </Tooltip>
+  );
 }

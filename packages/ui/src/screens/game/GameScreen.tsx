@@ -16,6 +16,7 @@ import { GameMenu } from "./GameMenu.js";
 import { GameOverlays } from "./GameOverlays.js";
 import { GameOverOverlay } from "./GameOverOverlay.js";
 import { LogStrip } from "./LogStrip.js";
+import { MapLegend, MapZoomControls } from "./map/WorldMap.js";
 import { OpeningStory } from "./OpeningStory.js";
 import { Outliner } from "./Outliner.js";
 import { openingSetupOf } from "./opening.js";
@@ -49,6 +50,9 @@ export function GameScreen(): ReactNode {
   const closeMenu = useUiStore((state) => state.closeMenu);
   const toggleMenu = useUiStore((state) => state.toggleMenu);
   const toggleOverlay = useUiStore((state) => state.toggleOverlay);
+  const mapMode = useUiStore((state) => state.mapMode);
+  const mapView = useUiStore((state) => state.mapView);
+  const setMapView = useUiStore((state) => state.setMapView);
   const openingPending = useGameStore((state) => state.openingPending);
   const [context, setContext] = useState<ContextMenuState | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -195,15 +199,35 @@ export function GameScreen(): ReactNode {
          * region so the interface scale moves the thresholds with everything else: the outliner
          * collapses to its strip first, then the selection panel becomes a sheet across the
          * bottom, then the primary panel takes the whole region.
+         *
+         * The bottom row is one bar across the whole width rather than three grid cells (control
+         * room, 2026-09-30). The primary panel is half again as wide as it was, so the middle
+         * column above it is a strip of map at 1280 by 720, and a log strip squeezed into it grew
+         * a line per word until it took the height the primary panel needed. In the bar the
+         * selection panel, the log strip and the map's own legend and zoom buttons sit side by
+         * side with widths of their own, so none of them can be drawn over another either.
          */}
         <div
           data-testid="panel-grid"
-          className="pointer-events-none absolute inset-0 grid grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto_auto] gap-2 overflow-hidden p-2"
+          className="pointer-events-none absolute inset-0 grid grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[minmax(0,1fr)_auto] gap-2 overflow-hidden p-2"
         >
           <PrimaryPanel view={view} />
-          <SelectionPanel view={view} />
           <Outliner view={view} />
-          <LogStrip view={view} />
+          <div
+            data-testid="bottom-bar"
+            className="pointer-events-none col-span-3 row-start-2 flex min-w-0 flex-wrap items-end gap-2 @min-[54rem]/screen:flex-nowrap"
+          >
+            <SelectionPanel view={view} />
+            <LogStrip view={view} />
+            <div className="ms-auto flex min-w-0 shrink-0 flex-col items-end gap-1">
+              <MapLegend mode={mapMode} className="pointer-events-none" />
+              <MapZoomControls
+                view={mapView}
+                onViewChange={setMapView}
+                className="pointer-events-auto"
+              />
+            </div>
+          </div>
           {/*
            * The ledger's own button, at the right edge as SYS-11's amendment asks (R10). It is the
            * foot of the right-hand column, one row above the map's own zoom controls, and the

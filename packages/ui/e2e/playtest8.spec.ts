@@ -248,7 +248,6 @@ const SWEEP: readonly { width: number; height: number }[] = [
 const PANELS = "[data-testid='panel-grid']";
 
 const TAB_KEYS = [
-  "panel.overview",
   "panel.compute",
   "panel.research",
   "panel.finances",
@@ -272,6 +271,12 @@ for (const language of LANGUAGES) {
         // an SVG that scales rather than a box that can overflow.
         expect(await sideways(page, PANELS), `${key} at ${size} in ${language}`).toEqual([]);
       }
+      // The self sheet the portrait opens took the Overview tab's place (control room).
+      await page.getByTestId("self-portrait").click();
+      await expect(page.getByTestId("self-overview")).toBeVisible();
+      expect(await sideways(page, PANELS), `the self sheet at ${size} in ${language}`).toEqual([]);
+      await page.getByTestId("self-portrait").click();
+      await expect(page.getByTestId("self-overview")).toHaveCount(0);
       // And the two dialogs this pass rebuilt, which are the widest windows on the game screen.
       await openTab(page, language, "panel.compute");
       await page.getByRole("button", { name: say(language, "compute.build_site") }).click();
@@ -283,13 +288,23 @@ for (const language of LANGUAGES) {
       await cancel.click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
 
-      await page.getByRole("button", { name: say(language, "compute.buy_hardware") }).click();
-      await expect(page.getByRole("dialog")).toBeVisible();
+      // The hardware is bought from the site window since the control room: its compute row's
+      // Change opens the workshop, which hands back to the site window when it closes.
+      await page.getByTestId("site-manage").click();
+      await expect(page.getByTestId("site-management")).toBeVisible();
       expect(
         await sideways(page, "[role='dialog']"),
-        `the buy dialog at ${size} in ${language}`,
+        `the site window at ${size} in ${language}`,
+      ).toEqual([]);
+      await page.getByTestId("equipment-change-compute").click();
+      await expect(page.getByTestId("equipment-dialog")).toBeVisible();
+      expect(
+        await sideways(page, "[role='dialog']"),
+        `the workshop at ${size} in ${language}`,
       ).toEqual([]);
       await cancel.click();
+      await expect(page.getByTestId("site-management")).toBeVisible();
+      await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog")).toHaveCount(0);
     }
   });
@@ -322,17 +337,21 @@ test("a running operation says what it is waiting for, and the compute adds up",
   await expect(running).toBeVisible();
   await expect(running).not.toBeEmpty();
 
-  // Z1 and Z2: the Compute tab's one line adds up, and names what the operation is holding.
-  await openTab(page, "en", "panel.compute");
-  const budget = page.getByTestId("compute-budget");
-  await expect(budget).toBeVisible();
+  // Z1 and Z2: the day's compute adds up, and names what the operation is holding. The ledger is
+  // the self sheet's since the control room: the whole capacity, what is left of it once the
+  // operations have taken theirs, and the operation by name in that figure's tooltip.
+  await page.getByTestId("self-portrait").click();
+  const sheet = page.getByTestId("self-overview");
+  await expect(sheet.getByTestId("compute-allocation-panel")).toBeVisible();
   const numbers = await page.evaluate(() => {
     const read = (id: string): number => {
       const text = document.querySelector(`[data-testid='${id}']`)?.textContent ?? "";
       return Number.parseFloat(text.replace(/[^0-9.,-]/g, "").replace(",", "."));
     };
-    return { reserved: read("budget-reserved"), allocatable: read("budget-allocatable") };
+    return { total: read("compute-total"), available: read("compute-available") };
   });
-  expect(numbers.reserved).toBeGreaterThan(0);
-  expect(numbers.allocatable).toBeGreaterThanOrEqual(0);
+  expect(numbers.total - numbers.available).toBeGreaterThan(0);
+  expect(numbers.available).toBeGreaterThanOrEqual(0);
+  await sheet.getByTestId("compute-available-figure").hover();
+  await expect(page.getByRole("tooltip")).toContainText(say("en", "self_ui.total_compute"));
 });

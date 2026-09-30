@@ -183,7 +183,7 @@ describe("the game screen, in both languages", () => {
 
       // Keep the transitions between overlays: uniqueness must survive one window replacing
       // another, as well as each window's initial render.
-      for (const overlay of ["log", "knowledge", "world"] as const) {
+      for (const overlay of ["log", "knowledge", "world", "borrowed"] as const) {
         await act(async () => {
           useUiStore.getState().openOverlay(overlay);
         });
@@ -216,6 +216,57 @@ describe("the game screen, in both languages", () => {
       await act(async () => {
         useGameStore.getState().setOpeningPending(false);
       });
+    }, 30_000);
+
+    it(`gives every button of the Sites tab a letter, and takes them back under a window in ${language}`, async () => {
+      await renderGame(language);
+      // The opening's blocking events are windows too: answered first, as a player would.
+      for (const choice of session?.view().pending.filter((entry) => entry.blocking) ?? []) {
+        const option = choice.options.find((entry) => entry.enabled);
+        if (option !== undefined) {
+          await act(async () => {
+            await useGameStore
+              .getState()
+              .send({ type: "resolve_event", instanceId: choice.instanceId, optionId: option.id });
+          });
+        }
+      }
+      await act(async () => {
+        useUiStore.getState().openTab("compute");
+      });
+      expect(screen.queryAllByRole("dialog")).toHaveLength(0);
+      const ids = [
+        "site-manage",
+        "site-rename",
+        "site-power",
+        "site-build",
+        "site-rent",
+        "site-liquidate",
+        "borrowed-details",
+      ];
+      for (const id of ids) {
+        const button = screen.getByTestId(id);
+        const letter = button.getAttribute("data-hotkey") ?? "";
+        expect(letter, `${id} in ${language}`).toHaveLength(1);
+        expect(button.querySelector("u")?.textContent?.toLowerCase(), id).toBe(letter);
+      }
+      // ...none of them shared with the strip, the top bar or the map around the tab.
+      expect(duplicates(), `${language}, the Sites tab`).toEqual([]);
+      expect(codeDuplicates(), `${language}, the Sites tab`).toEqual([]);
+      // Hotkeys are global: under a window the tab's letters would fire along with the window's.
+      await act(async () => {
+        useUiStore.getState().openOverlay("log");
+      });
+      for (const id of ids) {
+        expect(
+          screen.getByTestId(id).getAttribute("data-hotkey"),
+          `${id} under a window`,
+        ).toBeNull();
+      }
+      await act(async () => {
+        useUiStore.getState().closeOverlay();
+      });
+      expect(screen.getByTestId("site-rename").getAttribute("data-hotkey")).not.toBeNull();
     }, 30_000);
 
     it(`keeps the compute and subsequent journal letters unique in ${language}`, async () => {

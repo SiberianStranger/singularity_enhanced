@@ -642,6 +642,27 @@ export const AFTERMATH_COMPETENCE_GAIN = 0.05;
  */
 export const DECOMMISSION_NOTICE_DAYS = 30;
 
+/**
+ * The share of a site's current signatures still visible while it is switched off (SYS-11 "Control
+ * room (0.3.0)"). The maintainer asked for a sleeping site's signatures to become negligible; the
+ * original game divided a sleeping base's detection chance by four. The stored traces are kept and
+ * decay at the ordinary rate, and the site the self runs on is never masked (SYS-05 notes).
+ */
+export const SLEEP_SIGNATURE_FACTOR = 0.05;
+
+/**
+ * Share of the purchase receipts a liquidation's fire sale returns for delivered compute hardware
+ * the player owns (SYS-07 "Implementation notes (0.3.0)"). Installation, subsystems, prototype fees,
+ * undelivered orders and anything a provider owns return nothing; the notice is still owed.
+ */
+export const LIQUIDATION_RECOVERY_FACTOR = 0.15;
+
+/**
+ * What the catalog fallback values a legacy node at, as a share of the new price, when the used
+ * price is unknown: a node recorded before 0.3.0 carries no purchase receipt.
+ */
+export const LIQUIDATION_UNPRICED_USED_SHARE = 0.4;
+
 /** A clean decommission leaves this share of the site's exposure behind; abandoning spikes it. */
 export const CLEAN_DECOMMISSION_EXPOSURE_FACTOR = 0.25;
 export const ABANDON_EXPOSURE_SPIKE = 0.25;

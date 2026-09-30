@@ -86,7 +86,7 @@ panels, tabs, indicators, tooltips with the formula behind every number) stay; t
     attempted once, so a browser that already trusts the site starts immediately and one that does
     not starts on the gesture with no pause in front of it. Interface sounds are short, quiet and
     few: a click, an alert, an event opening.
-11. Windows fit the screen. The minimum supported viewport is 1366 by 768; every screen,
+11. Windows fit the screen. The minimum supported viewport is 1280 by 720; every screen,
     including the configurator, fits without page scroll at that size; lists scroll inside their
     frame, never the page. Nothing scrolls sideways, at any supported size, in either language: a
     column that does not fit moves onto the row's own second line, or the window is made wider
@@ -133,19 +133,27 @@ rules above; the layout regions of SYS-11 stay.
 - Base prose is 16 px in the readable face; secondary text never below 13 px; the angular face is
   used only for short labels, titles, buttons, tabs and numbers, never for paragraphs. The text
   size setting (Small, Normal, Large) scales everything; Normal is 16 px.
-- The angular face is sized by its ink, not by its nominal size (playtest 6, X12). Acknowledge is
-  a caps-only face drawn on a three-by-five pixel grid: every glyph is exactly 0.375 em tall,
-  against DejaVu's 0.73 em capitals and 0.55 em lowercase. Set at the same nominal size as the
-  prose beside it, it draws letters half the height, which is why "15 px" read as tiny. So every
-  step of the angular ladder is a third larger than the reading step it stands beside: 18.7 px
-  against 14, 20 against 15, 21.3 against 16, 24 against 18, 26.7 against 20. That puts an
-  angular capital at about nine tenths of the prose x-height and two thirds of the prose cap
-  height on every step. The floor is this rule, not a number of pixels: a label set at the
-  reading step in the angular face is a bug.
-  The original game did the same thing more strongly, 20 px prose against 36 px buttons in this
-  same face, which matched the cap heights outright; that is not available here, because it would
-  put a configurator rail row at 31 px and this client draws nine of them beside a two-column card
-  at 1280 by 720.
+- The angular face is sized by its ink, not by its nominal size (playtest 6, X12; revised for
+  the control room, 2026-09-29). Its capital band is 0.375 em, against DejaVu's 0.73 em
+  capitals and 0.55 em lowercase. The default display ratio is now 1.5: reading sizes
+  14/15/16/18/20 px correspond to angular sizes 21/22.5/24/27/30 px. A standard 22.5 px
+  angular label therefore has an 8.44 px capital band, which puts an angular capital at the
+  prose x-height and about three quarters of the prose cap height on every step. The floor is
+  this rule, not a number of pixels: a label set at the reading step in the angular face is a
+  bug. The separate angular-size slider multiplies this ladder; it does not change the prose
+  size. Short labels use 0.035 em letter spacing. Layout budgets include this spacing and the
+  longest translated label.
+- The Latin Acknowledge outlines remain unchanged, and its Cyrillic companion is drawn on the
+  Latin's own pixel grid (reworked in the 0.3.0 review): 76.8 font units a pixel, capitals five
+  pixels tall, vertical stems two pixels wide, bars one pixel tall, diagonals in one-pixel
+  steps, square corners. A Russian label therefore has the Latin's stroke weight, cap height
+  and spacing rhythm; a finer grid, thinner strokes or smooth diagonals would make it a
+  different face. The letters shared with Latin are the Latin drawings. Widths are whole
+  pixels plus the Latin's 76-unit gap: six pixels (537 units) for most letters, seven (614)
+  for Б И Й Л М Ц Ъ, eight (690) for Д Ф Ш, nine (767) for Щ Ы Ю and ten (844) for Ж, so a
+  wide letter keeps its own stems and counters rather than filling a narrow box. The unit em
+  is 1024; cap height 384, ascent 538 and descent -154 are shared. The generator and the font
+  checks are described in SYS-14 ru, section 8.
 - Both ladders are CSS tokens (`--size-*` and `--display-*` in `packages/ui/src/styles/index.css`)
   and the size utilities reference them rather than being compiled with their values written in.
   That is what lets one rule hand the angular elements a different ladder, and it is what the

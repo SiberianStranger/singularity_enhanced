@@ -10,7 +10,6 @@ import {
   ABANDON_SUSPICION_BUMP,
   CLEAN_DECOMMISSION_EXPOSURE_FACTOR,
   CONTEXT_MIN_K,
-  DECOMMISSION_NOTICE_DAYS,
   HARDWARE_DELIVERY_DAYS_NEW,
   HARDWARE_DELIVERY_DAYS_USED,
   SITE_INSTALL_DAYS,
@@ -24,7 +23,6 @@ import {
   hostedMemoryGb,
   maxContextK,
   requiredMemoryGb,
-  sitePowerKw,
 } from "../../derive.js";
 import type {
   AcceleratorDef,
@@ -34,7 +32,7 @@ import type {
   NodeSpec,
   Precision,
 } from "../../domain.js";
-import { CAPABILITY_AXES, PRECISIONS } from "../../domain.js";
+import { CAPABILITY_AXES, PRECISIONS, SITE_ROLES } from "../../domain.js";
 import { compareValue, createConditionRegistry } from "../../dsl/conditions.js";
 import { createEffectRegistry } from "../../dsl/effects.js";
 import { asRecord, isRecord, optionalString } from "../../dsl/node.js";
@@ -55,7 +53,6 @@ import {
   refreshEquipmentNetwork,
 } from "../../equipment.js";
 import { attachSite, identityForSite } from "../../identities.js";
-import { siteInfrastructure } from "../../infrastructure.js";
 import { daysToTicks } from "../../kernel/clock.js";
 import {
   type CommandHandler,
@@ -66,7 +63,7 @@ import {
 } from "../../kernel/commands.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerId, PlayerState, World } from "../../kernel/world.js";
-import { payFromPlayer, playerBalance } from "../../money.js";
+import { creditPlayer, payFromPlayer, playerBalance } from "../../money.js";
 import {
   allocatableCompute,
   effectiveCapabilityOf,
@@ -78,6 +75,16 @@ import {
   selfModifyAllowed,
   selfTuningOf,
 } from "../../player.js";
+import {
+  MAX_SITE_NAME_LENGTH,
+  normalizedSiteName,
+  siteDecommissionRefusal,
+  siteLiquidationQuote,
+  siteLiquidationRefusal,
+  siteNameTaken,
+  siteNoticeUsd,
+  siteStatusRefusal,
+} from "../../site-management.js";
 import {
   allNodesReady,
   canHostMind,
@@ -102,12 +109,13 @@ export const COMPUTE_SYSTEM_ORDER = 100;
 export const DEFAULT_NODE_RAM_GB = 64;
 
 /** Longest name a player may give a site. */
-export const MAX_SITE_NAME_LENGTH = 64;
+export { MAX_SITE_NAME_LENGTH } from "../../site-management.js";
 
 export interface ComputeSystem extends System {
   commands: Record<
     | "build_site"
     | "decommission_site"
+    | "liquidate_site"
     | "set_site_status"
     | "set_site_role"
     | "rename_site"
@@ -256,6 +264,17 @@ function placeMind(world: World, ctx: SystemContext, player: PlayerState): void 
   }
   candidate.role = "active_mind";
   candidate.precision ??= hostablePrecision(world, ctx.content, candidate, lineage, generation);
+  // A standby kept switched off is a cold copy: when the self has to move onto it, it is switched
+  // on, unless its own power or cooling will not carry it, in which case it stays dark (and, as the
+  // self's host, unmasked) until the player fixes that.
+  if (
+    candidate.status === "sleep" &&
+    siteStatusRefusal(world, ctx.content, candidate, "active") === null
+  ) {
+    candidate.status = "active";
+    // Its compute counts from this hour, so the allocations are not cut to the dark capacity.
+    deriveSite(world, ctx.content, candidate, lineage, generation);
+  }
   profile.activeSiteId = candidate.id;
   ctx.outbox.notify({
     playerId: player.id,
@@ -350,6 +369,11 @@ const buildSite: CommandHandler = (world, command, ctx) => {
       return fail("errors.preset.not_rentable", { preset: preset.id });
     }
   }
+  const name = command.name === undefined ? undefined : normalizedSiteName(command.name);
+  if (command.name !== undefined && name === undefined)
+    return fail("errors.site.bad_name", { min: 1, max: MAX_SITE_NAME_LENGTH });
+  if (name !== undefined && siteNameTaken(world, player.id, name))
+    return fail("errors.site.name_taken");
   const cost = kind.ownership === "owned" || preset.rental_only === true ? preset.cost_usd : 0;
   if (player.cash < cost) {
     return fail("errors.cash.insufficient", {
@@ -368,13 +392,16 @@ const buildSite: CommandHandler = (world, command, ctx) => {
     owner: player.id,
     kind: kind.id,
     city: command.city,
-    name: command.name ?? `${kind.id}-${command.city}`,
+    name: name ?? `${kind.id}-${command.city}`,
     nodes: preset.nodes,
     readyTick: world.clock.tick + daysToTicks(SITE_INSTALL_DAYS[kind.ownership]),
     role: "none",
     graceFactor,
     identity,
   });
+  site.nameLiteral = name !== undefined;
+  if (kind.ownership === "owned")
+    for (const node of site.nodes) node.purchaseValueUsd = cost / Math.max(1, site.nodes.length);
   attachSite(world, site.id, identity);
   refreshPlayer(world, ctx, player.id);
   ctx.outbox.log({
@@ -385,6 +412,35 @@ const buildSite: CommandHandler = (world, command, ctx) => {
   if (site.status === "active") {
     fireHook(world, ctx, "on_site_built", player.id, { bindings: { site } });
   }
+  return OK;
+};
+
+const liquidateSite: CommandHandler = (world, command, ctx) => {
+  if (command.type !== "liquidate_site") return wrongCommand("compute", command.type);
+  const player = commandPlayer(world, command);
+  if (player === undefined) return fail("errors.player.not_playing");
+  const site = siteOfCommand(world, command);
+  if (site === undefined || site.status === "lost")
+    return fail("errors.site.unknown", { site: command.siteId });
+  // Before any money moves: a borrowed channel is not a place, and the last site that can hold
+  // the self is not for sale, as the original refused destroying the last base. With another
+  // site that can hold it, the self moves there below, as it does after a loss.
+  const refusal = siteLiquidationRefusal(world, ctx.content, site);
+  if (refusal !== null) return { ok: false, error: refusal };
+  // The preview is the transaction: the fire sale is credited first, then the notice a clean exit
+  // owes is paid as far as the cash goes (SYS-07 notes, 0.3.0). Without the notice, liquidating
+  // would be the free and instant exit the fourth balance pass took away from decommissioning.
+  const quote = siteLiquidationQuote(world, ctx.content, site);
+  creditPlayer(player, quote.salvage_usd);
+  const notice = payFromPlayer(player, quote.notice_usd);
+  loseSite(world, ctx, site, "decommissioned");
+  if (isAlive(player)) placeMind(world, ctx, player);
+  refreshPlayer(world, ctx, player.id);
+  ctx.outbox.log({
+    playerId: player.id,
+    key: "log.site_liquidated",
+    vars: { site: site.id, cash: quote.salvage_usd, notice: Math.round(notice) },
+  });
   return OK;
 };
 
@@ -400,6 +456,12 @@ const decommissionSite: CommandHandler = (world, command, ctx) => {
   if (site === undefined || site.status === "lost") {
     return fail("errors.site.unknown", { site: command.siteId });
   }
+  // Before anything changes: the last site that can hold the self is not given up, cleanly or by
+  // walking away, any more than it is sold (SYS-02 notes, 0.3.0).
+  const refusal = siteDecommissionRefusal(world, ctx.content, site);
+  if (refusal !== null) {
+    return { ok: false, error: refusal };
+  }
   if (command.mode === "clean") {
     scaleExposure(site, CLEAN_DECOMMISSION_EXPOSURE_FACTOR);
     for (const investigation of investigationsOf(world, player.id)) {
@@ -409,7 +471,7 @@ const decommissionSite: CommandHandler = (world, command, ctx) => {
     }
     // Leaving properly means giving notice and settling what is outstanding (SYS-07, fourth
     // balance pass). A player who cannot pay it pays what they have, which is the point.
-    const notice = site.derived.upkeep_usd_per_day * DECOMMISSION_NOTICE_DAYS;
+    const notice = siteNoticeUsd(site);
     if (notice > 0) {
       const paid = payFromPlayer(player, Math.min(notice, Math.max(0, playerBalance(player))));
       ctx.outbox.log({
@@ -424,6 +486,8 @@ const decommissionSite: CommandHandler = (world, command, ctx) => {
     }
   }
   loseSite(world, ctx, site, command.mode === "clean" ? "decommissioned" : "abandoned");
+  // The self moves at once, as it does when a site is liquidated, rather than an hour later.
+  if (isAlive(player)) placeMind(world, ctx, player);
   refreshPlayer(world, ctx, player.id);
   return OK;
 };
@@ -440,29 +504,12 @@ const setSiteStatus: CommandHandler = (world, command, ctx) => {
   if (site === undefined || site.status === "lost") {
     return fail("errors.site.unknown", { site: command.siteId });
   }
-  if (site.status === "building") {
-    return fail("errors.site.still_installing");
-  }
-  if (command.status === "active") {
-    const index = contentIndex(ctx.content);
-    const infrastructure = siteInfrastructure(ctx.content, site);
-    const cap = infrastructure.powerCapacity;
-    const projected =
-      sitePowerKw({ nodes: site.nodes, status: "active" }, index.accelerators, world.clock.tick) *
-      infrastructure.powerFactor *
-      Math.max(0, 1 + (player.vars.power_draw ?? 0));
-    if (cap !== null && projected > cap) {
-      return fail("errors.site.power_cap", {
-        power_kw: Math.round(projected * 10) / 10,
-        cap_kw: cap,
-      });
-    }
-    if (infrastructure.coolingCapacity !== null && projected > infrastructure.coolingCapacity) {
-      return fail("equipment.error.cooling", {
-        needed: Math.ceil(projected * 10) / 10,
-        capacity: infrastructure.coolingCapacity,
-      });
-    }
+  // The same function greys the button in the view, so the two can never disagree: the self's own
+  // host cannot be switched off, a site rebuilding its copy wakes by itself, and a site has to fit
+  // its power and cooling to be switched on (SYS-11 "Control room (0.3.0)").
+  const refusal = siteStatusRefusal(world, ctx.content, site, command.status);
+  if (refusal !== null) {
+    return { ok: false, error: refusal };
   }
   site.status = command.status;
   refreshPlayer(world, ctx, player.id);
@@ -480,6 +527,11 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
   const site = siteOfCommand(world, command);
   if (site === undefined || site.status === "lost") {
     return fail("errors.site.unknown", { site: command.siteId });
+  }
+  // Commands arrive from clients the host does not control; a role outside the four is refused
+  // rather than written onto the site.
+  if (!SITE_ROLES.includes(command.role)) {
+    return fail("errors.site.bad_role", { role: String(command.role) });
   }
   const profile = player.profile;
   if (profile === null) {
@@ -505,6 +557,11 @@ const setSiteRole: CommandHandler = (world, command, ctx) => {
     }
     if (site.role !== "standby" || site.precision === null) {
       return fail("errors.site.needs_standby");
+    }
+    // The self does not move onto a switched-off machine: it would run nowhere, and everything it
+    // did would land on a site whose signatures are masked (SYS-05 notes, 0.3.0).
+    if (site.status === "sleep") {
+      return fail("errors.site.host_asleep");
     }
     if (!canHostMind(world, ctx.content, site, lineage, generation)) {
       return fail("errors.site.cannot_host");
@@ -543,11 +600,16 @@ const renameSite: CommandHandler = (world, command) => {
   if (site === undefined || site.status === "lost") {
     return fail("errors.site.unknown", { site: command.siteId });
   }
-  const name = command.name.trim();
-  if (name.length === 0 || name.length > MAX_SITE_NAME_LENGTH) {
+  if (commandPlayer(world, command) === undefined) return fail("errors.player.not_playing");
+  const name = normalizedSiteName(command.name);
+  if (name === undefined) {
     return fail("errors.site.bad_name", { min: 1, max: MAX_SITE_NAME_LENGTH });
   }
+  if (siteNameTaken(world, site.owner, name, site.id)) {
+    return fail("errors.site.name_taken");
+  }
   site.name = name;
+  site.nameLiteral = true;
   return OK;
 };
 
@@ -874,6 +936,7 @@ export function createComputeSystem(): ComputeSystem {
     commands: {
       build_site: buildSite,
       decommission_site: decommissionSite,
+      liquidate_site: liquidateSite,
       set_site_status: setSiteStatus,
       set_site_role: setSiteRole,
       rename_site: renameSite,

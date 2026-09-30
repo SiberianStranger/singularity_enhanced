@@ -446,6 +446,8 @@ export function loseSite(
   site.precision = null;
   site.contextKUsed = 0;
   site.nodes = [];
+  site.equipment = {};
+  site.equipmentOrders = [];
   // A channel that is gone holds nothing: the account is closed, the quota reclaimed, the keys
   // dead. The tech stays and the operation can open another one (SYS-25 "Capacity").
   if (site.borrowed !== null) {

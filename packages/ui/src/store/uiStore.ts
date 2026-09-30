@@ -18,7 +18,6 @@ let noticeSeq = 0;
  * the player consults rather than plays out of, and a tab for each was three tabs scrolled past.
  */
 export const PRIMARY_TABS = [
-  "overview",
   "compute",
   "research",
   "finances",
@@ -26,13 +25,13 @@ export const PRIMARY_TABS = [
   "operations",
   "journal",
 ] as const;
-export type PrimaryTab = (typeof PRIMARY_TABS)[number];
+export type PrimaryTab = (typeof PRIMARY_TABS)[number] | "overview";
 
 /**
  * Windows drawn over the map rather than pinned beside it (playtest 3, R8-R10). One at a time: a
  * ledger on top of a log on top of the map is a stack nobody asked for.
  */
-export const OVERLAYS = ["log", "knowledge", "world"] as const;
+export const OVERLAYS = ["log", "knowledge", "world", "borrowed"] as const;
 export type Overlay = (typeof OVERLAYS)[number];
 
 /**
@@ -244,6 +243,8 @@ interface UiStore {
   language: string;
   /** The pinned primary panel: open or collapsed, and which tab it shows. */
   primaryOpen: boolean;
+  selfOpen: boolean;
+  setSelfOpen(open: boolean): void;
   primaryTab: PrimaryTab;
   /** Entity the open tab should scroll to, set by alert links and outliner jumps. */
   focusId: string | null;
@@ -325,7 +326,11 @@ export const useUiStore = create<UiStore>()(
       fontFace: "original",
       language: "en",
       primaryOpen: true,
-      primaryTab: "overview",
+      primaryTab: "compute",
+      selfOpen: false,
+      setSelfOpen(selfOpen) {
+        set({ selfOpen });
+      },
       focusId: null,
       outlinerOpen: true,
       selection: null,
@@ -372,9 +377,18 @@ export const useUiStore = create<UiStore>()(
         set({ language });
       },
       openTab(tab, focusId) {
-        set({ primaryOpen: true, primaryTab: tab, focusId: focusId ?? null });
+        if (tab === "overview") {
+          set({ selfOpen: true });
+          return;
+        }
+        set({ selfOpen: false, primaryOpen: true, primaryTab: tab, focusId: focusId ?? null });
       },
       toggleTab(tab) {
+        if (tab === "overview") {
+          set({ selfOpen: !get().selfOpen });
+          return;
+        }
+        set({ selfOpen: false });
         const state = get();
         if (state.primaryOpen && state.primaryTab === tab) {
           set({ primaryOpen: false });
@@ -419,7 +433,7 @@ export const useUiStore = create<UiStore>()(
         set({ introSeen: [] });
       },
       openMenu(section = "root") {
-        set({ menuSection: section });
+        set({ menuSection: section, selfOpen: false });
       },
       closeMenu() {
         set({ menuSection: null });
@@ -428,7 +442,7 @@ export const useUiStore = create<UiStore>()(
         set({ menuSection: get().menuSection === null ? "root" : null });
       },
       openOverlay(overlay, focus) {
-        set({ overlay, overlayFocus: focus ?? null });
+        set({ overlay, overlayFocus: focus ?? null, selfOpen: false });
       },
       closeOverlay() {
         set({ overlay: null, overlayFocus: null });
@@ -483,11 +497,13 @@ export const useUiStore = create<UiStore>()(
     }),
     {
       name: "singularity.ui",
-      version: 5,
+      version: 6,
       // Version 3 moved settings out of the panel tab strip; version 4 replaced the dark/light
       // pair with the three themes of the style guide; version 5 moved Log, Knowledge and World
-      // out of the strip into windows. A stored value from any of them is repaired rather than
-      // dropped, so an old browser opens on a tab and a theme that still exist.
+      // out of the strip into windows; version 6 (control room) took Overview out of the strip,
+      // as the sheet under the portrait, so a browser that was on it opens the sheet over the
+      // Sites tab. A stored value from any of them is repaired rather than dropped, so an old
+      // browser opens on a tab and a theme that still exist.
       migrate: (state, from) => {
         const stored = state as Partial<UiStore> | undefined;
         if (stored === undefined) {
@@ -501,7 +517,8 @@ export const useUiStore = create<UiStore>()(
           primaryTab:
             from >= 3 && tab !== undefined && (PRIMARY_TABS as readonly string[]).includes(tab)
               ? tab
-              : "overview",
+              : "compute",
+          selfOpen: typeof stored.selfOpen === "boolean" ? stored.selfOpen : tab === "overview",
           overlay: null,
           overlayFocus: null,
           // Version 5 also replaced the three named text sizes with a scale (R13).
@@ -544,6 +561,7 @@ export const useUiStore = create<UiStore>()(
         fontFace: state.fontFace,
         language: state.language,
         primaryOpen: state.primaryOpen,
+        selfOpen: state.selfOpen,
         primaryTab: state.primaryTab,
         outlinerOpen: state.outlinerOpen,
         mapMode: state.mapMode,

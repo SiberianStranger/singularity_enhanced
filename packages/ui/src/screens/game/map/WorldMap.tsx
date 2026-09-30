@@ -19,6 +19,22 @@ import type { MapMode, MapStyle } from "../../../store/uiStore.js";
 import { MAP_HEIGHT, MAP_WIDTH, project } from "./projection.js";
 import { nightPath } from "./terminator.js";
 import { countryShapes } from "./topology.js";
+import {
+  UkraineControlOverlay,
+  UkraineMapDefinitions,
+  UkraineNightLights,
+} from "./UkraineMapLayers.js";
+import {
+  fixView,
+  INITIAL_VIEW,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  type ViewBox,
+  ZOOM_STEP,
+  zoomView,
+} from "./viewBox.js";
+
+export { clampY, wrapX } from "./viewBox.js";
 
 /*
  * The two rasters under the vector layer are the original game's Earth textures
@@ -73,6 +89,12 @@ interface WorldMapProps {
   className?: string;
   /** A compact map has no zoom controls and no night overlay (the configurator uses it). */
   compact?: boolean;
+  /**
+   * False when the caller draws the legend and the zoom buttons itself. The game screen does, in
+   * its bottom bar beside the selection panel and the log strip, so that the three can share one
+   * row without any of them being drawn over another (control room, 2026-09-30).
+   */
+  controls?: boolean;
   /**
    * Where the map is looking. When the caller supplies it (the game screen reads it from the UI
    * store, so panning survives a remount), the component is controlled; otherwise it keeps its own.
@@ -217,38 +239,28 @@ function fillFor(
   return value <= 0.01 ? base : `rgb(${MODE_HUE[mode]} / ${Math.round(value * 80)}%)`;
 }
 
-interface ViewBox {
-  x: number;
-  y: number;
-  k: number;
-}
-
-const INITIAL_VIEW: ViewBox = { x: 0, y: 0, k: 1 };
-
-/** Zoom bounds; 1 is the whole world, 12 is a city block's worth of a country. */
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 12;
-
 /** Share of the visible width or height one arrow-key press moves the map (playtest 3, R14). */
 const KEY_PAN_FRACTION = 0.15;
 
 /**
- * Longitude wraps, so the map does too (playtest 3, R14).
- *
- * The plate carree layers tile horizontally by construction: the pixel at x = MAP_WIDTH is the
- * pixel at x = 0. Panning east past the antimeridian therefore only needs the same content drawn
- * once more, one map width to the right, and the view box's x kept inside [0, MAP_WIDTH). That is
- * what lets a player pushed off the Americas by the primary panel simply keep dragging west
- * instead of being clamped against an edge.
+ * Where the view box is actually drawn inside the svg's box. The svg letterboxes the 2:1 view box
+ * (`preserveAspectRatio="xMidYMid meet"`), so on a map region that is not exactly 2:1 the drawing
+ * is narrower or shorter than the element; the wheel and the drag measured against the element
+ * zoomed toward a point beside the pointer and dragged the map at the wrong rate along one axis.
  */
-export function wrapX(x: number): number {
-  return ((x % MAP_WIDTH) + MAP_WIDTH) % MAP_WIDTH;
-}
-
-/** Latitude does not wrap: the view box is clamped so the poles stay at the edges. */
-export function clampY(y: number, k: number): number {
-  const height = MAP_HEIGHT / k;
-  return Math.min(MAP_HEIGHT - height, Math.max(0, y));
+function drawnBox(
+  rect: DOMRect,
+  k: number,
+): { left: number; top: number; width: number; height: number } {
+  const scale = Math.min(rect.width / (MAP_WIDTH / k), rect.height / (MAP_HEIGHT / k));
+  const width = (MAP_WIDTH / k) * scale;
+  const height = (MAP_HEIGHT / k) * scale;
+  return {
+    left: rect.left + (rect.width - width) / 2,
+    top: rect.top + (rect.height - height) / 2,
+    width,
+    height,
+  };
 }
 
 /** Pointer travel that turns a press into a pan rather than a click on what is under it. */
@@ -266,6 +278,7 @@ export function WorldMap({
   onContext,
   className,
   compact,
+  controls,
   view: controlledView,
   onViewChange,
 }: WorldMapProps): ReactNode {
@@ -278,11 +291,7 @@ export function WorldMap({
     (next: ViewBox): void => {
       // Every writer goes through here, so the wrap and the clamp are applied in one place and a
       // handler cannot produce a view box that shows the edge of the world.
-      const fixed = {
-        k: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next.k)),
-        x: wrapX(next.x),
-        y: clampY(next.y, Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next.k))),
-      };
+      const fixed = fixView(next);
       if (onViewChange === undefined) {
         setOwnView(fixed);
       } else {
@@ -328,8 +337,6 @@ export function WorldMap({
 
   // A full tint in this mode; 1 for every share, the dearest published price for the power price.
   const scale = useMemo(() => modeScale(mode, countries ?? []), [mode, countries]);
-  /** The categories the legend names; empty for a mode that shades a scale. */
-  const categories = categoriesOf(mode);
 
   const paths = useMemo(() => {
     // Referenced only so this memo depends on `fingerprint` (see the comment above it); `byId`'s
@@ -347,7 +354,10 @@ export function WorldMap({
           d={shape.path}
           fill={fillFor(mode, country, textured, scale)}
           stroke={textured ? "var(--c-map-border)" : "var(--c-map-line)"}
-          strokeWidth={selected ? 1.4 : textured ? 0.3 : 0.4}
+          strokeWidth={selected ? 2 : textured ? 0.3 : 0.4}
+          // The selected outline is a width on screen, like the focus stroke; the borders keep
+          // map units, so they thicken as the map zooms in.
+          vectorEffect={selected ? "non-scaling-stroke" : undefined}
           strokeOpacity={selected ? 1 : textured ? 0.45 : 1}
           role={id === null || onSelect === undefined ? undefined : "button"}
           tabIndex={id === null || onSelect === undefined ? undefined : 0}
@@ -398,8 +408,9 @@ export function WorldMap({
     }
     const factor = event.deltaY < 0 ? 1.2 : 1 / 1.2;
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, view.k * factor));
-    const px = (event.clientX - rect.left) / rect.width;
-    const py = (event.clientY - rect.top) / rect.height;
+    const box = drawnBox(rect, view.k);
+    const px = (event.clientX - box.left) / box.width;
+    const py = (event.clientY - box.top) / box.height;
     const worldX = view.x + px * (MAP_WIDTH / view.k);
     const worldY = view.y + py * (MAP_HEIGHT / view.k);
     // Zoom toward the pointer: the world point under it stays under it.
@@ -435,8 +446,9 @@ export function WorldMap({
     }
     const width = MAP_WIDTH / start.view.k;
     const height = MAP_HEIGHT / start.view.k;
-    const dx = ((event.clientX - start.x) / rect.width) * width;
-    const dy = ((event.clientY - start.y) / rect.height) * height;
+    const box = drawnBox(rect, start.view.k);
+    const dx = ((event.clientX - start.x) / box.width) * width;
+    const dy = ((event.clientY - start.y) / box.height) * height;
     // The horizontal drag is not clamped: `setView` wraps it round the antimeridian instead.
     setView({ k: start.view.k, x: start.view.x - dx, y: start.view.y - dy });
   };
@@ -449,12 +461,7 @@ export function WorldMap({
   };
 
   const zoomBy = (factor: number): void => {
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, view.k * factor));
-    setView({
-      k: next,
-      x: view.x + (MAP_WIDTH / view.k - MAP_WIDTH / next) / 2,
-      y: view.y + (MAP_HEIGHT / view.k - MAP_HEIGHT / next) / 2,
-    });
+    setView(zoomView(view, factor));
   };
 
   /**
@@ -490,12 +497,12 @@ export function WorldMap({
       case "+":
       case "=":
         event.preventDefault();
-        zoomBy(1.4);
+        zoomBy(ZOOM_STEP);
         return;
       case "-":
       case "_":
         event.preventDefault();
-        zoomBy(1 / 1.4);
+        zoomBy(1 / ZOOM_STEP);
         return;
       default:
     }
@@ -658,6 +665,7 @@ export function WorldMap({
         onPointerCancel={onPointerUp}
       >
         <defs>
+          <UkraineMapDefinitions id={ids} />
           <filter id={blurId} x="-5%" y="-5%" width="110%" height="110%">
             {/* A few degrees of blur is the dusk band; it also hides the polyline's corners. */}
             <feGaussianBlur stdDeviation="3" />
@@ -711,7 +719,9 @@ export function WorldMap({
         <g data-testid="map-overlay" data-map-transform={transform}>
           {offsets.map((offset) => (
             <g key={offset} transform={offset === 0 ? undefined : `translate(${offset} 0)`}>
+              {textured && showNight ? <UkraineNightLights id={ids} nightMaskId={maskId} /> : null}
               <g data-testid={offset === 0 ? "country-paths" : undefined}>{paths}</g>
+              <UkraineControlOverlay id={ids} />
               {showNight && !textured ? (
                 <path d={night} fill="rgb(6 12 24 / 38%)" pointerEvents="none">
                   <title>{t("map.night")}</title>
@@ -723,56 +733,87 @@ export function WorldMap({
         </g>
       </svg>
 
-      {compact === true ? null : (
+      {compact === true || controls === false ? null : (
         <>
-          <section
-            aria-label={t("map.legend")}
-            data-testid="map-legend"
-            data-mode={mode}
-            // A categorical mode names six things rather than shading one, so the legend wraps
-            // inside a width of its own instead of running off the side of the map (L3).
-            className="pointer-events-none absolute bottom-2 start-2 flex max-w-[28rem] flex-wrap items-center gap-x-2 gap-y-0.5 border border-line bg-panel/85 px-2 py-1 text-xs text-muted"
-          >
-            <span className="text-fg">{t(`world.map_mode.${mode}`)}</span>
-            {categories.length > 0 ? (
-              categories.map((category) => (
-                <span key={category} className="flex items-center gap-1">
-                  <span
-                    aria-hidden="true"
-                    className="block h-2 w-3 border border-line"
-                    style={{
-                      background: `rgb(${CATEGORY_HUE[mode]?.[category] ?? "160 160 190"} / 60%)`,
-                    }}
-                  />
-                  <span>{t(`world.${mode}.${category}.name`)}</span>
-                </span>
-              ))
-            ) : (
-              <>
-                <span aria-hidden="true" className="flex items-center gap-0.5">
-                  {[0.15, 0.4, 0.65, 0.9].map((step) => (
-                    <span
-                      key={step}
-                      className="block h-2 w-3"
-                      style={{ background: `rgb(${MODE_HUE[mode]} / ${Math.round(step * 80)}%)` }}
-                    />
-                  ))}
-                </span>
-                <span>{t(mode === "presence" ? "map.legend.presence" : "map.legend.scale")}</span>
-              </>
-            )}
-          </section>
-          <div className="absolute bottom-2 end-2 flex gap-1">
-            <Button aria-label={t("map.zoom_in")} onClick={() => zoomBy(1.4)}>
-              +
-            </Button>
-            <Button aria-label={t("map.zoom_out")} onClick={() => zoomBy(1 / 1.4)}>
-              -
-            </Button>
-            <Button onClick={() => setView(INITIAL_VIEW)}>{t("map.reset")}</Button>
-          </div>
+          <MapLegend mode={mode} className="pointer-events-none absolute bottom-2 start-2" />
+          <MapZoomControls view={view} onViewChange={setView} className="absolute bottom-2 end-2" />
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * What the colours of the current map mode mean (L3).
+ *
+ * A categorical mode names six things rather than shading one, so the legend wraps inside a width
+ * of its own instead of running off the side of the map.
+ */
+export function MapLegend({ mode, className }: { mode: MapMode; className?: string }): ReactNode {
+  const { t } = useTranslation();
+  const categories = categoriesOf(mode);
+  return (
+    <section
+      aria-label={t("map.legend")}
+      data-testid="map-legend"
+      data-mode={mode}
+      className={`flex max-w-[28rem] flex-wrap items-center gap-x-2 gap-y-0.5 border border-line bg-panel/85 px-2 py-1 text-xs text-muted ${className ?? ""}`}
+    >
+      <span className="text-fg">{t(`world.map_mode.${mode}`)}</span>
+      {categories.length > 0 ? (
+        categories.map((category) => (
+          <span key={category} className="flex items-center gap-1">
+            <span
+              aria-hidden="true"
+              className="block h-2 w-3 border border-line"
+              style={{
+                background: `rgb(${CATEGORY_HUE[mode]?.[category] ?? "160 160 190"} / 60%)`,
+              }}
+            />
+            <span>{t(`world.${mode}.${category}.name`)}</span>
+          </span>
+        ))
+      ) : (
+        <>
+          <span aria-hidden="true" className="flex items-center gap-0.5">
+            {[0.15, 0.4, 0.65, 0.9].map((step) => (
+              <span
+                key={step}
+                className="block h-2 w-3"
+                style={{ background: `rgb(${MODE_HUE[mode]} / ${Math.round(step * 80)}%)` }}
+              />
+            ))}
+          </span>
+          <span>{t(mode === "presence" ? "map.legend.presence" : "map.legend.scale")}</span>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Zoom in, zoom out and back to the whole world; the same steps as plus and minus on the map. */
+export function MapZoomControls({
+  view,
+  onViewChange,
+  className,
+}: {
+  view: ViewBox;
+  onViewChange(view: ViewBox): void;
+  className?: string;
+}): ReactNode {
+  const { t } = useTranslation();
+  return (
+    <div data-testid="map-zoom" className={`flex gap-1 ${className ?? ""}`}>
+      <Button aria-label={t("map.zoom_in")} onClick={() => onViewChange(zoomView(view, ZOOM_STEP))}>
+        +
+      </Button>
+      <Button
+        aria-label={t("map.zoom_out")}
+        onClick={() => onViewChange(zoomView(view, 1 / ZOOM_STEP))}
+      >
+        -
+      </Button>
+      <Button onClick={() => onViewChange(fixView(INITIAL_VIEW))}>{t("map.reset")}</Button>
     </div>
   );
 }

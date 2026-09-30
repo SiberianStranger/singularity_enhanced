@@ -1,78 +1,96 @@
 #!/usr/bin/env python3
-"""Cyrillic for Acknowledge TT, drawn on the face's own grid (SYS-14, docs/design/14-i18n-ru.md).
+"""Cyrillic companion to Acknowledge TT, drawn on the Latin face's own pixel grid (SYS-14 ru, section 8).
 
-Acknowledge TT (`packages/ui/src/assets/acknowtt.ttf`) is Latin only. It is also strictly
-rectilinear: every glyph is a subset of a three-column by five-row grid inside a 461 by 384 box on a
-1024 unit em, with a 537 advance and lowercase drawn as components of the capitals. Extending it is
-therefore not a matter of imitating a drawing style but of filling in the same table.
+Acknowledge TT (`packages/ui/src/assets/acknowtt.ttf`, untouched) is a pixel face. Every Latin
+outline point sits on a grid of 76.8 font units (1024 x 0.075) on a 1024 unit em: capitals are five
+pixels tall (cap height 384), vertical stems are two pixels wide, horizontal bars one pixel tall,
+counters two pixels wide, and diagonals are staircases of one-pixel steps (N, Z, K, V, X, M, W).
+Letters are six pixels wide, M and W seven, and every advance is the drawn width plus a 76 unit gap
+(537 and 614). Lowercase is a component of the capital.
 
-This script writes `packages/ui/src/assets/acknowtt-cyrillic.ttf`: the Russian alphabet in that
-grid, with the original's units per em, ascent, descent and advance, so the stylesheet can load it
-under the same family name behind `unicode-range: U+0400-04FF` and the browser can mix the two per
-character without a metric seam.
+This script writes `packages/ui/src/assets/acknowtt-cyrillic.ttf` on exactly that grid, so the
+stylesheet can load it under the same family name behind `unicode-range: U+0400-04FF` and a Russian
+label reads as the same face as an English one: same stroke weight, square corners, stepped
+diagonals, cap height and spacing rhythm.
 
-Three letters need more columns than the grid has and take the same kind of compromise the face
-already makes for M and N, which share one shape: Ж, Ш and Щ fill the middle band instead of
-carrying a middle stem. Marks live outside the cap band, in rows the font's own ascent and descent
-already cover: Ё and Й above 384, Ц, Щ and Д below 0.
+- The eleven letters Cyrillic shares with Latin (А В Е К М Н О Р С Т Х) are the Latin drawings,
+  pixel for pixel and with the same advance; `test_cyrillic.py` checks them against the Latin font.
+- The letters the maintainer reported as unreadable in 0.2.0 get the width their shapes need rather
+  than a six-pixel box: И has a real one-pixel staircase (seven pixels) and no crossbar, so it cannot
+  read as Н; Ш and Щ have three separate stems (eight and nine pixels) and no V, so neither reads as
+  М; Ж is ten pixels with a centre stem and stepped arms, unlike Х; Ы keeps a one-pixel gap between
+  its soft sign and its stem (nine pixels); Д has feet below the baseline and a stepped left leg,
+  unlike А; Ф is eight pixels with its stem through a bowl, unlike О; З has a short waist tick where
+  Э has a long bar and rounded corners; Б's top bar reaches a pixel past its bowl (seven
+  pixels), so its silhouette is not Е's.
+- Marks use the rows the Latin accents use: Ё carries the dots of Ë in the row above the cap
+  (461-538), Й a two-row breve. Д, Ц and Щ descend one pixel below the baseline, like Q's tail.
+- The glyphs are traced outlines of the pixel set (outer loops clockwise, holes counter-clockwise),
+  the way the Latin draws them, rather than overlapping rectangles.
 
-Run: python3 tools/fonts/build-cyrillic.py   (needs fonttools; the output is committed)
+Run: python3 tools/fonts/build-cyrillic.py [--specimen DIR] [--preview]
+Requires fonttools (and Pillow for --specimen). The output is committed and reproducible.
 """
 
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.ttLib import newTable
 
-# The grid. Columns are the original's stem positions; rows are its 77-unit bands, plus one band
-# above the cap height for Ё and Й and one below the baseline for Ц, Щ and Д. Both extra bands are
-# inside the font's declared ascent (538) and descent (-154), so no line box changes.
-XS = (0, 154, 307, 461)
-YS = (-77, 0, 77, 154, 230, 307, 384, 461, 538)
-BODY_TOP = 5  # row index of the top body band
-MARK_ROW = 7  # the band above the cap, with row 6 left empty so the mark does not touch the letter
-ADVANCE = 537
+PIXEL = 76.8
+GAP = 76
 UPM = 1024
+CAP_ROWS = 5
+FONT_TIMESTAMP = int((datetime(2026, 9, 30) - datetime(1904, 1, 1)).total_seconds())
 
-# Rows are written top to bottom, as the letter is read. "a" is the band above the cap height and
-# "b" the band below the baseline; a letter with neither leaves them out.
+# One string per pixel row, top to bottom. The five plain rows are the cap band (row 4 at the top,
+# row 0 on the baseline). A row starting with "^" sits above the cap: the first at row 6 (461-538),
+# a second at row 5. A row starting with "_" is the descender row below the baseline (-77-0).
 LETTERS: dict[str, tuple[str, ...]] = {
-    "А": ("###", "#.#", "###", "#.#", "#.#"),
-    "Б": ("###", "#..", "##.", "#.#", "###"),
-    "В": ("###", "#.#", "##.", "#.#", "###"),
-    "Г": ("###", "#..", "#..", "#..", "#.."),
-    "Д": (".##", "#.#", "#.#", "###", "#.#", "b#.#"),
-    "Е": ("###", "#..", "##.", "#..", "###"),
-    "Ё": ("###", "#..", "##.", "#..", "###", "a#.#"),
-    "Ж": ("#.#", "###", ".#.", "###", "#.#"),
-    "З": ("###", "..#", ".#.", "..#", "###"),
-    "И": ("#.#", "###", "###", "#.#", "#.#"),
-    "Й": ("#.#", "###", "###", "#.#", "#.#", "a###"),
-    "К": ("#.#", "##.", "##.", "##.", "#.#"),
-    "Л": (".##", "#.#", "#.#", "#.#", "#.#"),
-    "М": ("#.#", "#.#", "###", "###", "#.#"),
-    "Н": ("#.#", "#.#", "###", "#.#", "#.#"),
-    "О": ("###", "#.#", "#.#", "#.#", "###"),
-    "П": ("###", "#.#", "#.#", "#.#", "#.#"),
-    "Р": ("###", "#.#", "###", "#..", "#.."),
-    "С": ("###", "#..", "#..", "#..", "###"),
-    "Т": ("###", ".#.", ".#.", ".#.", ".#."),
-    "У": ("#.#", "#.#", "##.", ".#.", ".#."),
-    "Ф": (".#.", "###", "#.#", "###", ".#."),
-    "Х": ("#.#", "#.#", ".#.", "#.#", "#.#"),
-    "Ц": ("#.#", "#.#", "#.#", "#.#", "###", "b..#"),
-    "Ч": ("#.#", "#.#", "###", "..#", "..#"),
-    "Ш": ("#.#", "#.#", "###", "###", "###"),
-    "Щ": ("#.#", "#.#", "###", "###", "###", "b..#"),
-    "Ъ": ("##.", ".#.", "###", "#.#", "###"),
-    "Ы": ("#.#", "#.#", "###", "#.#", "###"),
-    "Ь": ("#..", "#..", "###", "#.#", "###"),
-    "Э": ("###", "..#", ".##", "..#", "###"),
-    "Ю": ("#..", "###", "#.#", "###", "#.."),
-    "Я": ("###", "#.#", ".##", "#.#", "#.#"),
+    "А": ("######", "##..##", "######", "##..##", "##..##"),
+    "Б": ("#######", "##.....", "#####..", "##..##.", "#####.."),
+    "В": ("######", "##..##", "#####.", "##..##", "######"),
+    "Г": ("######", "##....", "##....", "##....", "##...."),
+    "Д": ("..#####.", "..##.##.", ".##..##.", ".##..##.", "########", "_##....##"),
+    "Е": ("######", "##....", "####..", "##....", "######"),
+    "Ё": ("^##..##", "######", "##....", "####..", "##....", "######"),
+    "Ж": ("##..##..##", ".##.##.##.", "..######..", ".##.##.##.", "##..##..##"),
+    "З": ("######", "....##", "...##.", "....##", "######"),
+    "И": ("##...##", "##..###", "##.#.##", "###..##", "##...##"),
+    "Й": ("^.#...#.", "^..###..", "##...##", "##..###", "##.#.##", "###..##", "##...##"),
+    "К": ("##..##", "##.##.", "####..", "##.##.", "##..##"),
+    "Л": ("..#####", "..##.##", ".##..##", ".##..##", "##...##"),
+    "М": ("##...##", "###.###", "#######", "##.#.##", "##...##"),
+    "Н": ("##..##", "##..##", "######", "##..##", "##..##"),
+    "О": ("######", "##..##", "##..##", "##..##", "######"),
+    "П": ("######", "##..##", "##..##", "##..##", "##..##"),
+    "Р": ("######", "##..##", "######", "##....", "##...."),
+    "С": ("######", "##....", "##....", "##....", "######"),
+    "Т": ("######", "..##..", "..##..", "..##..", "..##.."),
+    "У": ("##..##", "##..##", ".#####", "....##", "#####."),
+    "Ф": ("...##...", ".######.", "##.##.##", ".######.", "...##..."),
+    "Х": ("##..##", "##..##", ".####.", "##..##", "##..##"),
+    "Ц": ("##..##.", "##..##.", "##..##.", "##..##.", "#######", "_.....##"),
+    "Ч": ("##..##", "##..##", "##..##", ".#####", "....##"),
+    "Ш": ("##.##.##", "##.##.##", "##.##.##", "##.##.##", "########"),
+    "Щ": ("##.##.##.", "##.##.##.", "##.##.##.", "##.##.##.", "#########", "_.......##"),
+    "Ъ": ("###....", ".##....", ".#####.", ".##..##", ".#####."),
+    "Ы": ("##.....##", "##.....##", "#####..##", "##..##.##", "#####..##"),
+    "Ь": ("##....", "##....", "#####.", "##..##", "#####."),
+    "Э": ("#####.", "....##", ".#####", "....##", "#####."),
+    "Ю": ("##.######", "##.##..##", "#####..##", "##.##..##", "##.######"),
+    "Я": ("######", "##..##", ".#####", ".##.##", "##..##"),
+}
+
+# The Latin capital each shared letter is drawn from; the tests hold them to it pixel for pixel.
+LATIN_TWINS = {
+    "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H",
+    "О": "O", "Р": "P", "С": "C", "Т": "T", "Х": "X",
 }
 
 GLYPH_NAMES = {
@@ -88,87 +106,118 @@ GLYPH_NAMES = {
 }
 
 
-def cells(rows: tuple[str, ...]) -> set[tuple[int, int]]:
-    """The filled (column, row) cells of a letter, with row 0 the band below the baseline."""
-    body = [row for row in rows if row[0] not in "ab"]
-    marks = [row for row in rows if row[0] in "ab"]
+def unit(pixels: int) -> int:
+    """A grid line in font units; round(i * 76.8) reproduces the Latin's 77, 154, 230, 307, 384."""
+    return round(pixels * PIXEL)
+
+
+def cells(letter: str) -> tuple[int, set[tuple[int, int]]]:
+    """The width in pixels and the filled (column, row) cells, with row 0 on the baseline."""
+    rows = LETTERS[letter]
+    marks = [row[1:] for row in rows if row.startswith("^")]
+    below = [row[1:] for row in rows if row.startswith("_")]
+    body = [row for row in rows if row[0] not in "^_"]
+    assert len(body) == CAP_ROWS and len(marks) <= 2 and len(below) <= 1, letter
+    width = len(body[0])
+    assert all(len(row) == width for row in body + marks + below), letter
     filled: set[tuple[int, int]] = set()
+    for index, row in enumerate(marks):
+        filled |= {(x, 6 - index) for x, mark in enumerate(row) if mark == "#"}
     for index, row in enumerate(body):
-        y = BODY_TOP - index
-        for column, mark in enumerate(row):
-            if mark == "#":
-                filled.add((column, y))
-    for row in marks:
-        y = MARK_ROW if row[0] == "a" else 0
-        for column, mark in enumerate(row[1:]):
-            if mark == "#":
-                filled.add((column, y))
-    return filled
+        filled |= {(x, CAP_ROWS - 1 - index) for x, mark in enumerate(row) if mark == "#"}
+    for row in below:
+        filled |= {(x, -1) for x, mark in enumerate(row) if mark == "#"}
+    return width, filled
 
 
-def contours(filled: set[tuple[int, int]]) -> list[list[tuple[int, int]]]:
-    """Covers the filled cells with maximal rectangles, largest first.
+def advance(letter: str) -> int:
+    return unit(cells(letter)[0]) + GAP
 
-    Rectangles abut instead of overlapping, and all of them are wound the same way, so the nonzero
-    fill of TrueType renders their union. The original face draws each glyph as one traced outline;
-    a rectangle cover is the same shape with more points, and it is the part of this script that has
-    to be obviously right rather than clever.
+
+def trace(filled: set[tuple[int, int]]) -> list[list[tuple[int, int]]]:
+    """The boundary of a pixel set as closed loops in font units.
+
+    Every cell contributes its own clockwise square (y up); an edge two cells share cancels, and the
+    edges left over are chained into loops. Outer loops come out clockwise and holes
+    counter-clockwise, which is the TrueType winding the Latin glyphs use. Where two loops touch
+    at a single corner the walk turns right, so each loop stays simple.
     """
-    remaining = set(filled)
-    rectangles: list[list[tuple[int, int]]] = []
-    while remaining:
-        column, row = min(remaining, key=lambda cell: (cell[1], cell[0]))
-        width = 1
-        while (column + width, row) in remaining:
-            width += 1
-        height = 1
-        while all((column + step, row + height) in remaining for step in range(width)):
-            height += 1
-        for step in range(width):
-            for lift in range(height):
-                remaining.discard((column + step, row + lift))
-        x0, x1 = XS[column], XS[column + width]
-        y0, y1 = YS[row], YS[row + height]
-        # Clockwise in a y-up space, which is the winding the original glyphs use.
-        rectangles.append([(x0, y0), (x0, y1), (x1, y1), (x1, y0)])
-    return rectangles
+    edges: dict[tuple[int, int], list[tuple[int, int]]] = {}
+    for x, y in sorted(filled):
+        square = [(x, y), (x, y + 1), (x + 1, y + 1), (x + 1, y)]
+        for start, end in zip(square, square[1:] + square[:1]):
+            reverse = edges.get(end)
+            if reverse is not None and start in reverse:
+                reverse.remove(start)
+                if not reverse:
+                    del edges[end]
+            else:
+                edges.setdefault(start, []).append(end)
+    loops: list[list[tuple[int, int]]] = []
+    while edges:
+        start = min(edges)
+        loop = [start]
+        current, heading = start, None
+        while True:
+            options = edges[current]
+            if heading is None or len(options) == 1:
+                following = options[0]
+            else:
+                # The cross product is negative for a right turn in a y-up space.
+                following = min(
+                    options,
+                    key=lambda point: heading[0] * (point[1] - current[1])
+                    - heading[1] * (point[0] - current[0]),
+                )
+            options.remove(following)
+            if not options:
+                del edges[current]
+            heading = (following[0] - current[0], following[1] - current[1])
+            current = following
+            if current == start:
+                break
+            loop.append(current)
+        corners = [
+            point
+            for index, point in enumerate(loop)
+            if (point[0] - loop[index - 1][0]) * (loop[(index + 1) % len(loop)][1] - point[1])
+            != (point[1] - loop[index - 1][1]) * (loop[(index + 1) % len(loop)][0] - point[0])
+        ]
+        loops.append([(unit(x), unit(y)) for x, y in corners])
+    return loops
 
 
 def build(destination: Path) -> None:
     glyph_order = [".notdef", "space"]
     glyphs: dict[str, object] = {}
     metrics: dict[str, tuple[int, int]] = {}
-    cmap: dict[int, str] = {}
+    cmap: dict[int, str] = {32: "space"}
 
-    pen = TTGlyphPen(None)
-    glyphs[".notdef"] = pen.glyph()
-    metrics[".notdef"] = (ADVANCE, 0)
-    pen = TTGlyphPen(None)
-    glyphs["space"] = pen.glyph()
-    metrics["space"] = (ADVANCE, 0)
+    for name in (".notdef", "space"):
+        glyphs[name] = TTGlyphPen(None).glyph()
+        metrics[name] = (unit(6) + GAP, 0)
 
-    for letter, rows in LETTERS.items():
+    for letter in LETTERS:
         name = GLYPH_NAMES[letter]
+        _, filled = cells(letter)
         pen = TTGlyphPen(None)
-        for loop in contours(cells(rows)):
+        for loop in trace(filled):
             pen.moveTo(loop[0])
             for point in loop[1:]:
                 pen.lineTo(point)
             pen.closePath()
         glyphs[name] = pen.glyph()
-        metrics[name] = (ADVANCE, 0)
+        metrics[name] = (advance(letter), unit(min(x for x, _ in filled)))
         glyph_order.append(name)
         cmap[ord(letter)] = name
         # Lowercase is a component of the capital, exactly as the Latin of this face is drawn.
-        lower = letter.lower()
-        if lower != letter:
-            lower_name = f"{name}.lc"
-            component = TTGlyphPen({name: glyphs[name]})
-            component.addComponent(name, (1, 0, 0, 1, 0, 0))
-            glyphs[lower_name] = component.glyph()
-            metrics[lower_name] = (ADVANCE, 0)
-            glyph_order.append(lower_name)
-            cmap[ord(lower)] = lower_name
+        lower_name = f"{name}.lc"
+        component = TTGlyphPen({name: glyphs[name]})
+        component.addComponent(name, (1, 0, 0, 1, 0, 0))
+        glyphs[lower_name] = component.glyph()
+        metrics[lower_name] = metrics[name]
+        glyph_order.append(lower_name)
+        cmap[ord(letter.lower())] = lower_name
 
     builder = FontBuilder(UPM, isTTF=True)
     builder.setupGlyphOrder(glyph_order)
@@ -180,12 +229,12 @@ def build(destination: Path) -> None:
         {
             "familyName": "AcknowledgeTT Cyrillic",
             "styleName": "Regular",
-            "uniqueFontIdentifier": "AcknowledgeTT Cyrillic; Rogue AI 2027",
+            "uniqueFontIdentifier": "AcknowledgeTT Cyrillic; Rogue AI 2027; 3",
             "fullName": "AcknowledgeTT Cyrillic",
             "psName": "AcknowledgeTTCyrillic",
-            "version": "Version 1.000",
+            "version": "Version 3.000",
             "copyright": (
-                "Cyrillic drawn on the grid of Acknowledge TT by Brian Kent (GMA Fonts), "
+                "Cyrillic companion to Acknowledge TT by Brian Kent (GMA Fonts), "
                 "which its author released free to use for any purpose."
             ),
         }
@@ -198,29 +247,84 @@ def build(destination: Path) -> None:
         usWinDescent=154,
         sxHeight=384,
         sCapHeight=384,
-        xAvgCharWidth=ADVANCE,
+        xAvgCharWidth=round(sum(advance(letter) for letter in LETTERS) / len(LETTERS)),
         usWeightClass=400,
         usWidthClass=5,
         fsType=0,
     )
-    builder.setupPost()
+    builder.setupPost(isFixedPitch=0)
+    # The same rasterizer request as the Latin (grayscale, no grid fitting), so a browser that
+    # reads `gasp` renders both halves of a mixed label the same way.
+    gasp = newTable("gasp")
+    gasp.version = 1
+    gasp.gaspRange = {0xFFFF: 0x0002}
+    builder.font["gasp"] = gasp
+    # A reproducible font build makes the committed binary independently checkable.
+    builder.font.recalcTimestamp = False
+    builder.font["head"].created = FONT_TIMESTAMP
+    builder.font["head"].modified = FONT_TIMESTAMP
     destination.parent.mkdir(parents=True, exist_ok=True)
     builder.save(str(destination))
 
 
 def render(letter: str) -> str:
-    """An ASCII preview, so a change to the table can be checked without opening a font editor."""
-    filled = cells(LETTERS[letter])
-    lines = []
-    for row in range(MARK_ROW, -1, -1):
-        lines.append("".join("#" if (column, row) in filled else "." for column in range(3)))
-    return "\n".join(lines)
+    """The pixel table of one letter, top row first, for --preview."""
+    width, filled = cells(letter)
+    return "\n".join(
+        f"{row:>2} " + "".join("#" if (column, row) in filled else "." for column in range(width))
+        for row in range(6, -2, -1)
+        if any((column, row) in filled for column in range(width)) or 0 <= row < CAP_ROWS
+    )
+
+
+SPECIMEN_LABELS = ("ПРОИСХОЖДЕНИЕ", "ЖЕЛЕЗО", "ЩИТ", "ВЫЧИСЛЕНИЯ И ПЛОЩАДКИ", "ОБНАРУЖЕНИЕ",
+                   "ДНЕВНИК И РЕШЕНИЯ")
+
+
+def specimen(font_path: Path, destination: Path) -> None:
+    """Render the built TTF next to the Latin at 20 and 40 px, one font per script as CSS does."""
+    from PIL import Image, ImageDraw, ImageFont
+
+    root = Path(__file__).resolve().parents[2]
+    assets = root / "packages/ui/src/assets"
+    caption = ImageFont.truetype(str(assets / "DejaVuSans.ttf"), 15)
+    image = Image.new("RGB", (1500, 560), "#000032")
+    draw = ImageDraw.Draw(image)
+
+    def run(x: float, baseline: float, text: str, size: int) -> float:
+        latin = ImageFont.truetype(str(assets / "acknowtt.ttf"), size)
+        cyrillic = ImageFont.truetype(str(font_path), size)
+        for character in text:
+            face = cyrillic if 0x0400 <= ord(character) <= 0x04FF else latin
+            draw.text((round(x), round(baseline)), character, font=face, anchor="ls", fill="white")
+            # The game sets the angular face with 0.035 em of letter spacing.
+            x += face.getlength(character) + 0.035 * size
+        return x
+
+    draw.text((24, 14), "Acknowledge Latin and its Cyrillic companion; actual TTFs, 1 image pixel "
+              "= 1 CSS pixel, 0.035 em letter spacing", font=caption, fill="#a0a0ff")
+    y = 70
+    for size in (20, 40):
+        draw.text((24, y - 26), f"{size} px", font=caption, fill="#a0a0ff")
+        lines = [
+            "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
+            "H M X E B O A 3   Н И Ш М Х Ж Е Б Ф О Д А З Э",
+            "ЫЬI   И Н   Щ Ш М   Д А   Ф О   Ж Х   Ц   З Э   Е Б",
+            "ORIGIN  HARDWARE  RESEARCH  " + "  ".join(SPECIMEN_LABELS[:3]),
+            "  ".join(SPECIMEN_LABELS[3:]),
+        ]
+        for text in lines:
+            run(24, y + size * 0.5, text, size)
+            y += int(size * 1.15) + 8
+        y += 40
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    image.save(destination)
 
 
 if __name__ == "__main__":
     if "--preview" in sys.argv:
         for letter in LETTERS:
-            print(letter)
+            print(f"{letter}  advance {advance(letter)}")
             print(render(letter))
             print()
     else:
@@ -228,3 +332,5 @@ if __name__ == "__main__":
         target = root / "packages" / "ui" / "src" / "assets" / "acknowtt-cyrillic.ttf"
         build(target)
         print(f"wrote {target} ({target.stat().st_size} bytes, {len(LETTERS)} letters)")
+        if "--specimen" in sys.argv:
+            specimen(target, Path(sys.argv[sys.argv.index("--specimen") + 1]))

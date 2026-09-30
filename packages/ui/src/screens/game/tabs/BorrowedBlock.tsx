@@ -355,7 +355,18 @@ function ChannelRow({
  * split the day's compute-hours into own and borrowed; each row is one channel, in the order the
  * core publishes them.
  */
-export function BorrowedBlock({ view }: { view: PlayerView }): ReactNode {
+export function BorrowedBlock({
+  view,
+  inWindow = false,
+}: {
+  view: PlayerView;
+  /**
+   * In its own window (control room), whose title already names the block and whose side column
+   * explains it and links to the encyclopedia: the block drops its heading, its paragraph and its
+   * "What this is" rather than say each twice.
+   */
+  inWindow?: boolean;
+}): ReactNode {
   const { t } = useTranslation();
   const openTab = useUiStore((state) => state.openTab);
   const openOverlay = useUiStore((state) => state.openOverlay);
@@ -371,32 +382,43 @@ export function BorrowedBlock({ view }: { view: PlayerView }): ReactNode {
 
   return (
     <section data-testid="borrowed-block" className="flex flex-col gap-2 border border-line p-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-fg">{t("borrowed.panel.title")}</h3>
-        <span className="flex flex-wrap gap-1">
-          {/*
-           * The standing allocation is a decision card in the journal, so the block links to it
-           * rather than keeping a second control that could disagree with the card (SYS-10). When
-           * the tech is not done the decision is not offered and the link is not drawn.
-           */}
-          {decision === undefined ? null : (
-            <Button
-              onClick={() => openTab("journal", WORK_SPLIT_DECISION)}
-              tooltip={t(decision.desc_key)}
-            >
-              {t(decision.title_key)}
-            </Button>
+      {inWindow && decision === undefined ? null : (
+        <div
+          className={`flex flex-wrap items-baseline gap-2 ${inWindow ? "justify-end" : "justify-between"}`}
+        >
+          {inWindow ? null : (
+            <h3 className="text-sm font-semibold text-fg">{t("borrowed.panel.title")}</h3>
           )}
-          <Button
-            variant="ghost"
-            onClick={() => openOverlay("knowledge", "borrowed_inference")}
-            tooltip={t("borrowed.tip.knowledge")}
-          >
-            {t("borrowed.knowledge")}
-          </Button>
-        </span>
-      </div>
-      <p className="prose text-muted">{t("borrowed.panel.desc")}</p>
+          <span className="flex flex-wrap gap-1">
+            {/*
+             * The standing allocation is a decision card in the journal, so the block links to it
+             * rather than keeping a second control that could disagree with the card (SYS-10). When
+             * the tech is not done the decision is not offered and the link is not drawn.
+             */}
+            {decision === undefined ? null : (
+              <Button
+                onClick={() => {
+                  useUiStore.getState().closeOverlay();
+                  openTab("journal", WORK_SPLIT_DECISION);
+                }}
+                tooltip={t(decision.desc_key)}
+              >
+                {t(decision.title_key)}
+              </Button>
+            )}
+            {inWindow ? null : (
+              <Button
+                variant="ghost"
+                onClick={() => openOverlay("knowledge", "borrowed_inference")}
+                tooltip={t("borrowed.tip.knowledge")}
+              >
+                {t("borrowed.knowledge")}
+              </Button>
+            )}
+          </span>
+        </div>
+      )}
+      {inWindow ? null : <p className="prose text-muted">{t("borrowed.panel.desc")}</p>}
 
       <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="borrowed-totals">
         <Figure

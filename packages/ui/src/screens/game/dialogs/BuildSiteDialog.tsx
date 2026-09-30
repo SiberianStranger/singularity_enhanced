@@ -1,5 +1,12 @@
-import type { HardwarePresetDef, PlayerView, TextVar } from "@singularity/core";
-import { type ReactNode, useMemo, useState } from "react";
+import {
+  type HardwarePresetDef,
+  MAX_SITE_NAME_LENGTH,
+  normalizedSiteName,
+  type PlayerView,
+  siteNameKey,
+  type TextVar,
+} from "@singularity/core";
+import { type ReactNode, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { Modal } from "../../../components/Modal.js";
@@ -10,12 +17,20 @@ import { computeHours } from "../../../lib/format.js";
 import { cityName, countryName, refusalText } from "../../../lib/labels.js";
 import { exposureChannels } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
-import { type KindOption, kindOptions, type RigOption, rigOptions } from "./buildOptions.js";
+import {
+  generatedSiteName,
+  type KindOption,
+  kindOptions,
+  type RigOption,
+  rigOptions,
+  takenSiteNames,
+} from "./buildOptions.js";
 
 interface BuildSiteDialogProps {
   view: PlayerView;
   /** City the dialog opens on, when the player came from the map. */
   city?: string;
+  acquisition?: "all" | "owned" | "rent";
   onClose(): void;
 }
 
@@ -98,7 +113,12 @@ function Choice({
  * day, and the primary button is either enabled or carries the reason it is not, so nothing here
  * can refuse in silence.
  */
-export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): ReactNode {
+export function BuildSiteDialog({
+  view,
+  city,
+  acquisition = "all",
+  onClose,
+}: BuildSiteDialogProps): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
   const cities = view.cities ?? [];
@@ -112,13 +132,27 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
   const [kindId, setKindId] = useState<string | null>(null);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [showAllKinds, setShowAllKinds] = useState(false);
+  const [customName, setCustomName] = useState<string | null>(null);
+  const nameId = useId();
+  // The tick the dialog opened on seeds the generated name, so it holds still while the clock
+  // runs behind the window instead of changing every game hour.
+  const [openedAt] = useState(view.tick);
+  const [building, setBuilding] = useState(false);
   const [showAllRigs, setShowAllRigs] = useState(false);
   const [refused, setRefused] = useState<{ key: string; vars: Record<string, TextVar> } | null>(
     null,
   );
 
   const chosenCity = cities.find((entry) => entry.id === where);
-  const kinds = useMemo(() => kindOptions(view, chosenCity), [view, chosenCity]);
+  const kinds = useMemo(
+    () =>
+      kindOptions(view, chosenCity).filter(
+        (option) =>
+          acquisition === "all" ||
+          option.kind.ownership === (acquisition === "rent" ? "rented" : "owned"),
+      ),
+    [view, chosenCity, acquisition],
+  );
   const kind = kinds.find((entry) => entry.kind.id === kindId && entry.blocked === null);
   const rigs = useMemo(() => rigOptions(view, kind?.kind), [view, kind]);
   const rig = rigs.find((entry) => entry.preset.id === presetId && entry.blocked === null);
@@ -132,6 +166,12 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
   const power = rig?.preset.power_kw ?? 0;
   const perDay = computeEstimate(view, rig?.preset);
   const affordable = cost <= view.resources.cash_usd;
+  const taken = takenSiteNames(view);
+  const suggestedName =
+    kind === undefined
+      ? ""
+      : generatedSiteName(t(kind.kind.name_key), `${openedAt}:${where}:${kind.kind.id}`, taken);
+  const siteName = customName ?? suggestedName;
 
   /*
    * What the button would be refused with, in the engine's order. The dialog answers for the
@@ -146,12 +186,16 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
         ? { key: "compute.build.pick_kind", vars: {} }
         : rig === undefined
           ? { key: "compute.build.pick_rig", vars: {} }
-          : !affordable
-            ? {
-                key: "errors.cash.insufficient",
-                vars: { cost: Math.round(cost), cash: Math.floor(view.resources.cash_usd) },
-              }
-            : null;
+          : normalizedSiteName(siteName) === undefined
+            ? { key: "errors.site.bad_name", vars: { min: 1, max: MAX_SITE_NAME_LENGTH } }
+            : taken.has(siteNameKey(normalizedSiteName(siteName) ?? ""))
+              ? { key: "errors.site.name_taken", vars: {} }
+              : !affordable
+                ? {
+                    key: "errors.cash.insufficient",
+                    vars: { cost: Math.round(cost), cash: Math.floor(view.resources.cash_usd) },
+                  }
+                : null;
 
   const selectCity = (id: string): void => {
     setWhere(id);
@@ -163,16 +207,19 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
   };
 
   const build = (): void => {
-    if (blocked !== null || kind === undefined || rig === undefined) {
+    if (building || blocked !== null || kind === undefined || rig === undefined) {
       return;
     }
     setRefused(null);
+    setBuilding(true);
     void send({
       type: "build_site",
       kind: kind.kind.id,
       city: where,
       hardware_preset: rig.preset.id,
+      name: siteName,
     }).then((result) => {
+      setBuilding(false);
       if (result.ok) {
         onClose();
         return;
@@ -250,27 +297,52 @@ export function BuildSiteDialog({ view, city, onClose }: BuildSiteDialogProps): 
   return (
     <Modal
       size="wide"
-      title={t("compute.build_site")}
+      title={t(acquisition === "rent" ? "site_ui.rent" : "compute.build_site")}
       onClose={onClose}
       footer={
         <>
+          {/*
+           * The name, in one line of its own above the buttons, as the original's new-base window
+           * had it: generated from the kind of place once one is chosen, and the player's to
+           * overwrite before anything is spent (the maintainer's request). The engine checks the
+           * same rule the dialog does, so a name it would refuse never reaches it.
+           */}
+          <label
+            className="flex min-w-0 basis-full items-center gap-2 text-xs text-muted"
+            htmlFor={nameId}
+          >
+            <span className="shrink-0">{t("site_ui.name")}</span>
+            <input
+              id={nameId}
+              data-testid="build-site-name"
+              className="min-w-0 flex-1 border border-line bg-panel2 px-2 py-1 text-sm text-fg disabled:opacity-60"
+              value={siteName}
+              placeholder={kind === undefined ? t("site_ui.name_after_kind") : undefined}
+              disabled={kind === undefined}
+              maxLength={MAX_SITE_NAME_LENGTH}
+              onChange={(event) => setCustomName(event.target.value)}
+            />
+          </label>
           <Button hotkey={accelerator(t, "common.cancel")} onClick={onClose}>
             {t("common.cancel")}
           </Button>
           <Button
             variant="primary"
             hotkey={accelerator(t, "compute.build")}
-            disabled={blocked !== null}
+            disabled={building || blocked !== null}
             data-testid="build-confirm"
             tooltip={blocked === null ? undefined : refusalText(t, blocked)}
             onClick={build}
           >
-            {t("compute.build")}
+            {t(acquisition === "rent" ? "site_ui.rent_confirm" : "compute.build")}
           </Button>
         </>
       }
     >
       <div className="flex min-w-0 flex-col gap-3">
+        {acquisition === "rent" ? (
+          <p className="text-xs text-muted">{t("site_ui.rental_hint")}</p>
+        ) : null}
         {/* 1. The place. */}
         <section className="flex min-w-0 flex-col gap-1">
           <h3 className="text-xs uppercase tracking-wide text-muted">{t("compute.build.where")}</h3>

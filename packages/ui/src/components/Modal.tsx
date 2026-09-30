@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useSyncExternalStore } from "react";
 
 interface ModalProps {
   title: ReactNode;
@@ -32,9 +32,35 @@ const WIDTHS: Readonly<Record<"normal" | "wide" | "ledger", string>> = {
  * behind a dialog and pausing from there is not a surprise.
  */
 let openDialogs = 0;
+const dialogListeners = new Set<() => void>();
+
+function dialogsChanged(): void {
+  for (const listener of dialogListeners) {
+    listener();
+  }
+}
 
 export function dialogsOpen(): boolean {
   return openDialogs > 0;
+}
+
+/**
+ * Whether any dialog is on screen, as a value a component re-renders on (control room). A panel
+ * under a window gives up its accelerators while the window is open: hotkeys are global, so a
+ * panel letter that a window also uses would fire both, and the Sites tab's six buttons need
+ * letters that only a window's own buttons (Close, About, Next) otherwise have.
+ */
+export function useDialogsOpen(): boolean {
+  return useSyncExternalStore(
+    (listener) => {
+      dialogListeners.add(listener);
+      return () => {
+        dialogListeners.delete(listener);
+      };
+    },
+    dialogsOpen,
+    dialogsOpen,
+  );
 }
 
 const FOCUSABLE =
@@ -65,8 +91,10 @@ export function Modal({ title, children, footer, onClose, wide, size }: ModalPro
     const previous = document.activeElement;
     ref.current?.focus();
     openDialogs += 1;
+    dialogsChanged();
     return () => {
       openDialogs = Math.max(0, openDialogs - 1);
+      dialogsChanged();
       if (previous instanceof HTMLElement) {
         previous.focus();
       }

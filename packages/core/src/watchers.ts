@@ -32,6 +32,7 @@ import {
   watcherTable,
 } from "./entities.js";
 import type { PlayerId, World } from "./kernel/world.js";
+import { siteSignatureFactor } from "./site-management.js";
 
 export const GLOBAL_JURISDICTION = "global";
 
@@ -199,7 +200,7 @@ export function watches(world: World, watcher: Watcher, site: Site): boolean {
 export function watchedExposure(watcher: Watcher, site: Site): number {
   let total = 0;
   for (const channel of EXPOSURE_CHANNELS) {
-    total += site.exposure[channel] * watcher.attention[channel];
+    total += site.exposure[channel] * siteSignatureFactor(site) * watcher.attention[channel];
   }
   return total;
 }

@@ -142,6 +142,8 @@
   --c-map-border: #e6eef8;
   --c-map-marker: #ffffff;
   --c-map-marker-rim: #0a1118;
+  --c-map-occupied: #b09062;
+  --c-map-control-line: #d4bd97;
 }
 
 /*
@@ -216,22 +218,23 @@
  * its `default` text was 20 px and its buttons 36 px in the same Acknowledge, 1.8 times the prose
  * so the two faces drew capitals of the same height.
  *
- * So the display ladder is sized by ink rather than by nominal size: every display step is a third
- * larger than the reading step it stands beside (`--display-ratio`, 4/3). At the default root size
- * that is
+ * So the display ladder is sized by ink rather than by nominal size: every display step is half
+ * again the reading step it stands beside (`--display-ratio`, 1.5; it was 4/3 until the control
+ * room, 2026-09-29, when the maintainer asked for the Russian angular labels a little larger).
+ * At the default root size that is
  *
  *   step        reading   display   Acknowledge cap   DejaVu x-height   DejaVu cap
- *   xs          14 px     18.7 px   7.0 px            7.7 px            10.2 px
- *   sm          15 px     20.0 px   7.5 px            8.2 px            11.0 px
- *   base        16 px     21.3 px   8.0 px            8.8 px            11.7 px
- *   lg          18 px     24.0 px   9.0 px            9.9 px            13.1 px
- *   xl          20 px     26.7 px  10.0 px           10.9 px            14.6 px
+ *   xs          14 px     21.0 px   7.9 px            7.7 px            10.2 px
+ *   sm          15 px     22.5 px   8.4 px            8.2 px            11.0 px
+ *   base        16 px     24.0 px   9.0 px            8.8 px            11.7 px
+ *   lg          18 px     27.0 px  10.1 px            9.9 px            13.1 px
+ *   xl          20 px     30.0 px  11.3 px           10.9 px            14.6 px
  *
- * which is nine tenths of the prose x-height and about two thirds of the prose cap height on every
- * step, against the half it was before. Matching the cap height outright is what the original game
- * did (20 px prose against 36 px buttons in this same face), and it is not available here: it
- * would put a rail row at 31 px, and this client draws a nine-row rail beside a two-column card at
- * 1280 by 720 where the original drew six buttons.
+ * which is about the prose x-height and three quarters of the prose cap height on every step,
+ * against the half it was before playtest 6. Matching the cap height outright is what the
+ * original game did (20 px prose against 36 px buttons in this same face), and it is not
+ * available here: it would put a rail row at 31 px, and this client draws a nine-row rail beside
+ * a two-column card at 1280 by 720 where the original drew six buttons.
  *
  * Both ladders are in rem, so the interface scale (which scales the root font size) scales all of
  * it, and `--display-scale` (the Settings slider for the angular face alone) scales the display
@@ -243,7 +246,7 @@
   --size-base: 1rem;
   --size-lg: 1.125rem;
   --size-xl: 1.25rem;
-  --display-ratio: 1.3333;
+  --display-ratio: 1.5;
   --display-xs: calc(var(--size-xs) * var(--display-ratio));
   --display-sm: calc(var(--size-sm) * var(--display-ratio));
   --display-base: calc(var(--size-base) * var(--display-ratio));
@@ -318,7 +321,7 @@ button,
 th,
 .font-display {
   font-family: var(--c-font-display);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.035em;
   /*
    * The display ladder, and the second dial of the text-size setting (playtest 3 R13, playtest 6
    * X12): the angular face alone, for a player who reads it less easily than the prose face.
@@ -458,7 +461,12 @@ input.font-mono {
   outline: none;
   stroke: var(--c-line-strong);
   stroke-opacity: 1;
-  stroke-width: 1.4;
+  /*
+   * In screen pixels rather than map units (control room): 1.4 units were 2 px on the whole world
+   * and a 10 px band round Ukraine at the zoom the map needs to show its regions.
+   */
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
 }
 
 /* The same for a city dot, so a focused marker grows instead of gaining a square. */

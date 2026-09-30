@@ -8,6 +8,7 @@ import { Bar } from "../../components/Meter.js";
 import { dayOf, fraction } from "../../lib/format.js";
 import { siteName } from "../../lib/labels.js";
 import { useUiStore } from "../../store/uiStore.js";
+import { siteStatusTone } from "./tabs/siteStatus.js";
 
 function Section({ title, children }: { title: string; children: ReactNode }): ReactNode {
   return (
@@ -48,13 +49,18 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
     <Frame
       title={t("outliner.title")}
       // The right-hand column of the screen grid (L8). Below 66rem of map region the body is
-      // hidden and only the title bar is left, so the outliner is a strip the player can collapse
-      // or read past rather than a column the map cannot spare; that is the first step of the
-      // reflow order (L11).
+      // hidden and only the title is left, so the outliner is a strip the player can read past
+      // rather than a column the map cannot spare; that is the first step of the reflow order
+      // (L11). The collapse button goes with the body: a strip that offered to collapse itself
+      // was wider than the open outliner, and took the width the primary panel needed.
       className="pointer-events-auto col-start-3 row-start-1 max-h-[calc(100%-3rem)] w-60 max-w-full self-start bg-panel/97 @max-[66rem]/screen:w-auto"
       bodyClassName="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2 @max-[66rem]/screen:hidden"
       actions={
-        <Button variant="ghost" onClick={() => setOpen(false)}>
+        <Button
+          variant="ghost"
+          className="max-w-full @max-[66rem]/screen:hidden"
+          onClick={() => setOpen(false)}
+        >
           {t("outliner.collapse")}
         </Button>
       }
@@ -75,10 +81,14 @@ export function Outliner({ view }: { view: PlayerView }): ReactNode {
                 <span className="flex min-w-0 flex-1 items-start gap-1 text-fg">
                   {/* The glyph learned on the configurator's origin list (playtest 3, R15). */}
                   <Glyph className="mt-0.5 shrink-0" name={sceneGlyph(site.kind)} size={13} />
-                  {/* L7: "Colocation cage, ..." told the player nothing; the name wraps instead. */}
-                  <span className="min-w-0">{siteName(t, site)}</span>
+                  {/* L7: "Colocation cage, ..." told the player nothing; the name wraps instead.
+                      In the reading face, as the Sites list prints it: a name in the angular face
+                      at this width broke inside its words (control room). */}
+                  <span className="min-w-0 font-sans text-xs">{siteName(t, site)}</span>
                 </span>
-                <span className="shrink-0 text-muted">{t(`compute.status.${site.status}`)}</span>
+                <span className={`shrink-0 font-sans text-xs ${siteStatusTone(site.status)}`}>
+                  {t(`site_ui.status.${site.status}`)}
+                </span>
               </button>
             ))}
       </Section>

@@ -140,6 +140,18 @@ describe("a log line names things rather than printing ids", () => {
     ).not.toMatch(RAW_ID);
   });
 
+  it("names a site passed by its stored name rather than its id", () => {
+    // Some alerts carry the site's stored name under `site`; a site nobody named stores an
+    // id-like name, which must not reach the player either (control room review).
+    const line = logLine(
+      t,
+      { key: "log.site_lost", vars: { site: "the-bank-rack", cause: "seized" } },
+      view,
+    );
+    expect(line).not.toContain("the-bank-rack");
+    expect(line).toContain(t("sites.colo.name"));
+  });
+
   it("leaves a variable it does not know exactly as the engine sent it", () => {
     // Prettifying an id into something that is not a name would be worse than showing the id: the
     // line would read as content while being a bug. A hook chain is a developer's line, not a

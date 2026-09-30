@@ -17,6 +17,7 @@ import { contentBundle } from "../src/content/bundle.js";
 import { DEFAULT_LANGUAGE } from "../src/i18n/index.js";
 import uiEn from "../src/locales/en.json";
 import uiRu from "../src/locales/ru.json";
+import { GameOverlays } from "../src/screens/game/GameOverlays.js";
 import { BorrowedBlock } from "../src/screens/game/tabs/BorrowedBlock.js";
 import { ComputeTab } from "../src/screens/game/tabs/ComputeTab.js";
 import { useUiStore } from "../src/store/uiStore.js";
@@ -291,14 +292,55 @@ describe("the borrowed block", () => {
     expect(useUiStore.getState().overlayFocus).toBe("borrowed_inference");
   });
 
-  it("sits in the Compute tab under the sites table", async () => {
+  /*
+   * The control room moved the block out of the Sites tab (the maintainer's request: "it must not
+   * live here whole"): the tab keeps one thin strip with the day's borrowed figure, and its
+   * Details button opens the whole block in a centred window of its own, with the explanations
+   * beside it.
+   */
+  it("is a thin strip under the sites table that opens its own window", async () => {
     const view = await fixtureView(FIXTURE_CHANNELS);
-    render(<ComputeTab view={view} />);
-    const block = screen.getByTestId("borrowed-block");
+    render(
+      <>
+        <ComputeTab view={view} />
+        <GameOverlays view={view} />
+      </>,
+    );
+    expect(screen.queryByTestId("borrowed-block")).toBeNull();
+    const strip = screen.getByTestId("borrowed-summary");
     const table = screen.getAllByRole("table")[0] as HTMLElement;
-    expect(table.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(table.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(strip).getByTestId("borrowed-summary-value")).toHaveTextContent("42 CH/day");
     // The channels are never rows of the sites table: a channel is not a place (SYS-25).
     expect(within(table).queryByText(STRINGS.en?.["borrowed.free_tier.name"] ?? "")).toBeNull();
+
+    await userEvent.click(within(strip).getByTestId("borrowed-details"));
+    expect(useUiStore.getState().overlay).toBe("borrowed");
+    const window = await screen.findByRole("dialog");
+    expect(within(window).getByTestId("borrowed-block")).toBeInTheDocument();
+    expect(within(window).getByTestId("borrowed-window")).toHaveTextContent(
+      STRINGS.en?.["site_ui.borrowed_access"] ?? "",
+    );
+    // The window's title names the block, so the block inside it has no heading of its own, and
+    // its explanation is said once, in the side column.
+    expect(within(window).getByRole("heading", { level: 2 })).toHaveTextContent(
+      STRINGS.en?.["site_ui.borrowed"] ?? "",
+    );
+    const block = within(window).getByTestId("borrowed-block");
+    expect(
+      within(block).queryByRole("heading", { name: STRINGS.en?.["borrowed.panel.title"] ?? "" }),
+    ).toBeNull();
+    expect(
+      within(window).getAllByText(STRINGS.en?.["borrowed.panel.desc"] ?? "", { exact: true }),
+    ).toHaveLength(1);
+    // "What this is" is the side column's heading, not a button as well; the column's foot links
+    // to the encyclopedia entry, which replaces this window.
+    expect(
+      within(window).queryByRole("button", { name: STRINGS.en?.["borrowed.knowledge"] ?? "" }),
+    ).toBeNull();
+    await userEvent.click(within(window).getByTestId("borrowed-window-knowledge"));
+    expect(useUiStore.getState().overlay).toBe("knowledge");
+    expect(useUiStore.getState().overlayFocus).toBe("borrowed_inference");
   });
 });
 

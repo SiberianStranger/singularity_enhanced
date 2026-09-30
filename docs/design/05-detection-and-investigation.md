@@ -309,3 +309,29 @@ the difference between a lab's competence and a ministry's, which held the hunt 
 enough to fill the `exposed` countdown before the raid it was waiting for: the ending went from 7%
 of losses to 14% and the starred origin stopped being captured at all. At `action` the ending is
 6.7% of losses with no other constant moved (SYS-01 "Balance notes (M2, second pass)").
+
+## Implementation notes (0.3.0: switched-off sites)
+
+A switched-off site (`status: "sleep"`) keeps its stored exposure and shows a twentieth of it
+(`SLEEP_SIGNATURE_FACTOR`, 0.05; the original game divided a sleeping base's detection chance by
+four). The factor applies everywhere a watcher or content reads a site: `watchedExposure`, and so
+suspicion, evidence and the choice of the loudest site; the published `<channel>_exposure`
+variables; the `exposure` condition; and the view, which also shows the stored value
+(`stored_exposure`) and the factor. The site's own daily growth is multiplied by the same factor,
+while decay runs at the ordinary rate, so the traces fade while it is off and come back at their
+decayed value when it is switched on; toggling does not erase anything.
+
+Investigation evidence is never touched. A case whose site is switched off gains almost nothing and
+loses 4% a day as before, so after a few weeks it can stall back a stage: going dark is a defence
+that costs the site's compute and keeps its standing costs, which is the original's sleep. A raid
+that reaches `action` still takes the site, off or on.
+
+The site the self runs on is never masked (`siteSignatureFactor` returns 1 for the `active_mind`
+role). Operations, events and dangerous research write their exposure onto the host by default, so
+a switched-off host would have laundered all of it while the self computed on its other sites; the
+compute system also refuses to switch the host off or to move the self onto a switched-off site
+(SYS-02 notes, 0.3.0). An involuntary outage of the host, a tripped breaker or a re-quantization,
+hides nothing. Exposure that an event or an operation writes onto a switched-off site that is not
+the host is masked like its physical signature, because a site keeps one exposure store per channel;
+separating event traces from physical signatures would need a second store and a save migration,
+and is left for the detection pass that needs it.

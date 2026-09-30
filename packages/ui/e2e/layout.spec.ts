@@ -63,9 +63,12 @@ const STEPS = [
   "summary",
 ] as const;
 
+/**
+ * The pinned panel's six tabs (control room): the Overview left the strip for the portrait, whose
+ * sheet is measured on its own below, and "Compute and sites" is "Sites".
+ */
 const TABS = [
-  "Overview",
-  "Compute and sites",
+  "Sites",
   "Research",
   "Finances",
   "Detection",
@@ -186,10 +189,8 @@ async function controlsOutsideViewport(page: Page, selector: string): Promise<st
 async function regionBoxes(page: Page): Promise<Box[]> {
   return await page.evaluate(() => {
     const named: [string, string][] = [
-      [
-        "primary",
-        "[data-testid='panel-grid'] > section[aria-label]:not([aria-label='Outliner']):not([aria-label='Selection'])",
-      ],
+      // The portrait and the tabbed panel under it, which share the grid's first column.
+      ["primary", "[data-testid='primary-shell']"],
       ["selection", "section[aria-label='Selection']"],
       ["outliner", "section[aria-label='Outliner']"],
       ["log strip", "[data-testid='log-strip']"],
@@ -331,6 +332,13 @@ for (const viewport of VIEWPORTS) {
       expect(scroll, `the page scrolls on ${name} at ${size}`).toEqual({ x: 0, y: 0 });
     }
 
+    // The self sheet the portrait opens, over the panel.
+    await page.getByTestId("self-portrait").click();
+    await expect(page.getByTestId("self-overview")).toBeVisible();
+    await expectFits(page, "main", `the self sheet at ${size}`);
+    await page.getByTestId("self-portrait").click();
+    await expect(page.getByTestId("self-overview")).toHaveCount(0);
+
     // The three windows over the map are panels too.
     for (const entry of ["open-knowledge", "open-world"] as const) {
       await page.getByTestId(entry).click();
@@ -405,9 +413,9 @@ for (const viewport of VIEWPORTS) {
     const map = page.getByRole("img", { name: /world map/i });
     await map.getByRole("button", { name: START_CITY, exact: true }).first().click();
     await expect(page.getByRole("region", { name: "Selection" })).toBeVisible();
-    await page.getByRole("button", { name: "Open Overview", exact: true }).click();
-    // The panel's own accessible name, not its tab: the selection panel has an Overview tab too.
-    await expect(page.getByRole("region", { name: "Overview" })).toBeVisible();
+    await page.getByRole("button", { name: "Open Sites", exact: true }).click();
+    // The panel's own accessible name, which is its tab's.
+    await expect(page.getByRole("region", { name: "Sites" })).toBeVisible();
     const boxes = await regionBoxes(page);
     expect(boxes.map((box) => box.name)).toContain("selection");
     expect(overlapping(boxes), `regions overlap with a selection at ${size}`).toEqual([]);
@@ -496,16 +504,17 @@ test("the angular-face scale in Settings reaches every angular label", async ({ 
   ];
   for (const name of Object.keys(LABELS)) {
     expect(normal[name], `${name} is drawn at all`).toBeGreaterThan(0);
-    // The default is the angular face's own ladder, a third above the reading step it sits on:
-    // a rail row and a list title are `text-sm` (15 px reading, 20 px angular).
+    // The default is the angular face's own ladder, half again above the reading step it sits
+    // on: a rail row and a list title are `text-sm` (15 px reading, 22.5 px angular).
     expect(small[name] ?? 0, `${name} follows the slider down`).toBeLessThan(normal[name] ?? 0);
     expect(large[name] ?? 0, `${name} follows the slider up`).toBeGreaterThan(normal[name] ?? 0);
   }
-  // The ladder itself: `sm` is 0.9375rem of reading against 1.25rem of angular, `xs` 0.875 against
-  // 1.1667, which is the third the two faces differ by (`index.css`).
-  expect(normal.rail, "a rail row is on the angular ladder's sm step").toBeCloseTo(1.25, 2);
-  expect(normal.title, "and so is a list entry's title").toBeCloseTo(1.25, 2);
-  expect(normal.header, "a frame header is its xs step").toBeCloseTo(1.1667, 2);
+  // The ladder itself: `sm` is 0.9375rem of reading against 1.40625rem of angular, `xs` 0.875
+  // against 1.3125, the half again the two faces differ by since the control room raised the
+  // default display ratio from 4/3 to 1.5 (`index.css`, style guide "Sizes and reveal").
+  expect(normal.rail, "a rail row is on the angular ladder's sm step").toBeCloseTo(1.40625, 2);
+  expect(normal.title, "and so is a list entry's title").toBeCloseTo(1.40625, 2);
+  expect(normal.header, "a frame header is its xs step").toBeCloseTo(1.3125, 2);
 });
 
 test("the interface scale follows a narrow window", async ({ page }) => {

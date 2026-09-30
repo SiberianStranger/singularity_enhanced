@@ -126,8 +126,16 @@ describe("research", () => {
       techId: "log_hygiene",
       compute_hours_per_day: capacity * 0.5,
     });
+    // An outage the self did not choose: the breakers trip on its only machine. The command that
+    // switches a site off refuses the self's own host (SYS-11 "Control room (0.3.0)"), so the
+    // outage is written onto the site directly.
     const siteId = game.snapshot("p1").sites[0]?.id ?? "";
-    game.command({ type: "set_site_status", playerId: "p1", siteId, status: "sleep" });
+    expect(
+      game.command({ type: "set_site_status", playerId: "p1", siteId, status: "sleep" }).error?.key,
+    ).toBe("errors.site.mind_cannot_sleep");
+    const site = game.world.entities.site?.[siteId] as { status: string } | undefined;
+    if (site === undefined) throw new Error("starting site missing");
+    site.status = "sleep";
     game.tick(1);
 
     const profile = game.world.players.p1?.profile;

@@ -34,10 +34,10 @@ export function LogStrip({ view }: { view: PlayerView }): ReactNode {
       aria-label={t("log.open_full")}
       title={t("log.open_full")}
       onClick={() => openOverlay("log")}
-      // The middle column of the screen grid, at its foot: whatever the panels on either side are
-      // doing, the strip has the width they leave and no more, so it can no longer run under the
-      // selection panel (L8).
-      className="pointer-events-auto col-start-2 row-start-2 flex w-full max-w-[44rem] min-w-0 flex-col gap-0.5 self-end justify-self-center border border-line bg-panel/92 px-2 py-0.5 text-start hover:border-linestrong"
+      // The middle of the screen's bottom bar: whatever the selection panel on one side and the
+      // map's legend and zoom on the other are doing, the strip has the width they leave and no
+      // more, so it can no longer run under either of them (L8; control room).
+      className="pointer-events-auto mx-auto flex min-w-0 max-w-[44rem] flex-1 basis-80 flex-col gap-0.5 border border-line bg-panel/92 px-2 py-0.5 text-start hover:border-linestrong"
     >
       {entries.map((entry) => (
         <span

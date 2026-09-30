@@ -87,6 +87,10 @@ export function useHotkeys({ onQuicksave, onQuickload, onMenu, blocked }: Hotkey
           return;
         }
         event.preventDefault();
+        if (useUiStore.getState().selfOpen) {
+          useUiStore.getState().setSelfOpen(false);
+          return;
+        }
         // An open window takes Escape first; only when none is open does it reach the menu.
         if (useUiStore.getState().overlay !== null) {
           useUiStore.getState().closeOverlay();

@@ -9,9 +9,12 @@
  */
 
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import i18next from "i18next";
 import { afterEach, describe, expect, it } from "vitest";
+import { computeHours } from "../src/lib/format.js";
 import { computeLedger } from "../src/lib/viewContract.js";
-import { ComputeBudget } from "../src/screens/game/tabs/ComputeBudget.js";
+import { PrimaryPanel } from "../src/screens/game/PrimaryPanel.js";
 import { FinancesTab } from "../src/screens/game/tabs/FinancesTab.js";
 import { ResearchTab } from "../src/screens/game/tabs/ResearchTab.js";
 import { useGameStore } from "../src/store/gameStore.js";
@@ -52,13 +55,36 @@ describe("the day's compute", () => {
     expect(ledger.capacity - ledger.reserved).toBeCloseTo(ledger.allocatable, 5);
     expect(ledger.allocatable - ledger.research - ledger.jobs).toBeCloseTo(ledger.unallocated, 5);
 
-    render(<ComputeBudget view={live.view()} />);
-    const budget = screen.getByTestId("compute-budget");
+    render(<PrimaryPanel view={live.view()} />);
+    await userEvent.click(screen.getByTestId("self-portrait"));
+    const budget = within(screen.getByTestId("self-overview")).getByTestId(
+      "compute-allocation-panel",
+    );
     expect(budget).toHaveTextContent(/CH\/day/);
+    for (const [id, value] of [
+      ["compute-total", ledger.capacity],
+      ["compute-available", ledger.allocatable],
+      ["allocation-value-research", ledger.research],
+      ["allocation-value-jobs", ledger.jobs],
+      ["allocation-value-free", ledger.unallocated],
+    ] as const) {
+      expect(within(budget).getByTestId(id)).toHaveTextContent(
+        i18next.t("common.ch_per_day", { value: computeHours(value) }),
+      );
+    }
     // A running operation holds compute, and the line says how much.
     if (ledger.reservations.length > 0) {
       expect(ledger.reserved).toBeGreaterThan(0);
-      expect(screen.getByTestId("budget-reserved")).not.toBeEmptyDOMElement();
+      const available = within(budget).getByTestId("compute-available").closest("button");
+      expect(available).not.toBeNull();
+      await userEvent.hover(available as HTMLElement);
+      const breakdown = await within(budget).findByRole("tooltip");
+      for (const reservation of ledger.reservations) {
+        expect(breakdown).toHaveTextContent(i18next.t(reservation.name_key));
+        expect(breakdown).toHaveTextContent(
+          i18next.t("common.ch_per_day", { value: computeHours(reservation.ch_per_day) }),
+        );
+      }
     }
   });
 

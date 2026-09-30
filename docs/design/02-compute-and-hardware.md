@@ -470,3 +470,55 @@ preset with no price that is not marked, so the data and the engine cannot drift
 `eco_company_folds` renames a colocation contract from the employer to the player: the kind changes
 from `employer_cage` to `colo` and the bill moves with it (SYS-07 "Who pays for the origin's
 hardware").
+
+## Implementation notes (0.3.0)
+
+The control room (SYS-11 "Control room (0.3.0)") added three site commands and changed two, all in
+`packages/core/src/site-management.ts` and the compute system; the commands and the views call the
+same functions, so a greyed button and a refusal cannot disagree.
+
+- **Names.** `build_site` and `rename_site` check a name before any money moves: 1 to 64 UTF-16
+  units after trimming, at least one visible character, no control characters, lone surrogates,
+  private-use characters, line or paragraph separators, or bidirectional overrides and isolates
+  (`normalizedSiteName`). It must differ, ignoring case and Unicode composition, from the names of
+  the owner's other running sites (`errors.site.name_taken`, `siteNameKey`); a lost site frees its
+  name. A name the player gave is stored with `nameLiteral` and printed as typed; a generated name
+  (`<kind>-<city>`) or a content key keeps its old meaning. The balance runner now numbers the
+  sites it builds, because the old fixed "fallback" would be refused the second time.
+- **Switching off.** `set_site_status` refuses any status but `active` and `sleep`, refuses to switch
+  off the site the self runs on (`errors.site.mind_cannot_sleep`), and refuses to switch on a site
+  whose copy is still being rebuilt after a re-quantization (`errors.site.rebuilding`; it wakes by
+  itself, as before) or whose hardware exceeds its power or cooling. `set_site_role` refuses a role
+  outside the four and refuses to make a switched-off site the self's host
+  (`errors.site.host_asleep`). When the self has to move after a loss and the best candidate is a
+  switched-off standby, `placeMind` switches it on if its power and cooling allow, and its compute
+  counts from that hour, so the allocations are not cut to the dark capacity; otherwise it stays
+  dark and, as the host, is not masked (SYS-05 notes, 0.3.0). A switched-off site still
+  counts as a backup, as a sleeping base with processors kept the original's singularity alive.
+- **Liquidation.** `liquidate_site` sells what the player owns and closes the site at once:
+  `siteLiquidationQuote` is the preview and the transaction (SYS-07 notes, 0.3.0). It refuses
+  borrowed channels, which are not places.
+- **Giving a site up never strands the self.** The guard covers every way the player gives a site
+  up: `liquidate_site`, and `decommission_site` both clean and abandoned. Each asks one test,
+  `siteHoldsLastCopy`, the same one `placeMind` answers after a loss: does any other site of the
+  player hold or fit the self (a switched-off standby counts)? If one does, giving up the site the
+  self runs on is allowed and the self moves to the best such site within the same command (a
+  decommission used to leave it without a host until the next hour). If none does and this site
+  holds a copy (the running copy, or the last backup while the self is between hosts after a
+  raid), the command is refused before anything changes, notice, traces, evidence and suspicion
+  included (`errors.site.last_copy`), as the original refused destroying the last base. The view
+  publishes the refusal per site and per command as `liquidation_refusal` and
+  `decommission_refusal`. A site that holds no copy, too small to carry the self, can always be
+  given up. Seizure, cutoff and content's `lose_site` can still take the last copy: they are not
+  the player's choice, and they end the run as before.
+- **Receipts.** A node records `purchaseValueUsd`, the hardware share of what was paid for it:
+  `build_site` splits an owned preset's price across its nodes, and `order_equipment` splits the
+  quote without the prototype fee across the configuration's nodes. Rental configurations are the
+  provider's hardware and record nothing. Nodes from before 0.3.0 have no receipt and are valued
+  from the catalog's used price, or 40% of the new price.
+- **Lost sites.** `loseSite` now clears installed subsystems and pending equipment orders with the
+  machines, for every cause, so no lost site keeps orders or equipment the views could show.
+- **Saves.** The schema stays at 5: `nameLiteral` and `purchaseValueUsd` are optional and read as
+  absent on an older save, which the 0.2.0 client never wrote custom names into. A save written by
+  the 0.2.0 engine is a test fixture (`packages/core/test/fixtures/saves/0.2.0-m1.json`); its
+  switched-off host, allowed then, loads and can be switched back on but not off again.

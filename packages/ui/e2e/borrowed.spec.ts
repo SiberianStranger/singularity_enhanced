@@ -42,11 +42,28 @@ async function loadFixture(page: Page): Promise<void> {
   await resolveOpenEvents(page);
 }
 
-test("the Compute tab shows the channels the run holds", async ({ page }) => {
+/**
+ * The borrowed block's own window (control room): the Sites tab keeps a thin strip with the day's
+ * figure, and its Details button opens the whole block, centred, with the explanations beside it.
+ */
+async function openBorrowedWindow(page: Page): Promise<void> {
+  await page.getByRole("tab", { name: "Sites", exact: true }).click();
+  const strip = page.getByTestId("borrowed-summary");
+  await expect(strip).toBeVisible();
+  await strip.getByTestId("borrowed-details").click();
+  await expect(page.getByTestId("borrowed-window")).toBeVisible();
+}
+
+test("the borrowed window shows the channels the run holds", async ({ page }) => {
   const failures = watchForFailures(page);
   await loadFixture(page);
 
-  await page.getByRole("tab", { name: /Compute/ }).click();
+  // The strip says how much the channels bring before anything is opened.
+  await page.getByRole("tab", { name: "Sites", exact: true }).click();
+  await expect(page.getByTestId("borrowed-summary-value")).toContainText("CH/day");
+  await expect(page.getByTestId("borrowed-summary-value")).not.toHaveText(/^0 CH/);
+
+  await openBorrowedWindow(page);
   const block = page.getByTestId("borrowed-block");
   await expect(block).toBeVisible();
 
@@ -65,7 +82,9 @@ test("the Compute tab shows the channels the run holds", async ({ page }) => {
   await expect(block).toContainText(english("borrowed.grey_relay.name"));
 
   // The channels are not rows of the sites table: a channel is not a place.
-  await expect(page.getByRole("table").first()).not.toContainText(
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("table", { name: "Sites" })).not.toContainText(
     english("borrowed.free_tier.name"),
   );
 
@@ -82,8 +101,8 @@ test("the relay's bill is its own line and the work-share decision is reachable"
   await expect(page.getByText(english("finances.cost.borrowed"))).toBeVisible();
 
   // The standing allocation is a decision card; the block links to it rather than owning a second
-  // control of its own (SYS-10, SYS-25).
-  await page.getByRole("tab", { name: /Compute/ }).click();
+  // control of its own (SYS-10, SYS-25). Following the link closes the window over the journal.
+  await openBorrowedWindow(page);
   await page
     .getByTestId("borrowed-block")
     .getByRole("button", { name: english("decisions.bi_send_the_work_out.title") })
@@ -93,11 +112,23 @@ test("the relay's bill is its own line and the work-share decision is reachable"
   expect(failures.list, "no console errors").toEqual([]);
 });
 
-test("the Overview splits the day's compute into own and borrowed", async ({ page }) => {
+test("the self sheet names each channel in the day's compute", async ({ page }) => {
   const failures = watchForFailures(page);
   await loadFixture(page);
 
-  await page.getByRole("tab", { name: /Overview/ }).click();
+  // The portrait's sheet carries the compute ledger now (control room); the whole capacity's
+  // tooltip lists what it is made of, one line per site and per channel.
+  await page.getByTestId("self-portrait").click();
+  const sheet = page.getByTestId("self-overview");
+  await expect(sheet).toBeVisible();
+  await sheet.getByTestId("compute-total-figure").hover();
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toContainText(english("borrowed.free_tier.name"));
+  await expect(tooltip).toContainText(english("borrowed.grey_relay.name"));
+
+  // And the own and borrowed split is the first line of the borrowed window.
+  await page.keyboard.press("Escape");
+  await openBorrowedWindow(page);
   await expect(page.getByText(ui("borrowed.total.borrowed"), { exact: true })).toBeVisible();
 
   expect(failures.list, "no console errors").toEqual([]);

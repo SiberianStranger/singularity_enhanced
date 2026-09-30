@@ -141,11 +141,20 @@ test("Russian fits the smallest supported screen", async ({ page }) => {
   await resolveOpenEvents(page);
   await check(page, "the game screen");
 
-  // The compute panel is the widest one (playtest 3, R4) and the first to break at this width.
-  // В of "Вычисления и площадки" sits on KeyD.
-  await page.keyboard.press("KeyD");
-  await expect(page.getByRole("region", { name: "Вычисления и площадки" })).toBeVisible();
-  await check(page, "the compute panel");
+  // The sites panel is the widest one (playtest 3, R4) and the first to break at this width. It
+  // is the tab the game opens on, so the walk leaves it for Finances first (Ф sits on KeyA) and
+  // comes back by its own letter: К of "Площадки" sits on KeyR (control room).
+  await page.keyboard.press("KeyA");
+  await expect(page.getByRole("region", { name: "Финансы" })).toBeVisible();
+  await page.keyboard.press("KeyR");
+  await expect(page.getByRole("region", { name: "Площадки" })).toBeVisible();
+  await check(page, "the sites panel");
+
+  // The self sheet the portrait opens, with its compute block and six capabilities.
+  await page.getByTestId("self-portrait").click();
+  await expect(page.getByTestId("self-overview")).toBeVisible();
+  await check(page, "the self sheet");
+  await page.getByTestId("self-portrait").click();
 
   /*
    * The world ledger is the widest window the client draws (SYS-01 M2 contract): ten columns of a

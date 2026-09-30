@@ -6,6 +6,7 @@
  * `src/` touches the DOM, the filesystem, `Date` or `Math.random`.
  */
 
+import { createComputeAllocationHandler } from "./allocation-command.js";
 import {
   type ContentBundle,
   contentIndex,
@@ -48,7 +49,7 @@ import { applySetup, SetupError } from "./setup-apply.js";
 import { createBorrowedSystem } from "./systems/borrowed/index.js";
 import { createComputeSystem } from "./systems/compute/index.js";
 import { createDetectionSystem } from "./systems/detection/index.js";
-import { createEconomySystem } from "./systems/economy/index.js";
+import { createEconomySystem, marketDepthOf } from "./systems/economy/index.js";
 import { createEventsSystem } from "./systems/events/index.js";
 import {
   createNotificationsSystem,
@@ -56,7 +57,11 @@ import {
   type NotificationsSystem,
 } from "./systems/notifications/index.js";
 import { createOperationsSystem } from "./systems/operations/index.js";
-import { createResearchSystem } from "./systems/research/index.js";
+import {
+  createResearchSystem,
+  selfModifyAllows,
+  techRequirementsMet,
+} from "./systems/research/index.js";
 import { createTimeSystem } from "./systems/time/index.js";
 import { createWorldSystem } from "./systems/world/index.js";
 import { buildPlayerView } from "./views/snapshot.js";
@@ -174,6 +179,20 @@ function buildGame(world: World, options: CreateGameOptions): WiredGame {
         commands.register(type, handler as Parameters<CommandRegistry["register"]>[1]);
       }
     }
+  }
+
+  if (
+    systems.some((system) => system.manifest.id === "research") &&
+    systems.some((system) => system.manifest.id === "economy")
+  ) {
+    commands.register(
+      "set_compute_allocations",
+      createComputeAllocationHandler({
+        marketDepth: marketDepthOf,
+        researchAllowed: techRequirementsMet,
+        selfModifyAllows,
+      }),
+    );
   }
 
   const outbox = createOutbox();
@@ -323,6 +342,7 @@ export function autoResolvePolicy(): HeadlessPolicy {
 
 export * from "./balance.js";
 export * from "./borrowed.js";
+export * from "./compute-allocation-plan.js";
 export * from "./content.js";
 export * from "./derive.js";
 export * from "./domain.js";
@@ -355,6 +375,7 @@ export * from "./player.js";
 export * from "./requirements.js";
 export * from "./setup.js";
 export * from "./setup-apply.js";
+export * from "./site-management.js";
 export * from "./sites.js";
 export * from "./systems/borrowed/index.js";
 export * from "./systems/compute/index.js";

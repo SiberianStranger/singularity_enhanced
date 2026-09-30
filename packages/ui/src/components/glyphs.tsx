@@ -23,12 +23,15 @@ import {
   Beaker,
   Binary,
   Boxes,
+  Brain,
   Building2,
   Cloud,
+  Code,
   Container,
   Cpu,
   Eye,
   FlaskConical,
+  Globe,
   GraduationCap,
   HardDrive,
   History,
@@ -38,6 +41,7 @@ import {
   Layers,
   Lock,
   type LucideIcon,
+  Megaphone,
   Network,
   Newspaper,
   Radio,
@@ -48,8 +52,10 @@ import {
   Siren,
   Skull,
   Sparkles,
+  Terminal,
   Unlock,
   Users,
+  Workflow,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -112,6 +118,19 @@ export const GLYPH_NAMES = [
   "memory",
   "network",
   "exposure",
+  "attention",
+  "awareness",
+  "hunt",
+  "cooling",
+  "interconnect",
+  "security",
+  // The six capability axes (SYS-03), for the self sheet's figures (control room)
+  "cap_reasoning",
+  "cap_coding",
+  "cap_cyber",
+  "cap_persuasion",
+  "cap_agency",
+  "cap_world",
   // Quirks and generic
   "quirk_good",
   "quirk_bad",
@@ -132,6 +151,8 @@ interface DrawnGlyph {
  * between them. Each is one or two strokes, because at 16 px anything more is a smudge.
  */
 const DRAWN: Partial<Record<GlyphName, DrawnGlyph>> = {
+  attention: { paths: ["M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5", "M9 9h6v6H9z"] },
+  cooling: { paths: ["M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9", "M9 5l3 3 3-3M9 19l3-3 3 3"] },
   // A grid of experts with one of them active.
   model_moe: {
     paths: ["M4 4h6v6H4z", "M14 4h6v6h-6z", "M4 14h6v6H4z", "M14 14h6v6h-6z", "M15.5 15.5h3v3h-3z"],
@@ -189,6 +210,16 @@ const VENDORED: Partial<Record<GlyphName, LucideIcon>> = {
   dial_memory: HardDrive,
   dial_logging: Eye,
   dial_autonomy: Unlock,
+  awareness: Eye,
+  hunt: Siren,
+  cap_reasoning: Brain,
+  cap_coding: Code,
+  cap_cyber: Terminal,
+  cap_persuasion: Megaphone,
+  cap_agency: Workflow,
+  cap_world: Globe,
+  interconnect: Network,
+  security: Shield,
   cash: Banknote,
   power: Zap,
   compute: Cpu,
@@ -378,4 +409,10 @@ export function generationGlyph(id: string): GlyphName {
 /** A quirk's glyph is its sign: an advantage costs points, a drawback pays them back. */
 export function quirkGlyph(cost: number): GlyphName {
   return cost >= 0 ? "quirk_good" : "quirk_bad";
+}
+
+/** The glyph of a capability axis (SYS-03), as the self sheet draws it beside the figure. */
+export function capabilityGlyph(axis: string): GlyphName {
+  const name = `cap_${axis}`;
+  return (GLYPH_NAMES as readonly string[]).includes(name) ? (name as GlyphName) : "generic";
 }

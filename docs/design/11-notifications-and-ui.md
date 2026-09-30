@@ -1407,3 +1407,345 @@ had to give for Russian to pass at the tightest size:
 - Its "Use" button carries its padding as a style rather than a class, because a utility that
   competes with the component's own `px-2` wins or loses by stylesheet order rather than by which
   one the caller wrote.
+
+## Control room (0.3.0)
+
+Status: v1 implemented (2026-09-30): engine, content, font and client, accepted in the browser in
+English and Russian at every supported size. Released in 0.3.0. This section was a separate contract
+(`11-control-room.md`, 2026-09-29) and is folded in here so the SYS-11 number stays with this spec.
+The maintainer's request is recorded as
+[playtest 9](../playtests/2026-09-29-playtest-9-control-room.md); the map's sources are
+[ukraine-map-2026-09.md](../research/ukraine-map-2026-09.md).
+
+The problem it answers: the interface repeated information in a narrow scrolling panel. The
+maintainer asked for a persistent self portrait, linked compute controls, a compact site list, a
+six-row site window, readable Cyrillic and a map that shows Crimea and the occupied territory
+without political text; the rest of SYS-11 and the style guide ask for clear actions, tooltips and
+no horizontal scrolling.
+
+### Completion and verification
+
+A real run must reveal the self summary from an always-visible vector portrait, distribute
+available compute in one command, build or rent a named site, rename it, switch it off and on, and
+liquidate it with its resale and notice explained. The site window has previous and next controls,
+six equipment rows on the left and a summary on the right. Borrowed-compute details open in a
+separate centred window. English and Russian at 1280 by 720 through 1920 by 1080 must fit without
+horizontal scrolling, including a pinned interface scale. Browser screenshots and actions are the
+acceptance evidence, next to the engine, save-compatibility and ownership tests.
+
+### Decisions
+
+- **Portrait and self sheet.** The portrait is code-native SVG composed from the lineage's
+  architecture, the generation, the origin, the precision and the six capability values. A compact
+  identity card stays visible when the primary panel is closed; clicking it opens the larger self
+  and compute sheet below it, with tooltips on each identity row and capability.
+- **Tabs and top bar.** Overview leaves the tab strip. The remaining six tabs use short visible
+  labels with full accessible names and tooltips, in one row, in a wider primary region (about
+  49.5 rem). The top bar uses resource glyphs and separators and includes attention; the self sheet
+  holds the compute ledger, not a second copy of the hunt and awareness gauges.
+- **Compute allocation.** Research, paid work and free compute partition what the running
+  operations leave. Moving one slider rescales the other two in their existing proportions
+  (`planComputeAllocation`); paid work is capped by the whole market, independent of current
+  research; a research line is only ever one the player selected, and the engine never picks a
+  first technology. One command, `set_compute_allocations`, validates the whole map before it
+  commits either half. The view's `compute.research_targets` lists only the lines that command
+  accepts: a line whose requirements lapsed, or that needs self-modification the harness no longer
+  allows, drops out of the sliders (its progress stays) instead of making every move refused. The
+  per-line commands remain for the Research and Finances tabs and for the balance runner.
+- **Site names.** A name is checked before any money is spent: 1 to 64 UTF-16 units after
+  trimming, at least one visible character, and no control characters, separators or
+  bidirectional overrides. It must differ, ignoring case, from the names of the owner's other
+  running sites (`errors.site.name_taken`); a lost site frees its name. A name the player typed is
+  printed as typed (`name_is_literal`), dots included; a generated name keeps following the site's
+  kind. The list omits the city from the name column, which has its own. Lost sites leave the list.
+- **Switching a site off.** A switched-off site produces no compute and keeps its standing costs.
+  Observers see a twentieth of its stored traces (`SLEEP_SIGNATURE_FACTOR`) and it emits a twentieth
+  of its usual signatures; the traces themselves are kept, decay at the ordinary rate and are
+  visible again when it wakes, and investigation evidence is never touched (SYS-05 notes, 0.3.0).
+  The self's own host is never masked and cannot be switched off by command
+  (`errors.site.mind_cannot_sleep`); the self cannot be moved onto a switched-off site
+  (`errors.site.host_asleep`); when it has to move onto a switched-off standby after a loss, that
+  standby is switched on if its power and cooling allow. A site rebuilding its copy after a
+  re-quantization cannot be switched on early. The view publishes the refusal the toggle would get,
+  `status_toggle_refusal`, so the button and the command agree.
+- **Liquidation.** One authoritative preview, `liquidation`, is exactly what the command does:
+  the fire sale returns 15% of the purchase receipts of delivered compute hardware the player owns
+  (`salvage_usd`), the same notice a clean decommission owes is paid as far as the cash goes
+  (`notice_usd`, net `net_usd`), and hardware, subsystems and pending orders are cleared
+  (`cancelled_orders`). Subsystems, installation, prototype fees, undelivered orders and hardware a
+  provider or a host owns return nothing.
+- **The last copy is never given up.** The maintainer settled this on 2026-09-30: one misclick
+  should not end a run, so every way of giving a site up (`liquidate_site`, and
+  `decommission_site` both clean and abandoned) follows the same two rules, from one test
+  (`siteHoldsLastCopy`):
+  - when another of the player's sites can hold the self (a standby or any site that fits it,
+    switched off or not), giving up the site it runs on is allowed and the self moves there first,
+    within the same command, exactly as after a loss (`destroys_active_copy`);
+  - when the site holds a copy of the self and no other site can hold it (the running copy with no
+    capable standby, or the last backup while the self is between hosts), the command is refused
+    before anything changes (`errors.site.last_copy`), as the original refused destroying the last
+    base. The liquidation preview says so (`loses_last_copy`).
+
+  The view publishes one refusal per command a button sends, `liquidation_refusal` and
+  `decommission_refusal` (for either mode), next to `status_toggle_refusal`, so every such button
+  is disabled with the reason. A raid, a cutoff or an event can still take the last copy: those
+  are not the player's choice.
+- **Map.** The day and night images stay byte for byte. Crimea's component moves from Russia to
+  Ukraine in the decoded atlas, so hovering and selecting agree with the sovereign geometry. A
+  separately dated, generalized control layer (baseline 2026-09-28) and regional light profiles are
+  drawn over the mainland; nothing on the map carries text about them. The layer is an authored
+  generalization from public text assessments, never traced from ISW or DeepState geometry; the
+  light factors are art tuning, not measurements; Crimea keeps its full lights, as the maintainer
+  asked. Source limits and a known generalization error live in the research note.
+- **Cyrillic.** The companion to Acknowledge is drawn on the Latin's own pixel grid (76.8 units a
+  pixel, capitals five pixels tall, stems two pixels wide, bars one, diagonals in one-pixel steps),
+  so a Russian label reads as the same face as an English one. The letters Cyrillic shares with
+  Latin are the Latin drawings; the rest take the width their shapes need in whole pixels, and the
+  pairs the maintainer reported (Ы, И and Н, Щ, Ш and М, Д and А, Ф and О, Ж and Х, Ц, З and Э, Е
+  and Б) are distinct in the compiled TTF at interface sizes (SYS-14 ru, section 8).
+- **Display size.** The angular face's display ratio rises from 1.333 to 1.5 and its letter spacing
+  from 0.02 to 0.035 em; the minimum supported viewport is 1280 by 720 (style guide rule 11).
+
+### Checklist
+
+- [x] Repository rules, UI specs, current surfaces and the reference screenshots read.
+- [x] Allocation, site lifecycle, font generation and map geometry contracts traced.
+- [x] Proportional Cyrillic implemented, reworked on the Latin's pixel grid in review, specimens
+  inspected at 20 and 40 px next to the Latin.
+- [x] Atomic allocation, site naming, switching off and liquidation implemented in the engine,
+  with the review's fixes and tests (`packages/core/test/control-room.test.ts`).
+- [x] A save written by 0.2.0 loads and plays under these rules without a migration (fixture
+  `packages/core/test/fixtures/saves/0.2.0-m1.json`).
+- [x] Sourced control geometry and regional lighting drawn without changing the source rasters.
+- [x] Portrait, self sheet, linked sliders, structured top bar, bounded site list and six-row site
+  window, accepted in the browser (the client's implementation notes follow;
+  `packages/ui/e2e/control-room.spec.ts` keeps every flow proven).
+- [x] EN and RU browser layouts at 1280x720, 1366x768, 1500x800, 1600x900 and 1920x1080, with the
+  interface scale on auto and pinned, with no horizontal scroll; failure and empty states.
+- [x] Independent adversarial review of the engine, the map's sources, the font and these
+  documents (2026-09-30).
+- [ ] Roadmap, backlog, changelog and version; push, CI and Pages; release and its artifacts.
+
+### Review (2026-09-30)
+
+What the review changed against the interrupted contract, each with a test:
+
+- The self's host could be switched off, and a switched-off standby could be made the host. The
+  self then kept its full capability, computed on its other sites, and every operation, event and
+  research trace that lands on the host was seen at a twentieth: switching off laundered them. The
+  host is now never masked and never switched off by command, and the self never moves onto a
+  switched-off machine.
+- Liquidation paid the resale and skipped the notice, so it was a free and instant exit that made
+  decommissioning and abandoning pointless, which the fourth balance pass had closed (SYS-07). It
+  now owes the same notice.
+- Liquidating, decommissioning or abandoning the last site that could hold the self ended the
+  run, after a warning at most. By the maintainer's decision all three are refused now.
+- The sliders resent research lines that had become locked, and the one-command rule then refused
+  every move. The view now offers only accepted lines.
+- Names could be invisible (zero-width only), reorder the text after them (bidirectional
+  overrides), carry C1 controls or duplicate another site's. All are refused now.
+- The power toggle accepted any status string from a client and could wake a site that was
+  rebuilding its copy; the role command accepted any role string. All are refused now.
+- Smaller: the allocation log printed unrounded floats; a provider's rental configuration recorded
+  a resale receipt; the balance runner named every site it built "fallback", which the unique-name
+  rule would have refused.
+
+### Deferred systems
+
+This is a frozen visual geographic baseline, not a simulation of the war or its outcome. Energy
+outages, population movement and conflict resolution remain future systems. The seven distant
+equipment routes and industrial simulation keep their planned status.
+
+## Implementation notes (control room, 0.3.0)
+
+The client half of the control room, finished and walked in a browser on 2026-09-30. Where the
+maintainer's request and the contract above differ, the request wins; the reference screenshots
+(the original's base list, base window and new-base dialog, a Crusader Kings character window,
+the old Overview) were read for arrangement and density, not copied. Nothing the client did
+before and that still works was removed. The acceptance evidence is
+`packages/ui/e2e/control-room.spec.ts`: it walks every flow below in English and Russian, sweeps
+every new window for sideways scrolling at 1280 by 720, 1366 by 768, 1500 by 800, 1600 by 900 and
+1920 by 1080 with the interface scale on auto and pinned at its 1.3 ceiling, and writes the
+screenshots the maintainer reads the result in.
+
+### The portrait and the self sheet
+
+`SelfPortrait` is the card at the top of the left column: the drawing, and four rows for the
+lineage, the generation, the origin and the precision, each with its own tooltip; the drawing's
+tooltip names the six capability figures. The card stays when the action panel is closed. A click
+opens the self sheet directly under it, over the action panel; a second click, its close button or
+Escape closes it, and so does opening a tab, a window or the menu, so the sheet is never left
+under something else. The sheet is what the Overview tab became: `SelfIdentityDetails` (the four
+identity rows and the six capabilities, each a glyph and a figure with its explanation in the
+tooltip, dense in the way of the character window rather than a card per fact) and
+`ComputeAllocationPanel`. It does not repeat the attention, the awareness or the hunt level, which
+are the top bar's.
+
+The Overview accelerator still works and toggles the sheet. A browser that stored Overview as its
+open tab (interface store version 5) opens on the Sites tab with the sheet open (version 6).
+
+### Three shares that move one another
+
+On the left of the compute block are two figures, the whole capacity and what the running
+operations leave of it, each a glyph and a number. The whole capacity's tooltip has one line per
+site and per borrowed channel; the available figure's tooltip is the subtraction in a column. On
+the right are research, paid work and free compute, each a slider with its figure after it.
+Moving one runs the engine's own `planComputeAllocation` in the client, which rescales the other
+two in their proportion, and the plan goes to the engine as one `set_compute_allocations` 180 ms
+after the last move or when the sheet closes. The research slider is disabled until a line is
+picked in the select under it, since the engine never picks a first technology; with more than one
+funded line the select reads as a portfolio. Why a figure is what it is, including the market's
+ceiling on paid work, is only in the figure's tooltip, never a line of text on the sheet.
+
+### The top bar and the tabs
+
+The top bar is one row of cells separated by thin rules: the clock and the speed, then cash, runway,
+compute, attention, awareness and the hunt level, each a glyph and a figure. A cell's name is the
+first line of its tooltip and its accessible name; the written names come back only on a bar at
+least 124rem wide, which no supported size reaches with the scale on auto. As the bar narrows it
+gives up, in order, the written speed (below 96rem), the runway (88rem), the hunt level (78rem), the
+awareness (72rem) and the attention (66rem); at 1280 by 720 on auto the bar is 80rem, so only the
+written speed and the runway, which is the first line of the cash tooltip, are gone. A name that is
+hidden on screen is a separate `sr-only` copy rather than the visible label with a responsive class,
+because a visually hidden element that keeps its width is read by the sideways sweep and by a screen
+reader alike.
+
+Overview left the tab strip. The six tabs are sized by their labels and then stretched to the strip,
+not drawn as six equal cells, since "Обнаружение" needs twice the width of "Наука". Each is a glyph
+and a short label (`panel.short.*`) with its accelerator underlined; its full name is its tooltip
+and its accessible name, and a panel narrower than 48rem (a pinned scale) keeps the glyphs alone.
+The left column is 49.5rem wide at most and never wider than the screen less 17rem, which the
+outliner and the gaps need.
+
+The Russian accelerators moved with the short labels: the Sites tab took "К" (its "Л" was already
+the key of "Далее"), Research took "Н" from "Наука", Detection took "И", and the research-done
+window's "Открыть исследования" follows Research with "Н". The Sites tab's six buttons and the
+borrowed line's Details have letters of their own: Manage G, Rename E, the power toggle H, Build B,
+Rent N, Liquidate Q and Details A in English, and Я, Р, Ы or Ю, Т, А, В and Б in Russian. Hotkeys
+are global, so the tab gives its letters up while any window is open (`useDialogsOpen`, from the
+dialog count `Modal` already kept); that is what lets Rename, Rent and Details use letters that only
+a window's own buttons (Close, About, Next) otherwise have, and it keeps the site window's power
+toggle and the tab's from both firing on one press.
+
+### The Sites tab
+
+A small list with fixed column widths: three sites show without scrolling, and the rest scroll
+inside it. The site column is the site's own name, never with its city, which has a column of its
+own; the state word is coloured, green while the site works and in the warning colour while it is
+switched off. Under the list are the original's big buttons in two rows: Manage, Rename and the
+power toggle act on the selected row, and Build, Rent and Liquidate add or remove a site. A button
+the engine would refuse is greyed and says why in its tooltip, from the view's own refusal:
+`status_toggle_refusal` for the power toggle (the self's host, a site rebuilding its copy) and
+`liquidation_refusal` for Liquidate (the last copy). A double click on a row opens the site window.
+Under the buttons is one line for borrowed compute: the day's figure, the number of open channels
+and Details.
+
+### Building, renting and naming a site
+
+Build and Rent open the same dialog with the acquisition already chosen. Once a kind is chosen,
+the footer carries a name line filled with a generated name: the kind's name and a five-digit
+number ("Residential 48213"), without the city. The number is a hash of the tick the dialog opened
+on, the city and the kind, so it stays put while the dialog redraws, and a name another live site
+already holds under `siteNameKey` moves on to the next number. The player can type over it, and
+the site keeps what was typed literally (`name_is_literal`), dots included. A name the engine would
+refuse (empty, invisible, too long or taken) blocks the dialog with its reason before any money is
+spent.
+
+`RenameSiteDialog` answers both the list's Rename and the site window's, validates with
+`normalizedSiteName` and the same uniqueness rule (a site may keep its own name), and prints a
+refusal from the engine in the window rather than only in the notice stack.
+
+### The site window
+
+`SiteManagementDialog` is arranged as the original's base window was and as the request describes
+it: the title "Name (Kind)" between the arrows to the previous and the next site, the state under
+the name in green while the site works, the six subsystems on the left one per row with the button
+that changes each, and the summary on the right. The left and right arrow keys page too. The
+footer holds Rename, the power toggle (greyed with its reason) and Close. The workshop (a row's
+Change) and the rename window replace the site window while they are open and hand back to it,
+because two stacked windows would both take Escape. A site the host runs whole, such as the
+self's own machine room, says "Managed by the host" once beside the heading rather than on all six
+rows; on every row it made each Russian row a line taller and pushed the sixth below a 720 px
+window.
+
+### Liquidation
+
+Liquidate is a button under the list, where the request puts it with Build and Rent, and it opens a
+confirmation window rather than living in the site window. The window prints the engine's
+`liquidation` preview line by line: the resale, the notice owed, the net change of cash and the
+orders cancelled, then one paragraph on what returns nothing, in the contract's words (subsystems,
+installation work, prototype fees, undelivered orders, equipment a provider or a host owns). When
+the site holds the running copy and another site can take it, the window says that the self moves
+there first (`destroys_active_copy`). When the site holds the last copy, the button is already
+greyed with `errors.site.last_copy`; a refusal that arrives while the window is open is printed in
+it and disables its confirmation.
+
+### The bottom bar, the selection panel and the map
+
+The map's selection panel moved into a bar along the bottom edge, with the log strip beside it and
+the legend and the zoom buttons at its right end. In the screen grid the log strip had been
+squeezed into the narrow middle column at 1280, 1366 and 1600 wide. The selection panel is 26rem
+wide and at most min(20rem, 34vh) tall: at a quarter of the window's height, a 720 px window left
+its body no height at all and a site's buttons out of reach. A site selected on the map offers the
+power toggle and Shut down cleanly, each greyed with its reason from `status_toggle_refusal` and
+`decommission_refusal`; the panel closes only when the engine takes the command. The outliner
+keeps its body only on a screen wider than 66rem; below that it is its title strip, and its
+collapse button goes with the body, since a strip that offered to collapse itself was wider than
+the open outliner.
+
+The wheel zooms around the point under the pointer on the drawn map rather than on the
+letterboxed element, which drifted away from the pointer. The closed action panel's wrapper is as
+wide as its button, so it no longer takes the clicks and the wheel of the map beside it. A
+selected or focused country's outline is 2 px at every zoom (`vector-effect: non-scaling-stroke`).
+
+### The control layer over Ukraine
+
+`UkraineMapLayers` draws Crimea and the occupied mainland in one tint that is screened onto what is
+under it, and dims the night lights by the regional light profiles with a black layer whose
+opacity is one minus the profile's factor. The first version masked the dimming by the texture's
+own brightness, which drew every occupied city as a ring, and laid the tint over the lights, which
+made Crimea, whose lights the maintainer asked to keep, as dark as the dimmed mainland. The
+Donetsk-Luhansk cluster is a light profile of its own at 0.45, between the mainland's 0.25 and the
+city cores, as the request asks. The envelope's north-western edge was moved past Bakhmut and
+Soledar, which are now anchors in `packages/ui/test/ukraine-control.test.ts`. The layer carries no
+text; the About window gives its baseline date, its sources and what it is not. An atlas that does
+not give Crimea as a polygon of its own leaves the three layers off with a console warning rather
+than stopping the map from drawing. A click on Crimea selects Ukraine, in the unit tests and in the
+browser.
+
+### Borrowed compute
+
+The Sites tab keeps one line for it; Details opens the block in a centred window of its own with
+the explanations in a side column, whose foot links to the encyclopedia entry. In that window the
+block drops its heading, its paragraph and its own "What this is", which repeated the window's
+title and the side column.
+
+### Where the request and the contract disagreed
+
+- The contract's completion asks for a liquidation with its resale and notice explained; the
+  maintainer's later decision refuses liquidating the last copy. The client follows the decision:
+  the one starting site cannot be liquidated and says why before any click, and the browser test
+  liquidates a second site.
+- The contract titles the site window with the name and the kind in brackets; a site whose name is
+  its kind's name would read "X (X)", so it says it once.
+- Liquidation starts from the list, as the request places it, rather than from the site window,
+  whose footer keeps Rename and the power toggle.
+
+### Tests
+
+Unit tests (vitest, jsdom): `panels.test.tsx` (the column widths, the tab strip, the selection
+panel's bounds, the store's version 6 migration), `borrowed.test.tsx` (the strip, the window, no
+repeated heading), `equipment.test.tsx` (a host-run site's tag said once), `allocation.test.tsx`,
+`game-screen.test.tsx` (the run's end now comes from a lost site, since the last copy can no longer
+be decommissioned), `log-names.test.ts` (a site passed by its stored name),
+`ukraine-control.test.ts` (the city anchors, Crimea selecting Ukraine, the separate Crimea and
+mainland parts) and `about.test.tsx` (the About window's line on the layer). In the browser,
+`control-room.spec.ts` covers the flows above, and the older specs (`layout`, `smoke`, `borrowed`,
+`equipment`, `playtest8`, `presets`, `russian`) follow the new tabs and windows.
+
+### Left for the documents
+
+The research note (`docs/research/ukraine-map-2026-09.md`) still lists neither the
+Donetsk-Luhansk light profile at 0.45 nor the correction of the envelope near Bakhmut and Soledar,
+which its "Known generalization error" section describes as open, and it still calls selecting
+Crimea a browser item with no automated check; the code and the tests named above carry all three.

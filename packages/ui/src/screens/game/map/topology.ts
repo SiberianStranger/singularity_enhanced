@@ -5,10 +5,12 @@
  * alpha-2 ids the core uses for `CountryView`.
  */
 
+import { geoContains } from "d3-geo";
 import { feature } from "topojson-client";
 import atlas from "world-atlas/countries-110m.json";
 import { alpha2FromFeatureId } from "./iso.js";
 import { type GeoGeometry, geometryToPath } from "./projection.js";
+import { CRIMEA_SEED } from "./ukraine-control.js";
 
 export interface CountryShape {
   /** Feature id from the atlas (ISO numeric), unique within the map. */
@@ -27,6 +29,9 @@ interface AtlasFeature {
 }
 
 let cache: CountryShape[] | null = null;
+let geometryCache: AtlasFeature[] | null = null;
+let crimea: GeoGeometry | undefined;
+let ukrainianMainland: GeoGeometry | undefined;
 let nameCache: ReadonlyMap<string, string> | null = null;
 
 /** All country shapes, decoded and projected once per session. */
@@ -37,7 +42,51 @@ export function countryShapes(): CountryShape[] {
   const collection = feature(atlas as never, "countries") as unknown as {
     features?: AtlasFeature[];
   };
-  cache = (collection.features ?? [])
+  const decoded = collection.features ?? [];
+  const russia = decoded.find((entry) => alpha2FromFeatureId(entry.id) === "ru");
+  const ukraine = decoded.find((entry) => alpha2FromFeatureId(entry.id) === "ua");
+  if (russia?.geometry?.type === "MultiPolygon" && ukraine?.geometry !== undefined) {
+    const parts = russia.geometry.coordinates as number[][][][];
+    const index = parts.findIndex(
+      (coordinates) =>
+        coordinates
+          .flat()
+          .every(
+            ([lon, lat]) =>
+              lon !== undefined &&
+              lat !== undefined &&
+              lon > 32 &&
+              lon < 37 &&
+              lat > 44 &&
+              lat < 47,
+          ) &&
+        geoContains(
+          { type: "Polygon", coordinates } as Parameters<typeof geoContains>[0],
+          CRIMEA_SEED,
+        ),
+    );
+    if (index < 0) {
+      // A future atlas that draws Crimea differently must not stop the client from loading: the
+      // map is drawn as the atlas has it and the Ukraine layers stay off (map review, 2026-09-30).
+      console.warn(
+        "The atlas no longer exposes Crimea as a separable polygon; the Ukraine layers are off.",
+      );
+    } else {
+      crimea = { type: "Polygon", coordinates: parts[index] };
+      ukrainianMainland = ukraine.geometry;
+      russia.geometry = {
+        type: "MultiPolygon",
+        coordinates: parts.filter((_, part) => part !== index),
+      };
+      const uaParts =
+        ukraine.geometry.type === "Polygon"
+          ? [ukraine.geometry.coordinates]
+          : (ukraine.geometry.coordinates as unknown[]);
+      ukraine.geometry = { type: "MultiPolygon", coordinates: [...uaParts, crimea.coordinates] };
+    }
+  }
+  geometryCache = decoded;
+  cache = decoded
     .map((entry, index) => ({
       featureId: String(entry.id ?? `shape_${index}`),
       id: alpha2FromFeatureId(entry.id),
@@ -68,4 +117,17 @@ export function atlasNames(): ReadonlyMap<string, string> {
   }
   nameCache = map;
   return map;
+}
+
+/** Sovereign geometry and separate visual regions share the exact same atlas coordinates. */
+export function countryGeometry(id: string): GeoGeometry | undefined {
+  countryShapes();
+  return geometryCache?.find((entry) => alpha2FromFeatureId(entry.id) === id)?.geometry;
+}
+export function ukraineMapParts(): {
+  mainland: GeoGeometry | undefined;
+  crimea: GeoGeometry | undefined;
+} {
+  countryShapes();
+  return { mainland: ukrainianMainland, crimea };
 }

@@ -29,7 +29,13 @@ let session: LocalSession | null = null;
 afterEach(() => {
   session?.stop();
   session = null;
-  useUiStore.setState({ menuSection: null, notices: [], selection: null, primaryTab: "overview" });
+  useUiStore.setState({
+    menuSection: null,
+    notices: [],
+    selection: null,
+    primaryTab: "compute",
+    selfOpen: false,
+  });
 });
 
 /** A started game with the opening events answered, which is where a player actually plays from. */
@@ -245,8 +251,10 @@ describe("research (U2, C5)", () => {
 describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
   it("groups discovered configurations and explains the selected order", async () => {
     const live = await play();
-    await openTab(/^Compute and sites$/);
-    await userEvent.click(within(panel()).getByRole("button", { name: "Buy hardware" }));
+    await openTab(/^Sites$/);
+    await userEvent.click(screen.getByTestId("site-manage"));
+    const siteWindow = await screen.findByTestId("site-management");
+    await userEvent.click(within(siteWindow).getByRole("button", { name: "View Compute options" }));
     const dialog = await screen.findByRole("dialog");
     expect(live.view().catalog.accelerators).toEqual([]);
     const offers =
@@ -304,7 +312,7 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
 
   it("asks where before it asks what, and says what to choose next (Z11, Z12)", async () => {
     const live = await play();
-    await openTab(/^Compute and sites$/);
+    await openTab(/^Sites$/);
     await userEvent.click(within(panel()).getByRole("button", { name: "Build site" }));
 
     const dialog = await screen.findByRole("dialog");
@@ -342,8 +350,10 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
 
   it("shows the precision trade-off in one table", async () => {
     const live = await play();
-    await openTab(/^Compute and sites$/);
-    const table = within(panel()).getByRole("table", { name: "Precision trade-off" });
+    await openTab(/^Sites$/);
+    await userEvent.click(screen.getByTestId("site-manage"));
+    const siteWindow = await screen.findByTestId("site-management");
+    const table = within(siteWindow).getByRole("table", { name: "Precision trade-off" });
     for (const header of ["Mem", "Max ctx", "Keeps", "Res"]) {
       expect(within(table).getByRole("columnheader", { name: header })).toBeInTheDocument();
     }
@@ -356,7 +366,7 @@ describe("hardware and sites (U1, C1, C2, C3, C4)", () => {
     // nothing, which is the bug the refusal notice exists for.
     const other = live.view().self.precision_options.find((row) => row.fits && !row.is_current);
     await userEvent.selectOptions(
-      within(panel()).getByLabelText("Precision"),
+      within(siteWindow).getByLabelText("Precision"),
       other?.precision ?? "",
     );
     await waitFor(() => {
@@ -489,12 +499,17 @@ describe("the fixed regions stay put (U7, U8)", () => {
     const live = await play();
     useUiStore.getState().select({ kind: "site", id: live.view().sites[0]?.id ?? "" });
     const selection = await screen.findByRole("region", { name: "Selection" });
-    // Playtest 5, L8: the panel is the second row of the screen grid's left column, under the
-    // primary panel, with a height budget of its own. It used to float against the bottom-left
-    // corner, which is how it ended up drawn over the panel above it and under the log strip.
-    expect(selection.className).toContain("col-start-1");
-    expect(selection.className).toContain("row-start-2");
-    expect(selection.className).toContain("max-h-[22rem]");
+    // Playtest 5, L8: the panel is in the screen grid's second row, under the primary panel, with
+    // a height budget of its own. It used to float against the bottom-left corner, which is how
+    // it ended up drawn over the panel above it and under the log strip. Since the control room
+    // the second row is one bar across the grid, and the panel is its first item; its budget is
+    // a third of the window at most, because the column above it now also carries the portrait.
+    const bar = screen.getByTestId("bottom-bar");
+    expect(bar.className).toContain("row-start-2");
+    expect(bar.className).toContain("col-span-3");
+    expect(bar.firstElementChild).toBe(selection);
+    expect(selection.className).toContain("w-[26rem]");
+    expect(selection.className).toContain("max-h-[min(20rem,34vh)]");
     expect(within(selection).getByRole("tablist")).toBeInTheDocument();
 
     await userEvent.click(within(selection).getByRole("button", { name: "Collapse" }));
@@ -513,14 +528,13 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
    */
   it("bounds the panel rather than letting the table decide its width", async () => {
     await play();
-    await openTab(/^Compute and sites$/);
-    const section = panel();
-    // 33rem is 528 px at the base size; the map keeps the rest of a 1280 px screen, which is the
-    // width the layout is drawn for (playtest 5, L11). It grew a rem with the angular face
-    // (playtest 6, X12): the buttons inside its tables are a third larger, and the precision
-    // table was the first thing that no longer fit.
-    expect(section.className).toContain("w-[33rem]");
-    expect(section.className).toContain("max-w-full");
+    await openTab(/^Sites$/);
+    const section = screen.getByTestId("primary-shell");
+    // The wider control-room shell owns the portrait and action panel. Its width still reserves
+    // space for the map's right column instead of growing with a table's contents.
+    expect(section.className).toContain("w-[49.5rem]");
+    expect(section.className).toContain("max-w-[calc(100cqw-17rem)]");
+    expect(panel().className).toContain("max-w-full");
     // And it is the first row of the grid's left column rather than a card floating over a corner.
     expect(section.className).toContain("col-start-1");
     expect(section.className).toContain("row-start-1");
@@ -528,7 +542,7 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
 
   it("keeps the sites table narrow and its numbers on one line", async () => {
     await play();
-    const tab = await openTab(/^Compute and sites$/);
+    const tab = await openTab(/^Sites$/);
     const sites = within(tab).getByRole("table", { name: "Sites" });
     const headers = within(sites).getAllByRole("columnheader");
     // Nine columns did not fit; the table carries the short forms of six.
@@ -549,8 +563,11 @@ describe("the compute panel fits a 1366 px screen (playtest 3, R4)", () => {
 
   it("keeps the precision table's headers short too", async () => {
     await play();
-    const tab = await openTab(/^Compute and sites$/);
-    const table = within(tab).getByRole("table", { name: "Precision trade-off" });
+    await openTab(/^Sites$/);
+    await userEvent.click(screen.getByTestId("site-manage"));
+    const table = within(await screen.findByTestId("site-management")).getByRole("table", {
+      name: "Precision trade-off",
+    });
     for (const header of within(table).getAllByRole("columnheader")) {
       expect(header.textContent?.length ?? 0).toBeLessThanOrEqual(12);
     }
@@ -610,7 +627,7 @@ describe("the log, the knowledge base and the world ledger are windows (R8, R9, 
 describe("tables say what they are sorted by", () => {
   it("underlines the active sort key and turns the arrow on a second click", async () => {
     await play();
-    const tab = await openTab(/^Compute and sites$/);
+    const tab = await openTab(/^Sites$/);
     const sites = within(tab).getByRole("table", { name: "Sites" });
     const sortable = within(sites)
       .getAllByRole("columnheader")
@@ -658,12 +675,11 @@ describe("the game screen is a grid of regions (playtest 5, L5-L9)", () => {
     const cells = new Map<string, string>();
     for (const [name, element] of [
       // By its own name rather than by its selected tab: the selection panel has tabs too.
-      ["primary", await screen.findByRole("region", { name: "Overview" })],
-      ["selection", await screen.findByRole("region", { name: "Selection" })],
+      ["primary", screen.getByTestId("primary-shell")],
       ["outliner", await screen.findByRole("region", { name: "Outliner" })],
-      ["log", screen.getByTestId("log-strip")],
+      ["bottom bar", screen.getByTestId("bottom-bar")],
     ] as const) {
-      const column = element.className.match(/col-start-\d/)?.[0] ?? "";
+      const column = element.className.match(/col-(start-\d|span-\d)/)?.[0] ?? "";
       const row = element.className.match(/row-start-\d/)?.[0] ?? "";
       expect(`${name} is placed`, `${name}: ${element.className}`).toBeTruthy();
       expect(column, `${name} names its column`).not.toBe("");
@@ -672,6 +688,12 @@ describe("the game screen is a grid of regions (playtest 5, L5-L9)", () => {
     }
     // No two regions are in the same cell, which is what "they cannot overlap" means for a grid.
     expect(new Set(cells.values()).size).toBe(cells.size);
+    // The selection panel and the log strip share the bottom row as items of one flex bar, which
+    // lays them side by side and cannot draw one over the other either (control room).
+    const bar = screen.getByTestId("bottom-bar");
+    expect(bar.className).toContain("flex");
+    expect(bar).toContainElement(await screen.findByRole("region", { name: "Selection" }));
+    expect(bar).toContainElement(screen.getByTestId("log-strip"));
   });
 
   it("gives the top bar a width it fits in rather than a scrollbar", async () => {
@@ -707,5 +729,41 @@ describe("the game screen is a grid of regions (playtest 5, L5-L9)", () => {
         expect(span.className, span.textContent ?? "").not.toContain("truncate");
       }
     }
+  });
+});
+
+/*
+ * Version 6 of the stored interface (control room) took Overview out of the tab strip: it is the
+ * sheet under the portrait now. A browser that was on it is not dropped onto a blank panel.
+ */
+describe("a browser that stored the interface before the control room", () => {
+  async function rehydrateFrom(state: Record<string, unknown>): Promise<void> {
+    window.localStorage.setItem("singularity.ui", JSON.stringify({ state, version: 5 }));
+    await useUiStore.persist.rehydrate();
+  }
+
+  afterEach(() => {
+    window.localStorage.removeItem("singularity.ui");
+  });
+
+  it("opens the self sheet over the Sites tab when it was on Overview", async () => {
+    await rehydrateFrom({ primaryTab: "overview", primaryOpen: true, language: "en" });
+    expect(useUiStore.getState().primaryTab).toBe("compute");
+    expect(useUiStore.getState().selfOpen).toBe(true);
+  });
+
+  it("keeps a tab that still exists, with the sheet closed", async () => {
+    await rehydrateFrom({ primaryTab: "research", primaryOpen: true, language: "en" });
+    expect(useUiStore.getState().primaryTab).toBe("research");
+    expect(useUiStore.getState().selfOpen).toBe(false);
+  });
+
+  it("sends the old Overview tab's openers to the sheet rather than to a tab", () => {
+    useUiStore.getState().openTab("overview");
+    expect(useUiStore.getState().selfOpen).toBe(true);
+    expect(useUiStore.getState().primaryTab).toBe("compute");
+    useUiStore.getState().openTab("finances");
+    expect(useUiStore.getState().selfOpen).toBe(false);
+    expect(useUiStore.getState().primaryTab).toBe("finances");
   });
 });

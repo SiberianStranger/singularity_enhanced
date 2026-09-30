@@ -17,6 +17,12 @@ export interface CommandBase {
 }
 
 export type PlayerCommand =
+  | (CommandBase & {
+      type: "set_compute_allocations";
+      jobs_ch_per_day: number;
+      research_ch_per_day: Record<string, number>;
+    })
+  | (CommandBase & { type: "liquidate_site"; siteId: string })
   | (CommandBase & { type: "order_equipment"; siteId: string; equipmentId: string })
   | (CommandBase & { type: "set_speed"; speed: number })
   | (CommandBase & { type: "resolve_event"; instanceId: string; optionId: string })
@@ -287,6 +293,8 @@ function dispatch(world: World, command: PlayerCommand, ctx: CommandContext): Co
     case "set_precision":
     case "set_context":
     case "set_research_allocation":
+    case "set_compute_allocations":
+    case "liquidate_site":
     case "set_job_allocation":
     case "start_operation":
     case "abort_operation": {

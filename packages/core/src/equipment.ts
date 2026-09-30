@@ -261,6 +261,17 @@ export const orderEquipment: CommandHandler = (world, command, ctx) => {
         ...node,
         equipmentId: def.id,
         equipmentBatch: id,
+        // The receipt a liquidation resells from: the hardware share of the price, without the
+        // prototype fee. A rental configuration is the provider's hardware and has no receipt.
+        ...(def.acquisition === "rental"
+          ? {}
+          : {
+              purchaseValueUsd:
+                Math.max(
+                  0,
+                  quote.cost_usd - (quote.prototype ? (def.prototype_cost_usd ?? 0) : 0),
+                ) / Math.max(1, def.nodes?.length ?? 0),
+            }),
       })),
     );
   }

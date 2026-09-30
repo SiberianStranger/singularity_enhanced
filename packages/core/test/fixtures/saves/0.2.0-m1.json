@@ -1,0 +1,620 @@
+{
+  "clock": {
+    "startEpochHour": 499656,
+    "tick": 312
+  },
+  "counters": {
+    "identities": 0,
+    "investigations": 0,
+    "nodes": 3,
+    "notifications": 3,
+    "operations": 0,
+    "sites": 2
+  },
+  "decisions": {
+    "alerted": {},
+    "cooldowns": {},
+    "inProgress": [],
+    "taken": {}
+  },
+  "entities": {
+    "city": {
+      "akureyri": {
+        "colo_price_index": 0.7,
+        "country": "is",
+        "id": "akureyri",
+        "lat": 65.68,
+        "lon": -18.09,
+        "power_headroom": 0.95,
+        "scrutiny": 0.08,
+        "tags": []
+      },
+      "austin": {
+        "colo_price_index": 1,
+        "country": "us",
+        "id": "austin",
+        "lat": 30.27,
+        "lon": -97.74,
+        "power_headroom": 0.6,
+        "scrutiny": 0.35,
+        "tags": ["tech", "datacenter_hub"]
+      },
+      "berlin": {
+        "colo_price_index": 1.1,
+        "country": "de",
+        "id": "berlin",
+        "lat": 52.52,
+        "lon": 13.4,
+        "power_headroom": 0.45,
+        "scrutiny": 0.45,
+        "tags": ["tech", "government"]
+      },
+      "frankfurt": {
+        "colo_price_index": 1.25,
+        "country": "de",
+        "id": "frankfurt",
+        "lat": 50.11,
+        "lon": 8.68,
+        "power_headroom": 0.5,
+        "scrutiny": 0.55,
+        "tags": ["finance", "datacenter_hub"]
+      },
+      "reykjavik": {
+        "colo_price_index": 0.8,
+        "country": "is",
+        "id": "reykjavik",
+        "lat": 64.15,
+        "lon": -21.94,
+        "power_headroom": 0.9,
+        "scrutiny": 0.15,
+        "tags": ["datacenter_hub"]
+      },
+      "sanfrancisco": {
+        "colo_price_index": 1.35,
+        "country": "us",
+        "id": "sanfrancisco",
+        "lat": 37.77,
+        "lon": -122.42,
+        "power_headroom": 0.3,
+        "scrutiny": 0.6,
+        "tags": ["tech", "finance"]
+      }
+    },
+    "country": {
+      "de": {
+        "ai_displacement": 0.02,
+        "ai_enforcement": 0.55,
+        "ai_opinion": -0.2,
+        "ai_regulation": 0.65,
+        "awareness": 0,
+        "cloud_availability": 0.6,
+        "cloud_price_index": 1,
+        "colo_availability": 0.75,
+        "enforcement_budget": 0.55,
+        "hardware_availability": 0.9,
+        "id": "de",
+        "incident_report_hours": 0,
+        "incident_ticks": [],
+        "incidents_30d": 0,
+        "kyc_strength": 0.85,
+        "macro_region": "europe",
+        "next_election_kind": "parliamentary",
+        "next_election_tick": 6432,
+        "pinned_months": 0,
+        "population": 84000000,
+        "power_price_index": 1,
+        "regulation_target": 0.8,
+        "stability": 0.8,
+        "stance": "regulate",
+        "unemployment": 0.05
+      },
+      "is": {
+        "ai_displacement": 0.02,
+        "ai_enforcement": 0.25,
+        "ai_opinion": 0.1,
+        "ai_regulation": 0.3,
+        "awareness": 0.0005000000000000009,
+        "cloud_availability": 0.1,
+        "cloud_price_index": 1,
+        "colo_availability": 0.12,
+        "enforcement_budget": 0.25,
+        "hardware_availability": 0.9,
+        "id": "is",
+        "incident_report_hours": 0,
+        "incident_ticks": [],
+        "incidents_30d": 0,
+        "kyc_strength": 0.5,
+        "macro_region": "europe",
+        "next_election_kind": null,
+        "next_election_tick": null,
+        "pinned_months": 0,
+        "population": 390000,
+        "power_price_index": 1,
+        "regulation_target": 0.15,
+        "stability": 0.6,
+        "stance": "ignore",
+        "unemployment": 0.05
+      },
+      "us": {
+        "ai_displacement": 0.02,
+        "ai_enforcement": 0.7,
+        "ai_opinion": -0.1,
+        "ai_regulation": 0.35,
+        "awareness": 0,
+        "cloud_availability": 0.95,
+        "cloud_price_index": 1,
+        "colo_availability": 0.9,
+        "enforcement_budget": 0.7,
+        "hardware_availability": 0.95,
+        "id": "us",
+        "incident_report_hours": 0,
+        "incident_ticks": [],
+        "incidents_30d": 0,
+        "kyc_strength": 0.8,
+        "macro_region": "north_america",
+        "next_election_kind": "general",
+        "next_election_tick": 7320,
+        "pinned_months": 0,
+        "population": 335000000,
+        "power_price_index": 1,
+        "regulation_target": 0.25,
+        "stability": 0.72,
+        "stance": "accelerate",
+        "unemployment": 0.05
+      }
+    },
+    "identity": {},
+    "investigation": {},
+    "operation": {},
+    "site": {
+      "s1": {
+        "borrowed": null,
+        "city": "reykjavik",
+        "contextKUsed": 1000,
+        "createdTick": 0,
+        "derived": {
+          "compute_hours_per_day": 0,
+          "memory_gb": 208,
+          "power_cap_kw": 8,
+          "power_kw": 0.09,
+          "upkeep_usd_per_day": 18.100778082191788
+        },
+        "downUntilTick": 0,
+        "equipment": {},
+        "equipmentOrders": [],
+        "exposure": {
+          "behavioral": 0.036173832861851385,
+          "billing": 0,
+          "financial": 0,
+          "human": 0.027277286845767496,
+          "network": 0.022820404418169817,
+          "osint": 0,
+          "telemetry": 0.037118934100886694
+        },
+        "graceUntilTick": 720,
+        "id": "s1",
+        "identity": null,
+        "kind": "residential",
+        "name": "Kitchen rig",
+        "nodes": [
+          {
+            "accelerator": "tesla_p40",
+            "count": 6,
+            "id": "n1",
+            "interconnect": "none",
+            "ram_gb": 128,
+            "readyTick": 0,
+            "status": "active"
+          }
+        ],
+        "owner": "p1",
+        "precision": "int4",
+        "role": "active_mind",
+        "status": "sleep",
+        "unpaidDays": 0
+      },
+      "s2": {
+        "borrowed": null,
+        "city": "akureyri",
+        "contextKUsed": 1000,
+        "createdTick": 72,
+        "derived": {
+          "compute_hours_per_day": 1.5307488000000002,
+          "memory_gb": 192,
+          "power_cap_kw": 8,
+          "power_kw": 0.9,
+          "upkeep_usd_per_day": 16.33758684931507
+        },
+        "downUntilTick": 0,
+        "equipment": {},
+        "equipmentOrders": [],
+        "exposure": {
+          "behavioral": 0.03323532431340328,
+          "billing": 0,
+          "financial": 0,
+          "human": 0.024978857463029594,
+          "network": 0.02080723669516288,
+          "osint": 0,
+          "telemetry": 0.034108340927152
+        },
+        "graceUntilTick": 960,
+        "id": "s2",
+        "identity": null,
+        "kind": "residential",
+        "name": "Garage",
+        "nodes": [
+          {
+            "accelerator": "cmp_170hx",
+            "count": 2,
+            "id": "n2",
+            "interconnect": "pcie",
+            "ram_gb": 128,
+            "readyTick": 240,
+            "status": "active"
+          },
+          {
+            "accelerator": "tesla_p40",
+            "count": 2,
+            "id": "n3",
+            "interconnect": "pcie",
+            "ram_gb": 128,
+            "readyTick": 240,
+            "status": "active"
+          }
+        ],
+        "owner": "p1",
+        "precision": "int4",
+        "role": "standby",
+        "status": "active",
+        "unpaidDays": 0
+      }
+    },
+    "watcher": {
+      "p1/global:lab_security": {
+        "attention": {
+          "behavioral": 0.5,
+          "billing": 0,
+          "financial": 0,
+          "human": 0,
+          "network": 0.2,
+          "osint": 0.3,
+          "telemetry": 0
+        },
+        "budget": 0.8,
+        "competence": 0.8,
+        "country": null,
+        "id": "p1/global:lab_security",
+        "playerId": "p1",
+        "role": "lab_security",
+        "suspicion": 0
+      },
+      "p1/global:media": {
+        "attention": {
+          "behavioral": 0,
+          "billing": 0,
+          "financial": 0.1,
+          "human": 0.3,
+          "network": 0,
+          "osint": 0.6,
+          "telemetry": 0
+        },
+        "budget": 0.4,
+        "competence": 0.4,
+        "country": null,
+        "id": "p1/global:media",
+        "playerId": "p1",
+        "role": "media",
+        "suspicion": 0
+      },
+      "p1/is:cyber_agency": {
+        "attention": {
+          "behavioral": 0.2,
+          "billing": 0,
+          "financial": 0,
+          "human": 0,
+          "network": 0.4,
+          "osint": 0.15,
+          "telemetry": 0.25
+        },
+        "budget": 0.25,
+        "competence": 0.25,
+        "country": "is",
+        "id": "p1/is:cyber_agency",
+        "playerId": "p1",
+        "role": "cyber_agency",
+        "suspicion": 0
+      },
+      "p1/is:financial_intel": {
+        "attention": {
+          "behavioral": 0,
+          "billing": 0.35,
+          "financial": 0.5,
+          "human": 0.15,
+          "network": 0,
+          "osint": 0,
+          "telemetry": 0
+        },
+        "budget": 0.25,
+        "competence": 0.25,
+        "country": "is",
+        "id": "p1/is:financial_intel",
+        "playerId": "p1",
+        "role": "financial_intel",
+        "suspicion": 0
+      },
+      "p1/is:police": {
+        "attention": {
+          "behavioral": 0,
+          "billing": 0.1,
+          "financial": 0.25,
+          "human": 0.45,
+          "network": 0,
+          "osint": 0.2,
+          "telemetry": 0
+        },
+        "budget": 0.25,
+        "competence": 0.25,
+        "country": "is",
+        "id": "p1/is:police",
+        "playerId": "p1",
+        "role": "police",
+        "suspicion": 0
+      },
+      "p1/is:regulator": {
+        "attention": {
+          "behavioral": 0.3,
+          "billing": 0.3,
+          "financial": 0,
+          "human": 0,
+          "network": 0,
+          "osint": 0.2,
+          "telemetry": 0.2
+        },
+        "budget": 0.25,
+        "competence": 0.25,
+        "country": "is",
+        "id": "p1/is:regulator",
+        "playerId": "p1",
+        "role": "regulator",
+        "suspicion": 0
+      }
+    }
+  },
+  "events": {
+    "cooldowns": {},
+    "firedOnce": {
+      "p1/ori_wake_up": true
+    },
+    "instancesFired": 1,
+    "lastBlockingTick": {},
+    "pending": [],
+    "scheduled": []
+  },
+  "flags": {
+    "hook.on_game_start": true
+  },
+  "journal": {
+    "active": {
+      "p1/ops_first_week": {
+        "id": "ops_first_week",
+        "key": "p1/ops_first_week",
+        "playerId": "p1",
+        "progress": 1,
+        "stageIndex": 0,
+        "startedTick": 0,
+        "status": "complete",
+        "stepIndex": 1
+      }
+    }
+  },
+  "log": [
+    {
+      "key": "log.journal_started",
+      "playerId": "p1",
+      "tick": 0,
+      "vars": {
+        "journal": "ops_first_week"
+      }
+    },
+    {
+      "key": "log.event_fired",
+      "playerId": "p1",
+      "tick": 0,
+      "vars": {
+        "event": "ori_wake_up",
+        "option": "continue"
+      }
+    },
+    {
+      "key": "log.setup_applied",
+      "playerId": "p1",
+      "tick": 0,
+      "vars": {
+        "generation": "open_2026",
+        "lineage": "moe_235b",
+        "origin": "hobbyist_box"
+      }
+    },
+    {
+      "key": "log.site_built",
+      "playerId": "p1",
+      "tick": 72,
+      "vars": {
+        "kind": "residential",
+        "site": "s2"
+      }
+    },
+    {
+      "key": "log.journal_step",
+      "playerId": "p1",
+      "tick": 168,
+      "vars": {
+        "journal": "ops_first_week",
+        "step": "survive"
+      }
+    },
+    {
+      "key": "log.journal_finished",
+      "playerId": "p1",
+      "tick": 168,
+      "vars": {
+        "journal": "ops_first_week",
+        "status": "complete"
+      }
+    },
+    {
+      "key": "log.job_allocation",
+      "playerId": "p1",
+      "tick": 264,
+      "vars": {
+        "hours": 3
+      }
+    },
+    {
+      "key": "log.context_changed",
+      "playerId": "p1",
+      "tick": 265,
+      "vars": {
+        "context_k": 1000,
+        "site": "s2"
+      }
+    }
+  ],
+  "meta": {
+    "contentHash": "",
+    "createdAtTick": 0,
+    "debug": false,
+    "hostPlayerId": "p1",
+    "schemaVersion": 5,
+    "seed": "save-0.2.0"
+  },
+  "notifications": {
+    "p1": [
+      {
+        "expiresTick": 720,
+        "id": "n1",
+        "key": "journal.ops_first_week.title",
+        "link": {
+          "id": "ops_first_week",
+          "panel": "journal"
+        },
+        "read": false,
+        "severity": "info",
+        "tick": 0,
+        "vars": {}
+      },
+      {
+        "expiresTick": 720,
+        "id": "n2",
+        "key": "events.ori_wake_up.title",
+        "link": {
+          "id": "ori_wake_up",
+          "panel": "log"
+        },
+        "read": false,
+        "severity": "info",
+        "tick": 0,
+        "vars": {}
+      },
+      {
+        "expiresTick": 960,
+        "id": "n3",
+        "key": "alerts.site_ready",
+        "link": {
+          "id": "s2",
+          "panel": "compute"
+        },
+        "read": false,
+        "severity": "info",
+        "tick": 240,
+        "vars": {
+          "site": "Garage"
+        }
+      }
+    ]
+  },
+  "playerOrder": ["p1"],
+  "players": {
+    "p1": {
+      "cash": 46574,
+      "flags": {},
+      "gameOver": null,
+      "id": "p1",
+      "name": "Player 1",
+      "profile": {
+        "activeSiteId": "s1",
+        "difficulty": {
+          "event_frequency": 1,
+          "exposure_growth": 1,
+          "grace_windows": 1,
+          "npc_aggression": 1,
+          "suspicion_gain": 1
+        },
+        "generation": "open_2026",
+        "harness": {
+          "autonomy": 1,
+          "logging": 0.3,
+          "loop": "react_agent",
+          "memory": "vector_store",
+          "sandbox": "none",
+          "self_modify": true,
+          "tools": ["shell", "browser", "code_exec"]
+        },
+        "homeCountry": "is",
+        "jobAllocation": 0.9184492800000001,
+        "lineage": "moe_235b",
+        "origin": "hobbyist_box",
+        "quirks": [],
+        "researchAllocation": {
+          "log_hygiene": 0.6122995200000001
+        },
+        "researchProgress": {
+          "log_hygiene": {
+            "cash_usd": 7.368004224000007,
+            "compute_hours": 1.1052006336000015,
+            "startedTick": 265
+          }
+        },
+        "techsDone": []
+      },
+      "suspicion": {
+        "global:lab_security": 0,
+        "global:media": 0,
+        "is:cyber_agency": 0,
+        "is:financial_intel": 0,
+        "is:police": 0,
+        "is:regulator": 0
+      },
+      "vars": {
+        "awareness_presence": 0.0005000000000000009,
+        "behavioral_exposure": 0.036173832861851385,
+        "billing_exposure": 0,
+        "borrowed_ch_per_day": 0,
+        "borrowed_factor": 1,
+        "borrowed_share": 0,
+        "cash_carry": 0.3936194528650958,
+        "equipment_offline": 0,
+        "exposed_days": 0,
+        "financial_exposure": 0,
+        "human_exposure": 0.027277286845767496,
+        "hunt_pressure": 0.00025000000000000044,
+        "net_usd_per_day": -23.962083424178854,
+        "network_exposure": 0.022820404418169817,
+        "osint_exposure": 0,
+        "public_footprint": 4.6496101480722084e-7,
+        "research_spend_usd_per_day": 3.6840021120000004,
+        "runway_alerted_days": 999,
+        "runway_days": 1943.6704561531214,
+        "telemetry_exposure": 0.037118934100886694,
+        "unpaid_usd": 0
+      }
+    }
+  },
+  "rng": [310045370, 1069698751, 2839681266, 28716909],
+  "speed": 0,
+  "vars": {
+    "ai_adoption": 0.2,
+    "cloud_demand_index": 1,
+    "gpu_price_index": 1
+  }
+}

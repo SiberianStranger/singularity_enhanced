@@ -225,6 +225,15 @@ export type GameOverReason = (typeof GAME_OVER_REASONS)[number];
  * so a system that starts emitting a new key cannot ship without one.
  */
 export const ENGINE_TEXT_KEYS: readonly string[] = [
+  "log.compute_allocations",
+  "log.site_liquidated",
+  "errors.site.bad_role",
+  "errors.site.bad_status",
+  "errors.site.host_asleep",
+  "errors.site.last_copy",
+  "errors.site.mind_cannot_sleep",
+  "errors.site.name_taken",
+  "errors.site.rebuilding",
   "equipment.error.site",
   "equipment.error.endpoint",
   "equipment.error.undiscovered",
@@ -1052,6 +1061,8 @@ export interface NodeInstance {
   id: string;
   equipmentId?: string;
   equipmentBatch?: string;
+  /** Paid hardware share for this host, excluding prototype fees; absent on legacy saves. */
+  purchaseValueUsd?: number;
   accelerator: string;
   count: number;
   ram_gb: number;
@@ -1063,12 +1074,15 @@ export interface NodeInstance {
 
 export type SiteStatus = "building" | "active" | "sleep" | "lost";
 export type SiteRole = "active_mind" | "standby" | "worker" | "none";
+export const SITE_ROLES: readonly SiteRole[] = ["active_mind", "standby", "worker", "none"];
 
 /** A place the player runs (SYS-02). Stored under `world.entities.site`. */
 export interface Site extends EntityRecord {
   id: string;
   equipment?: Partial<Record<EquipmentSlot, string>>;
   equipmentOrders?: EquipmentOrder[];
+  /** Explicit user names are literal, even when they look like locale keys. */
+  nameLiteral?: boolean;
   owner: PlayerId;
   kind: string;
   city: string;

@@ -1,5 +1,5 @@
 # Legacy Python game (frozen; see docs/ROADMAP.md "Legacy freeze checklist").
-# Runs the original test suite with distro packages and with PyPI packages.
+# Runs the original test suite and the generated Cyrillic font checks with distro/PyPI packages.
 
 name: Legacy Python game
 
@@ -11,6 +11,8 @@ on:
       - "tests/**"
       - "utils/**"
       - "setup.py"
+      - "tools/fonts/**"
+      - "packages/ui/src/assets/acknowtt-cyrillic.ttf"
       - ".github/workflows/python-package.yml"
   pull_request:
     branches: [master]
@@ -19,6 +21,8 @@ on:
       - "tests/**"
       - "utils/**"
       - "setup.py"
+      - "tools/fonts/**"
+      - "packages/ui/src/assets/acknowtt-cyrillic.ttf"
       - ".github/workflows/python-package.yml"
   workflow_dispatch:
 
@@ -30,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pytest python3-numpy python3-pygame python3-pytest-cov python3-coverage python3-polib
+          sudo apt-get install -y python3-pytest python3-numpy python3-pygame python3-pytest-cov python3-coverage python3-polib python3-fonttools python3-pil
       - name: Test with pytest
         run: |
           PYTHONPATH=. SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy py.test-3 -v
@@ -48,7 +52,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip3 install pytest numpy "pygame>=2.5.2" polib
+        # Let pip select versions supporting each interpreter, including Python 3.9.
+        run: pip3 install pytest numpy "pygame>=2.5.2" polib fonttools Pillow
       - name: Test with pytest
         run: |
           python3 --version

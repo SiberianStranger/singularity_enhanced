@@ -15,7 +15,6 @@ import {
 } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
-import { ComputeBudget } from "./ComputeBudget.js";
 
 /** Filters, in strip order. "available" is on by default, which is the fix for playtest 1 U2. */
 const FILTERS: readonly TechStatus[] = ["available", "in_progress", "done", "locked"];
@@ -105,7 +104,6 @@ export function ResearchTab({ view }: { view: PlayerView }): ReactNode {
        * (playtest 8, Z1). It replaces the old "X of Y CH/day allocated" line, which said one term
        * of it and left the operations out, which is what made the ceiling unaccountable.
        */}
-      <ComputeBudget view={view} />
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs uppercase tracking-wide text-muted">{t("research.show")}</span>

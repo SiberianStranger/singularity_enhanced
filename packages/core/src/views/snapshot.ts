@@ -135,6 +135,14 @@ import {
   workingContextK,
 } from "../player.js";
 import { blockedBy } from "../requirements.js";
+import {
+  effectiveSiteExposure,
+  siteDecommissionRefusal,
+  siteLiquidationQuote,
+  siteLiquidationRefusal,
+  siteSignatureFactor,
+  siteStatusRefusal,
+} from "../site-management.js";
 import { siteKindUnavailable } from "../sites.js";
 import { localHeat, localHeatTerms } from "../systems/detection/index.js";
 import {
@@ -154,6 +162,7 @@ import {
 } from "../systems/economy/index.js";
 import { decisionStatus } from "../systems/events/index.js";
 import { borrowedOperationFunding, harnessBlocks } from "../systems/operations/index.js";
+import { selfModifyAllows, techRequirementsMet } from "../systems/research/index.js";
 import { countryExplain, spillIndex } from "../systems/world/explain.js";
 import { splitActorId, topChannel, watchedExposure, watches } from "../watchers.js";
 import { summarizeCost, summarizeEffects, summarizeWithTone } from "./effects.js";
@@ -402,7 +411,19 @@ function buildSites(world: World, ctx: SystemContext, playerId: PlayerId): SiteV
         power_cap_kw: site.derived.power_cap_kw,
         compute_hours_per_day: site.derived.compute_hours_per_day,
         upkeep_usd_per_day: site.derived.upkeep_usd_per_day,
-        exposure: { ...site.exposure },
+        exposure: effectiveSiteExposure(site),
+        stored_exposure: { ...site.exposure },
+        signature_factor: siteSignatureFactor(site),
+        name_is_literal: site.nameLiteral === true,
+        liquidation: siteLiquidationQuote(world, ctx.content, site),
+        liquidation_refusal: siteLiquidationRefusal(world, ctx.content, site),
+        decommission_refusal: siteDecommissionRefusal(world, ctx.content, site),
+        status_toggle_refusal: siteStatusRefusal(
+          world,
+          ctx.content,
+          site,
+          site.status === "sleep" ? "active" : "sleep",
+        ),
         grace_until_tick: site.graceUntilTick,
         best_precision:
           lineage === undefined || generation === undefined
@@ -554,6 +575,21 @@ function buildCompute(world: World, ctx: SystemContext, playerId: PlayerId): Com
     allocated_jobs_ch_per_day: jobs,
     unallocated_ch_per_day: Math.max(0, allocatable - research - jobs),
     job_ceiling_ch_per_day: Math.min(depth, room),
+    job_market_limit_ch_per_day: Math.min(depth, allocatable),
+    // Only what `set_compute_allocations` would accept: a line that became locked (a requirement
+    // lost, a harness that no longer lets the self edit itself) is left out, or the linked sliders
+    // would resend it and every move would be refused (SYS-11 "Control room (0.3.0)").
+    research_targets: Object.keys(profile?.researchAllocation ?? {})
+      .filter((id) => {
+        const def = index.techs[id];
+        return (
+          def !== undefined &&
+          profile?.techsDone.includes(id) !== true &&
+          techRequirementsMet(world, ctx, def, playerId) &&
+          selfModifyAllows(player, def)
+        );
+      })
+      .sort(),
     // Which of the two stopped the slider is the line the panel prints next to it: a market that
     // takes only so much, a compute budget already spent, or no route to a client at all.
     job_ceiling_reason:

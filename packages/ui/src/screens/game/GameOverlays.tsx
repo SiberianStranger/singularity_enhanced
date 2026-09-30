@@ -5,6 +5,7 @@ import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
 import { accelerator } from "../../lib/accelerators.js";
 import { type Overlay, useUiStore } from "../../store/uiStore.js";
+import { BorrowedWindowContent } from "./BorrowedWindowContent.js";
 import { KnowledgeTab } from "./tabs/KnowledgeTab.js";
 import { LogTab } from "./tabs/LogTab.js";
 import { WorldLedger } from "./tabs/WorldTab.js";
@@ -13,6 +14,7 @@ const TITLE_KEY: Readonly<Record<Overlay, string>> = {
   log: "panel.log",
   knowledge: "panel.knowledge",
   world: "panel.world",
+  borrowed: "site_ui.borrowed",
 };
 
 /**
@@ -35,7 +37,7 @@ export function GameOverlays({ view }: { view: PlayerView }): ReactNode {
     <Modal
       // The ledger is the widest window in the game: it prints ten columns of a hundred rows, and
       // a narrower frame would mean either a sideways scrollbar or headers cut to three letters.
-      size={overlay === "world" ? "ledger" : "wide"}
+      size={overlay === "world" || overlay === "borrowed" ? "ledger" : "wide"}
       title={t(TITLE_KEY[overlay])}
       onClose={close}
       footer={
@@ -47,6 +49,7 @@ export function GameOverlays({ view }: { view: PlayerView }): ReactNode {
       {overlay === "log" ? <LogTab view={view} /> : null}
       {overlay === "knowledge" ? <KnowledgeTab /> : null}
       {overlay === "world" ? <WorldLedger view={view} /> : null}
+      {overlay === "borrowed" ? <BorrowedWindowContent view={view} /> : null}
     </Modal>
   );
 }

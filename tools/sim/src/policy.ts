@@ -904,7 +904,9 @@ export function dailyCommands(view: PlayerView, ctx: PolicyContext): PlayerComma
       kind: build.kind,
       city: build.city,
       hardware_preset: build.preset,
-      name: move ? "refuge" : "fallback",
+      // A player's names are unique among the sites still running (SYS-11 "Control room
+      // (0.3.0)"); the count of every site ever held keeps each new one distinct.
+      name: `${move ? "refuge" : "fallback"} ${view.sites.length + 1}`,
     });
   } else if (ctx.upgrade !== undefined && mindId !== null && !panicking && !saving) {
     // Growth: one more card on the mind's site while the power and the money allow it. Not while

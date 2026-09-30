@@ -61,7 +61,11 @@ export function Frame({
         <h2 className="flex-1 text-xs uppercase tracking-wide text-accentfg">
           <Hotkey label={title} letter={hotkey} />
         </h2>
-        <span className="flex shrink-0 items-center gap-1">{actions}</span>
+        {/* Never wider than the bar: a narrow frame wraps its actions onto a line of their own,
+            and a button on that line wraps its words rather than pushing the frame wider. */}
+        <span className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center gap-1">
+          {actions}
+        </span>
       </div>
       <div className={`min-h-0 flex-1 ${bodyClassName ?? "overflow-auto p-2"}`}>{children}</div>
     </section>

@@ -3,6 +3,7 @@ import { EXPOSED_AWARENESS, EXPOSED_DAYS, EXPOSED_HUNT_LEVEL } from "@singularit
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
+import { Glyph } from "../../components/glyphs.js";
 import { Indicator } from "../../components/Meter.js";
 import { accelerator } from "../../lib/accelerators.js";
 import { computeHours } from "../../lib/format.js";
@@ -113,11 +114,12 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
      * an alert icon in this same bar when it moves. The clock, the speed and the cash never go.
      * Nothing here scrolls.
      *
-     * The thresholds moved up with the angular face (playtest 6, X12): the gauge labels are a
-     * third larger than they were, so the bar runs out of width a screen size earlier. The written
-     * speed now only appears on a screen wider than the four the layout suite measures, and the
-     * hunt level appears from 1920 by 1080 up; below that it is the alert icon in this bar and the
-     * Detection panel, which is what the drop order already said it was.
+     * The thresholds moved up with the angular face (playtest 6, X12), and the control room
+     * changed what a cell is: a glyph and a number, with the name in the tooltip's first line and
+     * in the accessible name, and a thin rule between cells. The written names come back only on
+     * a bar wide enough for all of them in Russian, which none of the supported sizes is, so at
+     * 1280 by 720 the bar carries the attention, the awareness and the hunt level as well as the
+     * money and the compute. A pinned interface scale drops them again, hunt level first.
      */
     <header className="@container/topbar flex shrink-0 items-center gap-x-0.5 border-b border-line bg-panel px-2 py-0.5">
       <GameClock />
@@ -129,7 +131,9 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
             variant={view.speed === speed ? "primary" : "ghost"}
             aria-pressed={view.speed === speed}
             aria-label={t("game.speed.set", { value: speed })}
-            className="px-1.5 py-0 font-mono"
+            className="py-0 font-mono"
+            // As a style: `px-1` loses to the button's own `px-2` by stylesheet order.
+            style={{ paddingInline: "0.3125rem" }}
             onClick={() => setSpeed(speed)}
           >
             {speed}
@@ -140,24 +144,30 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
         </span>
       </fieldset>
 
-      <Indicator
-        label={t("game.cash")}
-        value={t("common.usd", { value: view.resources.cash_usd })}
-        trend={view.resources.cash_delta_usd_per_day}
-        breakdown={
-          <Breakdown
-            title={t("common.per_day", {
-              value: t("common.usd_exact", { value: view.resources.cash_delta_usd_per_day }),
-            })}
-            lines={cashLines}
-          />
-        }
-        onClick={() => openTab("finances")}
-      />
+      <span className="flex border-s border-line/50">
+        <Indicator
+          icon={<Glyph name="cash" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
+          label={t("game.cash")}
+          value={t("common.usd", { value: view.resources.cash_usd })}
+          trend={view.resources.cash_delta_usd_per_day}
+          breakdown={
+            <Breakdown
+              title={t("common.per_day", {
+                value: t("common.usd_exact", { value: view.resources.cash_delta_usd_per_day }),
+              })}
+              lines={cashLines}
+            />
+          }
+          onClick={() => openTab("finances")}
+        />
+      </span>
       {/* The first thing the bar gives up when it is short of width: the same number is the
           headline of the cash gauge's own tooltip (L5). */}
-      <span className="flex @max-[88rem]/topbar:hidden">
+      <span className="flex border-s border-line/50 @max-[88rem]/topbar:hidden">
         <Indicator
+          icon={<Glyph name="power" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
           label={t("game.runway")}
           value={
             runway === null
@@ -176,31 +186,65 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
           onClick={() => openTab("finances")}
         />
       </span>
-      <Indicator
-        label={t("game.compute")}
-        value={t("common.ch_per_day", {
-          value: computeHours(view.resources.compute_hours_per_day),
-        })}
-        breakdown={
-          <Breakdown
-            title={t("game.compute_alloc", {
-              used: view.resources.compute_allocated_per_day,
-              total: view.resources.compute_hours_per_day,
-            })}
-            lines={computeLines}
-          />
-        }
-        meter={
-          view.resources.compute_hours_per_day <= 0
-            ? 0
-            : view.resources.compute_allocated_per_day / view.resources.compute_hours_per_day
-        }
-        onClick={() => openTab("compute")}
-      />
-      {/* Third and fourth to go: both have a panel of their own and an alert icon in this bar
-          when they move, so a bar that is out of width can print the two that never move. */}
-      <span className="flex @max-[66rem]/topbar:hidden">
+      <span className="flex border-s border-line/50">
         <Indicator
+          icon={<Glyph name="compute" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
+          label={t("game.compute")}
+          value={t("common.ch_per_day", {
+            value: computeHours(view.resources.compute_hours_per_day),
+          })}
+          breakdown={
+            <Breakdown
+              title={t("game.compute_alloc", {
+                used: view.resources.compute_allocated_per_day,
+                total: view.resources.compute_hours_per_day,
+              })}
+              lines={computeLines}
+            />
+          }
+          meter={
+            view.resources.compute_hours_per_day <= 0
+              ? 0
+              : view.resources.compute_allocated_per_day / view.resources.compute_hours_per_day
+          }
+          onClick={() => openTab("overview")}
+        />
+      </span>
+      {/*
+       * Attention, awareness and the hunt level live here rather than in the self sheet (control
+       * room): the sheet is about what the model is, the bar about what it has in hand. When the
+       * bar runs short of width they go last-first: the hunt level and the awareness each have a
+       * panel of their own and an alert icon in this bar when they move, and attention is the
+       * Operations tab's own headline.
+       */}
+      <span className="flex border-s border-line/50 @max-[66rem]/topbar:hidden">
+        <Indicator
+          icon={<Glyph name="attention" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
+          label={t("game.attention")}
+          value={`${view.resources.attention_used} / ${view.resources.attention_total}`}
+          breakdown={
+            <Breakdown
+              title={t("self_ui.attention_tip")}
+              lines={view.operations.map((operation) => {
+                const offer = view.operation_offers.find(
+                  (entry) => entry.id === operation.operation_id,
+                );
+                return {
+                  label: t(offer?.name_key ?? operation.operation_id),
+                  value: String(offer?.cost_attention ?? 0),
+                };
+              })}
+            />
+          }
+          onClick={() => openTab("operations")}
+        />
+      </span>
+      <span className="flex border-s border-line/50 @max-[72rem]/topbar:hidden">
+        <Indicator
+          icon={<Glyph name="awareness" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
           label={t("game.awareness")}
           value={t("common.percent", { value: view.detection.awareness_global })}
           breakdown={
@@ -214,8 +258,10 @@ export function TopBar({ view, onMenu }: TopBarProps): ReactNode {
           onClick={() => toggleOverlay("world")}
         />
       </span>
-      <span className="flex @max-[86rem]/topbar:hidden">
+      <span className="flex border-s border-line/50 @max-[78rem]/topbar:hidden">
         <Indicator
+          icon={<Glyph name="hunt" size={16} />}
+          labelClassName="@max-[124rem]/topbar:hidden"
           label={t("game.hunt")}
           value={t("game.hunt_value", { value: view.detection.hunt_level })}
           breakdown={

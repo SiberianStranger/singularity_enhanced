@@ -30,6 +30,7 @@ import type {
   Severity,
   TextVar,
 } from "../kernel/world.js";
+import type { SiteLiquidationView } from "../site-management.js";
 
 export interface DateView extends CalendarDate {
   iso: string;
@@ -273,6 +274,9 @@ export interface ComputeView {
   unallocated_ch_per_day: number;
   /** The most the job slider may be set to right now: the market depth, inside what is allocatable. */
   job_ceiling_ch_per_day: number;
+  /** Whole market ceiling, before research; linked sliders can displace current research. */
+  job_market_limit_ch_per_day?: number;
+  research_targets?: string[];
   /** Why the slider stops there, as a locale key; null when nothing but the compute limits it. */
   job_ceiling_reason: string | null;
 }
@@ -297,6 +301,23 @@ export interface NodeView {
 }
 
 export interface SiteView {
+  /** The name is the player's own text and is printed as it is, even when it looks like a key. */
+  name_is_literal?: boolean;
+  /** Share of the stored traces an observer sees now: 1, or 0.05 while switched off (SYS-05). */
+  signature_factor?: number;
+  /** The traces the site keeps while switched off; `exposure` is what is visible today. */
+  stored_exposure?: Exposure;
+  /** The one liquidation preview: resale, notice, orders cancelled, and what happens to the self. */
+  liquidation?: SiteLiquidationView;
+  /** Why the power toggle would be refused right now (switch off when on, on when off), or null. */
+  status_toggle_refusal?: CommandError | null;
+  /** Why `liquidate_site` would be refused right now (the last copy of the self), or null. */
+  liquidation_refusal?: CommandError | null;
+  /**
+   * Why `decommission_site` would be refused right now, clean or abandoned alike (the last copy of
+   * the self), or null. Each command a button sends has its own `<command>_refusal`.
+   */
+  decommission_refusal?: CommandError | null;
   id: string;
   equipment?: SiteEquipmentView;
   name: string;

@@ -3,6 +3,7 @@ import {
   type EquipmentOfferView,
   type PlayerView,
   type SiteEquipmentView,
+  type SiteView,
 } from "@singularity/core";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -190,5 +191,30 @@ describe("site equipment", () => {
     expect(
       screen.getByText("No new configuration is known for this subsystem here yet."),
     ).toBeInTheDocument();
+  });
+
+  it("says once, beside the heading, that the host runs every subsystem", async () => {
+    const view = await fixture();
+    const site = view.sites[0];
+    const equipment = site?.equipment;
+    expect(equipment).toBeDefined();
+    if (site === undefined || equipment === undefined) {
+      return;
+    }
+    const hosted: SiteView = {
+      ...site,
+      equipment: {
+        ...equipment,
+        slots: equipment.slots.map((entry) => ({ ...entry, managed: true })),
+      },
+    };
+    render(<SiteEquipmentPanel view={view} site={hosted} />);
+    expect(screen.getAllByText("Managed by the host")).toHaveLength(1);
+    expect(screen.getByTestId("equipment-managed-all")).toHaveTextContent("Managed by the host");
+    for (const row of screen.getAllByTestId(/^equipment-slot-/)) {
+      expect(within(row).queryByText("Managed by the host")).toBeNull();
+      // Each row still offers a look at what the host allows, rather than a change.
+      expect(within(row).getByRole("button")).toHaveTextContent("Inspect");
+    }
   });
 });

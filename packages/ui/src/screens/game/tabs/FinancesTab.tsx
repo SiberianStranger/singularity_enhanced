@@ -16,7 +16,6 @@ import {
 } from "../../../lib/viewContract.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
-import { ComputeBudget } from "./ComputeBudget.js";
 
 /**
  * Income and cost lines, the net, the runway and the freelance allocation (SYS-07).
@@ -150,7 +149,6 @@ export function FinancesTab({ view }: { view: PlayerView }): ReactNode {
       <section className="border border-line bg-panel p-2">
         <h3 className="mb-2 text-sm font-semibold text-fg">{t("finances.jobs")}</h3>
         {/* The same subtraction the Compute tab opens with: this slider spends what is left of it. */}
-        <ComputeBudget view={view} />
         <Slider
           label={t("finances.jobs")}
           min={0}

@@ -26,7 +26,7 @@ export function GameClock(): ReactNode {
   const clock = { hour: face.hour, minute: face.minute, second: face.second };
 
   return (
-    <span className="flex items-baseline gap-2">
+    <span className="flex items-baseline gap-1.5">
       {/* `data-iso` is the unformatted date: locale-independent, and what the smoke test reads. */}
       <span className="font-mono text-sm text-fg" data-testid="game-date" data-iso={date.iso}>
         {t("game.date_full", { date: toJsDate(date) })}

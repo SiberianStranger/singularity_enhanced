@@ -49,6 +49,7 @@ Milestones: M1 vertical slice, M2 world, M3 actors, M4 configurator, M5 content,
 | P4 | Local litigation can throttle a specific facility with no cyber component | 08, 02 | M5 | ecosystem §10.17 |
 | P5 | Taiwan-strait shock as a rare world event resetting hardware availability for everyone | 08, 02 | M5 | ecosystem §10.36 |
 | P6 | Job-loss backlash channels into stricter law (more detection funding) or populist anti-lab sentiment the player can amplify | 08, 09 | M2 | ecosystem §10.37 |
+| P7 | Frozen conflicts on the map: the Ukraine control layer (0.3.0) is a dated static layer; a later pass could let a ceasefire, an offensive or a negotiated settlement move the control line and its night lights, with the date and the source shown in About as they are now | 08, 11 | M9 | `docs/research/ukraine-map-2026-09.md` |
 
 ## Harness and self (SYS-03)
 

@@ -6,10 +6,10 @@ import { BellIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js"
 import { Tooltip } from "../../components/Tooltip.js";
 import { logVars } from "../../lib/labels.js";
 import { groupAlerts, unreadCount } from "../../store/selectors.js";
-import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
+import { KEYED_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
 
 function asTab(panel: string | undefined): PrimaryTab | null {
-  return PRIMARY_TABS.includes(panel as PrimaryTab) ? (panel as PrimaryTab) : null;
+  return KEYED_TABS.includes(panel as PrimaryTab) ? (panel as PrimaryTab) : null;
 }
 
 /**
@@ -40,7 +40,13 @@ export function AlertIcons({ view }: { view: PlayerView }): ReactNode {
 
   return (
     <div className="relative flex items-center gap-1">
-      <ul className="flex items-center gap-0.5" data-testid="alert-icons">
+      {/* Below 88rem of bar the row keeps the two most urgent groups and the bell keeps the rest:
+          eight icons were a hundred and more pixels a bar that also carries the attention, the
+          awareness and the hunt level does not have at 1280 by 720 (control room). */}
+      <ul
+        className="flex items-center gap-0.5 @max-[88rem]/topbar:[&>li:nth-child(n+3)]:hidden @max-[100rem]/topbar:[&>li:nth-child(n+5)]:hidden"
+        data-testid="alert-icons"
+      >
         {groups.slice(0, 8).map((group) => (
           <li key={group.key}>
             <Tooltip

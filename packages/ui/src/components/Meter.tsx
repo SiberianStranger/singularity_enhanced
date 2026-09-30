@@ -36,6 +36,14 @@ export function Bar({ value, tone = "accent", className, label }: BarProps): Rea
 }
 
 interface IndicatorProps {
+  /** A glyph in front of the value, so the bar reads as icon and number (control room). */
+  icon?: ReactNode;
+  /**
+   * Classes for the drawn label only. The top bar hides it with a container query where the bar
+   * runs out of width and the glyph carries the meaning; the name stays in the DOM in a copy that
+   * is always visually hidden, so the accessible name never depends on the width.
+   */
+  labelClassName?: string;
   label: string;
   value: ReactNode;
   /** Contributing values, shown in the tooltip (Paradox-style breakdown). */
@@ -54,6 +62,8 @@ interface IndicatorProps {
  * fit in one flat row, and the gauge is a short bar next to its value rather than a third line.
  */
 export function Indicator({
+  icon,
+  labelClassName,
   label,
   value,
   breakdown,
@@ -63,8 +73,21 @@ export function Indicator({
   onClick,
 }: IndicatorProps): ReactNode {
   const body = (
-    <span className="flex items-center gap-1 whitespace-nowrap px-1.5 py-0.5 text-start">
-      <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
+    <span className="flex items-center gap-1 whitespace-nowrap px-1 py-0.5 text-start">
+      {icon === undefined ? null : <span className="flex shrink-0 text-muted">{icon}</span>}
+      {labelClassName === undefined ? (
+        <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
+      ) : (
+        <>
+          <span className="sr-only">{label}</span>
+          <span
+            aria-hidden="true"
+            className={`text-xs uppercase tracking-wide text-muted ${labelClassName}`}
+          >
+            {label}
+          </span>
+        </>
+      )}
       <span className="flex items-baseline gap-1 font-mono text-sm text-fg">
         {value}
         {trend !== undefined && trend !== 0 ? (
@@ -73,7 +96,13 @@ export function Indicator({
           </span>
         ) : null}
       </span>
-      {meter === undefined ? null : <Bar value={meter} tone={tone} label={label} className="w-8" />}
+      {/* The bar is `w-full` of a box of its own: as a flex item beside the value, a width of
+          100% took whatever the row had and squeezed the glyph beside it to a sliver. */}
+      {meter === undefined ? null : (
+        <span className="block w-5 shrink-0">
+          <Bar value={meter} tone={tone} label={label} />
+        </span>
+      )}
     </span>
   );
   const inner =

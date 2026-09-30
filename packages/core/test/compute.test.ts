@@ -14,7 +14,9 @@ import {
   sitePowerKw,
   siteTokensPerSecond,
 } from "../src/derive.js";
+import type { NodeSpec } from "../src/domain.js";
 import { createGame, type Game } from "../src/index.js";
+import { createSite } from "../src/sites.js";
 import { m1Content, m1Setup } from "./fixtures/m1/index.js";
 
 const index = contentIndex(m1Content);
@@ -237,9 +239,16 @@ describe("compute: commands", () => {
   it("erases the player when the last site that could host them is gone", () => {
     const game = startGame();
     const siteId = game.snapshot("p1").sites[0]?.id ?? "";
-    expect(
-      game.command({ type: "decommission_site", playerId: "p1", siteId, mode: "clean" }).ok,
-    ).toBe(true);
+    // The player cannot give up the last site that can hold the self (SYS-02 notes, 0.3.0)...
+    for (const mode of ["clean", "abandon"] as const) {
+      expect(
+        game.command({ type: "decommission_site", playerId: "p1", siteId, mode }).error?.key,
+      ).toBe("errors.site.last_copy");
+    }
+    // ...but a raid can take it, and then nothing is left to run on.
+    const site = game.world.entities.site?.[siteId] as { status: string } | undefined;
+    if (site === undefined) throw new Error("starting site missing");
+    site.status = "lost";
     game.tick(1);
     const view = game.snapshot("p1");
     expect(view.game_over?.reason).toBe("erased");
@@ -254,10 +263,33 @@ describe("compute: commands", () => {
     loud.tick(24 * 40);
     const cleanId = clean.snapshot("p1").sites[0]?.id ?? "";
     const loudId = loud.snapshot("p1").sites[0]?.id ?? "";
+    // A second machine that can hold the self, so giving up the first is not giving up the last.
+    for (const game of [clean, loud]) {
+      const host = game.world.entities.site?.[game === clean ? cleanId : loudId] as
+        | { city: string; nodes: NodeSpec[] }
+        | undefined;
+      if (host === undefined) throw new Error("starting site missing");
+      createSite(game.world, m1Content, {
+        owner: "p1",
+        kind: "residential",
+        city: host.city,
+        name: "second",
+        nodes: host.nodes.map(({ accelerator, count, ram_gb, interconnect }) => ({
+          accelerator,
+          count,
+          ram_gb,
+          interconnect,
+        })),
+        readyTick: 0,
+        role: "none",
+      });
+    }
     const before = loud.snapshot("p1").detection.watchers[0]?.suspicion ?? 0;
 
     clean.command({ type: "decommission_site", playerId: "p1", siteId: cleanId, mode: "clean" });
     loud.command({ type: "decommission_site", playerId: "p1", siteId: loudId, mode: "abandon" });
+    expect(loud.world.players.p1?.gameOver).toBeNull();
+    expect(clean.world.players.p1?.gameOver).toBeNull();
 
     expect(loud.snapshot("p1").detection.watchers[0]?.suspicion).toBeCloseTo(before + 0.08, 6);
     expect(clean.snapshot("p1").detection.watchers[0]?.suspicion).toBeLessThan(

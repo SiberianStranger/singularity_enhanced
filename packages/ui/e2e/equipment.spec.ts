@@ -36,8 +36,11 @@ for (const language of ["en", "ru"] as const) {
     await page.keyboard.press("Escape");
     await resolveOpenEvents(page);
     await page.getByRole("tab", { name: text("panel.compute"), exact: true }).click();
+    // The six subsystems are the site window's rows since the control room: Manage opens it, and
+    // the compute row's Change opens the workshop on that subsystem.
+    await page.getByTestId("site-manage").click();
     await expect(page.locator("[data-testid^='equipment-slot-']")).toHaveCount(6);
-    await page.getByRole("button", { name: text("compute.buy_hardware"), exact: true }).click();
+    await page.getByTestId("equipment-change-compute").click();
     const workshop = page.getByTestId("equipment-dialog");
     await expect(workshop.getByRole("radio")).toHaveCount(4);
     await page.screenshot({ path: `test-results/equipment/archetypes-${language}.png` });
@@ -61,7 +64,11 @@ for (const language of ["en", "ru"] as const) {
       );
     expect(overflow).toEqual([]);
     await page.screenshot({ path: `test-results/equipment/workshop-${language}.png` });
+    // Escape leaves the workshop for the site window it came from, and a second one closes that.
     await page.keyboard.press("Escape");
+    await expect(page.getByTestId("site-management")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     // Start owns its cash but not its host's rack. Build an ordinary owned place first.
     await page.getByRole("button", { name: text("compute.build_site"), exact: true }).click();
@@ -73,7 +80,8 @@ for (const language of ["en", "ru"] as const) {
     const sites = page.getByRole("table", { name: text("compute.sites") });
     await expect(sites.getByRole("row")).toHaveCount(3);
     await sites.getByRole("row").last().click();
-    await page.getByRole("button", { name: text("compute.buy_hardware"), exact: true }).click();
+    await page.getByTestId("site-manage").click();
+    await page.getByTestId("equipment-change-compute").click();
     await page.getByTestId("equipment-archetype-server_vintage").click();
     await expect(page.getByTestId("equipment-confirm")).toBeEnabled();
     await page.getByTestId("equipment-confirm").click();

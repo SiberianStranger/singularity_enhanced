@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button.js";
 import { Modal } from "../../components/Modal.js";
 import { accelerator } from "../../lib/accelerators.js";
+import { CONTROL_BASELINE_DATE } from "../game/map/ukraine-control.js";
 
 /**
  * Credits and licenses (playtest 2, deliverable 4).
@@ -66,6 +67,12 @@ export function AboutBody(): ReactNode {
       {/* NASA's terms for the Blue Marble rasters the map draws (LICENSE.txt). */}
       <p className="prose text-xs text-muted">{t("about.imagery_credit")}</p>
       <p className="prose text-xs text-muted">{t("about.map_credit")}</p>
+      {/* Where the Ukraine control layer comes from and what it is not, said here rather than on
+          the map, which carries no explanatory text (control room, map review 2026-09-30). */}
+      <p className="prose text-xs text-muted" data-testid="about-control-layer">
+        {/* Midday UTC, so no time zone moves the date across midnight. */}
+        {t("about.control_layer_credit", { date: new Date(`${CONTROL_BASELINE_DATE}T12:00:00Z`) })}
+      </p>
       <p className="prose text-xs text-muted">{t("about.icons_credit")}</p>
     </div>
   );

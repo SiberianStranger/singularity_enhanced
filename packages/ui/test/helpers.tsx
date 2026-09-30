@@ -81,7 +81,12 @@ export async function startSession(setup: GameSetup = testSetup()): Promise<Loca
       unsubscribe();
       host.dispose();
       useGameStore.setState({ host: null, view: null, setup: null, screen: "menu" });
-      useUiStore.setState({ selection: null, focusId: null, primaryTab: "overview" });
+      useUiStore.setState({
+        selection: null,
+        focusId: null,
+        primaryTab: "compute",
+        selfOpen: false,
+      });
     },
   };
 }

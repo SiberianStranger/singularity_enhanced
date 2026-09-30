@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CloseIcon, CogIcon, SEVERITY_TONE, SeverityIcon } from "../../components/Icon.js";
 import { logVars } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
-import { PRIMARY_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
+import { KEYED_TABS, type PrimaryTab, useUiStore } from "../../store/uiStore.js";
 import type { Toast, ToastApi } from "./useToasts.js";
 
 /**
@@ -94,7 +94,7 @@ export function Toasts({ api }: { api: ToastApi }): ReactNode {
               className="flex-1 text-start text-sm text-fg"
               onClick={() => {
                 const panel = toast.link?.panel;
-                if (panel !== undefined && PRIMARY_TABS.includes(panel as PrimaryTab)) {
+                if (panel !== undefined && KEYED_TABS.includes(panel as PrimaryTab)) {
                   openTab(panel as PrimaryTab, toast.link?.id);
                 }
                 api.dismiss(toast.id);

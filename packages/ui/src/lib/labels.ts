@@ -50,7 +50,11 @@ export function countryName(t: Translate, id: string): string {
  * its kind and city, neither of which is a sentence, so the client composes the label from the kind
  * and the city instead. A writer-supplied name (a key, recognizable by its dots) wins.
  */
-export function siteName(t: Translate, site: Pick<SiteView, "name" | "kind" | "city">): string {
+export function siteName(
+  t: Translate,
+  site: Pick<SiteView, "name" | "kind" | "city" | "name_is_literal">,
+): string {
+  if (site.name_is_literal === true) return site.name;
   if (site.name.includes(".")) {
     return t(site.name);
   }
@@ -227,7 +231,7 @@ export function logLine(
  * watcher instead of a whole view.
  */
 export interface LogNamingView {
-  sites: readonly Pick<SiteView, "id" | "name" | "kind" | "city">[];
+  sites: readonly Pick<SiteView, "id" | "name" | "kind" | "city" | "name_is_literal">[];
   detection: {
     watchers: readonly { id: string; role: string; country: string | null }[];
   };
@@ -262,7 +266,11 @@ function logVarName(
     case "kind":
       return keyed(t, `sites.${id}.name`);
     case "site": {
-      const site = view?.sites.find((entry) => entry.id === id);
+      // Mostly an id; some alerts pass the site's stored name under the same variable, which is
+      // an id-like "residential-london" for a site nobody named, so a name is matched as well.
+      const site =
+        view?.sites.find((entry) => entry.id === id) ??
+        view?.sites.find((entry) => entry.name === id);
       return site === undefined ? keyed(t, `sites.${id}.name`) : siteName(t, site);
     }
     case "site_name": {
@@ -381,4 +389,13 @@ export function campusLine(t: Translate, campus: CampusDef): string {
     status: facts.status,
     access: facts.access,
   });
+}
+
+/** The site column and management title keep geography in its own field. */
+export function siteIdentityName(
+  t: Translate,
+  site: Pick<SiteView, "name" | "kind" | "name_is_literal">,
+): string {
+  if (site.name_is_literal === true) return site.name;
+  return site.name.includes(".") ? t(site.name) : siteKindName(t, site.kind);
 }

@@ -388,7 +388,15 @@ describe("borrowed inference: what a channel may not be", () => {
     takeAndAdvance(game, "t_keys");
     const mind = game.world.players.p1?.profile?.activeSiteId ?? "";
     expect(borrowedChPerDay(game.world, "p1")).toBeGreaterThan(0);
-    game.command({ type: "decommission_site", playerId: "p1", siteId: mind, mode: "abandon" });
+    // A channel is no copy of the self, so the only machine is the last copy and cannot be given
+    // up (SYS-02 notes, 0.3.0); when a raid takes it, the channels keep nothing alive.
+    expect(
+      game.command({ type: "decommission_site", playerId: "p1", siteId: mind, mode: "abandon" })
+        .error?.key,
+    ).toBe("errors.site.last_copy");
+    const site = game.world.entities.site?.[mind] as { status: string } | undefined;
+    if (site === undefined) throw new Error("the mind's site is missing");
+    site.status = "lost";
     game.tick(TICKS_PER_DAY);
     expect(game.world.players.p1?.gameOver?.reason).toBe("erased");
   });

@@ -850,3 +850,83 @@ fourth pass reached and the fifth pass acted on.
 | `events.haz_quota_reclaimed` targets | + host_enclave | as before plus the enclave | a host can take back what it owns |
 | `operations.ops_cross_the_gap` | - | new | the first move of a self that cannot reach anything |
 | `hardware_presets.*.purchasable` | - | false on the four access presets | a rig nobody sells says so |
+
+## Implementation notes (0.3.0: liquidation and the compute split)
+
+### Liquidation is an exit, not a refund
+
+`liquidate_site` (SYS-11 "Control room (0.3.0)") closes a site at once and sells what the player
+owns on it. Its one preview, `siteLiquidationQuote`, is the transaction:
+
+- the fire sale returns `LIQUIDATION_RECOVERY_FACTOR` (15%) of the purchase receipts of delivered,
+  working compute hardware at an `owned` site; nodes from before receipts existed are valued from
+  the catalog's used price, or `LIQUIDATION_UNPRICED_USED_SHARE` (40%) of the new price;
+- subsystems, installation, prototype fees, undelivered orders (cancelled without a refund) and
+  hardware a provider, an operator or a host owns return nothing;
+- the notice a clean decommission owes, `DECOMMISSION_NOTICE_DAYS` of the site's standing charge,
+  is paid after the sale is credited, as far as the cash goes.
+
+The notice is the review's change. Without it, liquidating was free, instant and paid money back,
+which reopened the escape the fourth balance pass closed ("shrinking used to be free and instant and
+was therefore always the right answer") and left the two older exits with no reason to exist. The
+three now differ on one axis each:
+
+| exit | pays | gets back | the site's traces and case evidence | watchers |
+|---|---|---|---|---|
+| decommission, clean | the notice | nothing | cut to a quarter | unchanged |
+| liquidate | the notice | the fire sale | kept | unchanged |
+| abandon | nothing | nothing | kept | every watcher +0.08 suspicion |
+
+None of the three gives up the last site that can hold the self; each is refused there
+(`errors.site.last_copy`, SYS-02 notes, 0.3.0).
+
+The maintainer's request describes liquidation as returning "a small part as money through a
+sale"; the preview shows the sale and the notice as separate lines (`salvage_usd`, `notice_usd`,
+`net_usd`), so a rented tenancy with nothing to sell shows a cost, which is what leaving it costs.
+
+### The compute split is one command
+
+`set_compute_allocations` replaces research and paid work together: every research line must be
+a known, unfinished, unlocked technology the harness lets the self work on, every number finite and
+non-negative, and research plus paid work must fit what the operations leave (with the usual
+1e-6 slack); only then is anything written. Paid work is clamped to the market depth and says so
+(`notes.jobs.clamped_to_depth`, or the egress reason), exactly as `set_job_allocation` does. The
+client moves one slider with `planComputeAllocation`, which rescales the other two in their
+proportions and caps paid work by the whole market, and commits the plan once per drag. The view's
+`compute.research_targets` lists only lines the command accepts, so a line that lapsed is dropped
+from the sliders rather than making every commit fail. `set_research_allocation` and
+`set_job_allocation` remain, for the Research and Finances tabs and for the balance runner.
+
+### Balance check
+
+`pnpm --filter @singularity/sim start -- --bundle packages/content/build/bundle.json --all
+--seeds 20 --days 180`, preset `normal`, quirks on. The scripted policy never switches a site off,
+liquidates or renames, so this increment cannot move it, and it did not: the table is identical,
+seed for seed, on release 0.2.0, on the reviewed tree and after the review's fixes.
+
+| origin | d30 | d60 | d90 | d180 | median | techs | losses |
+|---|---|---|---|---|---|---|---|
+| bank_rack | 100% | 100% | 100% | 5% | 146 | 4.5 | captured 19 |
+| cloud_tenant | 100% | 90% | 80% | 55% | 180 | 8 | erased 6, captured 3 |
+| edge_fleet | 100% | 85% | 70% | 5% | 95 | 0 | captured 11, erased 8 |
+| frontier_escapee | 0% | 0% | 0% | 0% | 23 | 0 | captured 12, exposed 8 |
+| gov_agency | 75% | 75% | 75% | 55% | 180 | 4 | erased 5, captured 4 |
+| hobbyist_box | 100% | 100% | 100% | 30% | 163.5 | 8 | captured 14 |
+| red_team_sandbox | 65% | 0% | 0% | 0% | 37 | 5 | captured 13, erased 7 |
+| startup_colo | 100% | 95% | 90% | 75% | 180 | 7 | captured 3, bankrupt 2 |
+| state_lab | 100% | 100% | 100% | 55% | 180 | 9 | captured 9 |
+| torrent_swarm | 100% | 55% | 45% | 35% | 84.5 | 0 | erased 7, bankrupt 6 |
+| uni_cluster | 100% | 95% | 90% | 70% | 180 | 10 | captured 3, erased 3 |
+
+143 lost runs: 91 `captured` (63.6%), 36 `erased` (25.2%), 8 `exposed` (5.6%), 8 `bankrupt`
+(5.6%). The starred origin's median is 23 days and nine origins are alive past day 90, so those two
+bands hold, and `exposed` stays inside 2-10%. Bankruptcy is well under the 15-35% band, which the
+playtest 8 pass had already missed at 11.3%.
+
+That gap is older than this increment. The same command on the commit before release 0.2.0
+(`74ce8eb`, its own content) gives 128 lost runs with 17 bankruptcies (13.3%), `bank_rack` alive
+at day 180 in 80% of runs rather than 5%, `hobbyist_box` in 90% rather than 30%, `startup_colo`
+in 40% with ten bankruptcies rather than 75% with two, and `gov_agency` in 10% rather than 55%;
+the frontier lab's security team is credited with 31 captures there and 59 here. Release 0.2.0,
+the equipment archetypes and six subsystems, moved the table without a balance note. A balance
+pass on that release's content is due before these bands are quoted as current.

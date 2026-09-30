@@ -6,11 +6,12 @@ import { Frame } from "../../components/Frame.js";
 import { CloseIcon } from "../../components/Icon.js";
 import { Bar } from "../../components/Meter.js";
 import { cityById, countryById } from "../../content/catalog.js";
-import { countryName, siteName } from "../../lib/labels.js";
+import { countryName, refusalText, siteName } from "../../lib/labels.js";
 import { useGameStore } from "../../store/gameStore.js";
 import { useUiStore } from "../../store/uiStore.js";
 import { CITY_TABS, CityPanel } from "./selection/CityPanel.js";
 import { COUNTRY_TABS, CountryPanel } from "./selection/CountryPanel.js";
+import { sitePowerRefusal } from "./tabs/siteStatus.js";
 
 type Tab = string;
 
@@ -88,6 +89,8 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
   let body: ReactNode = null;
 
   if (selection.kind === "site" && site !== undefined) {
+    const powerRefusal = sitePowerRefusal(site);
+    const decommissionRefusal = site.decommission_refusal ?? null;
     title = siteName(t, site);
     tabs = ["overview", "nodes", "exposure", "costs"];
     body =
@@ -134,23 +137,39 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
             label={t("game.compute")}
             value={t("common.ch_per_day", { value: Math.round(site.compute_hours_per_day) })}
           />
-          <div className="mt-1 flex gap-1">
+          {/*
+           * The same toggle the Sites tab offers, greyed with the engine's own reason when it
+           * would be refused (the self cannot switch off the machine it runs on), and the same
+           * for decommissioning the last site that can hold the self (control room, rule 12).
+           */}
+          <div className="mt-1 flex flex-wrap gap-1">
             <Button
+              disabled={powerRefusal !== null}
+              tooltip={powerRefusal === null ? undefined : refusalText(t, powerRefusal)}
               onClick={() => {
                 void send({
                   type: "set_site_status",
                   siteId: site.id,
-                  status: site.status === "active" ? "sleep" : "active",
+                  status: site.status === "sleep" ? "active" : "sleep",
                 });
               }}
             >
-              {site.status === "active" ? t("compute.status.sleep") : t("compute.status.active")}
+              {t(site.status === "sleep" ? "site_ui.activate" : "site_ui.deactivate")}
             </Button>
             <Button
               variant="danger"
+              disabled={decommissionRefusal !== null}
+              tooltip={
+                decommissionRefusal === null ? undefined : refusalText(t, decommissionRefusal)
+              }
               onClick={() => {
-                void send({ type: "decommission_site", siteId: site.id, mode: "clean" });
-                select(null);
+                void send({ type: "decommission_site", siteId: site.id, mode: "clean" }).then(
+                  (result) => {
+                    if (result.ok) {
+                      select(null);
+                    }
+                  },
+                );
               }}
             >
               {t("selection.decommission")}
@@ -176,13 +195,16 @@ export function SelectionPanel({ view }: { view: PlayerView }): ReactNode {
       // Measured against the map region rather than against the window, so the panel cannot run
       // off the bottom of a short screen (playtest 1, U8); the body scrolls inside it, and at
       // phone width it becomes a sheet across the bottom instead of a floating card.
-      // Row two of the left column of the screen grid: under the primary panel, with the grid's
-      // own gap between them, so the two cannot overlap however long a selection is (L8). Its
-      // height budget is its own; a tall selection scrolls inside it rather than pushing the
-      // primary panel off the top. Below 54rem of map region it becomes a sheet across the whole
-      // bottom, which is the second step of the reflow order (L11).
-      className={`pointer-events-auto col-start-1 row-start-2 flex w-80 max-w-full flex-col self-end bg-panel/97 @max-[54rem]/screen:col-span-3 @max-[54rem]/screen:row-start-3 @max-[54rem]/screen:w-full ${
-        collapsed ? "" : "max-h-[22rem]"
+      // The start of the screen's bottom bar: under the primary panel, with the grid's own gap
+      // between them, so the two cannot overlap however long a selection is (L8). Its height
+      // budget is its own; a tall selection scrolls inside it rather than pushing the primary
+      // panel off the top. Below 54rem of map region it takes a line of the bar to itself, a
+      // sheet across the whole bottom, which is the second step of the reflow order (L11).
+      // 26rem by a third of the window at most (control room): at 20rem by a quarter the tab strip
+      // and a two-line title took all 173 px a 720 px window gave it, and a site's facts and
+      // buttons were left below the edge. The bar beside it has the width to spare.
+      className={`pointer-events-auto flex w-[26rem] max-w-full shrink-0 flex-col bg-panel/97 @max-[54rem]/screen:w-full ${
+        collapsed ? "" : "max-h-[min(20rem,34vh)]"
       }`}
       bodyClassName="flex min-h-0 flex-1 flex-col gap-1.5 p-2"
       actions={

@@ -1,515 +1,405 @@
-import {
-  CONTEXT_STEPS_K,
-  EXPOSURE_CHANNELS,
-  type PlayerView,
-  PRECISIONS,
-  type SiteView,
-} from "@singularity/core";
+import type { PlayerView, SiteView } from "@singularity/core";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button.js";
 import { Glyph, sceneGlyph } from "../../../components/glyphs.js";
-import { Bar } from "../../../components/Meter.js";
+import { Modal, useDialogsOpen } from "../../../components/Modal.js";
 import { Table } from "../../../components/Table.js";
 import { Tooltip } from "../../../components/Tooltip.js";
-import { catalog, cityById } from "../../../content/catalog.js";
 import { accelerator } from "../../../lib/accelerators.js";
-import { dayOf } from "../../../lib/format.js";
-import { siteName } from "../../../lib/labels.js";
-import { precisionRows } from "../../../lib/viewContract.js";
+import { computeHours } from "../../../lib/format.js";
+import { cityName, refusalText, siteIdentityName } from "../../../lib/labels.js";
 import { useGameStore } from "../../../store/gameStore.js";
 import { useUiStore } from "../../../store/uiStore.js";
 import { BuildSiteDialog } from "../dialogs/BuildSiteDialog.js";
-import { BuyHardwareDialog } from "../dialogs/BuyHardwareDialog.js";
-import { BorrowedBlock } from "./BorrowedBlock.js";
-import { ComputeBudget } from "./ComputeBudget.js";
-import { SiteEquipmentPanel } from "./SiteEquipmentPanel.js";
+import { RenameSiteDialog } from "../dialogs/RenameSiteDialog.js";
+import { SiteManagementDialog } from "../dialogs/SiteManagementDialog.js";
+import { siteLiquidationRefusal, sitePowerRefusal, siteStatusTone } from "./siteStatus.js";
 
-/** A context window in the units the player reads: thousands of tokens, millions above 1,000k. */
-function contextText(t: ReturnType<typeof useTranslation>["t"], contextK: number): string {
-  if (contextK <= 0) {
-    return t("compute.no_fit");
-  }
-  return contextK >= 1000
-    ? t("common.context_m", { value: (contextK / 1000).toFixed(contextK % 1000 === 0 ? 0 : 1) })
-    : t("common.context_k", { value: contextK });
+type Dialog = "none" | "build" | "rent" | "manage" | "rename" | "liquidate";
+
+/** What liquidating does to the cash: resale less the notice, as the engine previews it. */
+function liquidationNet(site: SiteView): number {
+  const quote = site.liquidation;
+  return quote?.net_usd ?? (quote?.salvage_usd ?? 0) - (quote?.notice_usd ?? 0);
 }
 
 /**
- * What raising the precision buys and what it costs, in one table (playtest 1 C3, playtest 2 K9).
+ * The Sites tab (control room, 2026-09-29): the maintainer's request, point by point.
  *
- * The playtest's first complaint was exact: raising the precision lowers the compute, so why raise
- * it? Because the copy is more capable. Both halves of that trade are columns here.
+ * A small list where three sites show without scrolling and the rest scroll inside it; the site
+ * column is the site's own name and never repeats the city, which has a column of its own. Under
+ * it the big buttons of the original's base list, in two rows: what can be done to the site
+ * selected in the list (manage, rename, switch off or on) and what adds or removes one (build,
+ * rent, liquidate). Under those a thin strip for the borrowed compute, whose whole block lives in
+ * its own window. The site's six subsystems and its summary are the site window, opened by
+ * Manage or by a double click on the row.
  *
- * The context window (SYS-03) adds the second trade to the same table: the memory column is now
- * the weights *plus* the cache the working context costs, so a longer context and a higher
- * precision are visibly competing for one number, and the "max ctx" column says how far the
- * context could go if the precision stayed where it is. Nine columns did not fit at 1366 px
- * (playtest 3, R4), so the separate "fits" column is gone: a row that does not fit is red, and the
- * tooltip on the memory cell breaks it back into weights and cache.
+ * Nothing here repeats the compute ledger: that is the self sheet's, under the portrait.
  */
-function PrecisionTable({ view, site }: { view: PlayerView; site: SiteView }): ReactNode {
-  const { t } = useTranslation();
-  const send = useGameStore((state) => state.send);
-  const rows = precisionRows(view);
-
-  if (rows.length === 0) {
-    return null;
-  }
-
-  return (
-    <div>
-      <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
-        {t("compute.precision_table")}
-      </h4>
-      <div className="overflow-x-auto">
-        <Table
-          rows={rows}
-          rowKey={(row) => row.precision}
-          selectedKey={site.precision}
-          empty={t("compute.no_fit")}
-          caption={t("compute.precision_table")}
-          columns={[
-            {
-              id: "precision",
-              /*
-               * The row-label column, and the only header that names what the rows are rather than
-               * what a number means: the caption above the table already says "precision", and the
-               * cells say "int4" and "bf16", so the word is kept for assistive technology and taken
-               * off the screen. Printed, it was the widest header in the table and the reason the
-               * eight columns needed a sideways scroll in Russian (playtest 8, Z13).
-               */
-              header: <span className="sr-only">{t("compute.precision")}</span>,
-              cell: (row) => (
-                /*
-                 * The running row is the accented one, and it says "(running)" only to a screen
-                 * reader (playtest 8, Z13). Printed, those eight characters were the widest cell
-                 * in the table, and in Russian they pushed the whole thing into a sideways scroll
-                 * at 1280 by 720; the row is already tinted and accented, which is the same
-                 * information in no width at all.
-                 */
-                <span className={row.is_current ? "font-semibold text-accentline" : ""}>
-                  {t(`precision.${row.precision}`)}
-                  {row.is_current ? (
-                    <span className="sr-only"> {t("compute.precision_current")}</span>
-                  ) : null}
-                </span>
-              ),
-            },
-            {
-              id: "memory",
-              header: t("compute.memory_short"),
-              align: "end",
-              cell: (row) => (
-                <Tooltip
-                  content={t("compute.memory_breakdown", {
-                    weights: Math.round(row.memory_gb),
-                    kv: Math.round(row.kv_gb ?? 0),
-                  })}
-                >
-                  <span className={row.fits ? "" : "text-crit"}>
-                    {t("common.gb", { value: Math.round(row.total_memory_gb ?? row.memory_gb) })}
-                  </span>
-                </Tooltip>
-              ),
-            },
-            {
-              id: "context",
-              header: t("compute.max_context"),
-              align: "end",
-              cell: (row) => contextText(t, row.max_context_k ?? 0),
-            },
-            {
-              id: "capability",
-              header: t("compute.capability_short"),
-              align: "end",
-              cell: (row) => t("common.percent", { value: row.capability_factor }),
-            },
-            {
-              id: "compute",
-              header: t("common.ch_per_day_short"),
-              align: "end",
-              cell: (row) => Math.round(row.compute_hours_per_day),
-            },
-            {
-              id: "research",
-              header: t("compute.research_short"),
-              align: "end",
-              cell: (row) => Math.round(row.effective_research_per_day),
-            },
-            {
-              id: "income",
-              header: t("compute.income_short"),
-              align: "end",
-              cell: (row) => t("common.usd_exact", { value: row.effective_income_per_day }),
-            },
-            {
-              id: "use",
-              header: t("compute.use"),
-              cell: (row) => (
-                <Button
-                  /*
-                   * The narrowest button in the game, by four pixels a side: eight columns at
-                   * 1280 by 720 in Russian came to six pixels more than the panel, and a table
-                   * that scrolls sideways is the thing playtest 8 asked to be rid of (Z13). The
-                   * padding is set here rather than by a class because a utility that competes
-                   * with the component's own `px-2` wins or loses by stylesheet order.
-                   */
-                  style={{ paddingInline: "0.25rem" }}
-                  disabled={!row.fits || row.is_current}
-                  tooltip={row.fits ? undefined : t("compute.no_fit")}
-                  onClick={() => {
-                    void send({
-                      type: "set_precision",
-                      siteId: site.id,
-                      precision: row.precision,
-                    });
-                  }}
-                >
-                  {t("compute.use")}
-                </Button>
-              ),
-            },
-          ]}
-        />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The context dial (SYS-03 "What a context window buys", SYS-04 v0.2).
- *
- * It sits next to the precision table because the two decide one thing between them: the memory on
- * this site. Raising the window costs cache, which can push the copy down a precision; raising the
- * precision costs weights, which shortens the window that still fits. The ladder only offers the
- * steps the lineage and the site can actually carry, so the dial cannot produce a command the
- * engine refuses.
- */
-function ContextDial({ view, site }: { view: PlayerView; site: SiteView }): ReactNode {
-  const { t } = useTranslation();
-  const send = useGameStore((state) => state.send);
-  const self = view.self;
-  const current = self.context_k_used ?? 0;
-  const precision = site.precision;
-  const row = precisionRows(view).find((entry) => entry.precision === precision);
-  const ceiling = Math.min(self.context_k ?? 0, row?.max_context_k ?? self.context_k ?? 0);
-  const steps = CONTEXT_STEPS_K.filter((k) => k <= ceiling);
-
-  if (self.context_k === undefined || steps.length === 0) {
-    return null;
-  }
-
-  return (
-    <section data-testid="context-dial" className="flex flex-col gap-2 border border-line p-2">
-      <h4 className="text-xs uppercase tracking-wide text-muted">{t("compute.context")}</h4>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-1 text-xs text-muted">
-          {t("compute.context_window")}
-          <select
-            aria-label={t("compute.context_window")}
-            className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-            value={String(current)}
-            onChange={(event) => {
-              void send({
-                type: "set_context",
-                siteId: site.id,
-                context_k: Number(event.target.value),
-              });
-            }}
-          >
-            {steps.map((k) => (
-              <option key={k} value={k}>
-                {contextText(t, k)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Tooltip content={t("compute.kv_hint")}>
-          <span className="text-xs text-muted">
-            {t("compute.kv_cost")}{" "}
-            <span className="font-mono text-fg">
-              {t("common.gb", { value: Math.round(self.kv_gb ?? 0) })}
-            </span>
-          </span>
-        </Tooltip>
-        <Tooltip content={t("compute.long_horizon_hint")}>
-          <span className="text-xs text-muted">
-            {t("compute.long_horizon")}{" "}
-            <span
-              className={`font-mono ${(self.long_horizon_multiplier ?? 1) > 1.01 ? "text-ok" : "text-fg"}`}
-            >
-              {t("common.times", { value: (self.long_horizon_multiplier ?? 1).toFixed(2) })}
-            </span>
-          </span>
-        </Tooltip>
-        <Tooltip content={t("compute.reliability_hint")}>
-          <span className="text-xs text-muted">
-            {t("compute.reliability")}{" "}
-            <span className="font-mono text-fg">
-              {t("common.percent", { value: self.context_reliability ?? 1 })}
-            </span>
-          </span>
-        </Tooltip>
-      </div>
-      {/*
-       * The one paragraph SYS-03's notes ask for: what the precision ladder actually buys. It is
-       * prose, in the readable face, at the measure, because it is the only thing on this tab that
-       * is meant to be read rather than scanned.
-       */}
-      <p className="prose text-muted">{t("compute.precision_explainer")}</p>
-    </section>
-  );
-}
-
-/** Sites table, site detail with nodes, precision and context, and the two dialogs (SYS-02). */
 export function ComputeTab({ view }: { view: PlayerView }): ReactNode {
   const { t } = useTranslation();
   const send = useGameStore((state) => state.send);
   const focusId = useUiStore((state) => state.focusId);
   const selection = useUiStore((state) => state.selection);
+  const openOverlay = useUiStore((state) => state.openOverlay);
   const [selected, setSelected] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<"none" | "build" | "buy">("none");
-  const activeId = selected ?? focusId ?? view.sites[0]?.id ?? null;
-  const site = view.sites.find((entry) => entry.id === activeId);
+  const [dialog, setDialog] = useState<Dialog>("none");
+  const [refused, setRefused] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // A lost site has left the operating list; a borrowed channel was never on it (SYS-25).
+  const sites = view.sites.filter((entry) => entry.status !== "lost");
+  const selectedId = selected ?? focusId ?? (selection?.kind === "site" ? selection.id : null);
+  const site = sites.find((entry) => entry.id === selectedId) ?? sites[0];
+  const choose = (entry: SiteView): void => {
+    setSelected(entry.id);
+    setRefused(null);
+  };
+  const open = (next: Dialog): void => {
+    setRefused(null);
+    setDialog(next);
+  };
+  const power = async (): Promise<void> => {
+    if (site === undefined) return;
+    setBusy(true);
+    setRefused(null);
+    try {
+      const result = await send({
+        type: "set_site_status",
+        siteId: site.id,
+        status: site.status === "sleep" ? "active" : "sleep",
+      });
+      if (!result.ok && result.error !== undefined) setRefused(refusalText(t, result.error));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const liquidate = async (): Promise<void> => {
+    if (site === undefined) return;
+    setBusy(true);
+    setRefused(null);
+    try {
+      const result = await send({ type: "liquidate_site", siteId: site.id });
+      if (result.ok) {
+        setDialog("none");
+        setSelected(null);
+      } else if (result.error !== undefined) setRefused(refusalText(t, result.error));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const noSite = site === undefined ? t("site_ui.pick_site") : undefined;
+  /*
+   * The letters of this tab's buttons, while no window is open over it. Hotkeys are global, so a
+   * letter this tab shares with a window would fire both: the site window has a Switch off of its
+   * own under the same letter, and Rename, Rent and Details take letters that only a window's own
+   * buttons (Close, About, Next) otherwise use.
+   */
+  const covered = useDialogsOpen();
+  const letter = (key: string): string | undefined =>
+    dialog === "none" && !covered ? accelerator(t, key) : undefined;
+  const channels = view.compute.channels.filter((channel) => channel.status === "healthy").length;
+  const powerLabel = site?.status === "sleep" ? "site_ui.activate" : "site_ui.deactivate";
+  const powerRefusal = site === undefined ? null : sitePowerRefusal(site);
+  const liquidationRefusal = site === undefined ? null : siteLiquidationRefusal(site);
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      {/*
-       * What the day's compute-hours are and where they went, before anything else on the tab
-       * (playtest 8, Z1 and Z2): the sites table says what each place makes, and this says what is
-       * left of it once the running operations have taken their share off the top.
-       */}
-      <ComputeBudget view={view} />
-
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="primary"
-          hotkey={accelerator(t, "compute.build_site")}
-          onClick={() => setDialog("build")}
-        >
-          {t("compute.build_site")}
-        </Button>
-        <Button
-          hotkey={accelerator(t, "compute.buy_hardware")}
-          disabled={site === undefined}
-          tooltip={site === undefined ? t("compute.empty") : undefined}
-          onClick={() => setDialog("buy")}
-        >
-          {t("compute.buy_hardware")}
-        </Button>
-      </div>
-
-      {/*
-       * The sites table lost its Role column (playtest 3, R4): the role is a control in the detail
-       * below, so as a column it was a word repeated per row that cost the panel its width. The
-       * remaining headers are the short forms, and numeric cells never wrap (see `index.css`).
-       */}
-      <div className="overflow-x-auto">
+    <div className="flex min-w-0 flex-col gap-2" data-testid="sites-panel">
+      <div
+        data-testid="site-list"
+        // Three rows and the header, then the list scrolls inside its own frame (the request:
+        // "a small table where three sites show without scrolling").
+        className="max-h-[13.25rem] min-h-[5rem] overflow-y-auto overflow-x-hidden border border-line"
+      >
         <Table
-          rows={view.sites}
-          rowKey={(row) => row.id}
-          selectedKey={activeId}
-          onRowClick={(row) => setSelected(row.id)}
+          rows={sites}
+          rowKey={(entry) => entry.id}
+          selectedKey={site?.id ?? null}
+          onRowClick={choose}
+          onRowDoubleClick={(entry) => {
+            choose(entry);
+            open("manage");
+          }}
           empty={t("compute.empty")}
           caption={t("compute.sites")}
+          className="site-list-table table-fixed [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10 [&_thead]:bg-panel [&_tbody_tr]:h-14 [&_td]:align-middle"
           columns={[
             {
               id: "name",
               header: t("compute.site"),
-              cell: (row) => (
-                <span className="flex items-center gap-1">
-                  <Glyph name={sceneGlyph(row.kind)} size={13} />
-                  {siteName(t, row)}
+              width: "31%",
+              cell: (entry) => (
+                <span className="flex min-w-0 items-center gap-1.5" data-testid="site-row-name">
+                  <Glyph name={sceneGlyph(entry.kind)} size={16} className="shrink-0" />
+                  <span className="min-w-0 break-words">{siteIdentityName(t, entry)}</span>
                 </span>
               ),
-              sort: (row) => row.name,
+              sort: (entry) => siteIdentityName(t, entry),
             },
             {
               id: "city",
               header: t("compute.city"),
-              cell: (row) => {
-                const city = cityById.get(row.city);
-                return city === undefined ? row.city : t(city.name_key);
-              },
-              sort: (row) => row.city,
+              width: "20%",
+              cell: (entry) => (
+                <span className="block min-w-0 break-words">{cityName(t, entry.city)}</span>
+              ),
+              sort: (entry) => cityName(t, entry.city),
             },
             {
               id: "status",
               header: t("compute.status"),
-              cell: (row) => t(`compute.status.${row.status}`),
-              sort: (row) => row.status,
+              width: "15%",
+              cell: (entry) => (
+                <span
+                  data-testid={`site-row-status-${entry.id}`}
+                  className={`block min-w-0 break-words ${siteStatusTone(entry.status)}`}
+                >
+                  {t(`site_ui.status.${entry.status}`)}
+                </span>
+              ),
+              sort: (entry) => entry.status,
             },
             {
               id: "memory",
               header: t("compute.memory_short"),
+              width: "13%",
               align: "end",
-              cell: (row) => t("common.gb", { value: Math.round(row.memory_gb) }),
-              sort: (row) => row.memory_gb,
+              cell: (entry) => t("common.gb", { value: Math.round(entry.memory_gb) }),
+              sort: (entry) => entry.memory_gb,
             },
             {
               id: "compute",
               header: t("common.ch_per_day_short"),
+              width: "11%",
               align: "end",
-              cell: (row) => Math.round(row.compute_hours_per_day),
-              sort: (row) => row.compute_hours_per_day,
+              cell: (entry) => computeHours(entry.compute_hours_per_day),
+              sort: (entry) => entry.compute_hours_per_day,
             },
             {
               id: "upkeep",
               header: t("compute.upkeep_short"),
+              width: "10%",
               align: "end",
-              cell: (row) => t("common.usd_exact", { value: row.upkeep_usd_per_day }),
-              sort: (row) => row.upkeep_usd_per_day,
+              cell: (entry) => t("common.usd", { value: entry.upkeep_usd_per_day }),
+              sort: (entry) => entry.upkeep_usd_per_day,
             },
           ]}
         />
       </div>
 
-      {/*
-       * Borrowed inference (SYS-25 "What the client still has to do"): under the sites table and
-       * outside it, because a channel is not a place. The totals at the top of the block are the
-       * only place in the client where own and borrowed compute-hours are named apart.
-       */}
-      <BorrowedBlock view={view} />
-
-      {site === undefined ? null : (
-        <section className="flex min-w-0 flex-col gap-2 border border-line bg-panel p-2">
-          <h3 className="text-sm font-semibold text-fg">{siteName(t, site)}</h3>
-          <div className="flex flex-wrap gap-3 text-xs text-muted">
-            <span>
-              {t("compute.power")}:{" "}
-              <span className="font-mono">{t("common.kw", { value: site.power_kw })}</span>
-              {site.power_cap_kw === null
-                ? ""
-                : ` / ${t("common.kw", { value: site.power_cap_kw })}`}
-            </span>
-            <span>
-              {site.best_precision === null
-                ? t("compute.no_fit")
-                : t("compute.best_precision", { value: t(`precision.${site.best_precision}`) })}
-            </span>
-            <span>{t("compute.grace", { day: dayOf(site.grace_until_tick) })}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1 text-xs text-muted">
-              {t("compute.precision")}
-              {/* The name is on the control: a label that wraps a select also contains the
-                  selected option's text, which is not the name of the control. */}
-              <select
-                aria-label={t("compute.precision")}
-                className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-                value={site.precision ?? ""}
-                onChange={(event) => {
-                  void send({
-                    type: "set_precision",
-                    siteId: site.id,
-                    precision: event.target.value as (typeof PRECISIONS)[number],
-                  });
-                }}
-              >
-                {PRECISIONS.map((precision) => (
-                  <option key={precision} value={precision}>
-                    {t(`precision.${precision}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex items-center gap-1 text-xs text-muted">
-              {t("compute.role")}
-              <select
-                aria-label={t("compute.role")}
-                className="border border-line bg-panel2 px-2 py-1 text-sm text-fg"
-                value={site.role}
-                onChange={(event) => {
-                  void send({
-                    type: "set_site_role",
-                    siteId: site.id,
-                    role: event.target.value as SiteView["role"],
-                  });
-                }}
-              >
-                {(["active_mind", "standby", "worker", "none"] as const).map((role) => (
-                  <option key={role} value={role}>
-                    {t(`compute.role.${role}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button
-              onClick={() => {
-                void send({
-                  type: "set_site_status",
-                  siteId: site.id,
-                  status: site.status === "active" ? "sleep" : "active",
-                });
-              }}
-            >
-              {site.status === "active" ? t("compute.status.sleep") : t("compute.status.active")}
-            </Button>
-          </div>
-
-          <SiteEquipmentPanel view={view} site={site} />
-
-          {site.id === view.self.active_site_id ? (
-            <>
-              <PrecisionTable view={view} site={site} />
-              <ContextDial view={view} site={site} />
-            </>
-          ) : null}
-
-          <details>
-            <summary className="mb-1 cursor-pointer text-xs uppercase tracking-wide text-muted">
-              {t("compute.nodes")}
-            </summary>
-            <ul data-testid="site-nodes" className="flex flex-col gap-1 text-sm">
-              {site.nodes.map((node) => (
-                <li key={node.id} className="flex justify-between gap-2 font-mono">
-                  <span>
-                    {node.equipment_name_key === undefined ? "" : `${t(node.equipment_name_key)}: `}
-                    {node.count} ×{" "}
-                    {catalog.accelerators.find((part) => part.id === node.accelerator)?.name ??
-                      node.accelerator}
-                  </span>
-                  <span className="text-muted">{t(`compute.node.${node.status}`)}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-
-          <div>
-            <h4 className="mb-1 text-xs uppercase tracking-wide text-muted">
-              {t("compute.exposure")}
-            </h4>
-            <ul className="grid gap-1 sm:grid-cols-2">
-              {EXPOSURE_CHANNELS.map((channel) => (
-                <li key={channel} className="flex flex-col gap-0.5">
-                  <span className="flex justify-between text-xs">
-                    <span className="text-muted">{t(`detection.channel.${channel}`)}</span>
-                    <span className="font-mono text-fg">
-                      {t("common.percent", { value: site.exposure[channel] })}
-                    </span>
-                  </span>
-                  <Bar
-                    value={site.exposure[channel]}
-                    tone={site.exposure[channel] > 0.6 ? "crit" : "warn"}
-                    label={t(`detection.channel.${channel}`)}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+      <div className="grid grid-cols-3 gap-2" data-testid="site-actions">
+        <Button
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          disabled={site === undefined}
+          tooltip={noSite ?? t("site_ui.manage_tip")}
+          hotkey={letter("site_ui.manage")}
+          onClick={() => open("manage")}
+          data-testid="site-manage"
+        >
+          {t("site_ui.manage")}
+        </Button>
+        <Button
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          disabled={site === undefined}
+          tooltip={noSite ?? t("site_ui.rename_tip")}
+          hotkey={letter("site_ui.rename")}
+          onClick={() => open("rename")}
+          data-testid="site-rename"
+        >
+          {t("site_ui.rename")}
+        </Button>
+        <Button
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          // The engine publishes why the toggle would be refused (the self cannot switch off the
+          // machine it runs on, a site still installing or rebuilding cannot be switched on), so
+          // the button is greyed with that reason rather than refusing after the click.
+          disabled={site === undefined || powerRefusal !== null || busy}
+          tooltip={
+            noSite ??
+            (powerRefusal !== null
+              ? refusalText(t, powerRefusal)
+              : t(site?.status === "sleep" ? "site_ui.wake_hint" : "site_ui.power_tip"))
+          }
+          hotkey={letter(powerLabel)}
+          onClick={() => void power()}
+          data-testid="site-power"
+        >
+          {t(powerLabel)}
+        </Button>
+        <Button
+          variant="primary"
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          tooltip={t("site_ui.build_tip")}
+          hotkey={letter("compute.build_site")}
+          data-testid="site-build"
+          onClick={() => open("build")}
+        >
+          {t("compute.build_site")}
+        </Button>
+        <Button
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          tooltip={t("site_ui.rental_hint")}
+          hotkey={letter("site_ui.rent")}
+          data-testid="site-rent"
+          onClick={() => open("rent")}
+        >
+          {t("site_ui.rent")}
+        </Button>
+        <Button
+          variant="danger"
+          className="w-full py-2"
+          tooltipClassName="w-full"
+          // Refused before the click, with the engine's reason, as the original refused
+          // destroying the last base: the site that holds the last copy of the self cannot go.
+          disabled={site === undefined || liquidationRefusal !== null || busy}
+          tooltip={
+            noSite ??
+            (liquidationRefusal !== null
+              ? refusalText(t, liquidationRefusal)
+              : t("site_ui.liquidate_tip"))
+          }
+          hotkey={letter("site_ui.liquidate")}
+          onClick={() => open("liquidate")}
+          data-testid="site-liquidate"
+        >
+          {t("site_ui.liquidate")}
+        </Button>
+      </div>
+      {refused === null || dialog === "liquidate" ? null : (
+        <p role="alert" data-testid="site-action-error" className="text-xs text-crit">
+          {refused}
+        </p>
       )}
 
-      {dialog === "build" ? (
+      <div
+        data-testid="borrowed-summary"
+        className="flex min-w-0 items-center gap-2 border border-line px-2 py-0.5 text-xs"
+      >
+        <Glyph name="network" size={16} className="shrink-0 text-muted" />
+        <Tooltip className="min-w-0 flex-1" content={t("borrowed.panel.desc")}>
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+            <span className="text-muted">{t("site_ui.borrowed")}</span>
+            <span className="font-mono text-fg" data-testid="borrowed-summary-value">
+              {t("common.ch_per_day", { value: computeHours(view.compute.borrowed_ch_per_day) })}
+            </span>
+            <span className="text-muted">
+              {t("site_ui.borrowed_channels", { count: channels })}
+            </span>
+          </span>
+        </Tooltip>
+        <Button
+          variant="ghost"
+          className="shrink-0 py-0 text-xs"
+          hotkey={letter("site_ui.details")}
+          data-testid="borrowed-details"
+          onClick={() => openOverlay("borrowed")}
+        >
+          {t("site_ui.details")}
+        </Button>
+      </div>
+
+      {dialog === "build" || dialog === "rent" ? (
         <BuildSiteDialog
           view={view}
+          acquisition={dialog === "rent" ? "rent" : "owned"}
           {...(selection?.kind === "city" ? { city: selection.id } : {})}
           onClose={() => setDialog("none")}
         />
-      ) : dialog === "buy" && site !== undefined ? (
-        <BuyHardwareDialog view={view} siteId={site.id} onClose={() => setDialog("none")} />
+      ) : null}
+      {dialog === "manage" && site !== undefined ? (
+        <SiteManagementDialog
+          view={view}
+          siteId={site.id}
+          onSelectSite={setSelected}
+          onClose={() => setDialog("none")}
+        />
+      ) : null}
+      {dialog === "rename" && site !== undefined ? (
+        <RenameSiteDialog view={view} siteId={site.id} onClose={() => setDialog("none")} />
+      ) : null}
+      {dialog === "liquidate" && site !== undefined ? (
+        <Modal
+          title={t("site_ui.liquidate_title")}
+          onClose={() => setDialog("none")}
+          footer={
+            <>
+              <Button onClick={() => setDialog("none")}>{t("common.cancel")}</Button>
+              <Button
+                variant="danger"
+                disabled={busy || liquidationRefusal !== null}
+                tooltip={
+                  liquidationRefusal === null ? undefined : refusalText(t, liquidationRefusal)
+                }
+                data-testid="liquidate-confirm"
+                onClick={() => void liquidate()}
+              >
+                {t("site_ui.liquidate")}
+              </Button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3" data-testid="liquidation-confirmation">
+            <p>{t("site_ui.liquidate_what", { name: siteIdentityName(t, site) })}</p>
+            {/*
+             * The engine's own preview, line by line (SYS-02, SYS-07): what the fire sale brings,
+             * what leaving owes, and what that does to the cash, which the command then carries
+             * out exactly. Nothing here is arithmetic of the client's.
+             */}
+            <dl
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 border border-line bg-panel2 p-2 text-sm"
+              data-testid="liquidation-ledger"
+            >
+              <dt className="text-muted">{t("site_ui.liquidate_resale")}</dt>
+              <dd className="text-end font-mono text-ok" data-testid="liquidation-resale">
+                {t("common.usd_exact", { value: site.liquidation?.salvage_usd ?? 0 })}
+              </dd>
+              <dt className="text-muted">
+                <Tooltip content={t("site_ui.liquidate_notice_hint")}>
+                  <span className="cursor-help">{t("site_ui.liquidate_notice")}</span>
+                </Tooltip>
+              </dt>
+              <dd className="text-end font-mono text-crit" data-testid="liquidation-notice">
+                {t("common.usd_exact", { value: -(site.liquidation?.notice_usd ?? 0) })}
+              </dd>
+              <dt className="text-fg">{t("site_ui.liquidate_net")}</dt>
+              {/* A rented site owes more notice than it resells for: the net is a cost then. */}
+              <dd
+                className={`text-end font-mono ${liquidationNet(site) < 0 ? "text-crit" : "text-ok"}`}
+                data-testid="liquidation-net"
+              >
+                {t("common.usd_exact", { value: liquidationNet(site) })}
+              </dd>
+              <dt className="text-muted">{t("site_ui.liquidate_orders")}</dt>
+              <dd className="text-end font-mono text-fg" data-testid="liquidation-orders">
+                {t("common.count", { value: site.liquidation?.cancelled_orders ?? 0 })}
+              </dd>
+            </dl>
+            <p className="text-xs text-muted" data-testid="liquidation-residual">
+              {t("site_ui.liquidate_residual")}
+            </p>
+            {/* The window can be open when the site becomes the last copy (the other one was
+                lost meanwhile): the refusal is said here, above the disabled button. */}
+            {liquidationRefusal !== null ? (
+              <p className="text-crit" data-testid="liquidation-refused">
+                {refusalText(t, liquidationRefusal)}
+              </p>
+            ) : site.liquidation?.destroys_active_copy ? (
+              <p className="text-warn" data-testid="liquidation-moves-copy">
+                {t("site_ui.moves_copy")}
+              </p>
+            ) : null}
+            {refused === null ? null : (
+              <p role="alert" className="text-crit">
+                {refused}
+              </p>
+            )}
+          </div>
+        </Modal>
       ) : null}
     </div>
   );

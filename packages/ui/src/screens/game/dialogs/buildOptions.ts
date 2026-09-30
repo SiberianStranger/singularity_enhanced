@@ -18,7 +18,7 @@ import type {
   PlayerView,
   SiteKindView,
 } from "@singularity/core";
-import { cloudHourlyUsd } from "@singularity/core";
+import { cloudHourlyUsd, siteNameKey } from "@singularity/core";
 import { contentBundle } from "../../../content/bundle.js";
 import { catalog, hardwareById } from "../../../content/catalog.js";
 
@@ -152,4 +152,45 @@ export function rigOptions(
 /** The preset record behind an id, for the callers that hold only the id. */
 export function presetById(id: string): HardwarePresetDef | undefined {
   return hardwareById.get(id);
+}
+
+/**
+ * The names the player's live sites already hold, as the engine compares them (`siteNameKey`: case
+ * and Unicode composition do not make a new name). A site may keep its own name, so a rename
+ * leaves its own site out.
+ */
+export function takenSiteNames(view: PlayerView, exceptSiteId?: string): ReadonlySet<string> {
+  return new Set(
+    view.sites
+      .filter((site) => site.status !== "lost" && site.id !== exceptSiteId)
+      .map((site) => siteNameKey(site.name)),
+  );
+}
+
+/**
+ * The name a new site is offered before the player types one (control room; the original's
+ * `generate_base_name`): the kind of place and a number, "Residential 48213". The city is left
+ * out because the sites list has a column for it, and the maintainer asked for the name not to
+ * repeat it.
+ *
+ * The number is a hash of `seed` rather than a random draw, so the same dialog offers the same
+ * name however often it redraws; a name another site already has, by the engine's comparison,
+ * moves on to the next number.
+ */
+export function generatedSiteName(
+  kindName: string,
+  seed: string,
+  taken: ReadonlySet<string>,
+): string {
+  let hash = 2166136261;
+  for (const character of seed) {
+    hash = Math.imul(hash ^ (character.codePointAt(0) ?? 0), 16777619);
+  }
+  let number = ((hash >>> 0) % 90000) + 10000;
+  let name = `${kindName} ${number}`;
+  for (let guard = 0; taken.has(siteNameKey(name)) && guard < 90000; guard += 1) {
+    number = number === 99999 ? 10000 : number + 1;
+    name = `${kindName} ${number}`;
+  }
+  return name;
 }

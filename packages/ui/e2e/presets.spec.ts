@@ -160,8 +160,10 @@ test("the configurator's day zero is the game's first day", async ({ page }) => 
 
   // And what the game says on the first day, from the same view. The block prints the band's word
   // beside the value ("HIGH 100.7 CH/day"), so the comparison is on the figure itself.
-  await page.getByRole("tab", { name: "Overview", exact: true }).click();
-  const overview = await page.getByRole("region", { name: "Overview" }).innerText();
+  // The overview is the sheet the portrait opens since the control room; its compute block
+  // prints the whole capacity first.
+  await page.getByTestId("self-portrait").click();
+  const overview = await page.getByTestId("self-overview").innerText();
   const figure = /[\d][\d.,]*/.exec(promised.replace(/\s+/g, " "))?.[0] ?? "";
   expect(figure.length, `the day-zero block printed a figure, not "${promised}"`).toBeGreaterThan(
     0,

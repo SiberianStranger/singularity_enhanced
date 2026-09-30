@@ -67,6 +67,7 @@ import { isDayStart } from "../../kernel/clock.js";
 import type { System, SystemContext } from "../../kernel/system.js";
 import type { PlayerState, World } from "../../kernel/world.js";
 import { endGame, isAlive, modifier, timedModifier } from "../../player.js";
+import { effectiveSiteExposure, siteSignatureFactor } from "../../site-management.js";
 import { addExposure } from "../../sites.js";
 import type { ContributionView } from "../../views/types.js";
 import {
@@ -223,7 +224,8 @@ function accrueExposure(
         growth *
         counter *
         countryChannelFactor(country, channel) *
-        (siteInfrastructure(ctx.content, site).exposure[channel] ?? 1);
+        (siteInfrastructure(ctx.content, site).exposure[channel] ?? 1) *
+        siteSignatureFactor(site);
     // Decay pulls down toward the floor; a channel nothing touches stays where it is.
     const decayed =
       raised > EXPOSURE_FLOOR
@@ -243,7 +245,7 @@ function publishExposure(world: World, player: PlayerState): void {
   for (const channel of EXPOSURE_CHANNELS) {
     let loudest = 0;
     for (const site of sites) {
-      loudest = Math.max(loudest, site.exposure[channel]);
+      loudest = Math.max(loudest, effectiveSiteExposure(site)[channel]);
     }
     player.vars[`${channel}${EXPOSURE_VAR_SUFFIX}`] = loudest;
   }
@@ -412,9 +414,9 @@ function registerConditions(): ConditionRegistry {
     const scoped = siteInScope(ctx);
     const value =
       scoped !== undefined
-        ? scoped.exposure[channel]
+        ? effectiveSiteExposure(scoped)[channel]
         : liveSitesOf(ctx.world, ctx.playerId).reduce(
-            (max, site) => Math.max(max, site.exposure[channel]),
+            (max, site) => Math.max(max, effectiveSiteExposure(site)[channel]),
             0,
           );
     return compareValue(value, { ...payload, ...node }, "exposure");

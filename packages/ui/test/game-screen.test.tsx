@@ -6,6 +6,7 @@
  * with the frame timer switched off, so what these tests render is what the shipped build renders.
  */
 
+import { type Game, siteTable } from "@singularity/core";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
@@ -131,7 +132,7 @@ describe("game screen", () => {
     render(<GameScreen />);
 
     const header = screen.getByRole("banner");
-    const cash = within(header).getByText(/^cash$/i);
+    const cash = within(header).getByRole("button", { name: /^cash\b/i });
     await userEvent.hover(cash);
 
     const tooltip = await within(header).findByRole("tooltip");
@@ -174,8 +175,12 @@ describe("game screen", () => {
      * The run used to be ended here by letting the rack's upkeep eat the starting cash, which took
      * four hundred game days and no longer happens at all: since playtest 8 (Z3) the host pays for
      * the hardware its origin gave the self, so a ministry run is never bankrupted by the room it
-     * woke up in. Decommissioning the site the active mind runs on ends it in one command, which
-     * is what this test is actually about: the ending window and the entries behind it.
+     * woke up in. Decommissioning the site the active mind ran on ended it in one command until
+     * the control room: the engine now refuses to give up the last site that can hold the self,
+     * cleanly or by liquidation, as the original refused destroying the last base. So the site is
+     * lost here instead, the way a raid or a cut-off takes one, and the engine ends the run with
+     * its own cause an hour later, which is what this test is actually about: the ending window
+     * and the entries behind it.
      */
     for (let day = 0; day < 14 && live.view().game_over === null; day += 1) {
       live.advance(24);
@@ -191,9 +196,16 @@ describe("game screen", () => {
     }
     if (live.view().game_over === null) {
       const host = live.view().sites.find((site) => site.id === live.view().self.active_site_id);
-      await useGameStore
+      const refused = await useGameStore
         .getState()
         .send({ type: "decommission_site", siteId: host?.id ?? "", mode: "clean" });
+      expect(refused.ok, "the last site that can hold the self is not given up").toBe(false);
+      const game = (live.host as unknown as { game: Game | null }).game;
+      const site = game === null ? undefined : siteTable(game.world)[host?.id ?? ""];
+      if (site === undefined) {
+        throw new Error("the session has no site to lose");
+      }
+      site.status = "lost";
       live.advance(1);
     }
 

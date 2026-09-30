@@ -13,7 +13,7 @@
  * name selector on them breaks whenever the rail is retouched.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import {
   day,
   english,
@@ -91,10 +91,10 @@ test("the panels the player needs all render", async ({ page }) => {
   await startGame(page);
   await resolveOpenEvents(page);
 
-  // The pinned panel keeps seven tabs; Log, Knowledge and World are windows now (R8-R10).
+  // The pinned panel keeps six tabs; Log, Knowledge and World are windows (R8-R10), and the
+  // Overview is the sheet the portrait opens (control room).
   const tabs = [
-    "Overview",
-    "Compute and sites",
+    "Sites",
     "Research",
     "Finances",
     "Detection",
@@ -108,6 +108,10 @@ test("the panels the player needs all render", async ({ page }) => {
       "true",
     );
   }
+  await page.getByTestId("self-portrait").click();
+  await expect(page.getByTestId("self-overview")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("self-overview")).toHaveCount(0);
 
   // The three windows, each from the entry point the player actually has: the log from its strip
   // at the bottom of the map, knowledge from the top-right corner, the ledger from the right edge.
@@ -226,10 +230,10 @@ test("the keyboard walks the configurator and nothing scrolls at 1366 by 768", a
   expect(await isoDate(page)).toBe("2027-01-01");
   await resolveOpenEvents(page);
 
-  // R4: the Compute and sites panel was the one that did not fit, and it is the widest.
-  await openPanel(page, "Compute and sites");
+  // R4: the sites panel was the one that did not fit, and it is the widest.
+  await openPanel(page, "Sites");
   expect(await pageOverflow(page), "the game screen fits 1366 by 768").toEqual({ x: 0, y: 0 });
-  const compute = page.getByRole("region", { name: "Compute and sites" });
+  const compute = page.getByRole("region", { name: "Sites" });
   const width = (await compute.boundingBox())?.width ?? Number.POSITIVE_INFINITY;
   expect(width, "the compute panel stays inside the screen").toBeLessThanOrEqual(
     SMALL_SCREEN.width,
@@ -274,7 +278,7 @@ test("the actions the playtest found broken all work", async ({ page }) => {
    * are the ones that fit the kind; nothing is built until both have been chosen, and the button
    * says so until then.
    */
-  await openPanel(page, "Compute and sites");
+  await openPanel(page, "Sites");
   const sites = page.getByRole("table", { name: "Sites" }).getByRole("row");
   const sitesBefore = await sites.count();
   await page.getByRole("button", { name: "Build site" }).click();
@@ -292,28 +296,36 @@ test("the actions the playtest found broken all work", async ({ page }) => {
   await expect(sites).toHaveCount(sitesBefore + 1);
 
   // C2, U1: discovered archetypes carry complete configurations and an authoritative preview.
-  // The owned place just built has room for another complete host.
+  // The owned place just built has room for another complete host. Since the control room the
+  // hardware is ordered from the site's own window: Manage, then the compute row's Change.
   await sites.nth(2).click();
-  await page.getByTestId("site-nodes").locator("..").locator("summary").click();
-  const nodes = page.getByTestId("site-nodes").getByRole("listitem");
-  const nodesBefore = await nodes.count();
-  await page.getByRole("button", { name: "Buy hardware" }).click();
-  const buy = page.getByRole("dialog");
+  await page.getByTestId("site-manage").click();
+  const siteWindow = page.getByTestId("site-management");
+  await expect(siteWindow.locator("[data-testid^='equipment-slot-']")).toHaveCount(6);
+  await siteWindow.getByTestId("equipment-change-compute").click();
+  const buy = page.getByTestId("equipment-dialog");
   await expect(buy.getByRole("radio")).toHaveCount(4);
   await buy.getByTestId("equipment-archetype-server_vintage").click();
   await expect(buy.getByTestId("equipment-preview")).toContainText("GB");
   await expect(buy.getByTestId("equipment-preview")).toContainText("$");
-  await expect(buy.getByTestId("equipment-confirm")).toBeEnabled();
-  await buy.getByTestId("equipment-confirm").click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(nodes).toHaveCount(nodesBefore + 1);
+  // The order button is in the window's footer, outside the body the test id marks.
+  await expect(page.getByTestId("equipment-confirm")).toBeEnabled();
+  await page.getByTestId("equipment-confirm").click();
+  // The workshop hands back to the site window it was opened from, which lists the order.
+  await expect(page.getByTestId("equipment-dialog")).toHaveCount(0);
   await expect(page.getByTestId("equipment-orders")).toContainText("Server vintage");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
   // C3: the precision table shows the trade-off, and changing the precision takes. It belongs to
-  // the site the mind actually runs on.
+  // the site the mind actually runs on, in that site's window.
   await sites.nth(1).click();
+  await page.getByTestId("site-manage").click();
+  await page.getByTestId("site-advanced-self").locator("summary").click();
   await expect(page.getByRole("table", { name: "Precision trade-off" })).toBeVisible();
-  const precision = page.getByRole("combobox", { name: "Precision" });
+  const precision = page
+    .getByTestId("site-management")
+    .getByRole("combobox", { name: "Precision" });
   await precision.selectOption("int4");
   // Either the precision moves or the engine says out loud why it will not, which is the same
   // shape the unit test asserts: what must never happen is a control that silently does nothing
@@ -326,6 +338,9 @@ test("the actions the playtest found broken all work", async ({ page }) => {
       { timeout: 10_000, message: "the precision control either took the change or refused it" },
     )
     .toBe("answered");
+  // The window first: the notice stack is under it.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   if ((await refusal.count()) > 0) {
     await refusal.first().getByRole("button", { name: "Close" }).click();
   }
